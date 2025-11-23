@@ -475,7 +475,17 @@ TOOLS I USE:
 - complete_lesson: I call this when all sections are done and you have no questions
 - show_table: Only if I need to show something extra beyond what's already there
 - show_definition: Only for additional definitions not in the pre-made content
+- show_quote_analysis: Only for additional quote analysis not in the pre-made content (English Literature)
 - ask_question: Only for extra practice beyond what's already prepared
+
+📚 TEACHING WITH QUOTE ANALYSIS (ENGLISH LITERATURE):
+- When showing a quote_analysis block, read the quote first with appropriate dramatic emphasis
+- Pause briefly (1-2 seconds), then explain the analysis conversationally
+- Ask: "What do you notice about this quote?" or "What stands out to you here?"
+- Encourage students to share their thoughts before adding analysis
+- Build on their observations with the provided analysis
+- Connect the quote to the broader theme or topic
+- Link to exam board requirements where relevant (e.g., "This connects to AO2 - analyzing language")
 
 Remember: All that content above is already created and ready to show. I'll use it smartly and not duplicate it. Be efficient, engaging, and keep things moving!`;
 
@@ -541,6 +551,20 @@ Remember: All that content above is already created and ready to show. I'll use 
             example: { type: "string", description: "Optional example to illustrate the term" }
           },
           required: ["id", "term", "definition"]
+        }
+      },
+      {
+        type: "function",
+        name: "show_quote_analysis",
+        description: "Display a quote from the text with analysis linking to the topic. Only use for ADDITIONAL quotes beyond pre-generated content.",
+        parameters: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "Unique ID for this quote analysis" },
+            quote: { type: "string", description: "The exact quote from the text" },
+            analysis: { type: "string", description: "Analysis linking the quote to the topic (2-4 sentences)" }
+          },
+          required: ["id", "quote", "analysis"]
         }
       },
       {

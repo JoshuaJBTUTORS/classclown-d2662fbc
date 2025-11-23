@@ -478,7 +478,39 @@ WORKED EXAMPLES (MANDATORY):
 OTHER RULES:
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
-- Focus on core concepts - avoid unnecessary detail`
+- Focus on core concepts - avoid unnecessary detail
+
+⚠️ FOR ENGLISH LITERATURE LESSONS - MANDATORY STRUCTURE:
+
+QUOTE ANALYSIS BLOCKS (CRITICAL - MUST INCLUDE):
+- EVERY English Literature lesson MUST include at least 1-2 quote_analysis blocks
+- These should be the primary teaching tool for analyzing texts
+- Use the "quote_analysis" content block type
+- Keep the structure ULTRA-SIMPLE with only 2 fields:
+  * quote: The exact quote from the text
+  * analysis: How this quote links to the topic/theme being studied (2-4 sentences)
+
+Example of a GOOD quote_analysis block:
+{
+  type: "quote_analysis",
+  title: "Key Quote 1",
+  data: {
+    quote: "Fair is foul, and foul is fair",
+    analysis: "This paradox introduces the theme of deception that runs throughout Macbeth. The witches' chant suggests that appearances can be misleading - what seems good may be evil, and vice versa. This directly links to our topic of how Shakespeare presents the supernatural as morally ambiguous."
+  }
+}
+
+CONTENT STRUCTURE FOR ENGLISH LITERATURE:
+- Step 1: Brief context introduction (1 text block, 1-2 sentences)
+- Step 2-3: Quote analysis (1-2 quote_analysis blocks per step)
+- Step 4: Exam practice (1-2 question blocks)
+
+RULES FOR QUOTE ANALYSIS:
+- Always include the full quote exactly as it appears in the text
+- Analysis should be 2-4 sentences linking to the lesson topic
+- Focus on themes, language, character, or context
+- Make it accessible for GCSE students
+- Avoid overly academic jargon`
           },
           {
             role: 'user',
@@ -534,7 +566,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                           properties: {
                             type: { 
                               type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example']
+                              enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example', 'quote_analysis']
                             },
                             title: { type: 'string' },
                             data: {
@@ -608,6 +640,21 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                     }
                                   },
                                   required: ['question', 'steps', 'answer']
+                                },
+                                {
+                                  type: 'object',
+                                  description: 'Quote Analysis - Literary quote with analysis',
+                                  properties: {
+                                    quote: { 
+                                      type: 'string',
+                                      description: 'The exact quote from the text'
+                                    },
+                                    analysis: { 
+                                      type: 'string',
+                                      description: 'Analysis explaining how this quote links to the topic or theme (2-4 sentences)'
+                                    }
+                                  },
+                                  required: ['quote', 'analysis']
                                 }
                               ]
                             },
