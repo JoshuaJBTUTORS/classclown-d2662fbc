@@ -99,10 +99,12 @@ export const LessonPlanDisplay: React.FC<LessonPlanDisplayProps> = ({
   return (
     <div className="h-screen bg-white p-8">
       <div className="cleo-lesson-container" style={{ maxWidth: '800px' }}>
-        <button onClick={handleBackToModule} className="cleo-back-btn">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Module
-        </button>
+        <div className="flex justify-start mb-4">
+          <button onClick={handleBackToModule} className="cleo-back-btn">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Module
+          </button>
+        </div>
 
         <div className="cleo-logo">Cleo</div>
 
