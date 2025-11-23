@@ -1533,6 +1533,7 @@ export type Database = {
           curriculum: string | null
           description: string | null
           difficulty_level: string | null
+          exam_board_specification_id: string | null
           generation_status: string | null
           id: string
           is_ai_generated: boolean | null
@@ -1554,6 +1555,7 @@ export type Database = {
           curriculum?: string | null
           description?: string | null
           difficulty_level?: string | null
+          exam_board_specification_id?: string | null
           generation_status?: string | null
           id?: string
           is_ai_generated?: boolean | null
@@ -1575,6 +1577,7 @@ export type Database = {
           curriculum?: string | null
           description?: string | null
           difficulty_level?: string | null
+          exam_board_specification_id?: string | null
           generation_status?: string | null
           id?: string
           is_ai_generated?: boolean | null
@@ -1591,6 +1594,13 @@ export type Database = {
           year_group_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "courses_exam_board_specification_id_fkey"
+            columns: ["exam_board_specification_id"]
+            isOneToOne: false
+            referencedRelation: "exam_board_specifications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "courses_year_group_id_fkey"
             columns: ["year_group_id"]
