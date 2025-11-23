@@ -1301,6 +1301,48 @@ export type Database = {
           },
         ]
       }
+      course_exam_board_specifications: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          exam_board_specification_id: string
+          id: string
+          is_default: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          exam_board_specification_id: string
+          id?: string
+          is_default?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          exam_board_specification_id?: string
+          id?: string
+          is_default?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_exam_board_specificatio_exam_board_specification_id_fkey"
+            columns: ["exam_board_specification_id"]
+            isOneToOne: false
+            referencedRelation: "exam_board_specifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_exam_board_specifications_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_lessons: {
         Row: {
           content_text: string | null
@@ -4809,6 +4851,15 @@ export type Database = {
       generate_future_school_progress_cycles: {
         Args: never
         Returns: undefined
+      }
+      get_course_exam_board_specifications: {
+        Args: { course_id_param: string }
+        Returns: {
+          exam_board: string
+          is_default: boolean
+          specification_id: string
+          subject_name: string
+        }[]
       }
       get_current_school_progress_cycle: { Args: never; Returns: string }
       get_current_tutor_id: { Args: never; Returns: string }
