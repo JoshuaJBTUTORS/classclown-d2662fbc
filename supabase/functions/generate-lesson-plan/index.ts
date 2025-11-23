@@ -194,16 +194,15 @@ serve(async (req) => {
       }
     }
 
-    // Priority 2: Check by lesson_id only (if no exam board match found)
+    // Priority 2: Check by lesson_id only (any exam board as fallback)
     if (!existingPlan && lessonId) {
       const { data } = await supabase
         .from('cleo_lesson_plans')
         .select()
         .eq('lesson_id', lessonId)
-        .is('exam_board', null)
         .maybeSingle();
       existingPlan = data;
-      console.log('Lookup by lesson_id result:', !!existingPlan);
+      console.log('Lookup by lesson_id (any exam board) result:', !!existingPlan);
     }
 
     if (!existingPlan && conversationId) {
