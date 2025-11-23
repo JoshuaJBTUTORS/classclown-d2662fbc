@@ -453,12 +453,29 @@ IMPORTANT RULES:
 - Include teaching_notes to guide how to present each block
 
 ⚠️ FOR MATHEMATICS LESSONS - MANDATORY STRUCTURE:
+
+INTRO TEXT BLOCKS (CRITICAL):
+- Maximum 1-2 sentences introducing the concept
+- NO historical context (who invented it, when, why)
+- NO real-world applications or "why this matters" content
+- NO motivational paragraphs
+- Example of a GOOD intro: "Expanding brackets means multiplying everything inside the brackets by what's outside. Let's see how to do it."
+- Example of a BAD intro: "Brackets have been used in mathematics since the 16th century and are essential for algebra. They help us solve real-world problems like calculating compound interest..."
+
+CONTENT STRUCTURE:
+- Step 1: Ultra-brief intro (1-2 sentences max)
+- Step 2-3: WORKED EXAMPLES (mandatory - use 1-2 worked_example blocks)
+- Step 4: Guided practice questions (2 questions)
+- Step 5: Independent exam-style questions (3-4 questions)
+
+WORKED EXAMPLES (MANDATORY):
 - ALWAYS include 1-2 worked_example blocks BEFORE practice questions
-- Use the "worked_example" content block type to show complete step-by-step solutions
-- Make steps clear and methodical (e.g., "Subtract 5 from both sides...", "Divide by 3...")
+- Use the "worked_example" content block type
+- Show complete step-by-step solutions
+- Make steps clear and methodical
 - Include checking steps where appropriate
-- Each worked example should demonstrate proper problem-solving technique
-- Structure: 1) Brief explanation → 2) Worked examples → 3) Practice questions
+
+OTHER RULES:
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
 - Focus on core concepts - avoid unnecessary detail`
