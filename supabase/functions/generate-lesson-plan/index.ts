@@ -33,36 +33,7 @@ serve(async (req) => {
 
     console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice });
 
-    // Helper function to get user's exam board for a subject
-    async function getUserExamBoardForSubject(userId: string, subjectName: string): Promise<string | null> {
-      // First, get the subject ID from the subject name
-      console.log('Looking up subject ID for:', subjectName);
-      const { data: subjectData } = await supabase
-        .from('subjects')
-        .select('id')
-        .ilike('name', subjectName)
-        .single();
-      
-      if (!subjectData) {
-        console.warn('Subject not found in database:', subjectName);
-        return null;
-      }
-      
-      console.log('Subject ID found:', subjectData.id);
-      
-      // Then look up the user's exam board for that subject ID
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('exam_boards')
-        .eq('id', userId)
-        .single();
-      
-      const examBoards = userProfile?.exam_boards || {};
-      const examBoard = examBoards[subjectData.id] || null;
-      
-      console.log('User exam board for subject ID', subjectData.id, ':', examBoard);
-      return examBoard;
-    }
+    // Function removed - now using course exam board specifications directly
 
     // Determine subject name and exam board from lesson structure
     let subjectName = '';
@@ -84,11 +55,57 @@ serve(async (req) => {
       
       if (lessonData?.course_modules?.courses?.subject) {
         subjectName = lessonData.course_modules.courses.subject;
-        console.log('Determined subject from lesson:', subjectName);
+        const courseId = lessonData.course_modules.course_id;
+        console.log('Determined subject and course_id from lesson:', { subjectName, courseId });
         
-        // Get user's exam board for this subject
-        examBoard = await getUserExamBoardForSubject(user.id, subjectName) || '';
-        console.log('User exam board for', subjectName, ':', examBoard);
+        // Get ALL exam board specifications for this course
+        const { data: examBoardSpecs } = await supabase
+          .rpc('get_course_exam_board_specifications', { course_id_param: courseId });
+        
+        if (examBoardSpecs && examBoardSpecs.length > 0) {
+          console.log('Available exam boards for course:', examBoardSpecs.map(s => s.exam_board));
+          
+          // Get the subject_id from the first specification
+          const { data: specData } = await supabase
+            .from('exam_board_specifications')
+            .select('subject_id')
+            .eq('id', examBoardSpecs[0].specification_id)
+            .single();
+          
+          if (specData?.subject_id) {
+            console.log('Subject ID:', specData.subject_id);
+            
+            // Get user's preferred exam board for this subject
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('exam_boards')
+              .eq('id', user.id)
+              .single();
+            
+            if (userProfile?.exam_boards && userProfile.exam_boards[specData.subject_id]) {
+              const userPreference = userProfile.exam_boards[specData.subject_id];
+              console.log('User exam board preference:', userPreference);
+              
+              // Match user's preference against available exam boards
+              const matchedSpec = examBoardSpecs.find(spec => spec.exam_board === userPreference);
+              
+              if (matchedSpec) {
+                examBoard = matchedSpec.exam_board;
+                console.log('✅ Matched user preference to available exam board:', examBoard);
+              } else {
+                // Fall back to default if user's preference isn't available for this course
+                const defaultSpec = examBoardSpecs.find(spec => spec.is_default);
+                examBoard = defaultSpec?.exam_board || examBoardSpecs[0]?.exam_board || '';
+                console.log('⚠️ User preference not available, using default:', examBoard);
+              }
+            } else {
+              // No user preference, use default
+              const defaultSpec = examBoardSpecs.find(spec => spec.is_default);
+              examBoard = defaultSpec?.exam_board || examBoardSpecs[0]?.exam_board || '';
+              console.log('No user preference, using default:', examBoard);
+            }
+          }
+        }
       }
     }
 
