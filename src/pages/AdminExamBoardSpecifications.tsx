@@ -5,12 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Archive, Trash2 } from 'lucide-react';
+import { Upload, FileText, Archive, Trash2, Link2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import UploadExamBoardSpecDialog from '@/components/admin/UploadExamBoardSpecDialog';
+import ManageCourseLinkingsDialog from '@/components/admin/ManageCourseLinkingsDialog';
+import EditExamBoardSpecDialog from '@/components/admin/EditExamBoardSpecDialog';
 
 const AdminExamBoardSpecifications = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedSpec, setSelectedSpec] = useState<any>(null);
 
   const { data: specifications, isLoading, refetch } = useQuery({
     queryKey: ['exam-board-specifications'],
@@ -26,7 +31,19 @@ const AdminExamBoardSpecifications = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+
+      // Fetch linked courses count for each specification
+      const specsWithCourses = await Promise.all(
+        data.map(async (spec) => {
+          const { count } = await supabase
+            .from('course_exam_board_specifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('exam_board_specification_id', spec.id);
+          return { ...spec, linkedCoursesCount: count || 0 };
+        })
+      );
+
+      return specsWithCourses;
     },
   });
 
@@ -93,6 +110,7 @@ const AdminExamBoardSpecifications = () => {
                   <TableHead>Exam Board</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Year</TableHead>
+                  <TableHead>Linked Courses</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -110,17 +128,45 @@ const AdminExamBoardSpecifications = () => {
                     </TableCell>
                     <TableCell>{spec.specification_year || '-'}</TableCell>
                     <TableCell>
+                      <Badge variant="outline">
+                        {spec.linkedCoursesCount} {spec.linkedCoursesCount === 1 ? 'course' : 'courses'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={spec.status === 'active' ? 'default' : 'secondary'}>
                         {spec.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedSpec(spec);
+                            setEditDialogOpen(true);
+                          }}
+                          title="Edit specification"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedSpec(spec);
+                            setLinkDialogOpen(true);
+                          }}
+                          title="Manage course links"
+                        >
+                          <Link2 className="w-4 h-4" />
+                        </Button>
                         {spec.status === 'active' && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleArchive(spec.id)}
+                            title="Archive"
                           >
                             <Archive className="w-4 h-4" />
                           </Button>
@@ -129,6 +175,7 @@ const AdminExamBoardSpecifications = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(spec.id)}
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -154,6 +201,23 @@ const AdminExamBoardSpecifications = () => {
           setUploadDialogOpen(false);
         }}
       />
+
+      {selectedSpec && (
+        <>
+          <ManageCourseLinkingsDialog
+            open={linkDialogOpen}
+            onOpenChange={setLinkDialogOpen}
+            specificationId={selectedSpec.id}
+            specificationTitle={selectedSpec.title}
+          />
+
+          <EditExamBoardSpecDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            specification={selectedSpec}
+          />
+        </>
+      )}
     </div>
   );
 };
