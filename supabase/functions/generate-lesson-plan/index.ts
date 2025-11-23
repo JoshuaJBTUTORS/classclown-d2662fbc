@@ -278,18 +278,18 @@ serve(async (req) => {
       
       // Validate and include lesson_id if provided
       if (lessonId) {
-        // Check if the lesson exists in lessons table (FK target)
+        // Check if the lesson exists in course_lessons table (FK target)
         const { data: lessonExists } = await supabase
-          .from('lessons')
+          .from('course_lessons')
           .select('id')
           .eq('id', lessonId)
           .maybeSingle();
         
         if (lessonExists) {
           insertPayload.lesson_id = lessonId;
-          console.log('Linking to lessons.id:', lessonId);
+          console.log('Linking to course_lessons.id:', lessonId);
         } else {
-          console.warn('Provided lessonId does not exist in lessons; skipping link:', lessonId);
+          console.warn('Provided lessonId does not exist in course_lessons; skipping link:', lessonId);
           // Continue without lesson_id rather than failing
         }
       }
