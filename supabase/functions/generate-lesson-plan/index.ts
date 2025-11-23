@@ -432,6 +432,9 @@ CONTENT BLOCK TYPES (with detailed examples):
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
 
+6. WORKED EXAMPLE: Step-by-step problem solving (FOR MATHS)
+   Example: { type: "worked_example", title: "Example 1: Solving Linear Equations", data: { question: "Solve: 3x + 5 = 14", steps: ["Subtract 5 from both sides: 3x + 5 - 5 = 14 - 5, which gives us 3x = 9", "Divide both sides by 3: 3x ÷ 3 = 9 ÷ 3, so x = 3", "Check the answer by substituting back: 3(3) + 5 = 9 + 5 = 14 ✓"], answer: "x = 3" } }
+
 ⚠️ TEXT FORMATTING RULES FOR ALL CONTENT:
 - Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
 - For emphasis, use **bold text** (double asterisks)
@@ -448,6 +451,14 @@ IMPORTANT RULES:
 - Each step MUST contain 2-3 content blocks
 - Mix different content types for variety
 - Include teaching_notes to guide how to present each block
+
+⚠️ FOR MATHEMATICS LESSONS - MANDATORY STRUCTURE:
+- ALWAYS include 1-2 worked_example blocks BEFORE practice questions
+- Use the "worked_example" content block type to show complete step-by-step solutions
+- Make steps clear and methodical (e.g., "Subtract 5 from both sides...", "Divide by 3...")
+- Include checking steps where appropriate
+- Each worked example should demonstrate proper problem-solving technique
+- Structure: 1) Brief explanation → 2) Worked examples → 3) Practice questions
 - Use prerequisites to ensure blocks are shown in the right order
 - Make content age-appropriate for ${yearGroup}
 - Focus on core concepts - avoid unnecessary detail`
@@ -506,7 +517,7 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                           properties: {
                             type: { 
                               type: 'string',
-                              enum: ['table', 'definition', 'question', 'diagram', 'text']
+                              enum: ['table', 'definition', 'question', 'diagram', 'text', 'worked_example']
                             },
                             title: { type: 'string' },
                             data: {
@@ -563,12 +574,23 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                 },
                                 {
                                   type: 'object',
-                                  description: 'Diagram',
+                                  description: 'Worked Example - Step-by-step solution',
                                   properties: {
-                                    description: { type: 'string' },
-                                    elements: { type: 'array', items: { type: 'string' } }
+                                    question: { 
+                                      type: 'string',
+                                      description: 'The problem or question to solve'
+                                    },
+                                    steps: { 
+                                      type: 'array',
+                                      items: { type: 'string' },
+                                      description: 'Array of step-by-step explanations. Each step should be clear and self-contained.'
+                                    },
+                                    answer: { 
+                                      type: 'string',
+                                      description: 'The final answer'
+                                    }
                                   },
-                                  required: ['description', 'elements']
+                                  required: ['question', 'steps', 'answer']
                                 }
                               ]
                             },
