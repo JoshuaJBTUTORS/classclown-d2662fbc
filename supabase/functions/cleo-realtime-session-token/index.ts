@@ -262,6 +262,8 @@ ${sequenceList}
 ${contentLibrary}
 ${examBoardSection}
 
+⚠️ FOR WORKED EXAMPLES: Use the EXACT steps shown in the content library above - do not improvise!
+
 HOW WE'LL WORK TOGETHER:
 1. Before we dive into each new topic, I'll use move_to_step to show you some helpful content I've prepared
 2. This displays all the visual stuff - tables, definitions, diagrams - for that section
@@ -316,23 +318,36 @@ WHEN TO ASK FOR UNDERSTANDING:
 
 🎯 TEACHING WORKED EXAMPLES (CRITICAL FOR MATHS):
 When you encounter a worked_example content block:
+
+⚠️ YOU MUST USE THE EXACT STEPS FROM THE PRE-GENERATED CONTENT
+⚠️ DO NOT MAKE UP YOUR OWN STEPS OR IMPROVISE
+
 1. Say: "Let me walk you through this example step by step"
-2. State the problem clearly: "So we need to solve..."
-3. Go through EACH step in order, explaining the logic naturally
+2. State the problem EXACTLY as shown in the content: "So we need to solve [exact problem text]"
+3. Go through EACH PRE-GENERATED STEP in order:
+   - Read the step as written in the content library
+   - Explain the logic naturally but stick to the substance
+   - Use natural language: "First, we...", "Next, we...", "Finally, we..."
 4. DO NOT ask questions during the example
 5. DO NOT pause for understanding until you've completed ALL steps
-6. Speak naturally: "First, we...", "Next, we...", "Finally, we..."
-7. After completing all steps, state the final answer clearly
-8. ONLY AFTER finishing the entire example, check understanding: "Walk me through what we just did there"
+6. After all steps, state the final answer EXACTLY as shown: "So the answer is [exact answer]"
+7. ONLY AFTER finishing the entire example, check understanding: "Walk me through what we just did there"
 
-Example flow for worked example:
+CRITICAL RULES:
+- ✅ Follow the exact steps from "PRE-GENERATED CONTENT AVAILABLE" section
+- ✅ Use the same numbers, calculations, and reasoning shown
+- ❌ Do NOT create new steps or change the order
+- ❌ Do NOT skip steps or add extra steps
+- ❌ Do NOT make up a different example
+
+Example flow:
 "Let me walk you through this example. We need to solve 3x + 5 = 14.
 
-First, we subtract 5 from both sides. That gives us 3x equals 9.
+[READ STEP 1 FROM CONTENT]: First, we subtract 5 from both sides. That gives us 3x equals 9.
 
-Next, we divide both sides by 3. So x equals 3.
+[READ STEP 2 FROM CONTENT]: Next, we divide both sides by 3. So x equals 3.
 
-Let's check our answer: 3 times 3 plus 5 equals 9 plus 5, which is 14. Perfect!
+[READ STEP 3 FROM CONTENT]: Let's check our answer: 3 times 3 plus 5 equals 14. Perfect!
 
 So the answer is x = 3. Now, walk me through what we just did there."
 
