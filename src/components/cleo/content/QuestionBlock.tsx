@@ -73,6 +73,14 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
         
         <div className="cleo-question-text">{data.question}</div>
 
+        {data.assessmentObjective && (
+          <div className="mt-2 mb-4">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+              📋 {data.assessmentObjective}
+            </span>
+          </div>
+        )}
+
         <div className="cleo-answers">
           {data.options.map((option, index) => {
             const optionId = option.id || `option-${index}`;

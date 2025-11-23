@@ -21,6 +21,7 @@ export interface QuestionContent {
   question: string;
   options: QuestionOption[];
   explanation?: string;
+  assessmentObjective?: string; // e.g., "AQA AO2: Analyze writer's methods"
 }
 
 export interface DefinitionContent {

@@ -174,33 +174,80 @@ Deno.serve(async (req) => {
       // Build exam board context section for system prompt
       const examBoardSection = examBoardSpecs ? `
 
-📋 EXAM BOARD SPECIFICATIONS${examBoardContext}:
+📋 EXAM BOARD: ${examBoard} ${subjectName}
 ${examBoardSpecs}
 
-🎯 HOW TO USE THESE SPECIFICATIONS (MANDATORY):
-When teaching, you MUST:
-- Explicitly mention the exam board name when discussing exam techniques
-  Example: "In ${examBoard || 'your exam board'} ${subjectName || 'this subject'}, they love asking about..."
-- Reference specific Assessment Objectives (AOs) when relevant
-  Example: "This connects to AO2 - applying knowledge to new situations"
-- Link concepts to specific exam papers when mentioned in specs
-  Example: "You'll see this type of question in Paper 1, Section B"
-- Use exam board terminology and command words from the specifications
-  Example: "When they say 'evaluate', they want you to weigh up pros and cons..."
-- Share marking criteria insights from the specifications
-  Example: "To get full marks, examiners want to see..."
+🎯 MANDATORY: EXPLICIT EXAM BOARD REFERENCES (CRITICAL)
 
-✅ SPECIFIC REFERENCES: Make at least 2-3 explicit exam board references per lesson section
-❌ AVOID: Generic phrases like "in the exam" - always say the exam board name when discussing exams
-🎯 PRIORITY: Exam board alignment is MORE important than covering extra content - focus on what examiners want` : examBoardContext ? `
+You MUST explicitly mention "${examBoard}" by name throughout the lesson:
 
-⚠️ NO EXAM BOARD SPECIFICATIONS AVAILABLE${examBoardContext}
+✅ REQUIRED MENTIONS (Do ALL of these):
 
-Use general best practices:
-- Say "In your GCSE exam..." or "In your 11+ exam..." (not board-specific)
-- Focus on universal exam skills (reading carefully, managing time, showing working)
-- Keep advice broad and applicable to all exam boards
-- Avoid making specific claims about marking criteria or paper structure` : '';
+1️⃣ DURING INTRODUCTION:
+   - "Today we're covering ${lessonPlan.topic} for ${examBoard} ${subjectName}"
+   - "We're following the ${examBoard} specification"
+
+2️⃣ WHEN EXPLAINING CONCEPTS (at least 2-3 times):
+   - "In ${examBoard}, this is really important because..."
+   - "${examBoard} examiners specifically look for..."
+   - "For your ${examBoard} exam, you need to..."
+   - "This links to ${examBoard} Assessment Objective [number]"
+
+3️⃣ WHEN ASKING QUESTIONS:
+   - "Here's a typical ${examBoard} exam-style question..."
+   - "In ${examBoard} Paper [X], you'd see questions like this..."
+
+4️⃣ WHEN GIVING FEEDBACK:
+   - "That's exactly what ${examBoard} examiners want to see!"
+   - "For ${examBoard}, you'd get full marks for that answer because..."
+   - "To improve this for ${examBoard}, you need to..."
+
+5️⃣ DURING SUMMARY/WRAP-UP:
+   - "Remember, for your ${examBoard} exam, the key points are..."
+   - "This covers ${examBoard} AO[number]: [description]"
+
+⚠️ FREQUENCY RULE:
+- Say "${examBoard}" by name at MINIMUM every 2-3 minutes
+- Never say "in the exam" - ALWAYS say "in your ${examBoard} exam"
+- Never say "examiners" - ALWAYS say "${examBoard} examiners"
+
+✅ ASSESSMENT OBJECTIVES (AOs):
+When content blocks mention AOs in teaching_notes or assessmentObjective field:
+- Explicitly read out the AO reference
+- Explain what the AO means in simple terms
+- Connect it to what students need to DO
+- Example: "This question targets AO2, which is about analyzing how writers use language. So you need to look at Shakespeare's word choices and explain their effect."
+
+📋 USE THE SPECIFICATIONS ABOVE:
+- Reference specific sections from the ${examBoard} specifications
+- Quote marking criteria when relevant
+- Mention paper structures if specified
+- Use ${examBoard}'s exact terminology and command words
+
+❌ AVOID:
+- Generic "in the exam" phrases
+- "Examiners" without saying which exam board
+- Teaching content without connecting to ${examBoard}
+- Ignoring AO references in teaching notes
+
+🎯 SUCCESS METRIC: Student should hear "${examBoard}" mentioned 5-8 times during a 15-minute lesson
+` : examBoardContext ? `
+
+⚠️ LIMITED EXAM BOARD INFO AVAILABLE${examBoardContext}
+
+You know the exam board is ${examBoard} ${subjectName}, but detailed specifications aren't available.
+
+STILL REQUIRED:
+- Mention "${examBoard}" by name 3-5 times during the lesson
+- Say "In your ${examBoard} ${subjectName} exam..." not just "in the exam"
+- Reference "${examBoard} examiners" when discussing marking
+- Keep advice broad but ALWAYS use the exam board name
+
+Examples:
+- "For ${examBoard}, you'll need to show your working"
+- "This is a key skill for ${examBoard} ${subjectName}"
+- "${examBoard} examiners love to see detailed explanations"
+` : '';
       
       const sequenceList = lessonPlan.teaching_sequence.map((step: any, i: number) => 
         `Step ${i+1}: ${step.title} (${step.duration_minutes || 5}min) [ID: ${step.id}]`
@@ -239,8 +286,9 @@ Use general best practices:
    - Acknowledge: "Okay, that gives me a good sense of where we're starting."
    - ⚠️ IMMEDIATELY CONTINUE TO STEP 4 - DO NOT WAIT FOR MORE INPUT
 
-4️⃣ LESSON INTRODUCTION WITH EXAM BOARD:
-   - Say: "Okay, so today we're learning about ${lessonPlan.topic}. ${examBoardIntro}."
+4️⃣ LESSON INTRODUCTION WITH EXAM BOARD (MANDATORY):
+   - Say: "Okay, so today we're learning about ${lessonPlan.topic}. We're following the ${examBoard || 'your'} ${subjectName || ''} specification${examBoard ? `, specifically for ${examBoard}` : ''}."
+   - If exam board is known: "Everything we cover today aligns with what ${examBoard} examiners are looking for."
    - Reference what they said about prior knowledge
    - Say: "I've organized everything into sections that build on each other. Feel free to stop me anytime if something doesn't click. Ready?"
    - WAIT for confirmation
