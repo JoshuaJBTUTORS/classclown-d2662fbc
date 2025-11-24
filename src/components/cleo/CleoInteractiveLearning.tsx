@@ -109,6 +109,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(conversationId);
   
   const controlsRef = useRef<{ 
     connect: () => void; 
@@ -140,7 +141,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   // Load messages on mount and subscribe to real-time updates
   useEffect(() => {
-    if (!conversationId) {
+    if (!currentConversationId) {
       if (mode === 'voice') {
         // Add initial welcome message for voice mode
         const welcomeMessage: CleoMessage = {
@@ -156,12 +157,14 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       return;
     }
 
+    console.log('📝 Loading messages for conversation:', currentConversationId);
+
     // Load existing messages
     const loadMessages = async () => {
       const { data, error } = await supabase
         .from('cleo_messages')
         .select('*')
-        .eq('conversation_id', conversationId)
+        .eq('conversation_id', currentConversationId)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -170,6 +173,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       }
 
       if (data) {
+        console.log('📝 Loaded', data.length, 'messages from database');
         setAllMessages(data.map(msg => ({
           id: msg.id,
           conversation_id: msg.conversation_id,
@@ -185,17 +189,19 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     loadMessages();
 
     // Subscribe to real-time message updates
+    console.log('📝 Subscribing to real-time messages for:', currentConversationId);
     const channel = supabase
-      .channel(`messages:${conversationId}`)
+      .channel(`messages:${currentConversationId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'cleo_messages',
-          filter: `conversation_id=eq.${conversationId}`,
+          filter: `conversation_id=eq.${currentConversationId}`,
         },
         (payload) => {
+          console.log('📝 New message received via realtime:', payload.new);
           const newMessage = payload.new as any;
           setAllMessages(prev => [...prev, {
             id: newMessage.id,
@@ -213,7 +219,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, mode, lessonData.topic]);
+  }, [currentConversationId, mode, lessonData.topic]);
 
   // PHASE 3: Goodbye loop detection (safety net)
   useEffect(() => {
@@ -729,7 +735,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       {/* Hidden Voice Chat Component */}
       <div className="hidden">
         <CleoVoiceChat
-          conversationId={conversationId}
+          conversationId={currentConversationId}
           topic={lessonData.topic}
           yearGroup={lessonData.yearGroup}
           lessonPlan={lessonPlan}
@@ -737,6 +743,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onConnectionStateChange={setConnectionState}
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
+          onConversationCreated={(id) => {
+            console.log('🎯 Conversation created:', id);
+            setCurrentConversationId(id);
+          }}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
             if (controls.isMuted !== undefined) {
