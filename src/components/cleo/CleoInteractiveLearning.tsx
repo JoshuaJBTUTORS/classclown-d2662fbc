@@ -559,15 +559,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   </div>)}
               </div>}
 
-            {/* Conversation Transcript */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden max-h-64">
-              <div className="p-4 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900">Conversation</h3>
-              </div>
-              <div className="overflow-y-auto max-h-48 p-3">
-                <TranscriptPanel messages={allMessages} isVoiceSpeaking={isSpeaking} />
-              </div>
-            </div>
 
             {/* Voice Input Bar */}
             <div className="cleo-voice-bar">

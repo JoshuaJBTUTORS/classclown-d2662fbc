@@ -58,7 +58,13 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   const [questionStartTimes, setQuestionStartTimes] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll within the content container, never affect page scroll
+    if (messagesEndRef.current) {
+      const container = messagesEndRef.current.parentElement;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
   }, [messages]);
 
   // Track when questions become visible
