@@ -481,8 +481,8 @@ CONTENT BLOCK TYPES (with detailed examples):
 5. DIAGRAM: Visual representations
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
 
-6. WORKED EXAMPLE: Step-by-step problem solving (FOR MATHS)
-   Example: { type: "worked_example", title: "Example 1: Solving Linear Equations", data: { question: "Solve: 3x + 5 = 14", steps: ["Subtract 5 from both sides: 3x + 5 - 5 = 14 - 5, which gives us 3x = 9", "Divide both sides by 3: 3x ÷ 3 = 9 ÷ 3, so x = 3", "Check the answer by substituting back: 3(3) + 5 = 9 + 5 = 14 ✓"], answer: "x = 3" } }
+6. WORKED EXAMPLE: Step-by-step problem solving (FOR MATHS) - MUST USE LaTeX
+   Example: { type: "worked_example", title: "Example 1: Simplifying Algebraic Fractions", data: { question: "Simplify: $$\\dfrac{3x(x - 2)}{3x}$$", steps: ["Write with factors visible: $$\\dfrac{3x(x - 2)}{3x}$$", "Cancel the common factor $3x$: $$\\dfrac{\\cancel{3x}(x - 2)}{\\cancel{3x}}$$", "Remaining expression: $$x - 2$$"], answer: "$$x - 2$$" } }
 
 ⚠️ TEXT FORMATTING RULES FOR ALL CONTENT:
 - Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)
@@ -523,6 +523,53 @@ WORKED EXAMPLES (MANDATORY):
 - Show complete step-by-step solutions
 - Make steps clear and methodical
 - Include checking steps where appropriate
+
+⚠️ LATEX FORMATTING FOR MATHS (ABSOLUTELY MANDATORY):
+
+ALL MATHEMATICAL EXPRESSIONS MUST USE LaTeX:
+- Use $$\\dfrac{numerator}{denominator}$$ for ALL fractions (display-style)
+- Use $\\times$ for multiplication, $\\div$ for division
+- Use $\\sqrt{x}$ for square roots, $\\sqrt[n]{x}$ for nth roots
+- Use $x^2$ for powers, $x_1$ for subscripts
+- Use $\\left($ and $\\right)$ for large parentheses
+- Wrap inline math in single $ signs: $x + 5$
+- Wrap display math (equations on their own line) in double $$ signs: $$x = 5$$
+
+CRITICAL LATEX RULES:
+✅ CORRECT: "Simplify: $$\\dfrac{3x(x - 2)}{3x}$$"
+❌ WRONG: "Simplify: (3x(x - 2)) / (3x)"
+
+✅ CORRECT: "$$\\dfrac{3 \\times 4 \\times 2}{3 \\times 4} = 2$$"
+❌ WRONG: "(3*4*2)/(3*4) = 2"
+
+✅ CORRECT: "Solve $2x + 5 = 13$ for $x$"
+❌ WRONG: "Solve 2x + 5 = 13 for x"
+
+WORKED EXAMPLE LaTeX FORMAT:
+{
+  question: "Simplify: $$\\dfrac{2x^2 + 4x}{2x}$$",
+  steps: [
+    "Factor the numerator: $$\\dfrac{2x(x + 2)}{2x}$$",
+    "Cancel the common factor $2x$: $$\\dfrac{\\cancel{2x}(x + 2)}{\\cancel{2x}}$$",
+    "Simplify: $$x + 2$$"
+  ],
+  answer: "$$x + 2$$"
+}
+
+QUESTION LaTeX FORMAT:
+{
+  question: "What is $$\\dfrac{3}{4} + \\dfrac{1}{2}$$?",
+  options: [
+    { text: "$$\\dfrac{5}{4}$$", isCorrect: true },
+    { text: "$$\\dfrac{4}{6}$$", isCorrect: false }
+  ],
+  explanation: "Convert to common denominator: $$\\dfrac{3}{4} + \\dfrac{2}{4} = \\dfrac{5}{4}$$"
+}
+
+TEXT BLOCK LaTeX FORMAT:
+"To add fractions, find a common denominator. For example, $\\dfrac{1}{3} + \\dfrac{1}{6}$ becomes $\\dfrac{2}{6} + \\dfrac{1}{6} = \\dfrac{3}{6} = \\dfrac{1}{2}$."
+
+⚠️ NEVER USE PLAIN TEXT FOR MATH - ALWAYS LaTeX!
 
 OTHER RULES:
 - Use prerequisites to ensure blocks are shown in the right order

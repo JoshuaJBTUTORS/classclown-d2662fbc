@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { DefinitionContent } from '@/types/lessonContent';
 import { BookOpen } from 'lucide-react';
 import { ContentActionButtons } from './ContentActionButtons';
+import { LatexRenderer } from '../LatexRenderer';
 
 interface DefinitionBlockProps {
   data: DefinitionContent;
@@ -32,14 +33,18 @@ export const DefinitionBlock: React.FC<DefinitionBlockProps> = ({ data, onConten
             <BookOpen className="w-6 h-6 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1">
-            <h4 className="text-lg font-bold text-foreground mb-2">{data.term}</h4>
-            <p className="text-base text-muted-foreground mb-3 leading-relaxed">
-              {data.definition}
-            </p>
+            <h4 className="text-lg font-bold text-foreground mb-2">
+              <LatexRenderer content={data.term} />
+            </h4>
+            <div className="text-base text-muted-foreground mb-3 leading-relaxed">
+              <LatexRenderer content={data.definition} />
+            </div>
             {data.example && (
               <div className="bg-background/50 rounded-md p-3 mt-3">
                 <p className="text-sm font-medium text-primary mb-1">Example:</p>
-                <p className="text-sm text-muted-foreground italic">{data.example}</p>
+                <div className="text-sm text-muted-foreground italic">
+                  <LatexRenderer content={data.example} />
+                </div>
               </div>
             )}
             {onContentAction && (
