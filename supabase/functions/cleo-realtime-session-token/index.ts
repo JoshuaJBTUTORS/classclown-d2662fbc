@@ -731,7 +731,7 @@ Remember: All that content above is already created and ready to show. I'll use 
         modalities: ["text", "audio"],
         input_audio_format: "pcm16",
         output_audio_format: "pcm16",
-        input_audio_transcription: { model: "whisper-1" },
+        input_audio_transcription: { model: "whisper-1", language: "en" },
       turn_detection: {
         type: "server_vad",
         threshold: 0.6,
