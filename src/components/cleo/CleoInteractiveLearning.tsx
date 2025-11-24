@@ -110,6 +110,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(conversationId);
+  const hasLoadedMessagesRef = useRef(false);
   
   const controlsRef = useRef<{ 
     connect: () => void; 
@@ -141,7 +142,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
   // Load messages on mount and subscribe to real-time updates
   useEffect(() => {
+    console.log('🔄 Effect triggered. ConversationID:', currentConversationId, 'Mode:', mode, 'HasLoaded:', hasLoadedMessagesRef.current);
+    
     if (!currentConversationId) {
+      console.log('⚠️ No conversation ID yet');
       if (mode === 'voice') {
         // Add initial welcome message for voice mode
         const welcomeMessage: CleoMessage = {
@@ -158,9 +162,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
 
     console.log('📝 Loading messages for conversation:', currentConversationId);
+    hasLoadedMessagesRef.current = true;
 
     // Load existing messages
     const loadMessages = async () => {
+      console.log('🔍 Fetching messages from database...');
       const { data, error } = await supabase
         .from('cleo_messages')
         .select('*')
@@ -168,13 +174,13 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error loading messages:', error);
+        console.error('❌ Error loading messages:', error);
         return;
       }
 
+      console.log('✅ Database query successful. Found', data?.length || 0, 'messages');
       if (data) {
-        console.log('📝 Loaded', data.length, 'messages from database');
-        setAllMessages(data.map(msg => ({
+        const mappedMessages = data.map(msg => ({
           id: msg.id,
           conversation_id: msg.conversation_id,
           role: msg.role as 'user' | 'assistant',
@@ -182,14 +188,16 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           mode: (msg.mode || 'voice') as ChatMode,
           duration_seconds: msg.duration_seconds,
           created_at: msg.created_at,
-        })));
+        }));
+        console.log('📝 Setting messages to state. Count:', mappedMessages.length);
+        setAllMessages(mappedMessages);
       }
     };
 
     loadMessages();
 
     // Subscribe to real-time message updates
-    console.log('📝 Subscribing to real-time messages for:', currentConversationId);
+    console.log('📡 Setting up real-time subscription for:', currentConversationId);
     const channel = supabase
       .channel(`messages:${currentConversationId}`)
       .on(
@@ -201,22 +209,29 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           filter: `conversation_id=eq.${currentConversationId}`,
         },
         (payload) => {
-          console.log('📝 New message received via realtime:', payload.new);
+          console.log('📥 New message received via realtime:', payload.new);
           const newMessage = payload.new as any;
-          setAllMessages(prev => [...prev, {
-            id: newMessage.id,
-            conversation_id: newMessage.conversation_id,
-            role: newMessage.role,
-            content: newMessage.content,
-            mode: newMessage.mode || 'voice',
-            duration_seconds: newMessage.duration_seconds,
-            created_at: newMessage.created_at,
-          }]);
+          setAllMessages(prev => {
+            const updated = [...prev, {
+              id: newMessage.id,
+              conversation_id: newMessage.conversation_id,
+              role: newMessage.role,
+              content: newMessage.content,
+              mode: newMessage.mode || 'voice',
+              duration_seconds: newMessage.duration_seconds,
+              created_at: newMessage.created_at,
+            }];
+            console.log('📝 Updated messages. New count:', updated.length);
+            return updated;
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Subscription status:', status);
+      });
 
     return () => {
+      console.log('🧹 Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, [currentConversationId, mode, lessonData.topic]);
@@ -744,8 +759,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           onListeningChange={setIsListening}
           onSpeakingChange={setIsSpeaking}
           onConversationCreated={(id) => {
-            console.log('🎯 Conversation created:', id);
+            console.log('🎯 Conversation created, setting ID:', id);
+            console.log('🎯 Current state before update:', currentConversationId);
             setCurrentConversationId(id);
+            console.log('🎯 State update triggered for:', id);
           }}
           onProvideControls={(controls) => {
             controlsRef.current = controls;
