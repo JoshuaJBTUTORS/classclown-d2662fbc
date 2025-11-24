@@ -14,7 +14,12 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll only within the transcript container, not the entire page
+    messagesEndRef.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest'
+    });
   }, [messages]);
 
   return (
