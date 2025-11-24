@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ContentActionButtons } from './ContentActionButtons';
+import { LatexRenderer } from '../LatexRenderer';
 
 interface TextBlockProps {
   data: string | any;
@@ -48,7 +49,7 @@ export const TextBlock: React.FC<TextBlockProps> = ({ data, onContentAction }) =
     >
       <div className="cleo-text-block">
         <div className="cleo-text-content">
-          {renderText(getText())}
+          <LatexRenderer content={getText()} />
         </div>
         {onContentAction && (
           <div className="cleo-lesson-actions mt-4">

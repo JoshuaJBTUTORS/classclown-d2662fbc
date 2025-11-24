@@ -4,6 +4,7 @@ import { QuestionContent } from '@/types/lessonContent';
 import { Check, X, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CoinAnimation } from '@/components/cleo/CoinAnimation';
+import { LatexRenderer } from '../LatexRenderer';
 
 interface QuestionBlockProps {
   data: QuestionContent;
@@ -71,7 +72,9 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
           </div>
         )}
         
-        <div className="cleo-question-text">{data.question}</div>
+        <div className="cleo-question-text">
+          <LatexRenderer content={data.question} />
+        </div>
 
         {data.assessmentObjective && (
           <div className="mt-2 mb-4">
@@ -98,7 +101,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
                 disabled={showFeedback}
                 className={className}
               >
-                {option.text}
+                <LatexRenderer content={option.text} />
               </button>
             );
           })}
@@ -115,9 +118,9 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
             <p className="text-sm font-medium mb-2" style={{ color: 'hsl(var(--cleo-green))' }}>
               Explanation:
             </p>
-            <p className="text-sm" style={{ color: 'hsl(var(--cleo-text-main))' }}>
-              {data.explanation}
-            </p>
+            <div className="text-sm" style={{ color: 'hsl(var(--cleo-text-main))' }}>
+              <LatexRenderer content={data.explanation} />
+            </div>
           </motion.div>
         )}
       </div>

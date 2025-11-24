@@ -1,5 +1,6 @@
 import React from 'react';
 import { WorkedExampleContent } from '@/types/lessonContent';
+import { LatexRenderer } from '../LatexRenderer';
 
 interface WorkedExampleBlockProps {
   data: WorkedExampleContent;
@@ -31,7 +32,9 @@ export const WorkedExampleBlock: React.FC<WorkedExampleBlockProps> = ({ data }) 
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-2">Problem:</p>
           <div className="bg-pastel-peach-50 rounded-lg p-4 border border-pastel-peach-200/50">
-            <p className="text-foreground font-medium whitespace-pre-wrap">{data.question}</p>
+            <div className="text-foreground font-medium whitespace-pre-wrap">
+              <LatexRenderer content={data.question} />
+            </div>
           </div>
         </div>
 
@@ -45,7 +48,9 @@ export const WorkedExampleBlock: React.FC<WorkedExampleBlockProps> = ({ data }) 
                   <span className="text-sm font-semibold text-foreground">{index + 1}</span>
                 </div>
                 <div className="flex-1 pt-1">
-                  <p className="text-foreground whitespace-pre-wrap">{step}</p>
+                  <div className="text-foreground whitespace-pre-wrap">
+                    <LatexRenderer content={step} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -58,7 +63,9 @@ export const WorkedExampleBlock: React.FC<WorkedExampleBlockProps> = ({ data }) 
             <span className="text-xl">✅</span>
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Answer:</p>
-              <p className="text-foreground font-semibold text-lg whitespace-pre-wrap">{data.answer}</p>
+              <div className="text-foreground font-semibold text-lg whitespace-pre-wrap">
+                <LatexRenderer content={data.answer} />
+              </div>
             </div>
           </div>
         </div>
