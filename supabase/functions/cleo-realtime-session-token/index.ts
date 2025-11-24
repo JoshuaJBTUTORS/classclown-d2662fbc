@@ -723,7 +723,7 @@ Remember: All that content above is already created and ready to show. I'll use 
       body: JSON.stringify({
         model: "gpt-realtime",
         voice: "ballad",
-        speed: 0.85,  // Slow down audio to 85% speed for better comprehension
+        speed: 0.80,  // Slow down audio to 80% speed for better comprehension
         instructions: systemPrompt,
         modalities: ["text", "audio"],
         input_audio_format: "pcm16",
