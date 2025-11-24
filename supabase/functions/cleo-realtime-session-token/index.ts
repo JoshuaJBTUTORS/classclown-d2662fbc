@@ -732,12 +732,12 @@ Remember: All that content above is already created and ready to show. I'll use 
         input_audio_format: "pcm16",
         output_audio_format: "pcm16",
         input_audio_transcription: { model: "whisper-1" },
-        turn_detection: {
-          type: "server_vad",
-          threshold: 0.6,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500
-        },
+      turn_detection: {
+        type: "server_vad",
+        threshold: 0.6,
+        prefix_padding_ms: 300,
+        silence_duration_ms: 900
+      },
         tools,
         tool_choice: "auto",
         temperature: 0.8,
