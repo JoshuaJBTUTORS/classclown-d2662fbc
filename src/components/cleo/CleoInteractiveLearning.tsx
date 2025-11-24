@@ -138,28 +138,82 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     checkSavedState();
   }, [conversationId, lessonState.savedState]);
 
-  // Load messages on mount and add initial welcome message in voice mode
+  // Load messages on mount and subscribe to real-time updates
   useEffect(() => {
-    if (conversationId) {
-      textChat.loadMessages();
-    } else if (mode === 'voice') {
-      // Add initial welcome message for voice mode
-      const welcomeMessage: CleoMessage = {
-        id: crypto.randomUUID(),
-        conversation_id: conversationId || '',
-        role: 'assistant',
-        content: `Welcome! 🎓 Click 'Start Learning' below to begin your voice lesson on ${lessonData.topic}.`,
-        mode: 'voice',
-        created_at: new Date().toISOString(),
-      };
-      setAllMessages([welcomeMessage]);
+    if (!conversationId) {
+      if (mode === 'voice') {
+        // Add initial welcome message for voice mode
+        const welcomeMessage: CleoMessage = {
+          id: crypto.randomUUID(),
+          conversation_id: '',
+          role: 'assistant',
+          content: `Welcome! 🎓 Click 'Start Learning' below to begin your voice lesson on ${lessonData.topic}.`,
+          mode: 'voice',
+          created_at: new Date().toISOString(),
+        };
+        setAllMessages([welcomeMessage]);
+      }
+      return;
     }
-  }, [conversationId]);
 
-  // Sync messages from text chat
-  useEffect(() => {
-    setAllMessages(textChat.messages);
-  }, [textChat.messages]);
+    // Load existing messages
+    const loadMessages = async () => {
+      const { data, error } = await supabase
+        .from('cleo_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading messages:', error);
+        return;
+      }
+
+      if (data) {
+        setAllMessages(data.map(msg => ({
+          id: msg.id,
+          conversation_id: msg.conversation_id,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          mode: (msg.mode || 'voice') as ChatMode,
+          duration_seconds: msg.duration_seconds,
+          created_at: msg.created_at,
+        })));
+      }
+    };
+
+    loadMessages();
+
+    // Subscribe to real-time message updates
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'cleo_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMessage = payload.new as any;
+          setAllMessages(prev => [...prev, {
+            id: newMessage.id,
+            conversation_id: newMessage.conversation_id,
+            role: newMessage.role,
+            content: newMessage.content,
+            mode: newMessage.mode || 'voice',
+            duration_seconds: newMessage.duration_seconds,
+            created_at: newMessage.created_at,
+          }]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, mode, lessonData.topic]);
 
   // PHASE 3: Goodbye loop detection (safety net)
   useEffect(() => {
