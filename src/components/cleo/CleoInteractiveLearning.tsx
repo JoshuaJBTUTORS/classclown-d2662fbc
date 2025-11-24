@@ -406,12 +406,38 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleBackClick = async () => {
+    // If voice session is active, show warning
+    if (connectionState === 'connected') {
+      const confirmed = window.confirm(
+        "You're currently in a lesson. Going back will pause your progress. Continue?"
+      );
+      
+      if (!confirmed) return;
+      
+      // Disconnect and pause
+      await handleVoiceDisconnect();
+      await handlePauseLesson();
+    } else {
+      // No active session, just navigate back
+      handleBackToModule();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Top Header Bar */}
       <div className="flex items-center justify-between px-8 pt-6 pb-4 max-w-[1120px] mx-auto">
-        <div className="cleo-logo">
-          Cleo 🧑🏻‍🔬
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleBackClick}
+            className="cleo-back-btn"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="cleo-logo">
+            Cleo 🧑🏻‍🔬
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {/* Progress Indicator */}
