@@ -32,7 +32,6 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   isConnecting,
   sessionStage,  // NEW
 }) => {
-  const [sessionsRemaining, setSessionsRemaining] = useState<number | null>(null);
   const [hasQuota, setHasQuota] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -85,7 +84,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   };
 
   useEffect(() => {
-    if (!isConnected && sessionsRemaining !== null) {
+    if (!isConnected) {
       checkQuota();
     }
   }, [isConnected]);
@@ -106,7 +105,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Quota Indicator */}
-      {!loading && sessionsRemaining !== null && (
+      {!loading && (
         <VoiceSessionIndicator />
       )}
 
