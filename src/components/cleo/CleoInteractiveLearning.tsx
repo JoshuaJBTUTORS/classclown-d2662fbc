@@ -22,9 +22,6 @@ import { CompactStepIndicator } from './CompactStepIndicator';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
 import { useAudioDevices } from '@/hooks/useAudioDevices';
 import { TranscriptPanel } from './TranscriptPanel';
-import { QuickChatInput } from './QuickChatInput';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { MessageSquare } from 'lucide-react';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { MinuteUsageTracker } from '@/components/voice/MinuteUsageTracker';
 
@@ -655,48 +652,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               )}
             </div>
           </aside>
-
-          {/* Mobile: Floating Transcript Button */}
-          <Sheet>
-            <SheetTrigger asChild className="lg:hidden fixed bottom-20 right-4 z-50">
-              <Button 
-                size="icon" 
-                className="rounded-full shadow-lg h-14 w-14"
-                style={{ background: 'hsl(var(--cleo-green))' }}
-              >
-                <MessageSquare className="w-6 h-6 text-white" />
-                {allMessages.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-semibold">
-                    {allMessages.length}
-                  </span>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[70vh]">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <div className="cleo-avatar-tiny">🧑🏻‍🔬</div>
-                  Conversation with Cleo
-                </SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 h-[calc(100%-120px)] overflow-y-auto">
-                <TranscriptPanel messages={allMessages} isVoiceSpeaking={isSpeaking} />
-              </div>
-              <div className="absolute bottom-4 left-4 right-4 bg-white pt-4 border-t">
-                <QuickChatInput 
-                  onSend={(msg) => {
-                    if (mode === 'text') {
-                      textChat.sendMessage(msg);
-                    } else {
-                      controlsRef.current?.sendUserMessage(msg);
-                    }
-                  }}
-                  disabled={connectionState !== 'connected' && mode !== 'text'}
-                  placeholder="Ask Cleo anything..."
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       </div>
 
