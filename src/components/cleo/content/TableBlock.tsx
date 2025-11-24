@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { TableContent } from '@/types/lessonContent';
 import { ContentActionButtons } from './ContentActionButtons';
+import { LatexRenderer } from '../LatexRenderer';
 
 interface TableBlockProps {
   data: TableContent;
@@ -52,7 +53,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction })
                     scope="col"
                     className="px-6 py-4 text-left text-sm font-semibold text-foreground"
                   >
-                    {header}
+                    <LatexRenderer content={header} />
                   </th>
                 ))}
               </tr>
@@ -68,7 +69,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({ data, onContentAction })
                       key={cellIndex}
                       className="px-6 py-4 text-sm text-muted-foreground whitespace-normal"
                     >
-                      {cell}
+                      <LatexRenderer content={cell} />
                     </td>
                   ))}
                 </tr>
