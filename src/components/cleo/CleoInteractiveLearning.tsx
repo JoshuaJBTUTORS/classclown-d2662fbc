@@ -590,11 +590,17 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               <div className="px-4 py-3 border-b border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-700">📝 Conversation Transcript</h3>
               </div>
-              <div className="max-h-[300px] overflow-y-auto p-2">
-                <TranscriptPanel 
-                  messages={allMessages}
-                  isVoiceSpeaking={isSpeaking}
-                />
+              <div className="min-h-[400px] max-h-[500px] overflow-y-auto p-4">
+                {allMessages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                    Your conversation with Cleo will appear here...
+                  </div>
+                ) : (
+                  <TranscriptPanel 
+                    messages={allMessages}
+                    isVoiceSpeaking={isSpeaking}
+                  />
+                )}
               </div>
             </div>
 
