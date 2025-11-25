@@ -3041,7 +3041,6 @@ export type Database = {
           region: string | null
           trial_completed_at: string | null
           updated_at: string | null
-          voice_speed: number | null
           year_group_id: string | null
         }
         Insert: {
@@ -3063,7 +3062,6 @@ export type Database = {
           region?: string | null
           trial_completed_at?: string | null
           updated_at?: string | null
-          voice_speed?: number | null
           year_group_id?: string | null
         }
         Update: {
@@ -3085,7 +3083,6 @@ export type Database = {
           region?: string | null
           trial_completed_at?: string | null
           updated_at?: string | null
-          voice_speed?: number | null
           year_group_id?: string | null
         }
         Relationships: [

@@ -767,7 +767,7 @@ Remember: All that content above is already created and ready to show. I'll use 
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview-2024-12-17",
         voice: "ballad",
-        speed: userProfile?.voice_speed || 0.90,  // Use user preference, default to 80% speed
+        speed: 0.90,  // Fixed speed for all users
         instructions: systemPrompt,
         modalities: ["text", "audio"],
         input_audio_format: "pcm16",
