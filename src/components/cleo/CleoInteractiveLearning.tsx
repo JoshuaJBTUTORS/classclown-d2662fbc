@@ -124,14 +124,15 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   useEffect(() => {
     const fetchVoiceSpeed = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: {
+            user
+          }
+        } = await supabase.auth.getUser();
         if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('voice_speed')
-            .eq('id', user.id)
-            .single();
-          
+          const {
+            data: profile
+          } = await supabase.from('profiles').select('voice_speed').eq('id', user.id).single();
           if (profile?.voice_speed) {
             setVoiceSpeed(profile.voice_speed);
           }
@@ -140,7 +141,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         console.log('Could not fetch voice speed preference');
       }
     };
-    
     fetchVoiceSpeed();
   }, []);
 
@@ -587,41 +587,39 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               </div>}
 
             {/* Voice Speed Control - Always visible */}
-            <VoiceSpeedControl
-              currentSpeed={voiceSpeed}
-              onSpeedChange={(speed) => {
-                setVoiceSpeed(speed);
-                // Only send live update if connected
-                if (connectionState === 'connected') {
-                  controlsRef.current?.updateVoiceSpeed?.(speed);
+            <VoiceSpeedControl currentSpeed={voiceSpeed} onSpeedChange={speed => {
+            setVoiceSpeed(speed);
+            // Only send live update if connected
+            if (connectionState === 'connected') {
+              controlsRef.current?.updateVoiceSpeed?.(speed);
+            }
+          }} onSave={async () => {
+            try {
+              const {
+                data: {
+                  user
                 }
-              }}
-              onSave={async () => {
-                try {
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (user) {
-                    await supabase
-                      .from('profiles')
-                      .update({ voice_speed: voiceSpeed })
-                      .eq('id', user.id);
-                    toast({
-                      title: '✅ Speed Saved',
-                      description: `Voice speed (${voiceSpeed.toFixed(2)}x) saved as your default`
-                    });
-                  }
-                } catch (error) {
-                  toast({
-                    title: 'Failed to save',
-                    description: 'Could not save your voice speed preference',
-                    variant: 'destructive'
-                  });
-                }
-              }}
-              isConnected={connectionState === 'connected'}
-            />
+              } = await supabase.auth.getUser();
+              if (user) {
+                await supabase.from('profiles').update({
+                  voice_speed: voiceSpeed
+                }).eq('id', user.id);
+                toast({
+                  title: '✅ Speed Saved',
+                  description: `Voice speed (${voiceSpeed.toFixed(2)}x) saved as your default`
+                });
+              }
+            } catch (error) {
+              toast({
+                title: 'Failed to save',
+                description: 'Could not save your voice speed preference',
+                variant: 'destructive'
+              });
+            }
+          }} isConnected={connectionState === 'connected'} />
 
             {/* Transcript Panel */}
-            <TranscriptPanel messages={allMessages} isVoiceSpeaking={isSpeaking} />
+            
 
 
             {/* Voice Input Bar */}
@@ -677,7 +675,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         if (controls.isMuted !== undefined) {
           setIsMuted(controls.isMuted);
         }
-      }} onSpeedChange={(speed) => setVoiceSpeed(speed)} selectedMicrophoneId={selectedMicrophone?.deviceId} selectedSpeakerId={selectedSpeaker?.deviceId} />
+      }} onSpeedChange={speed => setVoiceSpeed(speed)} selectedMicrophoneId={selectedMicrophone?.deviceId} selectedSpeakerId={selectedSpeaker?.deviceId} />
       </div>
 
       {/* Resume Dialog */}
