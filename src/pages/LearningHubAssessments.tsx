@@ -41,7 +41,7 @@ const LearningHubAssessments = () => {
 
         {/* CTA Button */}
         <Button
-          onClick={() => navigate('/learning-hub/my-courses')}
+          onClick={() => navigate('/heycleo/my-courses')}
           className="px-8 py-6 text-lg font-bold flex items-center gap-2 mx-auto"
           style={{
             background: 'linear-gradient(135deg, #1fb86b, #35d086)',

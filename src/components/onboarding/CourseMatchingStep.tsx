@@ -98,10 +98,10 @@ export const CourseMatchingStep = ({ data, userId }: CourseMatchingStepProps) =>
     try {
       await refreshProfile();
       setTimeout(() => {
-        navigate('/learning-hub');
+        navigate('/heycleo');
       }, 50);
     } catch {
-      window.location.href = '/learning-hub';
+      window.location.href = '/heycleo';
     }
   };
 

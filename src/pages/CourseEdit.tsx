@@ -102,7 +102,7 @@ const CourseEdit: React.FC = () => {
         title: "Course deleted",
         description: "The course has been successfully deleted",
       });
-      navigate('/learning-hub');
+      navigate('/heycleo');
     },
     onError: (error) => {
       toast({
@@ -181,7 +181,7 @@ const CourseEdit: React.FC = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate('/learning-hub')} 
+            onClick={() => navigate('/heycleo')} 
             className="mr-2"
           >
             <ChevronLeft className="mr-1" />
@@ -196,7 +196,7 @@ const CourseEdit: React.FC = () => {
           <CardContent>
             <p>Could not load course information. Please try again.</p>
             <Button 
-              onClick={() => navigate('/learning-hub')} 
+              onClick={() => navigate('/heycleo')} 
               className="mt-4"
             >
               Return to Learning Hub

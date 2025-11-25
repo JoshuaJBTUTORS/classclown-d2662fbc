@@ -366,10 +366,10 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         // Navigate to the learning path section of the course
         navigate(`/course/${courseMatch[1]}`, { replace: true });
       } else {
-        navigate('/learning-hub', { replace: true });
+        navigate('/heycleo', { replace: true });
       }
     } else {
-      navigate('/learning-hub', { replace: true });
+      navigate('/heycleo', { replace: true });
     }
   };
 
@@ -397,7 +397,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
             <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center sm:text-left">Assessment Not Found</h1>
             <p className="text-gray-600 mb-6 text-center sm:text-left">The assessment you're looking for doesn't exist or you don't have permission to view it.</p>
             {!embedded && (
-              <Button onClick={() => navigate('/learning-hub')}>
+              <Button onClick={() => navigate('/heycleo')}>
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Back to Learning Hub
               </Button>
@@ -412,7 +412,7 @@ const AIAssessmentViewer: React.FC<AIAssessmentViewerProps> = ({
         {!embedded && (
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/learning-hub')} 
+            onClick={() => navigate('/heycleo')} 
             className="mb-4"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />

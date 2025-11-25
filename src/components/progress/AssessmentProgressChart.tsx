@@ -157,7 +157,7 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
   };
 
   const handleUnlockAccess = () => {
-    navigate('/learning-hub');
+    navigate('/heycleo');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {

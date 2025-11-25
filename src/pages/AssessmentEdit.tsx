@@ -52,7 +52,7 @@ const AssessmentEdit: React.FC = () => {
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Not Found</h1>
                 <p className="text-gray-600 mb-6">The assessment you're looking for doesn't exist.</p>
-                <Button onClick={() => navigate('/learning-hub')}>
+                <Button onClick={() => navigate('/heycleo')}>
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Back to Learning Hub
                 </Button>
@@ -80,7 +80,7 @@ const AssessmentEdit: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <Button 
                   variant="ghost" 
-                  onClick={() => navigate('/learning-hub')} 
+                  onClick={() => navigate('/heycleo')} 
                   className="mb-4"
                 >
                   <ChevronLeft className="mr-2 h-4 w-4" />

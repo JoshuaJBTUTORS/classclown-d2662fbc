@@ -239,13 +239,13 @@ export default function LearningHubCleoID() {
           <Button
             variant="outline"
             className="rounded-full"
-            onClick={() => navigate('/learning-hub/settings')}
+            onClick={() => navigate('/heycleo/settings')}
           >
             Edit Cleo ID
           </Button>
           <Button
             className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-            onClick={() => navigate('/learning-hub/achievements')}
+            onClick={() => navigate('/heycleo/achievements')}
           >
             View Achievements
           </Button>

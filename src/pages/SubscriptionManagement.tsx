@@ -58,7 +58,7 @@ export default function SubscriptionManagement() {
       }, 2000);
 
       setTimeout(() => {
-        navigate('/learning-hub/my-courses');
+        navigate('/heycleo/my-courses');
       }, 3000);
     }
   }, [searchParams, navigate, toast]);
@@ -325,7 +325,7 @@ export default function SubscriptionManagement() {
               Upgrade Plan
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="w-full justify-between" onClick={() => navigate('/learning-hub')}>
+            <Button variant="outline" className="w-full justify-between" onClick={() => navigate('/heycleo')}>
               Back to Learning Hub
               <ArrowRight className="h-4 w-4" />
             </Button>

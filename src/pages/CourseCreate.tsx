@@ -57,7 +57,7 @@ const CourseCreate: React.FC = () => {
         title: 'Course created',
         description: 'Your course has been created successfully.',
       });
-      navigate(`/learning-hub/course/${data.id}/edit`);
+      navigate(`/heycleo/course/${data.id}/edit`);
     },
     onError: (error) => {
       toast({
@@ -88,7 +88,7 @@ const CourseCreate: React.FC = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => navigate('/learning-hub')} 
+          onClick={() => navigate('/heycleo')} 
           className="mr-2"
         >
           <ChevronLeft className="mr-1" />
@@ -221,7 +221,7 @@ const CourseCreate: React.FC = () => {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => navigate('/learning-hub')}
+                  onClick={() => navigate('/heycleo')}
                 >
                   Cancel
                 </Button>

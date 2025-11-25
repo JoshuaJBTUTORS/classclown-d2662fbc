@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {
           icon: BookOpen,
           label: 'Learning Hub',
-          href: '/learning-hub',
+          href: '/heycleo',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
         {

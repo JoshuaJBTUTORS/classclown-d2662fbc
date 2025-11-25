@@ -22,32 +22,32 @@ import {
 const navigationItems = [
   {
     title: 'Dashboard',
-    href: '/learning-hub',
+    href: '/heycleo',
     emoji: '🏠'
   },
   {
     title: 'My Courses',
-    href: '/learning-hub/my-courses',
+    href: '/heycleo/my-courses',
     emoji: '📖'
   },
   {
     title: "Cleo's Corner",
-    href: '/learning-hub/assessments',
+    href: '/heycleo/assessments',
     emoji: '✨'
   },
   {
     title: 'My Cleo ID',
-    href: '/learning-hub/cleo-id',
+    href: '/heycleo/cleo-id',
     emoji: '👨‍🎓'
   },
   {
     title: 'Subscription',
-    href: '/learning-hub/subscription',
+    href: '/heycleo/subscription',
     emoji: '💳'
   },
   {
     title: 'Settings',
-    href: '/learning-hub/settings',
+    href: '/heycleo/settings',
     emoji: '⚙️'
   }
 ];
@@ -70,10 +70,10 @@ const LearningHubSidebar = () => {
   };
 
   const isActive = (href: string) => {
-    if (href === '/learning-hub') {
+    if (href === '/heycleo') {
       return location.pathname === href;
     }
-    if (href === '/learning-hub/my-courses') {
+    if (href === '/heycleo/my-courses') {
       return location.pathname === href;
     }
     return location.pathname.startsWith(href);

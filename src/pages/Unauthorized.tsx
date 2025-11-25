@@ -22,7 +22,7 @@ const Unauthorized = () => {
             : "You don't have permission to access this page."}
         </p>
         <div className="flex flex-col gap-4">
-          <Button onClick={() => navigate(userRole === 'learning_hub_only' ? '/learning-hub' : '/')}>
+          <Button onClick={() => navigate(userRole === 'learning_hub_only' ? '/heycleo' : '/')}>
             {userRole === 'learning_hub_only' ? 'Return to Learning Hub' : 'Return to Dashboard'}
           </Button>
           <Button variant="outline" onClick={() => navigate(-1)}>
