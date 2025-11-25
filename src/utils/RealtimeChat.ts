@@ -120,20 +120,31 @@ export class RealtimeChat {
       this.dc.addEventListener("open", () => {
         console.log("✅ Data channel opened");
         
-        // Configure session with turn_detection settings FIRST
-        console.log("⚙️ Configuring session with turn_detection...");
+        // Send COMPLETE session configuration to avoid overwriting server settings
+        console.log("⚙️ Sending complete session configuration...");
         this.dc!.send(JSON.stringify({
           type: 'session.update',
           session: {
+            modalities: ["text", "audio"],
+            voice: "ballad",
+            input_audio_format: "pcm16",
+            output_audio_format: "pcm16",
+            speed: this.previousSpeed,
+            input_audio_transcription: {
+              model: "whisper-1",
+              language: "en"
+            },
             turn_detection: {
               type: "semantic_vad",
               eagerness: "medium",
-              interrupt_response: false,  // CRITICAL: Prevent interruptions
+              interrupt_response: false,
               create_response: true
             },
             input_audio_noise_reduction: {
-              type: "near_field"  // Filter background noise
-            }
+              type: "near_field"
+            },
+            temperature: 0.8,
+            max_response_output_tokens: "inf"
           }
         }));
         
@@ -296,21 +307,30 @@ export class RealtimeChat {
     
     console.log(`🔊 Updating voice speed: ${this.previousSpeed} → ${speed}`);
     
-    // Update session with new speed while preserving turn_detection settings
+    // Send COMPLETE session configuration with new speed
     this.dc.send(JSON.stringify({
       type: 'session.update',
       session: {
-        output_audio_format: 'pcm16',
-        modalities: ['text', 'audio'],
-        voice: 'ballad',
+        modalities: ["text", "audio"],
+        voice: "ballad",
+        input_audio_format: "pcm16",
+        output_audio_format: "pcm16",
         speed: speed,
-        // Preserve turn_detection to prevent interruptions
+        input_audio_transcription: {
+          model: "whisper-1",
+          language: "en"
+        },
         turn_detection: {
           type: "semantic_vad",
           eagerness: "medium",
-          interrupt_response: false,  // Keep Cleo from being interrupted
+          interrupt_response: false,
           create_response: true
-        }
+        },
+        input_audio_noise_reduction: {
+          type: "near_field"
+        },
+        temperature: 0.8,
+        max_response_output_tokens: "inf"
       }
     }));
     
