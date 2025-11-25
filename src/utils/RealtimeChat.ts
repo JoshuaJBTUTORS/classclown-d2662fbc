@@ -263,7 +263,16 @@ export class RealtimeChat {
     const direction = speed > this.previousSpeed ? 'faster' : 'slower';
     console.log(`🔊 Changing voice speed: ${this.previousSpeed} → ${speed} (${direction})`);
     
-    // Step 1: Cancel current response to apply speed change immediately
+    // Step 1: IMMEDIATELY stop audio playback by clearing the buffer
+    if (this.audioEl) {
+      this.audioEl.pause();
+      const currentStream = this.audioEl.srcObject;
+      this.audioEl.srcObject = null; // Clear buffer
+      this.audioEl.srcObject = currentStream; // Restore stream
+      this.audioEl.play().catch(() => {}); // Resume playback
+    }
+    
+    // Step 2: Cancel current response to stop server-side generation
     this.dc.send(JSON.stringify({ type: 'response.cancel' }));
     
     // Step 2: Update session with new speed
