@@ -67,6 +67,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   const rtcRef = useRef<RealtimeChat | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
+  const isConnectingRef = useRef(false); // Synchronous lock to prevent race conditions
 
   // Notify parent of state changes
   useEffect(() => {
@@ -115,10 +116,19 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
 
   const connect = async () => {
+    // SYNCHRONOUS check - prevents race conditions
+    if (isConnectingRef.current) {
+      console.log("⚠️ Connection already in progress, ignoring duplicate call");
+      return;
+    }
+    
     if (connectionState === 'connecting' || connectionState === 'connected') {
       console.log("Already connecting or connected");
       return;
     }
+
+    // Set flag IMMEDIATELY (synchronous)
+    isConnectingRef.current = true;
 
     try {
       setConnectionState('connecting');
@@ -453,6 +463,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
       // No automatic reconnection - user must manually reconnect
       console.log('❌ Connection failed - automatic reconnection disabled');
+    } finally {
+      // Reset lock on success or failure
+      isConnectingRef.current = false;
     }
   };
 

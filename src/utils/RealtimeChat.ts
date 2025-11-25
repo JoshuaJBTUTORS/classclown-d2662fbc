@@ -29,6 +29,13 @@ export class RealtimeChat {
     topic?: string, 
     yearGroup?: string
   ) {
+    // Guard against duplicate connections
+    if (this.pc && this.pc.connectionState !== 'closed') {
+      console.warn('⚠️ WebRTC connection already exists, cleaning up first...');
+      this.cleanup();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     try {
       console.log("🔗 Initializing WebRTC connection...");
 
