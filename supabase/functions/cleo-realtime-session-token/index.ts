@@ -731,7 +731,7 @@ Remember: All that content above is already created and ready to show. I'll use 
         input_audio_transcription: { model: "whisper-1", language: "en" },
         turn_detection: {
           type: "server_vad",
-          threshold: 0.6,
+          threshold: 0.75,  // Higher threshold = less sensitive to background noise (coughs, etc.)
           prefix_padding_ms: 300,
           silence_duration_ms: 1200
         },
