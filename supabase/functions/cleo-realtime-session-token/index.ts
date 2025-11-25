@@ -58,10 +58,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch user profile
+    // Fetch user profile including voice_speed preference
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('first_name, education_level, exam_boards')
+      .select('first_name, education_level, exam_boards, voice_speed')
       .eq('id', user.id)
       .single();
 
@@ -723,7 +723,7 @@ Remember: All that content above is already created and ready to show. I'll use 
       body: JSON.stringify({
         model: "gpt-realtime",
         voice: "ballad",
-        speed: 0.80,  // Slow down audio to 80% speed for better comprehension
+        speed: userProfile?.voice_speed || 0.80,  // Use user preference, default to 80% speed
         instructions: systemPrompt,
         modalities: ["text", "audio"],
         input_audio_format: "pcm16",

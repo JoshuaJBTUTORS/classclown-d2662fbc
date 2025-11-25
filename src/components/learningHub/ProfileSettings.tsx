@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { VoiceSpeedControl } from '@/components/cleo/VoiceSpeedControl';
 
 const profileSchema = z.object({
   first_name: z.string().optional(),
@@ -22,6 +23,7 @@ const profileSchema = z.object({
   education_level: z.enum(['11_plus', 'gcse']).optional(),
   gcse_subject_ids: z.array(z.string()).optional(),
   exam_boards: z.record(z.string()).optional(),
+  voice_speed: z.number().min(0.60).max(1.20).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -83,7 +85,7 @@ const ProfileSettings = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards')
+        .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards, voice_speed')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -122,6 +124,7 @@ const ProfileSettings = () => {
             education_level: undefined,
             gcse_subject_ids: [],
             exam_boards: {},
+            voice_speed: 0.80,
           });
         }
         return;
@@ -141,6 +144,7 @@ const ProfileSettings = () => {
         education_level: data.education_level as '11_plus' | 'gcse' | undefined,
         gcse_subject_ids: subjectIds,
         exam_boards: boards,
+        voice_speed: data.voice_speed || 0.80,
       });
     };
 
@@ -172,6 +176,7 @@ const ProfileSettings = () => {
       // Always update these as they might be cleared
       updates.gcse_subject_ids = data.gcse_subject_ids || [];
       updates.exam_boards = data.exam_boards || {};
+      if (data.voice_speed !== undefined) updates.voice_speed = data.voice_speed;
 
       // Update profile
       const { error: updateError } = await supabase
@@ -184,7 +189,7 @@ const ProfileSettings = () => {
       // Refetch profile to ensure UI is synced
       const { data: updatedProfile } = await supabase
         .from('profiles')
-        .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards')
+        .select('first_name, last_name, phone_number, education_level, gcse_subject_ids, exam_boards, voice_speed')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -203,6 +208,7 @@ const ProfileSettings = () => {
           education_level: updatedProfile.education_level as '11_plus' | 'gcse' | undefined,
           gcse_subject_ids: subjectIds,
           exam_boards: boards,
+          voice_speed: updatedProfile.voice_speed || 0.80,
         });
       }
 
@@ -359,6 +365,21 @@ const ProfileSettings = () => {
           </div>
         </div>
       )}
+      </div>
+
+      {/* Voice Speed Control */}
+      <div className="space-y-2 mt-4">
+        <Label>Voice Speed</Label>
+        <VoiceSpeedControl
+          currentSpeed={watch('voice_speed') || 0.80}
+          onSpeedChange={(speed) => setValue('voice_speed', speed)}
+          onSave={handleSubmit(onSubmit)}
+          isConnected={false}
+          showSaveButton={false}
+        />
+        <p className="text-xs text-gray-500">
+          Changes will apply to your next voice session
+        </p>
       </div>
 
       <Button 

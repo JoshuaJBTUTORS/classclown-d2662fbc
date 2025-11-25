@@ -248,6 +248,24 @@ export class RealtimeChat {
     return this.isMuted;
   }
 
+  updateVoiceSpeed(speed: number) {
+    if (!this.dc || this.dc.readyState !== 'open') {
+      console.warn('Data channel not ready, cannot update voice speed');
+      return;
+    }
+    
+    console.log(`🔊 Updating voice speed to ${speed}`);
+    this.dc.send(JSON.stringify({
+      type: 'session.update',
+      session: {
+        output_audio_format: 'pcm16',
+        modalities: ['text', 'audio'],
+        voice: 'ballad',
+        speed: speed
+      }
+    }));
+  }
+
   private async logSession(wasInterrupted: boolean = false) {
     if (!this.sessionStartTime || !this.conversationId) {
       console.warn('⚠️ Cannot log session: missing start time or conversation ID');
