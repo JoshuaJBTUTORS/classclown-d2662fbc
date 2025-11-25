@@ -767,7 +767,7 @@ Remember: All that content above is already created and ready to show. I'll use 
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview-2024-12-17",
         voice: "ballad",
-        speed: userProfile?.voice_speed || 0.80,  // Use user preference, default to 80% speed
+        speed: userProfile?.voice_speed || 0.90,  // Use user preference, default to 80% speed
         instructions: systemPrompt,
         modalities: ["text", "audio"],
         input_audio_format: "pcm16",
@@ -778,10 +778,10 @@ Remember: All that content above is already created and ready to show. I'll use 
         },
         turn_detection: {
           type: "server_vad",
-          threshold: 0.9,              // Strict but balanced - clear speech triggers
-          prefix_padding_ms: 1000,     // 1 second prefix padding
-          silence_duration_ms: 1000,   // 1 second silence detection
-          create_response: true        // Auto-respond when user finishes speaking
+          threshold: 0.85,              // More lenient - easier to trigger
+          prefix_padding_ms: 1000,      // 1 second prefix padding
+          silence_duration_ms: 2000,    // 2 seconds silence - prevents interrupting thinking pauses
+          create_response: true         // Auto-respond when user finishes speaking
         },
         tools,
         tool_choice: "auto",

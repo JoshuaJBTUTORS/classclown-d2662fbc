@@ -10,7 +10,7 @@ export class RealtimeChat {
   private localStream: MediaStream | null = null;
   private isMuted: boolean = false;
   private sessionStartTime: Date | null = null;
-  private previousSpeed: number = 0.80; // Track previous speed
+  private previousSpeed: number = 0.90; // Track previous speed
   private sessionConfigured: boolean = false; // Track if session.update was confirmed
 
   constructor(
@@ -136,9 +136,9 @@ export class RealtimeChat {
             },
             turn_detection: {
               type: "server_vad",
-              threshold: 0.9,
+              threshold: 0.85,
               prefix_padding_ms: 1000,
-              silence_duration_ms: 1000,
+              silence_duration_ms: 2000,
               create_response: true
             },
             input_audio_noise_reduction: {
@@ -323,9 +323,9 @@ export class RealtimeChat {
         },
         turn_detection: {
           type: "server_vad",
-          threshold: 0.9,
+          threshold: 0.85,
           prefix_padding_ms: 1000,
-          silence_duration_ms: 1000,
+          silence_duration_ms: 2000,
           create_response: true
         },
         input_audio_noise_reduction: {
