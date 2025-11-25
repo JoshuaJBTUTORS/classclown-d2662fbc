@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Volume2 } from 'lucide-react';
+
+const SPEED_PRESETS = [
+  { value: 0.70, label: 'Slow', emoji: '🐢' },
+  { value: 0.85, label: 'Normal', emoji: '🎯' },
+  { value: 1.00, label: 'Fast', emoji: '⚡' },
+  { value: 1.15, label: 'Faster', emoji: '🚀' },
+];
 
 interface VoiceSpeedControlProps {
   currentSpeed: number;
@@ -20,31 +26,24 @@ export const VoiceSpeedControl: React.FC<VoiceSpeedControlProps> = ({
   showSaveButton = true
 }) => {
   const [localSpeed, setLocalSpeed] = useState(currentSpeed);
+  const [showChangeNote, setShowChangeNote] = useState(false);
 
   useEffect(() => {
     setLocalSpeed(currentSpeed);
   }, [currentSpeed]);
 
-  const handleSpeedChange = (value: number[]) => {
-    const newSpeed = value[0];
+  const handleSpeedChange = (newSpeed: number) => {
     setLocalSpeed(newSpeed);
+    onSpeedChange(newSpeed);
     
-    // Minimal debounce for responsive feel
-    const timer = setTimeout(() => {
-      onSpeedChange(newSpeed);
-    }, 50);
-
-    return () => clearTimeout(timer);
-  };
-
-  const getSpeedLabel = (speed: number): string => {
-    if (speed <= 0.65) return 'Very Slow';
-    if (speed <= 0.75) return 'Slow';
-    if (speed <= 0.85) return 'Normal';
-    if (speed <= 0.95) return 'Slightly Faster';
-    if (speed <= 1.05) return 'Fast';
-    if (speed <= 1.15) return 'Very Fast';
-    return 'Maximum';
+    // Show feedback note when changing speed during active session
+    if (isConnected) {
+      setShowChangeNote(true);
+      const timer = setTimeout(() => {
+        setShowChangeNote(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
   };
 
   return (
@@ -54,24 +53,41 @@ export const VoiceSpeedControl: React.FC<VoiceSpeedControlProps> = ({
         <Label className="text-sm font-medium">Voice Speed</Label>
       </div>
       
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <span>Slower</span>
-          <span className="font-semibold text-green-700">{localSpeed.toFixed(2)}x ({getSpeedLabel(localSpeed)})</span>
-          <span>Faster</span>
+      <div className="space-y-3">
+        <div className="grid grid-cols-4 gap-2">
+          {SPEED_PRESETS.map((preset) => {
+            const isActive = Math.abs(localSpeed - preset.value) < 0.03;
+            return (
+              <button
+                key={preset.value}
+                onClick={() => handleSpeedChange(preset.value)}
+                disabled={!isConnected && showSaveButton}
+                className={`
+                  flex flex-col items-center justify-center p-3 rounded-lg
+                  transition-all duration-200 border
+                  ${isActive 
+                    ? 'bg-green-100 border-green-300 shadow-sm' 
+                    : 'bg-white border-gray-200 hover:border-green-200 hover:bg-green-50'
+                  }
+                  ${(!isConnected && showSaveButton) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                <span className="text-2xl mb-1">{preset.emoji}</span>
+                <span className={`text-xs font-medium ${isActive ? 'text-green-700' : 'text-gray-600'}`}>
+                  {preset.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
         
-        <Slider
-          value={[localSpeed]}
-          onValueChange={handleSpeedChange}
-          min={0.60}
-          max={1.20}
-          step={0.05}
-          disabled={!isConnected}
-          className="w-full"
-        />
+        {showChangeNote && isConnected && (
+          <p className="text-xs text-green-600 text-center animate-in fade-in slide-in-from-top-1 duration-300">
+            ✨ Speed will apply from next sentence
+          </p>
+        )}
         
-        {!isConnected && (
+        {!isConnected && showSaveButton && (
           <p className="text-xs text-gray-500 text-center">
             Set your preferred speed - will apply when lesson starts
           </p>
