@@ -119,6 +119,23 @@ export class RealtimeChat {
       this.dc.addEventListener("open", () => {
         console.log("✅ Data channel opened");
         
+        // Configure session with turn_detection settings FIRST
+        console.log("⚙️ Configuring session with turn_detection...");
+        this.dc!.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            turn_detection: {
+              type: "semantic_vad",
+              eagerness: "medium",
+              interrupt_response: false,  // CRITICAL: Prevent interruptions
+              create_response: true
+            },
+            input_audio_noise_reduction: {
+              type: "near_field"  // Filter background noise
+            }
+          }
+        }));
+        
         // Trigger Cleo to speak first after brief delay
         setTimeout(() => {
           if (this.dc?.readyState === 'open') {
