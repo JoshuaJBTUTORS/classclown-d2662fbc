@@ -80,7 +80,9 @@ export const useAppVersion = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Version subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
