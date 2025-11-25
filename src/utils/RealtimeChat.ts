@@ -11,6 +11,7 @@ export class RealtimeChat {
   private isMuted: boolean = false;
   private sessionStartTime: Date | null = null;
   private previousSpeed: number = 0.80; // Track previous speed
+  private sessionConfigured: boolean = false; // Track if session.update was confirmed
 
   constructor(
     private onMessage: (event: any) => void,
@@ -136,18 +137,27 @@ export class RealtimeChat {
           }
         }));
         
-        // Trigger Cleo to speak first after brief delay
-        setTimeout(() => {
-          if (this.dc?.readyState === 'open') {
-            console.log("🎬 Triggering initial response...");
-            this.dc.send(JSON.stringify({ type: 'response.create' }));
-          }
-        }, 500);
+        // Wait for session.updated confirmation before triggering response
+        console.log("⏳ Waiting for session.updated confirmation...");
       });
 
       this.dc.addEventListener("message", (e) => {
         try {
           const event = JSON.parse(e.data);
+          
+          // Handle session.updated confirmation
+          if (event.type === 'session.updated') {
+            console.log("✅ Session configuration confirmed by OpenAI");
+            this.sessionConfigured = true;
+            
+            // NOW trigger Cleo's initial response - settings are guaranteed active
+            if (this.dc?.readyState === 'open') {
+              console.log("🎬 Triggering initial response after config confirmation...");
+              this.dc.send(JSON.stringify({ type: 'response.create' }));
+            }
+            return;
+          }
+          
           this.onMessage(event);
         } catch (err) {
           console.error("Error parsing data channel message:", err);
