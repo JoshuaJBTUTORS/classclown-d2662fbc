@@ -10,9 +10,7 @@ export class RealtimeChat {
   private localStream: MediaStream | null = null;
   private isMuted: boolean = false;
   private sessionStartTime: Date | null = null;
-  private previousSpeed: number = 0.80; // Track previous speed for dynamic acknowledgments
-  private currentAssistantItemId: string | null = null; // Track current assistant message ID
-  private audioStartTime: number | null = null; // Track when audio started playing
+  private previousSpeed: number = 0.80; // Track previous speed
 
   constructor(
     private onMessage: (event: any) => void,
@@ -126,28 +124,6 @@ export class RealtimeChat {
       this.dc.addEventListener("message", (e) => {
         try {
           const event = JSON.parse(e.data);
-          
-          // Track assistant item_id from response events
-          if (event.type === 'response.output_item.added' && event.item?.role === 'assistant') {
-            this.currentAssistantItemId = event.item.id;
-            this.audioStartTime = Date.now();
-            console.log('🎯 Tracking assistant item:', this.currentAssistantItemId);
-          }
-          
-          // Also capture from audio delta events as backup
-          if (event.type === 'response.audio.delta' && event.item_id) {
-            if (this.currentAssistantItemId !== event.item_id) {
-              this.currentAssistantItemId = event.item_id;
-              this.audioStartTime = Date.now();
-            }
-          }
-          
-          // Clear tracking when response completes
-          if (event.type === 'response.done') {
-            this.currentAssistantItemId = null;
-            this.audioStartTime = null;
-          }
-          
           this.onMessage(event);
         } catch (err) {
           console.error("Error parsing data channel message:", err);
@@ -284,29 +260,9 @@ export class RealtimeChat {
       return;
     }
     
-    const direction = speed > this.previousSpeed ? 'faster' : 'slower';
-    console.log(`🔊 Changing voice speed: ${this.previousSpeed} → ${speed} (${direction})`);
+    console.log(`🔊 Updating voice speed: ${this.previousSpeed} → ${speed}`);
     
-    // Step 1: Truncate current audio immediately (OpenAI's native mechanism)
-    if (this.currentAssistantItemId) {
-      const audioEndMs = this.audioStartTime 
-        ? Math.floor(Date.now() - this.audioStartTime)
-        : 0;
-      
-      console.log(`✂️ Truncating item ${this.currentAssistantItemId} at ${audioEndMs}ms`);
-      
-      this.dc.send(JSON.stringify({ 
-        type: 'conversation.item.truncate',
-        item_id: this.currentAssistantItemId,
-        content_index: 0,
-        audio_end_ms: audioEndMs
-      }));
-    }
-    
-    // Step 2: Cancel current response to stop server-side generation
-    this.dc.send(JSON.stringify({ type: 'response.cancel' }));
-    
-    // Step 3: Update session with new speed
+    // Just update the session with new speed - let OpenAI handle everything
     this.dc.send(JSON.stringify({
       type: 'session.update',
       session: {
@@ -316,25 +272,6 @@ export class RealtimeChat {
         speed: speed
       }
     }));
-    
-    // Step 4: Send contextual acknowledgment message immediately
-    const acknowledgmentMessage = direction === 'slower'
-      ? "The student just slowed down the voice speed. Briefly and naturally acknowledge this (e.g., 'Okay, let me slow down for you' or 'No problem, I'll take it easier'), then smoothly continue where you left off."
-      : "The student just sped up the voice speed. Briefly and naturally acknowledge this (e.g., 'Alright, let me pick up the pace' or 'Okay, let's kick this up a notch'), then smoothly continue where you left off.";
-    
-    this.dc.send(JSON.stringify({
-      type: 'conversation.item.create',
-      item: {
-        type: 'message',
-        role: 'user',
-        content: [{ type: 'input_text', text: acknowledgmentMessage }]
-      }
-    }));
-    this.dc.send(JSON.stringify({ type: 'response.create' }));
-    
-    // Clear tracking since we're starting new response
-    this.currentAssistantItemId = null;
-    this.audioStartTime = null;
     
     this.previousSpeed = speed;
   }
