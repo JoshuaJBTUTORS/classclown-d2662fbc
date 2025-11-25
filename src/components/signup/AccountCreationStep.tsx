@@ -109,7 +109,7 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
         
         // Wait a moment then redirect
         setTimeout(() => {
-          navigate('/learning-hub');
+          navigate('/heycleo');
         }, 2000);
       }, 5000); // 5 seconds for loading animation
       
@@ -358,7 +358,7 @@ const AccountCreationStep: React.FC<AccountCreationStepProps> = ({
           className="space-y-3 sm:space-y-4"
         >
           <Button
-            onClick={() => navigate('/learning-hub')}
+            onClick={() => navigate('/heycleo')}
             size="lg"
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto"
           >

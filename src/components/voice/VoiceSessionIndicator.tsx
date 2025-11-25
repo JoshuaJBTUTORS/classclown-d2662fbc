@@ -71,7 +71,7 @@ export const VoiceSessionIndicator = ({
               </p>
               <div className="flex gap-3 flex-wrap justify-center">
                 
-                <Button onClick={() => navigate('/learning-hub/subscription')} variant="outline" className="rounded-full border-mint-300 text-mint-700 hover:bg-mint-50">
+                <Button onClick={() => navigate('/heycleo/subscription')} variant="outline" className="rounded-full border-mint-300 text-mint-700 hover:bg-mint-50">
                   Manage Subscription
                 </Button>
               </div>

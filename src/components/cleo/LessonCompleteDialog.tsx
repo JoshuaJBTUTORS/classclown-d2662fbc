@@ -70,7 +70,7 @@ export const LessonCompleteDialog: React.FC<LessonCompleteDialogProps> = ({
       
       // Automatically navigate to flashcards after generation
       setTimeout(() => {
-        window.location.href = '/learning-hub?tab=notes';
+        window.location.href = '/heycleo?tab=notes';
       }, 2000);
     } catch (error) {
       console.error('Error generating flashcards:', error);

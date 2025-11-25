@@ -296,7 +296,7 @@ const HubAccessManagement = () => {
                   • <strong>Learning Hub Only</strong> users always have access (toggle is disabled)
                 </p>
                 <p>
-                  • Users with access enabled will be redirected to <strong>/learning-hub</strong>
+                  • Users with access enabled will be redirected to <strong>/heycleo</strong>
                 </p>
                 <p>
                   • Users without access will be redirected to <strong>/calendar</strong>

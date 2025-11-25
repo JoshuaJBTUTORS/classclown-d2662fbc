@@ -17,12 +17,12 @@ const AuthRedirect = () => {
   if (user) {
     // learning_hub_only users ALWAYS go to learning hub (they're restricted)
     if (userRole === 'learning_hub_only') {
-      return <Navigate to="/learning-hub" replace />;
+      return <Navigate to="/heycleo" replace />;
     }
     
     // Other authenticated users: check feature flag
     if (hasCleoHubAccess) {
-      return <Navigate to="/learning-hub" replace />;
+      return <Navigate to="/heycleo" replace />;
     } else {
       // Users without Cleo hub access go to Calendar
       return <Navigate to="/calendar" replace />;

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
@@ -440,9 +440,12 @@ function App() {
                 />
 
 
+                {/* Redirect old learning-hub URLs to new heycleo URLs */}
+                <Route path="/learning-hub/*" element={<Navigate to="/heycleo" replace />} />
+
                 {/* Onboarding route - no guard */}
                 <Route
-                  path="/learning-hub/onboarding"
+                  path="/heycleo/onboarding"
                   element={
                     <ProtectedRoute>
                       <OnboardingWizard />
@@ -452,7 +455,7 @@ function App() {
 
                 {/* Learning Hub routes - with hub access and onboarding guard */}
                 <Route
-                  path="/learning-hub"
+                  path="/heycleo"
                   element={
                     <ProtectedRoute>
                       <HubAccessGuard>

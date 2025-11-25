@@ -254,7 +254,7 @@ const LearningHubMyCourses = () => {
             <p className="text-gray-600 mb-4">{emptyDescription}</p>
             {userProfile?.education_level && (
               <button 
-                onClick={() => navigate('/learning-hub/settings')}
+                onClick={() => navigate('/heycleo/settings')}
                 className="px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
               >
                 Go to Settings

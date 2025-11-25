@@ -350,7 +350,7 @@ const SuccessStep: React.FC<SuccessStepProps> = ({ data, onPrev }) => {
               className="space-y-4"
             >
               <Button
-                onClick={() => navigate('/learning-hub')}
+                onClick={() => navigate('/heycleo')}
                 size="lg"
                 className="w-full sm:w-auto px-8 py-6 text-lg font-semibold group"
               >

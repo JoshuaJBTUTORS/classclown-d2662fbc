@@ -118,7 +118,7 @@ const CourseDetail = () => {
   };
 
   const handleBackToLearningHub = () => {
-    navigate('/learning-hub');
+    navigate('/heycleo');
   };
 
   if (isLoading || !course) {

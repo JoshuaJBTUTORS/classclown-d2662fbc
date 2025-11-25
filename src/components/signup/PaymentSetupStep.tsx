@@ -118,7 +118,7 @@ export const PaymentSetupStep = () => {
         <PaymentForm 
           plan={selectedPlan} 
           billingInterval={billingInterval}
-          onSuccess={() => navigate('/learning-hub')}
+          onSuccess={() => navigate('/heycleo')}
         />
       </Elements>
     );
@@ -293,7 +293,7 @@ const PaymentForm = ({ plan, billingInterval, onSuccess }: PaymentFormProps) => 
       const { error, setupIntent } = await stripe.confirmSetup({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/learning-hub`,
+          return_url: `${window.location.origin}/heycleo`,
         },
         redirect: 'if_required'
       });

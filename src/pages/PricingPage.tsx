@@ -154,7 +154,7 @@ const PricingPage = () => {
               <p className="text-muted-foreground mb-6">
                 You have full access to all features as an owner. No subscription needed!
               </p>
-              <Button onClick={() => navigate('/learning-hub')}>
+              <Button onClick={() => navigate('/heycleo')}>
                 Go to Dashboard
               </Button>
             </div>

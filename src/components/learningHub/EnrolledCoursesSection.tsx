@@ -45,7 +45,7 @@ export const EnrolledCoursesSection = () => {
           </h3>
           <p className="text-gray-600 mb-6">Start your learning journey by enrolling in a course</p>
           <Button asChild className="cleo-btn-primary">
-            <Link to="/learning-hub/courses">
+            <Link to="/heycleo/courses">
               Browse Courses
             </Link>
           </Button>
@@ -64,7 +64,7 @@ export const EnrolledCoursesSection = () => {
           </span>
         </h2>
         <Button asChild className="cleo-btn-outline">
-          <Link to="/learning-hub/my-courses">
+          <Link to="/heycleo/my-courses">
             View All
           </Link>
         </Button>

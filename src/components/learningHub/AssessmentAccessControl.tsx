@@ -64,7 +64,7 @@ const AssessmentAccessControl: React.FC<AssessmentAccessControlProps> = ({
               You don't have permission to edit this assessment. Only the assessment creator or owners can make changes.
             </AlertDescription>
           </Alert>
-          <Button className="mt-4" onClick={() => navigate('/learning-hub')}>
+          <Button className="mt-4" onClick={() => navigate('/heycleo')}>
             Back to Learning Hub
           </Button>
         </div>
@@ -84,7 +84,7 @@ const AssessmentAccessControl: React.FC<AssessmentAccessControlProps> = ({
               This assessment is not published yet and cannot be accessed by students.
             </AlertDescription>
           </Alert>
-          <Button className="mt-4" onClick={() => navigate('/learning-hub')}>
+          <Button className="mt-4" onClick={() => navigate('/heycleo')}>
             Back to Learning Hub
           </Button>
         </div>
@@ -102,7 +102,7 @@ const AssessmentAccessControl: React.FC<AssessmentAccessControlProps> = ({
             This assessment has been archived and is no longer available for taking.
           </AlertDescription>
         </Alert>
-        <Button className="mt-4" onClick={() => navigate('/learning-hub')}>
+        <Button className="mt-4" onClick={() => navigate('/heycleo')}>
           Back to Learning Hub
         </Button>
       </div>

@@ -39,25 +39,9 @@ export const useAppVersion = () => {
           description: "New version detected. Refreshing in 2 seconds...",
         });
 
-        // Wait 2 seconds then force cache clear and reload
-        setTimeout(async () => {
+        // Wait 2 seconds then reload
+        setTimeout(() => {
           localStorage.setItem('app_version', serverVersion);
-          
-          // Clear all caches to force fresh JS bundles
-          if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
-            console.log('🗑️ Cleared all caches');
-          }
-          
-          // Unregister service workers if any
-          if ('serviceWorker' in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(registrations.map(reg => reg.unregister()));
-            console.log('🗑️ Unregistered service workers');
-          }
-          
-          // Hard reload bypassing cache
           window.location.reload();
         }, 2000);
       } else {
@@ -89,24 +73,8 @@ export const useAppVersion = () => {
               description: "Refreshing in 2 seconds...",
             });
 
-            setTimeout(async () => {
+            setTimeout(() => {
               localStorage.setItem('app_version', newVersion);
-              
-              // Clear all caches to force fresh JS bundles
-              if ('caches' in window) {
-                const cacheNames = await caches.keys();
-                await Promise.all(cacheNames.map(name => caches.delete(name)));
-                console.log('🗑️ Cleared all caches');
-              }
-              
-              // Unregister service workers if any
-              if ('serviceWorker' in navigator) {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(registrations.map(reg => reg.unregister()));
-                console.log('🗑️ Unregistered service workers');
-              }
-              
-              // Hard reload bypassing cache
               window.location.reload();
             }, 2000);
           }

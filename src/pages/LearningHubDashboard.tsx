@@ -74,7 +74,7 @@ const LearningHubDashboard = () => {
             <AlertDescription className="text-amber-800">
               Hey! In order to get the most out of Cleo, please{' '}
               <button
-                onClick={() => navigate('/learning-hub/settings')}
+                onClick={() => navigate('/heycleo/settings')}
                 className="font-semibold underline hover:text-amber-900"
               >
                 set your exam board
