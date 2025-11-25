@@ -29,10 +29,10 @@ export const VoiceSpeedControl: React.FC<VoiceSpeedControlProps> = ({
     const newSpeed = value[0];
     setLocalSpeed(newSpeed);
     
-    // Debounced update - send to live session after 300ms
+    // Minimal debounce for responsive feel
     const timer = setTimeout(() => {
       onSpeedChange(newSpeed);
-    }, 300);
+    }, 50);
 
     return () => clearTimeout(timer);
   };
@@ -73,7 +73,7 @@ export const VoiceSpeedControl: React.FC<VoiceSpeedControlProps> = ({
         
         {!isConnected && (
           <p className="text-xs text-gray-500 text-center">
-            Connect to a voice session to adjust speed
+            Set your preferred speed - will apply when lesson starts
           </p>
         )}
       </div>

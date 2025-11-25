@@ -10,6 +10,7 @@ export class RealtimeChat {
   private localStream: MediaStream | null = null;
   private isMuted: boolean = false;
   private sessionStartTime: Date | null = null;
+  private previousSpeed: number = 0.80; // Track previous speed for dynamic acknowledgments
 
   constructor(
     private onMessage: (event: any) => void,
@@ -61,6 +62,11 @@ export class RealtimeChat {
       this.conversationId = tokenData.conversationId;
       this.sessionStartTime = new Date();
       const ephemeralKey = tokenData.client_secret;
+      
+      // Initialize previous speed from user's saved preference
+      if (tokenData.voice_speed) {
+        this.previousSpeed = tokenData.voice_speed;
+      }
 
       // Create RTCPeerConnection
       console.log("🌐 Creating RTCPeerConnection...");
@@ -254,7 +260,13 @@ export class RealtimeChat {
       return;
     }
     
-    console.log(`🔊 Updating voice speed to ${speed}`);
+    const direction = speed > this.previousSpeed ? 'faster' : 'slower';
+    console.log(`🔊 Changing voice speed: ${this.previousSpeed} → ${speed} (${direction})`);
+    
+    // Step 1: Cancel current response to apply speed change immediately
+    this.dc.send(JSON.stringify({ type: 'response.cancel' }));
+    
+    // Step 2: Update session with new speed
     this.dc.send(JSON.stringify({
       type: 'session.update',
       session: {
@@ -264,6 +276,27 @@ export class RealtimeChat {
         speed: speed
       }
     }));
+    
+    // Step 3: Send contextual acknowledgment message
+    const acknowledgmentMessage = direction === 'slower'
+      ? "The student just slowed down the voice speed. Briefly and naturally acknowledge this (e.g., 'Okay, let me slow down for you' or 'No problem, I'll take it easier'), then smoothly continue where you left off."
+      : "The student just sped up the voice speed. Briefly and naturally acknowledge this (e.g., 'Alright, let me pick up the pace' or 'Okay, let's kick this up a notch'), then smoothly continue where you left off.";
+    
+    setTimeout(() => {
+      if (this.dc?.readyState === 'open') {
+        this.dc.send(JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [{ type: 'input_text', text: acknowledgmentMessage }]
+          }
+        }));
+        this.dc.send(JSON.stringify({ type: 'response.create' }));
+      }
+    }, 150); // Small delay to ensure session update is processed
+    
+    this.previousSpeed = speed;
   }
 
   private async logSession(wasInterrupted: boolean = false) {
