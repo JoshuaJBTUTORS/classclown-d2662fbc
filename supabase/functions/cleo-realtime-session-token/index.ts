@@ -729,14 +729,11 @@ Remember: All that content above is already created and ready to show. I'll use 
         input_audio_format: "pcm16",
         output_audio_format: "pcm16",
         input_audio_transcription: { model: "whisper-1", language: "en" },
-        input_audio_noise_reduction: {
-          type: "near_field"  // Filter background noise before processing
-        },
         turn_detection: {
-          type: "semantic_vad",
-          eagerness: "low",           // Wait to confirm real speech (prevents cough interruptions)
-          interrupt_response: true,   // Allow user to genuinely interrupt Cleo
-          create_response: true       // Auto-respond when user finishes speaking
+          type: "server_vad",
+          threshold: 0.9,  // Very high threshold = highly insensitive to background noise
+          prefix_padding_ms: 300,
+          silence_duration_ms: 1200
         },
         tools,
         tool_choice: "auto",
