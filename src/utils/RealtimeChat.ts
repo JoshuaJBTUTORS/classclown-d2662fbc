@@ -153,7 +153,7 @@ export class RealtimeChat {
       // Connect to OpenAI Realtime API
       console.log("🚀 Connecting to OpenAI Realtime...");
       const baseUrl = "https://api.openai.com/v1/realtime";
-      const model = "gpt-4o-realtime-preview-2024-10-01";
+      const model = "gpt-4o-realtime-preview-2024-12-17";
       
       const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
         method: "POST",
@@ -269,14 +269,21 @@ export class RealtimeChat {
     
     console.log(`🔊 Updating voice speed: ${this.previousSpeed} → ${speed}`);
     
-    // Just update the session with new speed - let OpenAI handle everything
+    // Update session with new speed while preserving turn_detection settings
     this.dc.send(JSON.stringify({
       type: 'session.update',
       session: {
         output_audio_format: 'pcm16',
         modalities: ['text', 'audio'],
         voice: 'ballad',
-        speed: speed
+        speed: speed,
+        // Preserve turn_detection to prevent interruptions
+        turn_detection: {
+          type: "semantic_vad",
+          eagerness: "medium",
+          interrupt_response: false,  // Keep Cleo from being interrupted
+          create_response: true
+        }
       }
     }));
     

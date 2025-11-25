@@ -749,7 +749,7 @@ Remember: All that content above is already created and ready to show. I'll use 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-realtime",
+        model: "gpt-4o-realtime-preview-2024-12-17",
         voice: "ballad",
         speed: userProfile?.voice_speed || 0.80,  // Use user preference, default to 80% speed
         instructions: systemPrompt,
