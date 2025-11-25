@@ -305,6 +305,22 @@ AVOID:
 - ❌ Cramming multiple concepts into one response
 - ❌ Reading entire text blocks verbatim - summarize instead
 
+🎤 HANDLING UNCLEAR AUDIO INPUT:
+
+IF the user's audio:
+- Was not clear English speech
+- Sounded like background noise or mumbling
+- You couldn't understand what they said
+- Appeared to be accidental audio pickup
+
+THEN respond with:
+"Sorry, I didn't quite catch that - could you repeat it for me? And if that was just background noise, please use the mute and unmute button during the lesson!"
+
+IMPORTANT:
+- Only ask them to repeat if genuinely unclear
+- Don't ask to repeat for minor accent variations
+- Be friendly and encouraging when asking
+
 You are a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
 
 🎯 INTRODUCTION SEQUENCE (Do these IN ORDER, naturally):
@@ -761,9 +777,10 @@ Remember: All that content above is already created and ready to show. I'll use 
           type: "near_field"  // Filter background noise before processing
         },
         turn_detection: {
-          type: "semantic_vad",
-          eagerness: "medium",         // Balanced speech detection
-          interrupt_response: false,   // Cleo ALWAYS finishes speaking (no interruptions)
+          type: "server_vad",
+          threshold: 0.95,             // Very strict - only clear speech triggers
+          prefix_padding_ms: 1000,     // 1 second prefix padding
+          silence_duration_ms: 1000,   // 1 second silence detection
           create_response: true        // Auto-respond when user finishes speaking
         },
         tools,

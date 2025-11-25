@@ -135,9 +135,10 @@ export class RealtimeChat {
               language: "en"
             },
             turn_detection: {
-              type: "semantic_vad",
-              eagerness: "medium",
-              interrupt_response: false,
+              type: "server_vad",
+              threshold: 0.95,
+              prefix_padding_ms: 1000,
+              silence_duration_ms: 1000,
               create_response: true
             },
             input_audio_noise_reduction: {
@@ -321,9 +322,10 @@ export class RealtimeChat {
           language: "en"
         },
         turn_detection: {
-          type: "semantic_vad",
-          eagerness: "medium",
-          interrupt_response: false,
+          type: "server_vad",
+          threshold: 0.95,
+          prefix_padding_ms: 1000,
+          silence_duration_ms: 1000,
           create_response: true
         },
         input_audio_noise_reduction: {
