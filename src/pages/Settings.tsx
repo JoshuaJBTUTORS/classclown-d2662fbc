@@ -2,13 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Shield, Settings as SettingsIcon } from 'lucide-react';
+import { User, Shield, Settings as SettingsIcon, Server } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
+import { AppVersionControl } from '@/components/admin/AppVersionControl';
 
 
 const Settings = () => {
@@ -36,7 +37,7 @@ const Settings = () => {
               className="mt-6"
             >
               <Tabs defaultValue="profile" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+                <TabsList className={`grid w-full ${(userRole === 'admin' || userRole === 'owner') ? 'grid-cols-3' : 'grid-cols-2'} lg:w-[600px]`}>
                   <TabsTrigger value="profile" className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     Profile
@@ -45,6 +46,12 @@ const Settings = () => {
                     <Shield className="h-4 w-4" />
                     Security
                   </TabsTrigger>
+                  {(userRole === 'admin' || userRole === 'owner') && (
+                    <TabsTrigger value="system" className="flex items-center gap-2">
+                      <Server className="h-4 w-4" />
+                      System
+                    </TabsTrigger>
+                  )}
                 </TabsList>
 
                 <TabsContent value="profile">
@@ -66,6 +73,18 @@ const Settings = () => {
                     <SecuritySettings />
                   </motion.div>
                 </TabsContent>
+
+                {(userRole === 'admin' || userRole === 'owner') && (
+                  <TabsContent value="system">
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <AppVersionControl />
+                    </motion.div>
+                  </TabsContent>
+                )}
               </Tabs>
             </motion.div>
 
