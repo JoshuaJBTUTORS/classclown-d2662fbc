@@ -157,6 +157,27 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       assessment_improvements: {
         Row: {
           created_at: string
