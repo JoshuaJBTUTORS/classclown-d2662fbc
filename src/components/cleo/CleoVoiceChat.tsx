@@ -73,7 +73,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const speechStartTime = useRef<number | null>(null);
   const interruptionTimer = useRef<NodeJS.Timeout | null>(null);
   const isSpeakingRef = useRef(false); // Sync ref for timeout callbacks
-  const INTERRUPT_BUFFER_MS = 400; // Configurable threshold
+  const INTERRUPT_BUFFER_MS = 2000; // 2 seconds for testing
 
   // Notify parent of state changes
   useEffect(() => {
