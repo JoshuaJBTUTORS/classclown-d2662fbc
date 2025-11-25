@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { LearningHubProvider } from '@/contexts/LearningHubContext';
+import { useAppVersion } from '@/hooks/useAppVersion';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
 import { OnboardingGuard } from '@/components/routing/OnboardingGuard';
@@ -83,6 +84,11 @@ import CleoTracker from './pages/admin/CleoTracker';
 import CleoUserDetail from './pages/admin/CleoUserDetail';
 import Unauthorized from './pages/Unauthorized';
 
+// Component to monitor app version
+const AppVersionMonitor = () => {
+  useAppVersion();
+  return null;
+};
 
 function App() {
   const queryClient = new QueryClient();
@@ -90,6 +96,7 @@ function App() {
   return (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
+        <AppVersionMonitor />
         <AuthProvider>
             <OrganizationProvider>
               <LearningHubProvider>
