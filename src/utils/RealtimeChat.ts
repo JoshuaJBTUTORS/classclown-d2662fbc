@@ -136,7 +136,7 @@ export class RealtimeChat {
             },
             turn_detection: {
               type: "server_vad",
-              threshold: 0.95,
+              threshold: 0.9,
               prefix_padding_ms: 1000,
               silence_duration_ms: 1000,
               create_response: true
@@ -323,7 +323,7 @@ export class RealtimeChat {
         },
         turn_detection: {
           type: "server_vad",
-          threshold: 0.95,
+          threshold: 0.9,
           prefix_padding_ms: 1000,
           silence_duration_ms: 1000,
           create_response: true

@@ -778,7 +778,7 @@ Remember: All that content above is already created and ready to show. I'll use 
         },
         turn_detection: {
           type: "server_vad",
-          threshold: 0.95,             // Very strict - only clear speech triggers
+          threshold: 0.9,              // Strict but balanced - clear speech triggers
           prefix_padding_ms: 1000,     // 1 second prefix padding
           silence_duration_ms: 1000,   // 1 second silence detection
           create_response: true        // Auto-respond when user finishes speaking
