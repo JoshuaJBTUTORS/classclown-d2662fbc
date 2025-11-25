@@ -24,6 +24,7 @@ import { useAudioDevices } from '@/hooks/useAudioDevices';
 import { TranscriptPanel } from './TranscriptPanel';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { MinuteUsageTracker } from '@/components/voice/MinuteUsageTracker';
+import { VoiceSpeedControl } from './VoiceSpeedControl';
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
   conversationId?: string;
@@ -106,6 +107,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(conversationId);
+  const [voiceSpeed, setVoiceSpeed] = useState<number>(0.80); // Default voice speed
   const hasLoadedMessagesRef = useRef(false);
   const controlsRef = useRef<{
     connect: () => void;
@@ -113,6 +115,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     sendUserMessage: (text: string) => void;
     toggleMute?: () => void;
     isMuted?: boolean;
+    updateVoiceSpeed?: (speed: number) => void;
   } | null>(null);
   const hasDisconnectedOnComplete = useRef(false);
   const modeSwitchCountRef = useRef(0);
@@ -559,6 +562,42 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                   </div>)}
               </div>}
 
+            {/* Voice Speed Control */}
+            {connectionState === 'connected' && (
+              <VoiceSpeedControl
+                currentSpeed={voiceSpeed}
+                onSpeedChange={(speed) => {
+                  setVoiceSpeed(speed);
+                  controlsRef.current?.updateVoiceSpeed?.(speed);
+                }}
+                onSave={async () => {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      await supabase
+                        .from('profiles')
+                        .update({ voice_speed: voiceSpeed })
+                        .eq('id', user.id);
+                      toast({
+                        title: '✅ Speed Saved',
+                        description: `Voice speed (${voiceSpeed.toFixed(2)}x) saved as your default`
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: 'Failed to save',
+                      description: 'Could not save your voice speed preference',
+                      variant: 'destructive'
+                    });
+                  }
+                }}
+                isConnected={connectionState === 'connected'}
+              />
+            )}
+
+            {/* Transcript Panel */}
+            <TranscriptPanel messages={allMessages} isVoiceSpeaking={isSpeaking} />
+
 
             {/* Voice Input Bar */}
             <div className="cleo-voice-bar">
@@ -613,7 +652,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         if (controls.isMuted !== undefined) {
           setIsMuted(controls.isMuted);
         }
-      }} selectedMicrophoneId={selectedMicrophone?.deviceId} selectedSpeakerId={selectedSpeaker?.deviceId} />
+      }} onSpeedChange={(speed) => setVoiceSpeed(speed)} selectedMicrophoneId={selectedMicrophone?.deviceId} selectedSpeakerId={selectedSpeaker?.deviceId} />
       </div>
 
       {/* Resume Dialog */}

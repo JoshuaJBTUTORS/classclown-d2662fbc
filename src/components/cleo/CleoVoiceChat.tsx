@@ -35,7 +35,9 @@ interface CleoVoiceChatProps {
     sendUserMessage: (text: string) => void;
     toggleMute?: () => void;
     isMuted?: boolean;
+    updateVoiceSpeed?: (speed: number) => void;
   }) => void;
+  onSpeedChange?: (speed: number) => void;
   selectedMicrophoneId?: string;
   selectedSpeakerId?: string;
 }
@@ -51,6 +53,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onListeningChange,
   onSpeakingChange,
   onProvideControls,
+  onSpeedChange,
   selectedMicrophoneId,
   selectedSpeakerId
 }) => {
@@ -85,6 +88,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     }
   };
 
+  const updateVoiceSpeed = (speed: number) => {
+    if (rtcRef.current) {
+      rtcRef.current.updateVoiceSpeed(speed);
+      onSpeedChange?.(speed);
+    }
+  };
+
   // Provide connect/disconnect controls to parent
   useEffect(() => {
     onProvideControls?.({ 
@@ -92,7 +102,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       disconnect: () => disconnect(false), 
       sendUserMessage, 
       toggleMute, 
-      isMuted 
+      isMuted,
+      updateVoiceSpeed
     });
   }, [onProvideControls, isMuted]);
 
@@ -407,6 +418,25 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
       currentConversationId.current = result.conversationId;
       onConversationCreated?.(result.conversationId);
+
+      // Fetch and notify parent of user's voice speed preference
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('voice_speed')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.voice_speed) {
+            console.log('🔊 User voice speed preference:', profile.voice_speed);
+            onSpeedChange?.(profile.voice_speed);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch voice speed preference:', error);
+      }
       
       console.log("✅ WebRTC connection established with unified introduction flow");
 
