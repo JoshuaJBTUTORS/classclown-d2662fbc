@@ -263,19 +263,16 @@ export class RealtimeChat {
     const direction = speed > this.previousSpeed ? 'faster' : 'slower';
     console.log(`🔊 Changing voice speed: ${this.previousSpeed} → ${speed} (${direction})`);
     
-    // Step 1: IMMEDIATELY stop audio playback by clearing the buffer
-    if (this.audioEl) {
-      this.audioEl.pause();
-      const currentStream = this.audioEl.srcObject;
-      this.audioEl.srcObject = null; // Clear buffer
-      this.audioEl.srcObject = currentStream; // Restore stream
-      this.audioEl.play().catch(() => {}); // Resume playback
-    }
+    // Step 1: Truncate current audio immediately (OpenAI's native mechanism)
+    this.dc.send(JSON.stringify({ 
+      type: 'conversation.item.truncate',
+      item_id: 'current' // Truncate the currently playing item
+    }));
     
     // Step 2: Cancel current response to stop server-side generation
     this.dc.send(JSON.stringify({ type: 'response.cancel' }));
     
-    // Step 2: Update session with new speed
+    // Step 3: Update session with new speed
     this.dc.send(JSON.stringify({
       type: 'session.update',
       session: {
@@ -286,24 +283,20 @@ export class RealtimeChat {
       }
     }));
     
-    // Step 3: Send contextual acknowledgment message
+    // Step 4: Send contextual acknowledgment message immediately
     const acknowledgmentMessage = direction === 'slower'
       ? "The student just slowed down the voice speed. Briefly and naturally acknowledge this (e.g., 'Okay, let me slow down for you' or 'No problem, I'll take it easier'), then smoothly continue where you left off."
       : "The student just sped up the voice speed. Briefly and naturally acknowledge this (e.g., 'Alright, let me pick up the pace' or 'Okay, let's kick this up a notch'), then smoothly continue where you left off.";
     
-    setTimeout(() => {
-      if (this.dc?.readyState === 'open') {
-        this.dc.send(JSON.stringify({
-          type: 'conversation.item.create',
-          item: {
-            type: 'message',
-            role: 'user',
-            content: [{ type: 'input_text', text: acknowledgmentMessage }]
-          }
-        }));
-        this.dc.send(JSON.stringify({ type: 'response.create' }));
+    this.dc.send(JSON.stringify({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text: acknowledgmentMessage }]
       }
-    }, 150); // Small delay to ensure session update is processed
+    }));
+    this.dc.send(JSON.stringify({ type: 'response.create' }));
     
     this.previousSpeed = speed;
   }
