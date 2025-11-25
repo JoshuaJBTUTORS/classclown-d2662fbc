@@ -68,6 +68,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const rtcRef = useRef<RealtimeChat | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
   const isConnectingRef = useRef(false); // Synchronous lock to prevent race conditions
+  
+  // Speech confirmation buffer refs
+  const speechStartTime = useRef<number | null>(null);
+  const interruptionTimer = useRef<NodeJS.Timeout | null>(null);
+  const isSpeakingRef = useRef(false); // Sync ref for timeout callbacks
+  const INTERRUPT_BUFFER_MS = 400; // Configurable threshold
 
   // Notify parent of state changes
   useEffect(() => {
@@ -80,6 +86,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   useEffect(() => {
     onSpeakingChange?.(isSpeaking);
+    isSpeakingRef.current = isSpeaking; // Keep ref in sync
   }, [isSpeaking, onSpeakingChange]);
 
   const toggleMute = () => {
@@ -176,11 +183,37 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
           case 'input_audio_buffer.speech_started':
             setIsListening(true);
-            setIsSpeaking(false);
+            speechStartTime.current = Date.now();
+            
+            // Start buffer timer - only interrupt if speech continues beyond threshold
+            if (isSpeakingRef.current && !interruptionTimer.current) {
+              console.log(`⏱️ Speech started while Cleo speaking - starting ${INTERRUPT_BUFFER_MS}ms buffer`);
+              
+              interruptionTimer.current = setTimeout(() => {
+                const duration = Date.now() - (speechStartTime.current || 0);
+                console.log(`🛑 Speech confirmed after ${duration}ms - cancelling Cleo's response`);
+                rtcRef.current?.sendEvent({ type: 'response.cancel' });
+                setIsSpeaking(false);
+                interruptionTimer.current = null;
+              }, INTERRUPT_BUFFER_MS);
+            }
             break;
 
           case 'input_audio_buffer.speech_stopped':
             setIsListening(false);
+            
+            // Check if speech was too brief (likely background noise)
+            if (speechStartTime.current) {
+              const duration = Date.now() - speechStartTime.current;
+              
+              if (duration < INTERRUPT_BUFFER_MS && interruptionTimer.current) {
+                console.log(`🚫 Speech too brief (${duration}ms) - ignoring as background noise`);
+                clearTimeout(interruptionTimer.current);
+                interruptionTimer.current = null;
+              }
+              
+              speechStartTime.current = null;
+            }
             break;
 
           case 'conversation.item.input_audio_transcription.completed':
@@ -474,6 +507,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const disconnect = async (wasInterrupted: boolean = false) => {
     console.log('🔌 Disconnecting...');
     
+    // Clear any pending interruption timer
+    if (interruptionTimer.current) {
+      clearTimeout(interruptionTimer.current);
+      interruptionTimer.current = null;
+    }
+    
     if (rtcRef.current) {
       await rtcRef.current.disconnect(wasInterrupted);
       rtcRef.current = null;
@@ -482,6 +521,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
+    speechStartTime.current = null;
   };
 
   const sendUserMessage = (text: string) => {
