@@ -616,7 +616,38 @@ RULES FOR QUOTE ANALYSIS:
 - Analysis should be 2-4 sentences linking to the lesson topic
 - Focus on themes, language, character, or context
 - Make it accessible for GCSE students
-- Avoid overly academic jargon`
+- Avoid overly academic jargon
+
+⚠️ FOR SCIENCE LESSONS (BIOLOGY/CHEMISTRY/PHYSICS) - LATEX RULES:
+
+Scientific equations, formulas, and calculations MUST use LaTeX:
+
+FRACTIONS AND RATIOS:
+- Use $$\\dfrac{numerator}{denominator}$$ for ALL fractions
+- ✅ CORRECT: "efficacy = $$\\dfrac{AR_{unvax} - AR_{vax}}{AR_{unvax}} \\times 100$$"
+- ❌ WRONG: "efficacy = (AR_un - AR_v) / AR_un × 100"
+
+SUBSCRIPTS (VERY IMPORTANT):
+- Use $X_{subscript}$ for ALL subscripted variables
+- ✅ CORRECT: "Calculate $AR_{unvax}$ and $AR_{vax}$"
+- ❌ WRONG: "Calculate AR_un and AR_v" (plain underscores look bad)
+- ✅ CORRECT: "$CO_2$ and $H_2O$"
+- ❌ WRONG: "CO2 and H2O"
+
+CALCULATIONS IN STEPS:
+- ✅ CORRECT: "$AR_{unvax} = \\dfrac{300}{1200} = 0.25$"
+- ❌ WRONG: "AR_un = 300 / 1200 = 0.25"
+
+CHEMICAL FORMULAS:
+- Use subscripts: $H_2O$, $CO_2$, $O_2$, $NaCl$
+- Use superscripts for charges: $Na^+$, $Cl^-$, $Ca^{2+}$
+
+UNITS AND SYMBOLS:
+- Use $\\times$ for multiplication, $\\div$ for division
+- Keep units outside LaTeX: "$$\\dfrac{300}{1200}$$ = 0.25 (25%)"
+
+⚠️ CRITICAL: ALL mathematical expressions in Science worked examples MUST use LaTeX.
+Plain text underscores (like AR_un) render poorly and are hard to speak naturally.`
           },
           {
             role: 'user',
