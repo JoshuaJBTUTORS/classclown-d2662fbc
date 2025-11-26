@@ -139,25 +139,16 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     return speakable;
   };
 
-  // Helper: Send text to ElevenLabs (sequential chaining to maintain order)
+  // Helper: Send text to ElevenLabs streaming (fire-and-forget for low latency)
   const sendToElevenLabs = (text: string) => {
     const speakableText = convertLatexToSpeech(text);
     if (!speakableText.trim()) return;
     
-    // Chain this TTS request after all previous ones to maintain sentence order
-    ttsPromiseChain.current = ttsPromiseChain.current.then(async () => {
-      console.log(`🎙️ Sending sentence (${speakableText.length} chars): "${speakableText.substring(0, 50)}..."`);
-      try {
-        const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-          body: { text: speakableText, voiceId: 'lcMyyd2HUfFzxdCaC4Ta' }
-        });
-        if (!error && data?.audioContent) {
-          await elevenLabsPlayerRef.current?.playAudio(data.audioContent);
-        }
-      } catch (err) {
-        console.error('TTS error:', err);
-      }
-    });
+    console.log(`🎙️ Streaming sentence (${speakableText.length} chars): "${speakableText.substring(0, 50)}..."`);
+    
+    // Fire-and-forget streaming request
+    elevenLabsPlayerRef.current?.playStreamingAudio(speakableText, 'lcMyyd2HUfFzxdCaC4Ta')
+      .catch(err => console.error('TTS streaming error:', err));
   };
 
   // Notify parent of state changes

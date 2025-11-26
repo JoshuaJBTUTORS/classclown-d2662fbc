@@ -82,6 +82,85 @@ export class ElevenLabsPlayer {
     return this.isPlaying;
   }
 
+  async playStreamingAudio(text: string, voiceId: string): Promise<void> {
+    try {
+      console.log(`🎙️ Starting streaming playback for ${text.length} chars`);
+      
+      const response = await fetch(
+        `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/elevenlabs-tts-stream`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text, voiceId }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Stream request failed: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log('✅ Stream complete');
+          break;
+        }
+
+        // Decode incoming bytes and add to buffer
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE events (delimited by \n\n)
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || ''; // Keep incomplete event in buffer
+
+        for (const event of events) {
+          if (!event.trim() || !event.startsWith('data: ')) continue;
+
+          try {
+            const data = JSON.parse(event.substring(6)); // Remove "data: " prefix
+            
+            if (data.done) {
+              console.log('🎬 Stream marked as done');
+              break;
+            }
+
+            if (data.chunk) {
+              // Decode base64 to binary
+              const binaryString = atob(data.chunk);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+
+              // Add to queue immediately
+              this.queue.push(bytes);
+
+              // Start playing if not already
+              if (!this.isPlaying) {
+                await this.playNext();
+              }
+            }
+          } catch (parseError) {
+            console.error('Error parsing SSE event:', parseError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Streaming playback error:', error);
+    }
+  }
+
   async playFillerAudio(base64Audio: string): Promise<void> {
     if (!base64Audio || base64Audio === '') {
       console.warn('⚠️ Empty filler audio, skipping');
