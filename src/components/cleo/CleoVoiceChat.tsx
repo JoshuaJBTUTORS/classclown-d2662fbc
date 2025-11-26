@@ -71,11 +71,37 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const currentConversationId = useRef<string | undefined>(conversationId);
   const isConnectingRef = useRef(false); // Synchronous lock to prevent race conditions
   const textAccumulator = useRef<string>(''); // Accumulate text for ElevenLabs
+  const fullMessageRef = useRef<string>(''); // Track full message for database
   
   // Speech confirmation buffer refs (NOT USED - VAD handled server-side by OpenAI)
   const speechStartTime = useRef<number | null>(null);
   const interruptionTimer = useRef<NodeJS.Timeout | null>(null);
   const isSpeakingRef = useRef(false);
+
+  // Helper: Detect complete sentences
+  const detectSentenceEnd = (text: string): number => {
+    const match = text.match(/[.!?](?:\s|$)/);
+    if (match && match.index !== undefined) {
+      return match.index + 1;
+    }
+    return -1;
+  };
+
+  // Helper: Send text to ElevenLabs (non-blocking)
+  const sendToElevenLabs = async (text: string) => {
+    if (!text.trim()) return;
+    console.log(`🎙️ Sending sentence (${text.length} chars)`);
+    try {
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+        body: { text, voiceId: 'Tx7VLgfksXHVnoY6jDGU' }
+      });
+      if (!error && data?.audioContent) {
+        await elevenLabsPlayerRef.current?.playAudio(data.audioContent);
+      }
+    } catch (err) {
+      console.error('TTS error:', err);
+    }
+  };
 
   // Notify parent of state changes
   useEffect(() => {
@@ -210,12 +236,33 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
           case 'response.text.delta':
             // Accumulate text chunks
             textAccumulator.current += event.delta;
+            fullMessageRef.current += event.delta;
             setCurrentTranscript(prev => prev + event.delta);
+            
+            // Check for complete sentences and send immediately
+            let sentenceEnd = detectSentenceEnd(textAccumulator.current);
+            while (sentenceEnd > 0) {
+              const sentence = textAccumulator.current.substring(0, sentenceEnd).trim();
+              textAccumulator.current = textAccumulator.current.substring(sentenceEnd).trim();
+              
+              if (sentence.length > 0) {
+                sendToElevenLabs(sentence); // Fire and forget
+              }
+              sentenceEnd = detectSentenceEnd(textAccumulator.current);
+            }
             break;
 
           case 'response.text.done':
-            const fullText = textAccumulator.current;
-            textAccumulator.current = ''; // Reset accumulator
+            // Send any remaining text that didn't end with punctuation
+            const remaining = textAccumulator.current.trim();
+            if (remaining.length > 0) {
+              sendToElevenLabs(remaining);
+            }
+            
+            // Use full message for database storage
+            const fullText = fullMessageRef.current;
+            textAccumulator.current = '';
+            fullMessageRef.current = '';
             
             if (fullText) {
               console.log(`📝 Full text response (${fullText.length} chars):`, fullText);
@@ -229,26 +276,6 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                   role: 'assistant',
                   content: fullText
                 });
-              }
-              
-              // Send to ElevenLabs for TTS
-              console.log('🎙️ Sending to ElevenLabs...');
-              try {
-                const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-                  body: {
-                    text: fullText,
-                    voiceId: 'Tx7VLgfksXHVnoY6jDGU'
-                  }
-                });
-
-                if (error) {
-                  console.error('ElevenLabs error:', error);
-                } else if (data?.audioContent) {
-                  console.log('✅ Received audio from ElevenLabs');
-                  await elevenLabsPlayerRef.current?.playAudio(data.audioContent);
-                }
-              } catch (err) {
-                console.error('Failed to generate speech:', err);
               }
             }
             setCurrentTranscript('');
@@ -508,6 +535,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     setIsSpeaking(false);
     speechStartTime.current = null;
     textAccumulator.current = '';
+    fullMessageRef.current = '';
   };
 
   const sendUserMessage = (text: string) => {
