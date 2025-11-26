@@ -841,6 +841,7 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           difficulty_score: number | null
+          difficulty_tier: string | null
           estimated_duration_minutes: number | null
           exam_board: string | null
           id: string
@@ -858,6 +859,7 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           difficulty_score?: number | null
+          difficulty_tier?: string | null
           estimated_duration_minutes?: number | null
           exam_board?: string | null
           id?: string
@@ -875,6 +877,7 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           difficulty_score?: number | null
+          difficulty_tier?: string | null
           estimated_duration_minutes?: number | null
           exam_board?: string | null
           id?: string
@@ -3037,6 +3040,7 @@ export type Database = {
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
           phone_number: string | null
+          preferred_difficulty: string | null
           preferred_subjects: string[] | null
           region: string | null
           trial_completed_at: string | null
@@ -3058,6 +3062,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           phone_number?: string | null
+          preferred_difficulty?: string | null
           preferred_subjects?: string[] | null
           region?: string | null
           trial_completed_at?: string | null
@@ -3079,6 +3084,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           phone_number?: string | null
+          preferred_difficulty?: string | null
           preferred_subjects?: string[] | null
           region?: string | null
           trial_completed_at?: string | null

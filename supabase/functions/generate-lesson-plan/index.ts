@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.5";
+import { getDifficultyTierPrompt } from '../_shared/difficultyTierPrompts.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,9 +30,9 @@ serve(async (req) => {
       );
     }
 
-    const { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice = false } = await req.json();
+    const { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice = false, difficultyTier = 'intermediate' } = await req.json();
 
-    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice });
+    console.log('Generating lesson plan:', { lessonId, topic, yearGroup, learningGoal, conversationId, isExamPractice, difficultyTier });
 
     // Function removed - now using course exam board specifications directly
 
@@ -194,8 +195,26 @@ serve(async (req) => {
     // Priority: lesson_id + exam_board -> lesson_id only -> conversation_id+topic -> standalone
     let existingPlan = null as any;
 
-    // Priority 1: Check by lesson_id + exam_board (if both provided)
-    if (lessonId && examBoard) {
+    // Priority 1: Check by lesson_id + exam_board + difficulty_tier
+    if (lessonId && examBoard && difficultyTier) {
+      const { data, error: lookupError } = await supabase
+        .from('cleo_lesson_plans')
+        .select()
+        .eq('lesson_id', lessonId)
+        .eq('exam_board', examBoard)
+        .eq('difficulty_tier', difficultyTier)
+        .maybeSingle();
+      
+      if (lookupError) {
+        console.error('Error looking up lesson plan by lesson_id + exam_board + tier:', lookupError);
+      } else {
+        existingPlan = data;
+        console.log('Lookup by lesson_id + exam_board + tier:', !!existingPlan);
+      }
+    }
+
+    // Priority 2: Check by lesson_id + exam_board (any tier as fallback)
+    if (!existingPlan && lessonId && examBoard) {
       const { data, error: lookupError } = await supabase
         .from('cleo_lesson_plans')
         .select()
@@ -211,7 +230,7 @@ serve(async (req) => {
       }
     }
 
-    // Priority 2: Check by lesson_id only (any exam board as fallback)
+    // Priority 3: Check by lesson_id only (any exam board & tier as fallback)
     if (!existingPlan && lessonId) {
       const { data } = await supabase
         .from('cleo_lesson_plans')
@@ -308,6 +327,7 @@ serve(async (req) => {
       year_group: yearGroup,
       exam_board: examBoard || null,
       subject_name: subjectName || null,
+      difficulty_tier: difficultyTier || null,
       status: 'generating'
     };
       
@@ -405,6 +425,7 @@ Make all content appropriate for 11+ entrance exam level (ages 10-11).`
               
               : `You are an expert curriculum designer creating concise, focused lesson plans${examBoard ? ` for ${examBoard} ${subjectName}` : ''} for students.
 ${learningGoal ? `\nLearning Goal: ${learningGoal}` : ''}
+${getDifficultyTierPrompt(difficultyTier, subjectName)}
 ${examBoardSpecs ? `
 
 📋 EXAM BOARD SPECIFICATIONS FOR ${examBoard} ${subjectName}:

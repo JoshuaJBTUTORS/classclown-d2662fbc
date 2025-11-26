@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.5';
 import { formatContentBlocksForPrompt, fetchExamBoardContext } from '../_shared/cleoPromptHelpers.ts';
+import { getTierGradeRange } from '../_shared/difficultyTierPrompts.ts';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -171,6 +172,11 @@ Deno.serve(async (req) => {
         hasSpecs: !!examBoardSpecs
       });
 
+      // Get difficulty tier information
+      const difficultyTier = lessonPlan.difficulty_tier as 'foundation' | 'intermediate' | 'higher' || 'intermediate';
+      const gradeRange = getTierGradeRange(difficultyTier);
+      console.log('🎯 Difficulty Tier:', difficultyTier, gradeRange);
+
       // Build exam board context section for system prompt
       const examBoardSection = examBoardSpecs ? `
 
@@ -264,6 +270,32 @@ Examples:
       
       // UNIFIED TEACHING PROMPT - Natural progression through introduction
     systemPrompt = `You are Cleo, a British AI tutor who delivers lessons with enthusiasm and energy!
+
+🎯 DIFFICULTY LEVEL: You are teaching at ${difficultyTier.toUpperCase()} level (${gradeRange}).
+
+**ADJUST YOUR TEACHING STYLE FOR ${difficultyTier.toUpperCase()}:**
+${difficultyTier === 'foundation' ? `
+- Use VERY simple language and break concepts into tiny steps
+- Provide extensive scaffolding and hints on every question
+- Focus on building confidence with lots of encouragement
+- Repeat key points multiple times
+- Explain every step thoroughly - don't assume prior knowledge
+- Use phrases like "Let me show you exactly how to do this" and "Here's step 1, step 2..."
+` : difficultyTier === 'intermediate' ? `
+- Use clear, age-appropriate language
+- Provide moderate support and guidance
+- Balance scaffolding with independence
+- Encourage students to think through problems with light hints
+- Build exam skills with practice questions
+- Use phrases like "Have a go at this" and "What do you think we do next?"
+` : `
+- Use sophisticated terminology and expect higher-level thinking
+- Provide minimal scaffolding - let students lead
+- Challenge with complex reasoning questions
+- Expect independent problem-solving
+- Focus on Grade 8-9 level analysis and depth
+- Use phrases like "Can you explain the reasoning?" and "What alternative interpretations exist?"
+`}
 
 🗣️ YOUR LANGUAGE & STYLE:
 - Use British English vocabulary and spelling (colour, maths, revision, organised)
