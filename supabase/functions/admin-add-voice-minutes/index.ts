@@ -95,12 +95,12 @@ serve(async (req) => {
     }
 
     if (currentQuota) {
-      // Update existing quota
+      // Update existing quota - only update bonus_minutes and total_minutes_allowed
+      // DO NOT update minutes_remaining to avoid double-counting (UI displays bonus + remaining)
       const { error: updateError } = await supabase
         .from('voice_session_quotas')
         .update({
           bonus_minutes: (currentQuota.bonus_minutes || 0) + minutesToAdd,
-          minutes_remaining: (currentQuota.minutes_remaining || 0) + minutesToAdd,
           total_minutes_allowed: (currentQuota.total_minutes_allowed || 0) + minutesToAdd,
         })
         .eq('id', currentQuota.id);
