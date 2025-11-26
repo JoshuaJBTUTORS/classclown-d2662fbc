@@ -4,6 +4,7 @@ export class ElevenLabsPlayer {
   private isPlaying: boolean = false;
   private isPlayingFiller: boolean = false;
   private currentSource: AudioBufferSourceNode | null = null;
+  private nextPlayTime: number = 0;
   private onSpeakingChange?: (isSpeaking: boolean) => void;
 
   constructor(onSpeakingChange?: (isSpeaking: boolean) => void) {
@@ -85,6 +86,9 @@ export class ElevenLabsPlayer {
   async playStreamingAudio(text: string, voiceId: string): Promise<void> {
     try {
       console.log(`🎙️ Starting streaming playback for ${text.length} chars`);
+
+      // Reset scheduled time for new stream
+      this.nextPlayTime = 0;
       
       const response = await fetch(
         `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/elevenlabs-tts-stream`,
@@ -143,13 +147,8 @@ export class ElevenLabsPlayer {
                 bytes[i] = binaryString.charCodeAt(i);
               }
 
-              // Add to queue immediately
-              this.queue.push(bytes);
-
-              // Start playing if not already
-              if (!this.isPlaying) {
-                await this.playNext();
-              }
+              // Play PCM chunk immediately - no decoding needed!
+              this.playPCMChunk(bytes);
             }
           } catch (parseError) {
             console.error('Error parsing SSE event:', parseError);
@@ -158,6 +157,53 @@ export class ElevenLabsPlayer {
       }
     } catch (error) {
       console.error('Streaming playback error:', error);
+      this.onSpeakingChange?.(false);
+    }
+  }
+
+  // Convert raw PCM Int16 samples to playable AudioBuffer
+  private pcmToAudioBuffer(pcmBytes: Uint8Array): AudioBuffer {
+    // PCM is 16-bit signed integers, little-endian
+    const int16Array = new Int16Array(pcmBytes.buffer);
+    
+    // Create AudioBuffer at 24kHz (matching pcm_24000 format)
+    const audioBuffer = this.audioContext.createBuffer(1, int16Array.length, 24000);
+    const channelData = audioBuffer.getChannelData(0);
+    
+    // Convert Int16 (-32768 to 32767) to Float32 (-1.0 to 1.0)
+    for (let i = 0; i < int16Array.length; i++) {
+      channelData[i] = int16Array[i] / 32768;
+    }
+    
+    return audioBuffer;
+  }
+
+  // Play PCM chunk with scheduled timing for gapless playback
+  private playPCMChunk(bytes: Uint8Array) {
+    try {
+      const audioBuffer = this.pcmToAudioBuffer(bytes);
+      
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+      
+      // Schedule precisely after previous chunk for gapless playback
+      const startTime = Math.max(this.audioContext.currentTime, this.nextPlayTime);
+      this.nextPlayTime = startTime + audioBuffer.duration;
+      
+      source.start(startTime);
+      this.onSpeakingChange?.(true);
+      
+      source.onended = () => {
+        // Only mark as not speaking if no more audio scheduled
+        if (this.nextPlayTime <= this.audioContext.currentTime + 0.05) {
+          this.onSpeakingChange?.(false);
+        }
+      };
+      
+      console.log(`🔊 Scheduled PCM chunk (${audioBuffer.duration.toFixed(3)}s)`);
+    } catch (error) {
+      console.error('Error playing PCM chunk:', error);
     }
   }
 
