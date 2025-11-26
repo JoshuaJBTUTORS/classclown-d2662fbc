@@ -5,6 +5,8 @@ export class ElevenLabsPlayer {
   private isPlayingFiller: boolean = false;
   private currentSource: AudioBufferSourceNode | null = null;
   private nextPlayTime: number = 0;
+  private sentenceQueue: Array<{ text: string; voiceId: string }> = [];
+  private isProcessingQueue: boolean = false;
   private onSpeakingChange?: (isSpeaking: boolean) => void;
 
   constructor(onSpeakingChange?: (isSpeaking: boolean) => void) {
@@ -76,6 +78,9 @@ export class ElevenLabsPlayer {
     }
     this.queue = [];
     this.isPlaying = false;
+    this.sentenceQueue = [];
+    this.isProcessingQueue = false;
+    this.nextPlayTime = 0;
     this.onSpeakingChange?.(false);
   }
 
@@ -84,11 +89,33 @@ export class ElevenLabsPlayer {
   }
 
   async playStreamingAudio(text: string, voiceId: string): Promise<void> {
+    this.sentenceQueue.push({ text, voiceId });
+    
+    // If not already processing, start the queue
+    if (!this.isProcessingQueue) {
+      this.processQueue();
+    }
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.sentenceQueue.length === 0) return;
+    
+    this.isProcessingQueue = true;
+    
+    // Reset nextPlayTime only at start of fresh queue
+    this.nextPlayTime = this.audioContext.currentTime;
+    
+    while (this.sentenceQueue.length > 0) {
+      const { text, voiceId } = this.sentenceQueue.shift()!;
+      await this.streamSingleSentence(text, voiceId); // AWAIT - ensures order!
+    }
+    
+    this.isProcessingQueue = false;
+  }
+
+  private async streamSingleSentence(text: string, voiceId: string): Promise<void> {
     try {
       console.log(`🎙️ Starting streaming playback for ${text.length} chars`);
-
-      // Reset scheduled time for new stream
-      this.nextPlayTime = 0;
       
       const response = await fetch(
         `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/elevenlabs-tts-stream`,
