@@ -22,11 +22,11 @@ serve(async (req) => {
 
     // Call ElevenLabs streaming API
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=mp3_22050_32&optimize_streaming_latency=4`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=pcm_24000&optimize_streaming_latency=4`,
       {
         method: 'POST',
         headers: {
-          'Accept': 'audio/mpeg',
+          'Accept': 'audio/pcm',
           'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY') || '',
           'Content-Type': 'application/json',
         },
