@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { VoiceControls } from './VoiceControls';
 import { ContentDisplay } from './ContentDisplay';
+import { LessonRulesCard } from './LessonRulesCard';
 import { Send } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { ContentBlock } from '@/types/lessonContent';
@@ -135,8 +136,11 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
     <div className="flex flex-col h-full">
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto space-y-6 mb-4 px-4">
-        {/* Content Blocks */}
-        {contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
+        {/* Show Rules Card before voice connects */}
+        {!isVoiceConnected && <LessonRulesCard />}
+        
+        {/* Content Blocks - Only show after voice connects */}
+        {isVoiceConnected && contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
           <ContentDisplay
             content={contentBlocks}
             visibleContent={visibleContentIds}

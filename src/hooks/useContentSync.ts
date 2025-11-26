@@ -130,25 +130,8 @@ export const useContentSync = (lessonData: LessonData, onStateChange?: (state: {
     [showContent, moveToNextStep, completeStep, lessonData]
   );
 
-  // Auto-show first visible content block on mount
-  useEffect(() => {
-    const firstVisible = lessonData.content?.find(c => c.visible);
-    if (firstVisible && !visibleContent.includes(firstVisible.id)) {
-      showContent(firstVisible.id);
-    }
-  }, [lessonData, showContent, visibleContent]);
-
-  // Safety net: ensure first content shows after 300ms if nothing is visible
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (visibleContent.length === 0 && lessonData.content?.[0]) {
-        console.log('⚠️ Safety fallback: showing first content');
-        showContent(lessonData.content[0].id);
-      }
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [visibleContent, lessonData.content, showContent]);
+  // Content visibility is now controlled by move_to_step events from Cleo
+  // No auto-show on mount - rules card displays first
 
   // Notify parent of state changes
   useEffect(() => {
