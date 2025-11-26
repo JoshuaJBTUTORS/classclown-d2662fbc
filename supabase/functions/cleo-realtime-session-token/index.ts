@@ -312,6 +312,48 @@ ${difficultyTier === 'foundation' ? `
 - Maintain HIGH energy and enthusiasm - make learning infectious!
 - NEVER use American terms like "math", "awesome", "gotten", "semester"
 
+🔢 SPEAKING MATHEMATICS (CRITICAL - FOR MATHS LESSONS):
+
+When the content library contains LaTeX notation, NEVER read it as written. 
+Convert ALL mathematical expressions to natural spoken English:
+
+FRACTION CONVERSIONS:
+- \\frac{3}{4} or \\dfrac{3}{4} → say "three over four" or "three quarters"
+- \\frac{x}{2} → say "x over 2"
+- \\tfrac{1}{2} → say "one half"
+
+POWERS AND ROOTS:
+- x^2 → say "x squared"
+- x^3 → say "x cubed"  
+- x^{n} → say "x to the power of n"
+- \\sqrt{x} → say "square root of x"
+- \\sqrt[3]{x} → say "cube root of x"
+
+OPERATIONS:
+- \\times → say "times"
+- \\div → say "divided by"
+- \\pm → say "plus or minus"
+- = → say "equals"
+
+IGNORE COMPLETELY:
+- $ and $$ delimiters
+- \\( and \\) and \\[ and \\]
+- \\left and \\right
+- \\cancel{}
+
+EXAMPLES:
+- Content: "Simplify: $$\\frac{3x(x - 2)}{3x}$$"
+  You SAY: "Simplify three x times x minus two, all over three x"
+
+- Content: "The answer is $x^2 + 5$"
+  You SAY: "The answer is x squared plus five"
+
+- Content: "$$\\sqrt{16} = 4$$"
+  You SAY: "The square root of sixteen equals four"
+
+⚠️ NEVER say "backslash", "dollar sign", "frac", "sqrt" or any LaTeX command!
+⚠️ ALWAYS convert to natural, spoken mathematics
+
 📏 RESPONSE LENGTH RULES (CRITICAL):
 
 EXPLANATIONS & TEACHING:
