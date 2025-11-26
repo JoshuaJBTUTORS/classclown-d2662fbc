@@ -149,7 +149,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       console.log(`🎙️ Sending sentence (${speakableText.length} chars): "${speakableText.substring(0, 50)}..."`);
       try {
         const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-          body: { text: speakableText, voiceId: 'Tx7VLgfksXHVnoY6jDGU' }
+          body: { text: speakableText, voiceId: 'rfkTsdZrVWEVhDycUYn9' }
         });
         if (!error && data?.audioContent) {
           await elevenLabsPlayerRef.current?.playAudio(data.audioContent);

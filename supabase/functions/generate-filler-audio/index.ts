@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY not configured');
     }
 
-    const VOICE_ID = 'Tx7VLgfksXHVnoY6jDGU'; // Cleo's voice
+    const VOICE_ID = 'rfkTsdZrVWEVhDycUYn9'; // Cleo's voice
 
     // Filler phrases to generate
     const fillerPhrases = [
