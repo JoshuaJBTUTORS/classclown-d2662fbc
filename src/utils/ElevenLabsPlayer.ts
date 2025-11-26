@@ -72,6 +72,13 @@ export class ElevenLabsPlayer {
     }
   }
 
+  async resume(): Promise<void> {
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log('🔊 AudioContext resumed');
+    }
+  }
+
   stop() {
     if (this.currentSource) {
       this.currentSource.stop();
@@ -91,6 +98,12 @@ export class ElevenLabsPlayer {
   }
 
   async playStreamingAudio(text: string, voiceId: string): Promise<void> {
+    // Resume AudioContext if suspended (browser autoplay policy)
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log('🔊 AudioContext resumed');
+    }
+    
     this.sentenceQueue.push({ text, voiceId });
     
     // If not already processing, start the queue
@@ -269,6 +282,12 @@ export class ElevenLabsPlayer {
     if (!base64Audio || base64Audio === '') {
       console.warn('⚠️ Empty filler audio, skipping');
       return;
+    }
+
+    // Resume AudioContext if suspended
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log('🔊 AudioContext resumed');
     }
 
     try {
