@@ -211,11 +211,31 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
           case 'input_audio_buffer.speech_started':
             setIsListening(true);
             speechStartTime.current = Date.now();
+            
+            // STOP ElevenLabs audio on interruption
+            elevenLabsPlayerRef.current?.stop();
+            
+            // Clear pending text accumulators
+            textAccumulator.current = '';
+            fullMessageRef.current = '';
             break;
 
           case 'input_audio_buffer.speech_stopped':
             setIsListening(false);
             speechStartTime.current = null;
+            break;
+
+          case 'response.cancelled':
+          case 'response.interrupted':
+            console.log('⚠️ Response interrupted by user');
+            
+            // Stop audio immediately
+            elevenLabsPlayerRef.current?.stop();
+            
+            // Clear accumulators
+            textAccumulator.current = '';
+            fullMessageRef.current = '';
+            setCurrentTranscript('');
             break;
 
           case 'conversation.item.input_audio_transcription.completed':
