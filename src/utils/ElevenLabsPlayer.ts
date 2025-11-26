@@ -8,6 +8,8 @@ export class ElevenLabsPlayer {
   private sentenceQueue: Array<{ text: string; voiceId: string }> = [];
   private isProcessingQueue: boolean = false;
   private pcmByteBuffer: Uint8Array = new Uint8Array(0); // Accumulate incomplete PCM bytes
+  private scheduledSources: AudioBufferSourceNode[] = []; // Track all scheduled audio sources
+  private abortController: AbortController | null = null; // Track ongoing fetch streams
   private onSpeakingChange?: (isSpeaking: boolean) => void;
 
   constructor(onSpeakingChange?: (isSpeaking: boolean) => void) {
@@ -80,10 +82,25 @@ export class ElevenLabsPlayer {
   }
 
   stop() {
+    // Abort any ongoing fetch stream
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+    
+    // Stop the legacy currentSource (from playNext)
     if (this.currentSource) {
-      this.currentSource.stop();
+      try { this.currentSource.stop(); } catch (e) { /* Already stopped */ }
       this.currentSource = null;
     }
+    
+    // Stop ALL scheduled streaming sources
+    for (const source of this.scheduledSources) {
+      try { source.stop(); } catch (e) { /* Already stopped */ }
+    }
+    this.scheduledSources = [];
+    
+    // Clear all queues and state
     this.queue = [];
     this.isPlaying = false;
     this.sentenceQueue = [];
@@ -132,6 +149,9 @@ export class ElevenLabsPlayer {
     // Reset byte buffer for fresh sentence
     this.pcmByteBuffer = new Uint8Array(0);
     
+    // Create abort controller for this stream
+    this.abortController = new AbortController();
+    
     try {
       console.log(`🎙️ Starting streaming playback for ${text.length} chars`);
       
@@ -143,6 +163,7 @@ export class ElevenLabsPlayer {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ text, voiceId }),
+          signal: this.abortController.signal, // Add abort signal
         }
       );
 
@@ -201,6 +222,10 @@ export class ElevenLabsPlayer {
         }
       }
     } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        console.log('🛑 Stream aborted');
+        return; // Clean exit on abort
+      }
       console.error('Streaming playback error:', error);
       this.onSpeakingChange?.(false);
     }
@@ -258,19 +283,26 @@ export class ElevenLabsPlayer {
       source.buffer = audioBuffer;
       source.connect(this.audioContext.destination);
       
+      // Track this source for cleanup
+      this.scheduledSources.push(source);
+      
       // Schedule precisely after previous chunk for gapless playback
       const startTime = Math.max(this.audioContext.currentTime, this.nextPlayTime);
       this.nextPlayTime = startTime + audioBuffer.duration;
       
-      source.start(startTime);
-      this.onSpeakingChange?.(true);
-      
       source.onended = () => {
+        // Remove from tracking when done
+        const index = this.scheduledSources.indexOf(source);
+        if (index > -1) this.scheduledSources.splice(index, 1);
+        
         // Only mark as not speaking if no more audio scheduled
         if (this.nextPlayTime <= this.audioContext.currentTime + 0.05) {
           this.onSpeakingChange?.(false);
         }
       };
+      
+      source.start(startTime);
+      this.onSpeakingChange?.(true);
       
       console.log(`🔊 Scheduled PCM chunk (${audioBuffer.duration.toFixed(3)}s), buffered ${this.pcmByteBuffer.length} bytes`);
     } catch (error) {
