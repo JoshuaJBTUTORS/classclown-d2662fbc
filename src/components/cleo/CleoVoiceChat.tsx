@@ -80,9 +80,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const interruptionTimer = useRef<NodeJS.Timeout | null>(null);
   const isSpeakingRef = useRef(false);
 
-  // Helper: Detect complete sentences
+  // Helper: Detect complete sentences (but NOT decimal points in numbers)
   const detectSentenceEnd = (text: string): number => {
-    const match = text.match(/[.!?](?:\s|$)/);
+    // Match sentence-ending punctuation, but NOT decimal points in numbers
+    // Negative lookbehind: don't match if preceded by a digit
+    // Negative lookahead: don't match if followed by a digit
+    const match = text.match(/(?<!\d)[.!?](?!\d)(?:\s|$)/);
     if (match && match.index !== undefined) {
       return match.index + 1;
     }
