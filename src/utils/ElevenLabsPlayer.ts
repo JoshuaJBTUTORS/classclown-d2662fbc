@@ -190,8 +190,13 @@ export class ElevenLabsPlayer {
 
   // Convert raw PCM Int16 samples to playable AudioBuffer
   private pcmToAudioBuffer(pcmBytes: Uint8Array): AudioBuffer {
-    // PCM is 16-bit signed integers, little-endian
-    const int16Array = new Int16Array(pcmBytes.buffer);
+    // CRITICAL: Create aligned buffer copy
+    // pcmBytes.buffer may be misaligned or larger than actual data
+    const alignedBuffer = new ArrayBuffer(pcmBytes.byteLength);
+    new Uint8Array(alignedBuffer).set(pcmBytes);
+    
+    // Now safely interpret as Int16 (2 bytes per sample)
+    const int16Array = new Int16Array(alignedBuffer);
     
     // Create AudioBuffer at 24kHz (matching pcm_24000 format)
     const audioBuffer = this.audioContext.createBuffer(1, int16Array.length, 24000);
