@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { RealtimeChat } from '@/utils/RealtimeChat';
+import { ElevenLabsPlayer } from '@/utils/ElevenLabsPlayer';
 import { supabase } from '@/integrations/supabase/client';
 import { ContentEvent } from '@/types/lessonContent';
 
@@ -66,8 +67,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [isMuted, setIsMuted] = useState(false);
 
   const rtcRef = useRef<RealtimeChat | null>(null);
+  const elevenLabsPlayerRef = useRef<ElevenLabsPlayer | null>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
   const isConnectingRef = useRef(false); // Synchronous lock to prevent race conditions
+  const textAccumulator = useRef<string>(''); // Accumulate text for ElevenLabs
   
   // Speech confirmation buffer refs (NOT USED - VAD handled server-side by OpenAI)
   const speechStartTime = useRef<number | null>(null);
@@ -95,12 +98,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     }
   };
 
-  const updateVoiceSpeed = (speed: number) => {
-    if (rtcRef.current) {
-      rtcRef.current.updateVoiceSpeed(speed);
-      onSpeedChange?.(speed);
-    }
-  };
+  // Voice speed removed - not applicable with ElevenLabs
 
   // Provide connect/disconnect controls to parent
   useEffect(() => {
@@ -109,8 +107,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       disconnect: () => disconnect(false), 
       sendUserMessage, 
       toggleMute, 
-      isMuted,
-      updateVoiceSpeed
+      isMuted
     });
   }, [onProvideControls, isMuted]);
 
@@ -147,13 +144,18 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
+      // Initialize ElevenLabs player
+      elevenLabsPlayerRef.current = new ElevenLabsPlayer((speaking) => {
+        setIsSpeaking(speaking);
+      });
+
       // Handle events from WebRTC data channel
       const handleMessage = async (event: any) => {
         console.log('Received:', event.type);
 
         switch (event.type) {
           case 'session.created':
-            console.log('✅ WebRTC session created');
+            console.log('✅ WebRTC session created (text-only mode)');
             setConnectionState('connected');
             toast({
               title: "Connected",
@@ -205,32 +207,59 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             }
             break;
 
-          case 'response.audio_transcript.delta':
+          case 'response.text.delta':
+            // Accumulate text chunks
+            textAccumulator.current += event.delta;
             setCurrentTranscript(prev => prev + event.delta);
             break;
 
-          case 'response.audio_transcript.done':
-            if (event.transcript) {
-              setMessages(prev => [...prev, { role: 'assistant', content: event.transcript }]);
+          case 'response.text.done':
+            const fullText = textAccumulator.current;
+            textAccumulator.current = ''; // Reset accumulator
+            
+            if (fullText) {
+              console.log(`📝 Full text response (${fullText.length} chars):`, fullText);
+              
+              setMessages(prev => [...prev, { role: 'assistant', content: fullText }]);
               
               // Save to database
               if (currentConversationId.current) {
                 await supabase.from('cleo_messages').insert({
                   conversation_id: currentConversationId.current,
                   role: 'assistant',
-                  content: event.transcript
+                  content: fullText
                 });
+              }
+              
+              // Send to ElevenLabs for TTS
+              console.log('🎙️ Sending to ElevenLabs...');
+              try {
+                const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+                  body: {
+                    text: fullText,
+                    voiceId: 'XB0fDUnXU5powFXDhCwa' // Charlotte
+                  }
+                });
+
+                if (error) {
+                  console.error('ElevenLabs error:', error);
+                } else if (data?.audioContent) {
+                  console.log('✅ Received audio from ElevenLabs');
+                  await elevenLabsPlayerRef.current?.playAudio(data.audioContent);
+                }
+              } catch (err) {
+                console.error('Failed to generate speech:', err);
               }
             }
             setCurrentTranscript('');
             break;
 
           case 'response.created':
-            setIsSpeaking(true);
+            console.log('📤 Response started');
             break;
 
           case 'response.done':
-            setIsSpeaking(false);
+            console.log('✅ Response complete');
             break;
 
           case 'response.function_call_arguments.done':
@@ -469,10 +498,16 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       rtcRef.current = null;
     }
     
+    if (elevenLabsPlayerRef.current) {
+      elevenLabsPlayerRef.current.stop();
+      elevenLabsPlayerRef.current = null;
+    }
+    
     setConnectionState('disconnected');
     setIsListening(false);
     setIsSpeaking(false);
     speechStartTime.current = null;
+    textAccumulator.current = '';
   };
 
   const sendUserMessage = (text: string) => {

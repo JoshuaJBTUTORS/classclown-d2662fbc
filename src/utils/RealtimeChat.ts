@@ -80,21 +80,8 @@ export class RealtimeChat {
       console.log("🌐 Creating RTCPeerConnection...");
       this.pc = new RTCPeerConnection();
 
-      // Set up remote audio playback
-      this.pc.ontrack = async (e) => {
-        console.log("🔊 Received remote audio track");
-        this.audioEl.srcObject = e.streams[0];
-        
-        // Set speaker device if specified
-        if (this.speakerId && 'setSinkId' in this.audioEl) {
-          try {
-            await (this.audioEl as any).setSinkId(this.speakerId);
-            console.log("✅ Audio output set to:", this.speakerId);
-          } catch (err) {
-            console.error("Failed to set speaker device:", err);
-          }
-        }
-      };
+      // NO remote audio track - ElevenLabs handles TTS
+      console.log("🔇 Audio output disabled (using ElevenLabs TTS)");
 
       // Add local audio track from microphone
       console.log("🎤 Requesting microphone access...");
@@ -125,11 +112,8 @@ export class RealtimeChat {
         this.dc!.send(JSON.stringify({
           type: 'session.update',
           session: {
-            modalities: ["text", "audio"],
-            voice: "ballad",
+            modalities: ["text"], // TEXT ONLY for ElevenLabs
             input_audio_format: "pcm16",
-            output_audio_format: "pcm16",
-            speed: this.previousSpeed,
             input_audio_transcription: {
               model: "whisper-1",
               language: "en"
@@ -300,44 +284,7 @@ export class RealtimeChat {
     return this.isMuted;
   }
 
-  updateVoiceSpeed(speed: number) {
-    if (!this.dc || this.dc.readyState !== 'open') {
-      console.warn('Data channel not ready, cannot update voice speed');
-      return;
-    }
-    
-    console.log(`🔊 Updating voice speed: ${this.previousSpeed} → ${speed}`);
-    
-    // Send COMPLETE session configuration with new speed
-    this.dc.send(JSON.stringify({
-      type: 'session.update',
-      session: {
-        modalities: ["text", "audio"],
-        voice: "ballad",
-        input_audio_format: "pcm16",
-        output_audio_format: "pcm16",
-        speed: speed,
-        input_audio_transcription: {
-          model: "whisper-1",
-          language: "en"
-        },
-        turn_detection: {
-          type: "server_vad",
-          threshold: 0.85,
-          prefix_padding_ms: 1000,
-          silence_duration_ms: 2000,
-          create_response: true
-        },
-        input_audio_noise_reduction: {
-          type: "near_field"
-        },
-        temperature: 0.8,
-        max_response_output_tokens: "inf"
-      }
-    }));
-    
-    this.previousSpeed = speed;
-  }
+  // Voice speed not applicable with ElevenLabs (removed)
 
   private async logSession(wasInterrupted: boolean = false) {
     if (!this.sessionStartTime || !this.conversationId) {

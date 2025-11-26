@@ -766,12 +766,9 @@ Remember: All that content above is already created and ready to show. I'll use 
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview-2024-12-17",
-        voice: "ballad",
-        speed: 0.90,  // Fixed speed for all users
         instructions: systemPrompt,
-        modalities: ["text", "audio"],
+        modalities: ["text"], // TEXT ONLY - ElevenLabs handles TTS
         input_audio_format: "pcm16",
-        output_audio_format: "pcm16",
         input_audio_transcription: { model: "whisper-1", language: "en" },
         input_audio_noise_reduction: {
           type: "near_field"  // Filter background noise before processing
