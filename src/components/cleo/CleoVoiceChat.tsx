@@ -139,10 +139,24 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     return speakable;
   };
 
+  // Deduplication Set to prevent duplicate sentence sends
+  const sentDedupeRef = useRef<Set<string>>(new Set());
+  
   // Helper: Send text to ElevenLabs streaming (fire-and-forget for low latency)
   const sendToElevenLabs = (text: string) => {
     const speakableText = convertLatexToSpeech(text);
     if (!speakableText.trim()) return;
+    
+    // Deduplicate: prevent sending the same sentence twice within 2 seconds
+    const dedupeKey = speakableText.trim();
+    if (sentDedupeRef.current.has(dedupeKey)) {
+      console.log(`⚠️ Skipping duplicate sentence: "${dedupeKey.substring(0, 30)}..."`);
+      return;
+    }
+    
+    // Mark as sent
+    sentDedupeRef.current.add(dedupeKey);
+    setTimeout(() => sentDedupeRef.current.delete(dedupeKey), 2000); // Clear after 2s
     
     console.log(`🎙️ Streaming sentence (${speakableText.length} chars): "${speakableText.substring(0, 50)}..."`);
     
