@@ -119,6 +119,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   } | null>(null);
   const hasDisconnectedOnComplete = useRef(false);
   const modeSwitchCountRef = useRef(0);
+  const preWorkedExampleSpeedRef = useRef<number | null>(null); // Store speed before worked example
+  const currentWorkedExampleStepRef = useRef<string | null>(null); // Track which step is a worked example
 
   // Check for saved state and show resume dialog
   useEffect(() => {
@@ -263,6 +265,13 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       navigate(-1);
     }
   };
+  // Helper function to check if a step contains worked examples
+  const stepHasWorkedExample = (stepId: string): boolean => {
+    return lessonData.content.some(
+      block => block.stepId === stepId && block.type === 'worked_example'
+    );
+  };
+
   const handleModeSwitch = async (newMode: ChatMode, isAuto: boolean = false) => {
     if (newMode === mode) return;
 
@@ -296,6 +305,41 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     });
   };
   const handleContentEventWithUpsert = async (event: ContentEvent) => {
+    // Handle move_to_step - check for worked examples and adjust speed
+    if (event.type === 'move_to_step' && event.stepId) {
+      const hasWorkedExample = stepHasWorkedExample(event.stepId);
+      
+      if (hasWorkedExample && preWorkedExampleSpeedRef.current === null) {
+        // Entering a worked example - slow down
+        preWorkedExampleSpeedRef.current = voiceSpeed;
+        currentWorkedExampleStepRef.current = event.stepId;
+        const newSpeed = Math.max(0.7, voiceSpeed - 0.2);
+        setVoiceSpeed(newSpeed);
+        controlsRef.current?.updateVoiceSpeed?.(newSpeed);
+        console.log(`🐢 Slowing down for worked example: ${voiceSpeed} → ${newSpeed}`);
+      } else if (!hasWorkedExample && preWorkedExampleSpeedRef.current !== null) {
+        // Leaving worked example area - restore speed
+        const restoredSpeed = preWorkedExampleSpeedRef.current;
+        setVoiceSpeed(restoredSpeed);
+        controlsRef.current?.updateVoiceSpeed?.(restoredSpeed);
+        preWorkedExampleSpeedRef.current = null;
+        currentWorkedExampleStepRef.current = null;
+        console.log(`⚡ Speed restored: → ${restoredSpeed}`);
+      }
+    }
+    
+    // Handle complete_step - restore speed if completing worked example
+    if (event.type === 'complete_step' && event.stepId) {
+      if (event.stepId === currentWorkedExampleStepRef.current && preWorkedExampleSpeedRef.current !== null) {
+        const restoredSpeed = preWorkedExampleSpeedRef.current;
+        setVoiceSpeed(restoredSpeed);
+        controlsRef.current?.updateVoiceSpeed?.(restoredSpeed);
+        preWorkedExampleSpeedRef.current = null;
+        currentWorkedExampleStepRef.current = null;
+        console.log(`⚡ Speed restored after worked example: → ${restoredSpeed}`);
+      }
+    }
+
     if (event.type === 'upsert_content' && event.block) {
       console.log('🎨 Upserting content block:', event.block.id);
       setContent(prev => {
