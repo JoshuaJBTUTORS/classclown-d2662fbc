@@ -4,6 +4,7 @@ import { RealtimeChat } from '@/utils/RealtimeChat';
 import { ElevenLabsPlayer } from '@/utils/ElevenLabsPlayer';
 import { supabase } from '@/integrations/supabase/client';
 import { ContentEvent } from '@/types/lessonContent';
+import { getRandomFiller } from '@/assets/audio/cleoFillers';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -296,6 +297,15 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             const userMessage = event.transcript;
             setCurrentTranscript('');
             setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+            
+            // 🎭 Play instant filler audio to hide latency
+            if (userMessage.trim().length > 5) {
+              const filler = getRandomFiller();
+              if (filler.audio && filler.audio !== '') {
+                elevenLabsPlayerRef.current?.playFillerAudio(filler.audio);
+                console.log(`🎭 Playing filler: "${filler.text}"`);
+              }
+            }
             
             // Save to database
             if (currentConversationId.current) {

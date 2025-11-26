@@ -2,6 +2,7 @@ export class ElevenLabsPlayer {
   private audioContext: AudioContext;
   private queue: Uint8Array[] = [];
   private isPlaying: boolean = false;
+  private isPlayingFiller: boolean = false;
   private currentSource: AudioBufferSourceNode | null = null;
   private onSpeakingChange?: (isSpeaking: boolean) => void;
 
@@ -79,5 +80,55 @@ export class ElevenLabsPlayer {
 
   getIsSpeaking(): boolean {
     return this.isPlaying;
+  }
+
+  async playFillerAudio(base64Audio: string): Promise<void> {
+    if (!base64Audio || base64Audio === '') {
+      console.warn('⚠️ Empty filler audio, skipping');
+      return;
+    }
+
+    try {
+      // Decode base64 to binary
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Decode MP3 audio
+      const audioBuffer = await this.audioContext.decodeAudioData(bytes.slice().buffer);
+      
+      // Create source
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+      
+      // Mark as playing filler
+      this.isPlayingFiller = true;
+      this.onSpeakingChange?.(true);
+      
+      // When filler ends, continue with queued audio
+      source.onended = () => {
+        console.log('🎭 Filler audio complete');
+        this.isPlayingFiller = false;
+        
+        // If there's queued audio, start playing it
+        if (this.queue.length > 0 && !this.isPlaying) {
+          this.playNext();
+        } else if (this.queue.length === 0) {
+          // No queued audio yet, update speaking state
+          this.onSpeakingChange?.(false);
+        }
+      };
+      
+      source.start(0);
+      console.log(`🎭 Playing filler audio (${audioBuffer.duration.toFixed(2)}s)`);
+
+    } catch (error) {
+      console.error('Error playing filler audio:', error);
+      this.isPlayingFiller = false;
+      this.onSpeakingChange?.(false);
+    }
   }
 }
