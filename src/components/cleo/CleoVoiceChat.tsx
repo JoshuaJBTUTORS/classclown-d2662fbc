@@ -237,7 +237,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
                   body: {
                     text: fullText,
-                    voiceId: 'XB0fDUnXU5powFXDhCwa' // Charlotte
+                    voiceId: 'Tx7VLgfksXHVnoY6jDGU'
                   }
                 });
 
