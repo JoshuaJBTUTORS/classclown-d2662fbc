@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Loader2, Check, BookOpen, Table, HelpCircle, Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ProgressBar from '@/components/learningHub/ProgressBar';
+import { MiniGameSelector } from './minigames/MiniGameSelector';
+import { Button } from '@/components/ui/button';
 
 interface LessonPlanningScreenProps {
   topic: string;
@@ -36,6 +38,8 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
   const [progress, setProgress] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentPhase, setCurrentPhase] = useState('Initializing...');
+  const [showMiniGame, setShowMiniGame] = useState(true);
+  const [gameScore, setGameScore] = useState(0);
   
   const [steps, setSteps] = useState<PlanningStep[]>([
     { id: 'objectives', label: 'Creating learning objectives', icon: <Lightbulb className="w-5 h-5" />, completed: false },
@@ -112,6 +116,9 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
       setSteps(prev => prev.map(s => ({ ...s, completed: true })));
       setCurrentStep(steps.length);
 
+      // Hide mini-game when complete
+      setShowMiniGame(false);
+
       // Wait a moment before completing
       setTimeout(() => {
         onComplete(data.lessonPlanId);
@@ -128,13 +135,42 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
       <div className="cleo-lesson-container">
         <div className="cleo-logo">Cleo</div>
         
-        <div className="cleo-avatar">🧑🏻‍🔬</div>
+        {!showMiniGame && <div className="cleo-avatar">🧑🏻‍🔬</div>}
 
-        <h1 className="cleo-heading">Preparing Your Lesson</h1>
+        {!showMiniGame && <h1 className="cleo-heading">Preparing Your Lesson</h1>}
         
-        <p className="text-base mb-8" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
-          Cleo is creating a personalized learning experience...
-        </p>
+        {!showMiniGame && (
+          <p className="text-base mb-8" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
+            Cleo is creating a personalized learning experience...
+          </p>
+        )}
+
+        {/* Mini-Game Display */}
+        {showMiniGame && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-8"
+          >
+            <MiniGameSelector
+              topic={topic}
+              yearGroup={yearGroup}
+              isActive={showMiniGame}
+              onScoreUpdate={setGameScore}
+            />
+            
+            <div className="flex justify-center mt-6">
+              <Button
+                variant="ghost"
+                onClick={() => setShowMiniGame(false)}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Skip Game
+              </Button>
+            </div>
+          </motion.div>
+        )}
 
         <div className="cleo-planning-card">
           {/* Progress Bar */}
@@ -154,15 +190,17 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
             </div>
           </div>
 
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="inline-block mb-6"
-          >
-            <Loader2 className="w-12 h-12" style={{ color: 'hsl(var(--cleo-green))' }} />
-          </motion.div>
+          {!showMiniGame && (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="inline-block mb-6"
+            >
+              <Loader2 className="w-12 h-12" style={{ color: 'hsl(var(--cleo-green))' }} />
+            </motion.div>
+          )}
 
-          <div className="cleo-planning-steps">
+          {!showMiniGame && <div className="cleo-planning-steps">
             {steps.map((step, index) => {
               const stepProgress = (index / steps.length) * 100;
               const isCompleted = progress > stepProgress + 15;
@@ -193,7 +231,19 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
                 </motion.div>
               );
             })}
-          </div>
+          </div>}
+
+          {gameScore > 0 && !showMiniGame && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-4 p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
+            >
+              <p className="text-sm text-center font-medium text-green-700">
+                🎮 You scored {gameScore} while waiting!
+              </p>
+            </motion.div>
+          )}
 
           <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: '#f8f9f9' }}>
             <p className="text-xs text-center" style={{ color: 'hsl(var(--cleo-text-muted))' }}>
