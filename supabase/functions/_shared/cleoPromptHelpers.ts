@@ -61,13 +61,14 @@ export function formatSingleBlock(block: any): string {
   switch (type) {
     case 'text':
       const textContent = convertLatexToSpeech(data?.content || '');
-      const textPreview = textContent.substring(0, 100);
-      description = `   • Text Block: "${textPreview}${textPreview.length >= 100 ? '...' : ''}"`;
+      // Include full content for AI, not just preview
+      description = `   • Text Block: "${textContent}"`;
       break;
       
     case 'definition':
-      description = `   • Definition: "${data?.term || 'Unknown'}" - ${(data?.definition || '').substring(0, 60)}...`;
-      if (data?.example) description += `\n      Example: ${data.example.substring(0, 60)}...`;
+      description = `   • Definition: ${convertLatexToSpeech(data?.term || 'Key Term')}`;
+      description += `\n      Meaning: ${convertLatexToSpeech(data?.definition || '')}`;
+      if (data?.example) description += `\n      Example: ${convertLatexToSpeech(data.example)}`;
       break;
       
     case 'question':
@@ -80,9 +81,18 @@ export function formatSingleBlock(block: any): string {
       break;
       
     case 'table':
-      const headers = data?.headers || [];
-      const rowCount = data?.rows?.length || 0;
-      description = `   • Table: ${headers.join(', ')} (${rowCount} rows)`;
+      description = `   • Table: ${title || 'Data Table'}`;
+      if (data?.headers) {
+        const convertedHeaders = data.headers.map((h: string) => convertLatexToSpeech(h));
+        description += `\n      Columns: ${convertedHeaders.join(', ')}`;
+      }
+      if (data?.rows && Array.isArray(data.rows)) {
+        description += `\n      Rows: ${data.rows.length}`;
+        data.rows.forEach((row: any[], idx: number) => {
+          const convertedRow = row.map((cell: any) => convertLatexToSpeech(String(cell)));
+          description += `\n         Row ${idx + 1}: ${convertedRow.join(' | ')}`;
+        });
+      }
       break;
       
     case 'diagram':
