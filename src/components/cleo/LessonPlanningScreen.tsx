@@ -10,6 +10,7 @@ interface LessonPlanningScreenProps {
   lessonId?: string;
   conversationId?: string;
   learningGoal?: string;
+  difficultyTier?: 'foundation' | 'intermediate' | 'higher';
   onComplete: (planId: string) => void;
   onError: (error: string) => void;
 }
@@ -27,6 +28,7 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
   lessonId,
   conversationId,
   learningGoal,
+  difficultyTier = 'intermediate',
   onComplete,
   onError
 }) => {
@@ -96,7 +98,8 @@ export const LessonPlanningScreen: React.FC<LessonPlanningScreenProps> = ({
           topic,
           yearGroup,
           learningGoal,
-          conversationId
+          conversationId,
+          difficultyTier
         }
       });
 

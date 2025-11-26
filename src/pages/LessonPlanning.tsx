@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LessonPlanningScreen } from '@/components/cleo/LessonPlanningScreen';
 import { LessonPlanDisplay } from '@/components/cleo/LessonPlanDisplay';
 import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
+import { DifficultySelectionScreen } from '@/components/cleo/DifficultySelectionScreen';
 import { useLessonPlan } from '@/hooks/useLessonPlan';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,7 @@ const LessonPlanning: React.FC = () => {
   const moduleId = searchParams.get('moduleId') || undefined;
   const courseId = searchParams.get('courseId') || undefined;
   const isCompletedParam = searchParams.get('isCompleted') === 'true';
+  const difficultyTier = searchParams.get('difficultyTier') as 'foundation' | 'intermediate' | 'higher' | null;
 
   // Generate or retrieve conversation ID to prevent duplicate lesson plans
   const [conversationId] = useState(() => {
@@ -114,8 +116,21 @@ const LessonPlanning: React.FC = () => {
         }
       }
 
-      // First try by lessonId + exam board
-      if (lessonId && userExamBoard) {
+      // First try by lessonId + exam board + difficulty tier
+      if (lessonId && userExamBoard && difficultyTier) {
+        const result = await supabase
+          .from('cleo_lesson_plans')
+          .select('id, teaching_sequence')
+          .eq('lesson_id', lessonId)
+          .eq('exam_board', userExamBoard)
+          .eq('difficulty_tier', difficultyTier)
+          .maybeSingle();
+        data = result.data;
+        console.log('Searched for lesson plan with exam board + tier:', userExamBoard, difficultyTier, 'found:', !!data);
+      }
+      
+      // Fallback: try by lessonId + exam board (any tier)
+      if (!data && lessonId && userExamBoard) {
         const result = await supabase
           .from('cleo_lesson_plans')
           .select('id, teaching_sequence')
@@ -123,10 +138,10 @@ const LessonPlanning: React.FC = () => {
           .eq('exam_board', userExamBoard)
           .maybeSingle();
         data = result.data;
-        console.log('Searched for lesson plan with exam board:', userExamBoard, 'found:', !!data);
+        console.log('Fallback: Searched for lesson plan with exam board (any tier):', userExamBoard, 'found:', !!data);
       }
       
-      // Fallback: try by lessonId without exam board filter
+      // Final fallback: try by lessonId without filters
       if (!data && lessonId) {
         const result = await supabase
           .from('cleo_lesson_plans')
@@ -378,6 +393,21 @@ const LessonPlanning: React.FC = () => {
     );
   }
 
+  // Show difficulty selection if no difficulty tier is selected
+  if (!difficultyTier && lessonId) {
+    return (
+      <DifficultySelectionScreen
+        topic={topic}
+        courseId={courseId || ''}
+        moduleId={moduleId || ''}
+        lessonId={lessonId}
+        yearGroup={yearGroup}
+        isCompleted={isCompletedParam}
+        subjectName={yearGroup}
+      />
+    );
+  }
+
   return (
     <LessonPlanningScreen
       topic={topic}
@@ -385,6 +415,7 @@ const LessonPlanning: React.FC = () => {
       lessonId={lessonId}
       conversationId={conversationId}
       learningGoal={searchParams.get('goal') || undefined}
+      difficultyTier={difficultyTier || 'intermediate'}
       onComplete={handlePlanningComplete}
       onError={handlePlanningError}
     />
