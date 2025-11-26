@@ -141,6 +141,9 @@ verify_jwt = true
 [functions.generate-lesson-exam]
 verify_jwt = true
 
+[functions.generate-filler-audio]
+verify_jwt = false
+
 [functions.add-minutes-bal]
 verify_jwt = false
 
