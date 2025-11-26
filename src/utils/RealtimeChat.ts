@@ -303,6 +303,14 @@ export class RealtimeChat {
     try {
       console.log(`📊 Logging voice session: ${durationSeconds}s`);
       
+      // 🔐 Force refresh the auth session before logging
+      // This ensures we have a valid token even after long lessons
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !session) {
+        console.warn('⚠️ Could not refresh session, trying with current token...');
+      }
+      
       const { data, error } = await supabase.functions.invoke('log-voice-session', {
         body: {
           conversationId: this.conversationId,
