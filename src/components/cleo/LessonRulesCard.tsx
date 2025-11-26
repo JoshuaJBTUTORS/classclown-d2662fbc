@@ -33,7 +33,7 @@ export const LessonRulesCard: React.FC = () => {
         <div className="flex items-start gap-3">
           <span className="text-2xl">⏸️</span>
           <p className="text-foreground/90 flex-1">
-            Don't move on until you get it - I have infinite patience!
+            Don't move on until you get it... I have infinite patience!
           </p>
         </div>
 
