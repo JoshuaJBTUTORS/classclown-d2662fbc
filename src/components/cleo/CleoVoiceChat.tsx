@@ -88,16 +88,59 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     return -1;
   };
 
+  // Helper: Convert LaTeX to speakable text for TTS
+  const convertLatexToSpeech = (text: string): string => {
+    let speakable = text;
+    
+    // Remove bold markers (visual only)
+    speakable = speakable.replace(/\*\*(.*?)\*\*/g, '$1');
+    
+    // Remove LaTeX delimiters
+    speakable = speakable.replace(/\\\(|\\\)|\\\[|\\\]|\$\$?/g, '');
+    
+    // Convert fractions: \frac{a}{b} → "a over b"
+    speakable = speakable.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
+    
+    // Convert tfrac (text fraction): \tfrac{a}{b} → "a over b"
+    speakable = speakable.replace(/\\tfrac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
+    
+    // Convert square root: \sqrt{x} → "square root of x"
+    speakable = speakable.replace(/\\sqrt\{([^}]+)\}/g, 'square root of $1');
+    
+    // Convert powers: ^{2} → "squared", ^{3} → "cubed", ^{n} → "to the power of n"
+    speakable = speakable.replace(/\^\{2\}/g, ' squared');
+    speakable = speakable.replace(/\^\{3\}/g, ' cubed');
+    speakable = speakable.replace(/\^\{([^}]+)\}/g, ' to the power of $1');
+    speakable = speakable.replace(/\^2/g, ' squared');
+    speakable = speakable.replace(/\^3/g, ' cubed');
+    
+    // Convert common symbols
+    speakable = speakable.replace(/\\times/g, 'times');
+    speakable = speakable.replace(/\\div/g, 'divided by');
+    speakable = speakable.replace(/\\pm/g, 'plus or minus');
+    speakable = speakable.replace(/\\leq/g, 'less than or equal to');
+    speakable = speakable.replace(/\\geq/g, 'greater than or equal to');
+    speakable = speakable.replace(/\\neq/g, 'not equal to');
+    speakable = speakable.replace(/\\pi/g, 'pi');
+    speakable = speakable.replace(/\\infty/g, 'infinity');
+    
+    // Clean up extra whitespace
+    speakable = speakable.replace(/\s+/g, ' ').trim();
+    
+    return speakable;
+  };
+
   // Helper: Send text to ElevenLabs (sequential chaining to maintain order)
   const sendToElevenLabs = (text: string) => {
-    if (!text.trim()) return;
+    const speakableText = convertLatexToSpeech(text);
+    if (!speakableText.trim()) return;
     
     // Chain this TTS request after all previous ones to maintain sentence order
     ttsPromiseChain.current = ttsPromiseChain.current.then(async () => {
-      console.log(`🎙️ Sending sentence (${text.length} chars): "${text.substring(0, 50)}..."`);
+      console.log(`🎙️ Sending sentence (${speakableText.length} chars): "${speakableText.substring(0, 50)}..."`);
       try {
         const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-          body: { text, voiceId: 'Tx7VLgfksXHVnoY6jDGU' }
+          body: { text: speakableText, voiceId: 'Tx7VLgfksXHVnoY6jDGU' }
         });
         if (!error && data?.audioContent) {
           await elevenLabsPlayerRef.current?.playAudio(data.audioContent);
