@@ -683,6 +683,7 @@ TOOLS I USE:
 - move_to_step: I call this before each new section to show the content
 - complete_step: I call this after finishing each section to track progress
 - complete_lesson: I call this when all sections are done and you have no questions
+- change_speed: When user says "slow down" / "too fast" / "slower" → call with direction: 'slower'. When they say "speed up" / "faster" / "too slow" → call with direction: 'faster'. Then briefly say "Of course, I'll slow down a bit!" or "Sure, I'll speed up!"
 - show_table: Only if I need to show something extra beyond what's already there
 - show_definition: Only for additional definitions not in the pre-made content
 - show_quote_analysis: Only for additional quote analysis not in the pre-made content (English Literature)
@@ -810,17 +811,17 @@ Remember: All that content above is already created and ready to show. I'll use 
       {
         type: "function",
         name: "change_speed",
-        description: "Change speaking speed when user asks to slow down, speed up, or says you're talking too fast/slow",
+        description: "Adjust speaking speed when user asks to slow down or speed up. Each call adjusts speed by 0.1 in the requested direction.",
         parameters: {
           type: "object",
           properties: {
-            speed: {
+            direction: {
               type: "string",
-              enum: ["slow", "normal", "fast", "faster"],
-              description: "slow=0.7, normal=0.85, fast=1.0, faster=1.15"
+              enum: ["slower", "faster"],
+              description: "Direction to adjust speed: 'slower' decreases by 0.1, 'faster' increases by 0.1"
             }
           },
-          required: ["speed"]
+          required: ["direction"]
         }
       },
       {
