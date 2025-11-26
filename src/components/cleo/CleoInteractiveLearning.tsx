@@ -313,7 +313,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         // Entering a worked example - slow down
         preWorkedExampleSpeedRef.current = voiceSpeed;
         currentWorkedExampleStepRef.current = event.stepId;
-        const newSpeed = Math.max(0.7, voiceSpeed - 0.2);
+        const newSpeed = Math.max(0.7, voiceSpeed - 0.15);
         setVoiceSpeed(newSpeed);
         controlsRef.current?.updateVoiceSpeed?.(newSpeed);
         console.log(`🐢 Slowing down for worked example: ${voiceSpeed} → ${newSpeed}`);
