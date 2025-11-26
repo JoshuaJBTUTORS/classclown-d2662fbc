@@ -40,6 +40,7 @@ interface CleoVoiceChatProps {
     updateVoiceSpeed?: (speed: number) => void;
   }) => void;
   onSpeedChange?: (speed: number) => void;
+  voiceSpeed?: number;
   selectedMicrophoneId?: string;
   selectedSpeakerId?: string;
 }
@@ -56,6 +57,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onSpeakingChange,
   onProvideControls,
   onSpeedChange,
+  voiceSpeed,
   selectedMicrophoneId,
   selectedSpeakerId
 }) => {
@@ -74,6 +76,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const textAccumulator = useRef<string>(''); // Accumulate text for ElevenLabs
   const fullMessageRef = useRef<string>(''); // Track full message for database
   const ttsPromiseChain = useRef<Promise<void>>(Promise.resolve()); // Chain TTS requests sequentially
+  const currentSpeedRef = useRef<number>(voiceSpeed || 0.85); // Track current speed
   
   // Speech confirmation buffer refs (NOT USED - VAD handled server-side by OpenAI)
   const speechStartTime = useRef<number | null>(null);
@@ -158,10 +161,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     sentDedupeRef.current.add(dedupeKey);
     setTimeout(() => sentDedupeRef.current.delete(dedupeKey), 2000); // Clear after 2s
     
-    console.log(`🎙️ Streaming sentence (${speakableText.length} chars): "${speakableText.substring(0, 50)}..."`);
+    console.log(`🎙️ Streaming sentence (${speakableText.length} chars) at speed ${currentSpeedRef.current}: "${speakableText.substring(0, 50)}..."`);
     
-    // Fire-and-forget streaming request
-    elevenLabsPlayerRef.current?.playStreamingAudio(speakableText, 'lcMyyd2HUfFzxdCaC4Ta')
+    // Fire-and-forget streaming request with speed
+    elevenLabsPlayerRef.current?.playStreamingAudio(speakableText, 'lcMyyd2HUfFzxdCaC4Ta', currentSpeedRef.current)
       .catch(err => console.error('TTS streaming error:', err));
   };
 
@@ -186,7 +189,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     }
   };
 
-  // Voice speed removed - not applicable with ElevenLabs
+  const updateVoiceSpeed = (speed: number) => {
+    currentSpeedRef.current = speed;
+    console.log(`🎙️ Voice speed updated to ${speed}`);
+  };
 
   // Provide connect/disconnect controls to parent
   useEffect(() => {
@@ -195,7 +201,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       disconnect: () => disconnect(false), 
       sendUserMessage, 
       toggleMute, 
-      isMuted
+      isMuted,
+      updateVoiceSpeed
     });
   }, [onProvideControls, isMuted]);
 

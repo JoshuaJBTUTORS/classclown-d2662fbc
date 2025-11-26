@@ -628,7 +628,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         if (controls.isMuted !== undefined) {
           setIsMuted(controls.isMuted);
         }
-      }} onSpeedChange={speed => setVoiceSpeed(speed)} selectedMicrophoneId={selectedMicrophone?.deviceId} selectedSpeakerId={selectedSpeaker?.deviceId} />
+      }} onSpeedChange={speed => setVoiceSpeed(speed)} voiceSpeed={voiceSpeed} selectedMicrophoneId={selectedMicrophone?.deviceId} selectedSpeakerId={selectedSpeaker?.deviceId} />
       </div>
 
       {/* Resume Dialog */}

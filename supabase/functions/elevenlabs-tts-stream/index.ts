@@ -12,13 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voiceId } = await req.json()
+    const { text, voiceId, speed = 1.0 } = await req.json()
 
     if (!text) {
       throw new Error('Text is required')
     }
 
-    console.log(`🎙️ Streaming TTS for ${text.length} chars with voice ${voiceId}`)
+    console.log(`🎙️ Streaming TTS for ${text.length} chars with voice ${voiceId} at speed ${speed}`)
+
+    // Clamp speed to ElevenLabs range (0.7-1.2)
+    const clampedSpeed = Math.max(0.7, Math.min(1.2, speed))
 
     // Call ElevenLabs streaming API
     const response = await fetch(
@@ -36,7 +39,8 @@ serve(async (req) => {
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
-            use_speaker_boost: false
+            use_speaker_boost: false,
+            speed: clampedSpeed
           }
         }),
       }

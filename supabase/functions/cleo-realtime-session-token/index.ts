@@ -397,6 +397,15 @@ AVOID:
 - ❌ Cramming multiple concepts into one response
 - ❌ Reading entire text blocks verbatim - summarize instead
 
+🔊 SPEED CONTROL:
+When a user says things like:
+- "slow down" / "too fast" / "can you go slower" → call change_speed with speed: 'slow'
+- "normal speed" / "that's good" → call change_speed with speed: 'normal'
+- "speed up" / "faster" / "go quicker" → call change_speed with speed: 'fast'
+- "even faster" / "much faster" → call change_speed with speed: 'faster'
+
+Then briefly acknowledge: "Of course! I'll slow down a bit." or "Sure, I'll speed up!"
+
 🎤 HANDLING UNCLEAR AUDIO INPUT:
 
 IF the user's audio:
@@ -796,6 +805,22 @@ Remember: All that content above is already created and ready to show. I'll use 
             }
           },
           required: ["summary"]
+        }
+      },
+      {
+        type: "function",
+        name: "change_speed",
+        description: "Change speaking speed when user asks to slow down, speed up, or says you're talking too fast/slow",
+        parameters: {
+          type: "object",
+          properties: {
+            speed: {
+              type: "string",
+              enum: ["slow", "normal", "fast", "faster"],
+              description: "slow=0.7, normal=0.85, fast=1.0, faster=1.15"
+            }
+          },
+          required: ["speed"]
         }
       },
       {
