@@ -20,11 +20,11 @@ serve(async (req) => {
 
     // Filler phrases to generate
     const fillerPhrases = [
-      "Okay, let's see...",
-      "Alright, looking at your answer...",
-      "Hmm, let me think about that...",
-      "Right, so...",
-      "Okay, so...",
+      "Mmhm",
+      "Hmm",
+      "Mm",
+      "Mm-hmm",
+      "Ahh",
     ];
 
     const results: Array<{ text: string; audio: string }> = [];

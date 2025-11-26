@@ -11,23 +11,23 @@ export interface FillerAudio {
 // For now, they contain placeholder empty strings
 export const CLEO_FILLER_AUDIO: FillerAudio[] = [
   { 
-    text: "Okay, let's see...", 
+    text: "Mmhm", 
     audio: "" // To be populated
   },
   { 
-    text: "Alright, looking at your answer...", 
+    text: "Hmm", 
     audio: "" // To be populated
   },
   { 
-    text: "Hmm, let me think about that...", 
+    text: "Mm", 
     audio: "" // To be populated
   },
   { 
-    text: "Right, so...", 
+    text: "Mm-hmm", 
     audio: "" // To be populated
   },
   { 
-    text: "Okay, so...", 
+    text: "Ahh", 
     audio: "" // To be populated
   },
 ];
