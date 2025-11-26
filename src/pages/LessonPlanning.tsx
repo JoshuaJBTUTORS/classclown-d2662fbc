@@ -126,6 +126,7 @@ const LessonPlanning: React.FC = () => {
           .eq('lesson_id', lessonId)
           .eq('exam_board', userExamBoard)
           .eq('difficulty_tier', difficultyTier)
+          .eq('status', 'ready')
           .maybeSingle();
         data = result.data;
         console.log('Searched for lesson plan with exam board + tier:', userExamBoard, difficultyTier, 'found:', !!data);
@@ -138,6 +139,7 @@ const LessonPlanning: React.FC = () => {
           .select('id, teaching_sequence')
           .eq('lesson_id', lessonId)
           .eq('difficulty_tier', difficultyTier)
+          .eq('status', 'ready')
           .maybeSingle();
         data = result.data;
         console.log('Fallback: Searched for lesson plan with tier (any exam board):', difficultyTier, 'found:', !!data);
