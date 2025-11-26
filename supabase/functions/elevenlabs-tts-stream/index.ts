@@ -22,7 +22,7 @@ serve(async (req) => {
 
     // Call ElevenLabs streaming API
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=pcm_24000&optimize_streaming_latency=4`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=pcm_24000&optimize_streaming_latency=3`,
       {
         method: 'POST',
         headers: {
