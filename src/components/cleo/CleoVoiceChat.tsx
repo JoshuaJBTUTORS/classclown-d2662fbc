@@ -72,6 +72,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const isConnectingRef = useRef(false); // Synchronous lock to prevent race conditions
   const textAccumulator = useRef<string>(''); // Accumulate text for ElevenLabs
   const fullMessageRef = useRef<string>(''); // Track full message for database
+  const ttsPromiseChain = useRef<Promise<void>>(Promise.resolve()); // Chain TTS requests sequentially
   
   // Speech confirmation buffer refs (NOT USED - VAD handled server-side by OpenAI)
   const speechStartTime = useRef<number | null>(null);
@@ -87,20 +88,24 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     return -1;
   };
 
-  // Helper: Send text to ElevenLabs (non-blocking)
-  const sendToElevenLabs = async (text: string) => {
+  // Helper: Send text to ElevenLabs (sequential chaining to maintain order)
+  const sendToElevenLabs = (text: string) => {
     if (!text.trim()) return;
-    console.log(`🎙️ Sending sentence (${text.length} chars)`);
-    try {
-      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-        body: { text, voiceId: 'Tx7VLgfksXHVnoY6jDGU' }
-      });
-      if (!error && data?.audioContent) {
-        await elevenLabsPlayerRef.current?.playAudio(data.audioContent);
+    
+    // Chain this TTS request after all previous ones to maintain sentence order
+    ttsPromiseChain.current = ttsPromiseChain.current.then(async () => {
+      console.log(`🎙️ Sending sentence (${text.length} chars): "${text.substring(0, 50)}..."`);
+      try {
+        const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+          body: { text, voiceId: 'Tx7VLgfksXHVnoY6jDGU' }
+        });
+        if (!error && data?.audioContent) {
+          await elevenLabsPlayerRef.current?.playAudio(data.audioContent);
+        }
+      } catch (err) {
+        console.error('TTS error:', err);
       }
-    } catch (err) {
-      console.error('TTS error:', err);
-    }
+    });
   };
 
   // Notify parent of state changes
@@ -218,6 +223,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             // Clear pending text accumulators
             textAccumulator.current = '';
             fullMessageRef.current = '';
+            
+            // Reset TTS promise chain
+            ttsPromiseChain.current = Promise.resolve();
             break;
 
           case 'input_audio_buffer.speech_stopped':
@@ -236,6 +244,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
             textAccumulator.current = '';
             fullMessageRef.current = '';
             setCurrentTranscript('');
+            
+            // Reset TTS promise chain
+            ttsPromiseChain.current = Promise.resolve();
             break;
 
           case 'conversation.item.input_audio_transcription.completed':
