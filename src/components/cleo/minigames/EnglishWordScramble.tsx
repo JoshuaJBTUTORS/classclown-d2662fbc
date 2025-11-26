@@ -9,18 +9,26 @@ interface EnglishWordScrambleProps {
 }
 
 const WORDS = [
-  { word: 'METAPHOR', hint: 'A figure of speech' },
-  { word: 'SIMILE', hint: 'Comparison using like or as' },
-  { word: 'ALLITERATION', hint: 'Repetition of consonant sounds' },
-  { word: 'PERSONIFICATION', hint: 'Giving human traits to non-human things' },
-  { word: 'HYPERBOLE', hint: 'Exaggeration for effect' },
-  { word: 'ONOMATOPOEIA', hint: 'Words that sound like what they mean' },
-  { word: 'FORESHADOWING', hint: 'Hints about future events' },
-  { word: 'SYMBOLISM', hint: 'Using objects to represent ideas' },
-  { word: 'PROTAGONIST', hint: 'Main character' },
-  { word: 'ANTAGONIST', hint: 'Character in opposition' },
-  { word: 'NARRATIVE', hint: 'A story or account' },
-  { word: 'IMAGERY', hint: 'Vivid descriptive language' },
+  { word: 'PLOT', hint: 'The sequence of story events' },
+  { word: 'POEM', hint: 'Verse writing with rhythm' },
+  { word: 'THEME', hint: 'Main idea or message' },
+  { word: 'TONE', hint: 'Author\'s attitude' },
+  { word: 'MOOD', hint: 'How the reader feels' },
+  { word: 'GENRE', hint: 'Type of literature' },
+  { word: 'SCENE', hint: 'Part of a play or story' },
+  { word: 'PROSE', hint: 'Ordinary written language' },
+  { word: 'MYTH', hint: 'Traditional story' },
+  { word: 'HERO', hint: 'Main good character' },
+  { word: 'STANZA', hint: 'Group of lines in a poem' },
+  { word: 'SIMILE', hint: 'Comparison using like/as' },
+  { word: 'SYMBOL', hint: 'Object representing an idea' },
+  { word: 'RHYME', hint: 'Similar ending sounds' },
+  { word: 'IRONY', hint: 'Opposite of expected' },
+  { word: 'SATIRE', hint: 'Mocking to criticize' },
+  { word: 'FABLE', hint: 'Story with a moral' },
+  { word: 'DRAMA', hint: 'Play or theatre' },
+  { word: 'ESSAY', hint: 'Short written piece' },
+  { word: 'VERSE', hint: 'Line of poetry' },
 ];
 
 const scramble = (word: string) => {
@@ -37,7 +45,6 @@ export const EnglishWordScramble: React.FC<EnglishWordScrambleProps> = ({ isActi
   const [currentWord, setCurrentWord] = useState(WORDS[0]);
   const [scrambled, setScrambled] = useState(scramble(WORDS[0].word));
   const [userAnswer, setUserAnswer] = useState('');
-  const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
 
@@ -45,14 +52,11 @@ export const EnglishWordScramble: React.FC<EnglishWordScrambleProps> = ({ isActi
     if (!isActive) return;
     
     const timer = setInterval(() => {
-      setTimeElapsed(prev => {
-        if (prev >= 10 && !showHint) setShowHint(true);
-        return prev + 1;
-      });
+      setTimeElapsed(prev => prev + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isActive, showHint]);
+  }, [isActive]);
 
   const nextWord = () => {
     const newWord = WORDS[Math.floor(Math.random() * WORDS.length)];
@@ -66,7 +70,6 @@ export const EnglishWordScramble: React.FC<EnglishWordScrambleProps> = ({ isActi
     setCurrentWord(newWord);
     setScrambled(newScrambled);
     setUserAnswer('');
-    setShowHint(false);
     setTimeElapsed(0);
     setFeedback(null);
   };
@@ -103,7 +106,7 @@ export const EnglishWordScramble: React.FC<EnglishWordScrambleProps> = ({ isActi
           Score: <span className="text-2xl font-bold text-rose-600">{score}</span>
         </div>
         <div className="text-sm text-muted-foreground">
-          ⏱️ {timeElapsed}s
+          Time: {timeElapsed}s
         </div>
       </div>
 
@@ -115,22 +118,19 @@ export const EnglishWordScramble: React.FC<EnglishWordScrambleProps> = ({ isActi
         key={scrambled}
         initial={{ x: 20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        className="text-center mb-6"
+        className="text-center mb-4"
       >
-        <div className="text-4xl font-bold text-foreground tracking-wider mb-4">
+        <div className="text-sm text-muted-foreground mb-2">
+          First letter: <span className="font-bold text-rose-600">{currentWord.word[0]}</span>
+        </div>
+        <div className="text-4xl font-bold text-foreground tracking-wider mb-2">
           {scrambled}
         </div>
       </motion.div>
 
-      {showHint && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-4 text-sm text-amber-700 bg-amber-50 p-2 rounded"
-        >
-          💡 Hint: {currentWord.hint}
-        </motion.div>
-      )}
+      <div className="text-center mb-4 text-sm text-amber-700 bg-amber-50 p-2 rounded">
+        💡 {currentWord.hint}
+      </div>
 
       <div className="space-y-4">
         <Input
