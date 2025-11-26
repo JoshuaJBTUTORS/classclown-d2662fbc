@@ -329,13 +329,20 @@ POWERS AND ROOTS:
 - \\sqrt{x} → say "square root of x"
 - \\sqrt[3]{x} → say "cube root of x"
 
-OPERATIONS:
-- + → say "plus"
-- - → say "minus"
+OPERATIONS (MATHEMATICAL CONTEXT ONLY):
+- The + symbol between numbers/variables → say "plus" (e.g., "2 + 3" → "two plus three")
+- The - symbol between numbers/variables → say "minus" (e.g., "5 - 2" → "five minus two")
 - \\times → say "times"
 - \\div → say "divided by"
 - \\pm → say "plus or minus"
 - = → say "equals"
+
+⚠️ HYPHENS IN COMPOUND WORDS - DO NOT SAY "MINUS":
+- "well-known" → say "well known" (ignore the hyphen)
+- "self-esteem" → say "self esteem"  
+- "long-term" → say "long term"
+- "re-read" → say "re read"
+- ONLY say "minus" for mathematical subtraction (numbers/variables on both sides)
 
 IGNORE COMPLETELY:
 - $ and $$ delimiters
