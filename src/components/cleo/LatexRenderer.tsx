@@ -9,6 +9,17 @@ interface LatexRendererProps {
 export const LatexRenderer: React.FC<LatexRendererProps> = ({ content }) => {
   if (!content) return null;
 
+  // Helper: Process markdown bold (**text**)
+  const processBoldText = (text: string): React.ReactNode[] => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   const parseContent = (text: string): React.ReactNode[] => {
     const elements: React.ReactNode[] = [];
     let position = 0;
@@ -81,7 +92,7 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({ content }) => {
       if (nextDelimiterPos > position) {
         const plainText = text.substring(position, nextDelimiterPos);
         elements.push(
-          <span key={key++}>{plainText}</span>
+          <span key={key++}>{processBoldText(plainText)}</span>
         );
         position = nextDelimiterPos;
       } else {
