@@ -4,6 +4,54 @@
  */
 
 /**
+ * Converts LaTeX notation to natural spoken English
+ */
+export function convertLatexToSpeech(text: string): string {
+  if (!text) return text;
+  
+  let result = text;
+  
+  // Remove delimiters first
+  result = result.replace(/\$\$/g, '');
+  result = result.replace(/\$/g, '');
+  result = result.replace(/\\\[/g, '');
+  result = result.replace(/\\\]/g, '');
+  result = result.replace(/\\\(/g, '');
+  result = result.replace(/\\\)/g, '');
+  
+  // Remove \left and \right
+  result = result.replace(/\\left/g, '');
+  result = result.replace(/\\right/g, '');
+  
+  // Fractions: \frac{a}{b} or \dfrac{a}{b} → "a over b"
+  result = result.replace(/\\d?frac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
+  
+  // Powers: x^2 → "x squared", x^3 → "x cubed", x^{n} → "x to the power of n"
+  result = result.replace(/\^2(?![0-9])/g, ' squared');
+  result = result.replace(/\^3(?![0-9])/g, ' cubed');
+  result = result.replace(/\^\{([^}]+)\}/g, ' to the power of $1');
+  result = result.replace(/\^([0-9]+)/g, ' to the power of $1');
+  
+  // Roots: \sqrt{x} → "square root of x", \sqrt[3]{x} → "cube root of x"
+  result = result.replace(/\\sqrt\[3\]\{([^}]+)\}/g, 'cube root of $1');
+  result = result.replace(/\\sqrt\{([^}]+)\}/g, 'square root of $1');
+  
+  // Operations
+  result = result.replace(/\\times/g, ' times ');
+  result = result.replace(/\\div/g, ' divided by ');
+  result = result.replace(/\\pm/g, ' plus or minus ');
+  result = result.replace(/\\cdot/g, ' times ');
+  
+  // Percentages: 25\% → "25 percent"
+  result = result.replace(/\\%/g, ' percent');
+  
+  // Clean up extra spaces
+  result = result.replace(/\s+/g, ' ').trim();
+  
+  return result;
+}
+
+/**
  * Formats a single content block for display in the system prompt
  */
 export function formatSingleBlock(block: any): string {
@@ -12,7 +60,8 @@ export function formatSingleBlock(block: any): string {
   
   switch (type) {
     case 'text':
-      const textPreview = (data?.content || '').substring(0, 100);
+      const textContent = convertLatexToSpeech(data?.content || '');
+      const textPreview = textContent.substring(0, 100);
       description = `   • Text Block: "${textPreview}${textPreview.length >= 100 ? '...' : ''}"`;
       break;
       
@@ -22,9 +71,11 @@ export function formatSingleBlock(block: any): string {
       break;
       
     case 'question':
-      description = `   • Question: "${(data?.question || '').substring(0, 80)}..."`;
+      const questionText = convertLatexToSpeech(data?.question || '');
+      description = `   • Question: "${questionText.substring(0, 80)}..."`;
       if (data?.options) {
-        description += `\n      Options: ${data.options.map((o: any) => o.text).slice(0, 2).join(', ')}...`;
+        const convertedOptions = data.options.map((o: any) => convertLatexToSpeech(o.text));
+        description += `\n      Options: ${convertedOptions.slice(0, 2).join(', ')}...`;
       }
       break;
       
@@ -41,16 +92,16 @@ export function formatSingleBlock(block: any): string {
     case 'worked_example':
       description = `   • Worked Example: ${title || 'Step-by-step solution'}`;
       if (data?.question) {
-        description += `\n      Problem: ${data.question}`;
+        description += `\n      Problem: ${convertLatexToSpeech(data.question)}`;
       }
       if (data?.steps && Array.isArray(data.steps)) {
         description += `\n      Steps:`;
         data.steps.forEach((step: string, idx: number) => {
-          description += `\n         ${idx + 1}. ${step}`;
+          description += `\n         ${idx + 1}. ${convertLatexToSpeech(step)}`;
         });
       }
       if (data?.answer) {
-        description += `\n      ✅ Answer: ${data.answer}`;
+        description += `\n      ✅ Answer: ${convertLatexToSpeech(data.answer)}`;
       }
       break;
       
