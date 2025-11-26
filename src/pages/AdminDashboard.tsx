@@ -6,6 +6,7 @@ import { RefreshCw, Users, Calendar, UserCheck, GraduationCap, TrendingUp, FileT
 import { getAdminDashboardData, AdminDashboardData } from '@/services/adminDashboardService';
 import PageTitle from '@/components/ui/PageTitle';
 import { UserPasswordReset } from '@/components/admin/UserPasswordReset';
+import { VoiceMinutesManager } from '@/components/admin/VoiceMinutesManager';
 import { useNavigate } from 'react-router-dom';
 import { useAdminCleoStats } from '@/hooks/useAdminCleoTracker';
 
@@ -232,6 +233,9 @@ const AdminDashboard = () => {
         
         {/* User Password Management */}
         <UserPasswordReset />
+        
+        {/* Voice Minutes Management */}
+        <VoiceMinutesManager />
       </div>
     </div>
   );
