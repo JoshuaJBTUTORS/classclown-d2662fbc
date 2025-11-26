@@ -330,6 +330,8 @@ POWERS AND ROOTS:
 - \\sqrt[3]{x} → say "cube root of x"
 
 OPERATIONS:
+- + → say "plus"
+- - → say "minus"
 - \\times → say "times"
 - \\div → say "divided by"
 - \\pm → say "plus or minus"
@@ -347,6 +349,9 @@ EXAMPLES:
 
 - Content: "The answer is $x^2 + 5$"
   You SAY: "The answer is x squared plus five"
+
+- Content: "Solve: $2x - 7 = 3$"
+  You SAY: "Solve two x minus seven equals three"
 
 - Content: "$$\\sqrt{16} = 4$$"
   You SAY: "The square root of sixteen equals four"

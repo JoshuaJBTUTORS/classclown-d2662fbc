@@ -125,6 +125,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     speakable = speakable.replace(/\\pi/g, 'pi');
     speakable = speakable.replace(/\\infty/g, 'infinity');
     
+    // Convert basic operators (after LaTeX commands to avoid conflicts)
+    speakable = speakable.replace(/\+/g, ' plus ');
+    speakable = speakable.replace(/ - /g, ' minus ');
+    speakable = speakable.replace(/ = /g, ' equals ');
+    
     // Clean up extra whitespace
     speakable = speakable.replace(/\s+/g, ' ').trim();
     
