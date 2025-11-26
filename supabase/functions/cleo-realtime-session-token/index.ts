@@ -869,7 +869,7 @@ Remember: All that content above is already created and ready to show. I'll use 
           type: "server_vad",
           threshold: 0.85,              // More lenient - easier to trigger
           prefix_padding_ms: 1000,      // 1 second prefix padding
-          silence_duration_ms: 2000,    // 2 seconds silence - prevents interrupting thinking pauses
+          silence_duration_ms: 1000,    // 1 second silence - faster response trigger
           create_response: true         // Auto-respond when user finishes speaking
         },
         tools,
