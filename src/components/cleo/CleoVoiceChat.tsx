@@ -76,7 +76,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const textAccumulator = useRef<string>(''); // Accumulate text for ElevenLabs
   const fullMessageRef = useRef<string>(''); // Track full message for database
   const ttsPromiseChain = useRef<Promise<void>>(Promise.resolve()); // Chain TTS requests sequentially
-  const currentSpeedRef = useRef<number>(voiceSpeed || 0.85); // Track current speed
+  const currentSpeedRef = useRef<number>(voiceSpeed || 0.9); // Track current speed
   
   // Speech confirmation buffer refs (NOT USED - VAD handled server-side by OpenAI)
   const speechStartTime = useRef<number | null>(null);
@@ -501,6 +501,49 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 console.log('🎓 Auto-disconnecting after lesson completion');
                 rtcRef.current?.disconnect(false);
               }, 3000);
+              break;
+            }
+            
+            // Handle change_speed
+            if (functionName === 'change_speed') {
+              const { direction } = args;
+              
+              console.log(`🎙️ ========== CHANGE_SPEED CALLED ==========`);
+              console.log(`🎙️ Direction: ${direction}`);
+              
+              const currentSpeed = currentSpeedRef.current;
+              let newSpeed: number;
+              
+              if (direction === 'slower') {
+                newSpeed = Math.max(0.7, currentSpeed - 0.1); // Min 0.7
+              } else {
+                newSpeed = Math.min(1.2, currentSpeed + 0.1); // Max 1.2
+              }
+              
+              // Round to 1 decimal place to avoid floating point issues
+              newSpeed = Math.round(newSpeed * 10) / 10;
+              
+              currentSpeedRef.current = newSpeed;
+              onSpeedChange?.(newSpeed); // Update parent UI
+              
+              console.log(`🎙️ Speed changed: ${currentSpeed} → ${newSpeed}`);
+              
+              // Confirm to OpenAI
+              rtcRef.current?.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify({ 
+                    success: true, 
+                    newSpeed: newSpeed,
+                    message: `Speed adjusted to ${newSpeed}` 
+                  })
+                }
+              });
+              
+              // Trigger next response
+              rtcRef.current?.sendEvent({ type: 'response.create' });
               break;
             }
             

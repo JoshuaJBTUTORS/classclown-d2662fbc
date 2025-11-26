@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Volume2 } from 'lucide-react';
 
 const SPEED_PRESETS = [
-  { value: 0.70, label: 'Slow', emoji: '🐢' },
-  { value: 0.85, label: 'Normal', emoji: '🎯' },
+  { value: 0.80, label: 'Slow', emoji: '🐢' },
+  { value: 0.90, label: 'Normal', emoji: '🎯' },
   { value: 1.00, label: 'Fast', emoji: '⚡' },
-  { value: 1.15, label: 'Faster', emoji: '🚀' },
+  { value: 1.10, label: 'Faster', emoji: '🚀' },
 ];
 
 interface VoiceSpeedControlProps {
