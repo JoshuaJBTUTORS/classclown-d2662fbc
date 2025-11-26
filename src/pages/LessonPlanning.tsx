@@ -68,6 +68,8 @@ const LessonPlanning: React.FC = () => {
   // Attempt to recover existing lesson plan by lessonId or topic+yearGroup on mount
   useEffect(() => {
     const loadExistingPlan = async () => {
+      // Don't auto-load if no difficulty tier is selected yet
+      if (!difficultyTier) return;
       if (lessonPlanId) return;
 
       let data = null;
@@ -129,40 +131,16 @@ const LessonPlanning: React.FC = () => {
         console.log('Searched for lesson plan with exam board + tier:', userExamBoard, difficultyTier, 'found:', !!data);
       }
       
-      // Fallback: try by lessonId + exam board (any tier)
-      if (!data && lessonId && userExamBoard) {
+      // Fallback: try by lessonId + difficulty tier (any exam board)
+      if (!data && lessonId && difficultyTier) {
         const result = await supabase
           .from('cleo_lesson_plans')
           .select('id, teaching_sequence')
           .eq('lesson_id', lessonId)
-          .eq('exam_board', userExamBoard)
+          .eq('difficulty_tier', difficultyTier)
           .maybeSingle();
         data = result.data;
-        console.log('Fallback: Searched for lesson plan with exam board (any tier):', userExamBoard, 'found:', !!data);
-      }
-      
-      // Final fallback: try by lessonId without filters
-      if (!data && lessonId) {
-        const result = await supabase
-          .from('cleo_lesson_plans')
-          .select('id, teaching_sequence')
-          .eq('lesson_id', lessonId)
-          .maybeSingle();
-        data = result.data;
-        console.log('Fallback: Searched for any lesson plan with lessonId, found:', !!data);
-      }
-
-      // Final fallback: try by topic + year_group
-      if (!data) {
-        const result = await supabase
-          .from('cleo_lesson_plans')
-          .select('id, teaching_sequence')
-          .eq('topic', topic)
-          .eq('year_group', yearGroup)
-          .eq('status', 'ready')
-          .maybeSingle();
-        data = result.data;
-        console.log('Fallback: Searched by topic + year_group, found:', !!data);
+        console.log('Fallback: Searched for lesson plan with tier (any exam board):', difficultyTier, 'found:', !!data);
       }
 
       if (data) {
@@ -173,7 +151,7 @@ const LessonPlanning: React.FC = () => {
     };
 
     loadExistingPlan();
-  }, [lessonId, lessonPlanId, topic, yearGroup]);
+  }, [lessonId, lessonPlanId, topic, yearGroup, difficultyTier]);
 
   const handlePlanningComplete = (planId: string) => {
     console.log('Lesson plan generated:', planId);
@@ -215,6 +193,21 @@ const LessonPlanning: React.FC = () => {
       setShowLearning(true);
     }
   };
+
+  // Show difficulty selection FIRST if no difficulty tier is selected
+  if (!difficultyTier && lessonId) {
+    return (
+      <DifficultySelectionScreen
+        topic={topic}
+        courseId={courseId || ''}
+        moduleId={moduleId || ''}
+        lessonId={lessonId}
+        yearGroup={yearGroup}
+        isCompleted={isCompletedParam}
+        subjectName={yearGroup}
+      />
+    );
+  }
 
   // Show lesson plan display after generation
   if (showPlanDisplay && lessonPlan && !loading) {
@@ -390,21 +383,6 @@ const LessonPlanning: React.FC = () => {
           courseId={courseId}
         />
       </>
-    );
-  }
-
-  // Show difficulty selection if no difficulty tier is selected
-  if (!difficultyTier && lessonId) {
-    return (
-      <DifficultySelectionScreen
-        topic={topic}
-        courseId={courseId || ''}
-        moduleId={moduleId || ''}
-        lessonId={lessonId}
-        yearGroup={yearGroup}
-        isCompleted={isCompletedParam}
-        subjectName={yearGroup}
-      />
     );
   }
 
