@@ -161,10 +161,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     sentDedupeRef.current.add(dedupeKey);
     setTimeout(() => sentDedupeRef.current.delete(dedupeKey), 2000); // Clear after 2s
     
-    console.log(`🎙️ Streaming sentence (${speakableText.length} chars) at speed ${currentSpeedRef.current}: "${speakableText.substring(0, 50)}..."`);
+    const speedAtCallTime = currentSpeedRef.current;
+    console.log(`🎙️ ====== SENDING TO ELEVENLABS ======`);
+    console.log(`🎙️ Current speed ref value: ${speedAtCallTime}`);
+    console.log(`🎙️ Sentence (${speakableText.length} chars): "${speakableText.substring(0, 50)}..."`);
     
     // Fire-and-forget streaming request with speed
-    elevenLabsPlayerRef.current?.playStreamingAudio(speakableText, 'lcMyyd2HUfFzxdCaC4Ta', currentSpeedRef.current)
+    elevenLabsPlayerRef.current?.playStreamingAudio(speakableText, 'lcMyyd2HUfFzxdCaC4Ta', speedAtCallTime)
       .catch(err => console.error('TTS streaming error:', err));
   };
 
@@ -509,24 +512,36 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               const { direction } = args;
               
               console.log(`🎙️ ========== CHANGE_SPEED CALLED ==========`);
-              console.log(`🎙️ Direction: ${direction}`);
+              console.log(`🎙️ Raw args:`, JSON.stringify(args));
+              console.log(`🎙️ Direction received: "${direction}"`);
+              console.log(`🎙️ Direction type: ${typeof direction}`);
               
               const currentSpeed = currentSpeedRef.current;
+              console.log(`🎙️ Current speed BEFORE change: ${currentSpeed}`);
+              
               let newSpeed: number;
               
               if (direction === 'slower') {
+                console.log(`🎙️ Direction is 'slower' - DECREASING speed`);
                 newSpeed = Math.max(0.7, currentSpeed - 0.1); // Min 0.7
+                console.log(`🎙️ Calculation: Math.max(0.7, ${currentSpeed} - 0.1) = ${newSpeed}`);
               } else {
+                console.log(`🎙️ Direction is NOT 'slower' (is: "${direction}") - INCREASING speed`);
                 newSpeed = Math.min(1.2, currentSpeed + 0.1); // Max 1.2
+                console.log(`🎙️ Calculation: Math.min(1.2, ${currentSpeed} + 0.1) = ${newSpeed}`);
               }
               
               // Round to 1 decimal place to avoid floating point issues
               newSpeed = Math.round(newSpeed * 10) / 10;
+              console.log(`🎙️ After rounding: ${newSpeed}`);
               
               currentSpeedRef.current = newSpeed;
-              onSpeedChange?.(newSpeed); // Update parent UI
+              console.log(`🎙️ currentSpeedRef.current NOW SET TO: ${currentSpeedRef.current}`);
               
-              console.log(`🎙️ Speed changed: ${currentSpeed} → ${newSpeed}`);
+              onSpeedChange?.(newSpeed); // Update parent UI
+              console.log(`🎙️ Called onSpeedChange with: ${newSpeed}`);
+              
+              console.log(`🎙️ FINAL: Speed changed ${currentSpeed} → ${newSpeed}`);
               
               // Confirm to OpenAI
               rtcRef.current?.sendEvent({

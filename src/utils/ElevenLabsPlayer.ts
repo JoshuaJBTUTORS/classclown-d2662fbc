@@ -154,7 +154,11 @@ export class ElevenLabsPlayer {
     this.abortController = new AbortController();
     
     try {
-      console.log(`🎙️ Starting streaming playback for ${text.length} chars at speed ${speed}`);
+      console.log(`🎙️ ====== ELEVENLABS PLAYER streamSingleSentence ======`);
+      console.log(`🎙️ Text length: ${text.length} chars`);
+      console.log(`🎙️ Speed parameter received: ${speed}`);
+      console.log(`🎙️ Speed type: ${typeof speed}`);
+      console.log(`🎙️ About to call edge function with speed: ${speed}`);
       
     const response = await fetch(
       `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/elevenlabs-tts-stream`,
@@ -168,6 +172,8 @@ export class ElevenLabsPlayer {
           signal: this.abortController.signal, // Add abort signal
         }
       );
+      
+      console.log(`🎙️ Edge function response status: ${response.status}`);
 
       if (!response.ok) {
         throw new Error(`Stream request failed: ${response.status}`);
