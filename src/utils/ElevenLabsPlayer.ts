@@ -7,6 +7,7 @@ export class ElevenLabsPlayer {
   private nextPlayTime: number = 0;
   private sentenceQueue: Array<{ text: string; voiceId: string }> = [];
   private isProcessingQueue: boolean = false;
+  private pcmByteBuffer: Uint8Array = new Uint8Array(0); // Accumulate incomplete PCM bytes
   private onSpeakingChange?: (isSpeaking: boolean) => void;
 
   constructor(onSpeakingChange?: (isSpeaking: boolean) => void) {
@@ -81,6 +82,7 @@ export class ElevenLabsPlayer {
     this.sentenceQueue = [];
     this.isProcessingQueue = false;
     this.nextPlayTime = 0;
+    this.pcmByteBuffer = new Uint8Array(0);
     this.onSpeakingChange?.(false);
   }
 
@@ -114,6 +116,9 @@ export class ElevenLabsPlayer {
   }
 
   private async streamSingleSentence(text: string, voiceId: string): Promise<void> {
+    // Reset byte buffer for fresh sentence
+    this.pcmByteBuffer = new Uint8Array(0);
+    
     try {
       console.log(`🎙️ Starting streaming playback for ${text.length} chars`);
       
@@ -210,10 +215,31 @@ export class ElevenLabsPlayer {
     return audioBuffer;
   }
 
-  // Play PCM chunk with scheduled timing for gapless playback
-  private playPCMChunk(bytes: Uint8Array) {
+  // Play PCM chunk with byte boundary alignment for gapless playback
+  private playPCMChunk(incomingBytes: Uint8Array) {
     try {
-      const audioBuffer = this.pcmToAudioBuffer(bytes);
+      // Combine with any leftover bytes from previous chunk
+      const combined = new Uint8Array(this.pcmByteBuffer.length + incomingBytes.length);
+      combined.set(this.pcmByteBuffer, 0);
+      combined.set(incomingBytes, this.pcmByteBuffer.length);
+      
+      // Calculate complete samples (2 bytes each for Int16)
+      const completeSampleBytes = Math.floor(combined.length / 2) * 2;
+      
+      // If we have no complete samples, just buffer and wait
+      if (completeSampleBytes === 0) {
+        this.pcmByteBuffer = combined;
+        return;
+      }
+      
+      // Extract complete samples to play
+      const toPlay = combined.slice(0, completeSampleBytes);
+      
+      // Store leftover byte (0 or 1 byte) for next chunk
+      this.pcmByteBuffer = combined.slice(completeSampleBytes);
+      
+      // Convert to audio buffer and play
+      const audioBuffer = this.pcmToAudioBuffer(toPlay);
       
       const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
@@ -233,7 +259,7 @@ export class ElevenLabsPlayer {
         }
       };
       
-      console.log(`🔊 Scheduled PCM chunk (${audioBuffer.duration.toFixed(3)}s)`);
+      console.log(`🔊 Scheduled PCM chunk (${audioBuffer.duration.toFixed(3)}s), buffered ${this.pcmByteBuffer.length} bytes`);
     } catch (error) {
       console.error('Error playing PCM chunk:', error);
     }
