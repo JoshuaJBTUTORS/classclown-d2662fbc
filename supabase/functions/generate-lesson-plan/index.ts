@@ -213,32 +213,21 @@ serve(async (req) => {
       }
     }
 
-    // Priority 2: Check by lesson_id + exam_board (any tier as fallback)
-    if (!existingPlan && lessonId && examBoard) {
+    // Priority 2: Check by lesson_id + difficulty_tier (any exam board)
+    if (!existingPlan && lessonId && difficultyTier) {
       const { data, error: lookupError } = await supabase
         .from('cleo_lesson_plans')
         .select()
         .eq('lesson_id', lessonId)
-        .eq('exam_board', examBoard)
+        .eq('difficulty_tier', difficultyTier)
         .maybeSingle();
       
       if (lookupError) {
-        console.error('Error looking up lesson plan by lesson_id + exam_board:', lookupError);
+        console.error('Error looking up lesson plan by lesson_id + tier:', lookupError);
       } else {
         existingPlan = data;
-        console.log('Lookup by lesson_id + exam_board:', !!existingPlan);
+        console.log('Lookup by lesson_id + tier (any exam board):', !!existingPlan);
       }
-    }
-
-    // Priority 3: Check by lesson_id only (any exam board & tier as fallback)
-    if (!existingPlan && lessonId) {
-      const { data } = await supabase
-        .from('cleo_lesson_plans')
-        .select()
-        .eq('lesson_id', lessonId)
-        .maybeSingle();
-      existingPlan = data;
-      console.log('Lookup by lesson_id (any exam board) result:', !!existingPlan);
     }
 
     if (!existingPlan && conversationId) {
