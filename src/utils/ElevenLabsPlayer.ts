@@ -5,7 +5,7 @@ export class ElevenLabsPlayer {
   private isPlayingFiller: boolean = false;
   private currentSource: AudioBufferSourceNode | null = null;
   private nextPlayTime: number = 0;
-  private sentenceQueue: Array<{ text: string; voiceId: string }> = [];
+  private sentenceQueue: Array<{ text: string; voiceId: string; speed: number }> = [];
   private isProcessingQueue: boolean = false;
   private pcmByteBuffer: Uint8Array = new Uint8Array(0); // Accumulate incomplete PCM bytes
   private scheduledSources: AudioBufferSourceNode[] = []; // Track all scheduled audio sources
@@ -114,14 +114,15 @@ export class ElevenLabsPlayer {
     return this.isPlaying;
   }
 
-  async playStreamingAudio(text: string, voiceId: string): Promise<void> {
+  async playStreamingAudio(text: string, voiceId: string, speed: number = 1.0): Promise<void> {
     // Resume AudioContext if suspended (browser autoplay policy)
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
       console.log('🔊 AudioContext resumed');
     }
     
-    this.sentenceQueue.push({ text, voiceId });
+    console.log(`🎙️ Adding "${text.substring(0, 30)}..." to sentence queue (speed: ${speed})`);
+    this.sentenceQueue.push({ text, voiceId, speed });
     
     // If not already processing, start the queue
     if (!this.isProcessingQueue) {
@@ -138,14 +139,14 @@ export class ElevenLabsPlayer {
     this.nextPlayTime = this.audioContext.currentTime;
     
     while (this.sentenceQueue.length > 0) {
-      const { text, voiceId } = this.sentenceQueue.shift()!;
-      await this.streamSingleSentence(text, voiceId); // AWAIT - ensures order!
+      const { text, voiceId, speed } = this.sentenceQueue.shift()!;
+      await this.streamSingleSentence(text, voiceId, speed); // AWAIT - ensures order!
     }
     
     this.isProcessingQueue = false;
   }
 
-  private async streamSingleSentence(text: string, voiceId: string): Promise<void> {
+  private async streamSingleSentence(text: string, voiceId: string, speed: number): Promise<void> {
     // Reset byte buffer for fresh sentence
     this.pcmByteBuffer = new Uint8Array(0);
     
@@ -153,16 +154,17 @@ export class ElevenLabsPlayer {
     this.abortController = new AbortController();
     
     try {
-      console.log(`🎙️ Starting streaming playback for ${text.length} chars`);
+      console.log(`🎙️ Starting streaming playback for ${text.length} chars at speed ${speed}`);
       
       const response = await fetch(
-        `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/elevenlabs-tts-stream`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts-stream`,
         {
           method: 'POST',
           headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ text, voiceId }),
+          body: JSON.stringify({ text, voiceId, speed }),
           signal: this.abortController.signal, // Add abort signal
         }
       );
