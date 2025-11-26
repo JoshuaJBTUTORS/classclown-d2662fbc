@@ -1,5 +1,5 @@
 // Pre-cached filler audio for instant playback during thinking time
-// Generated using ElevenLabs voice ID: rfkTsdZrVWEVhDycUYn9
+// Generated using ElevenLabs voice ID: lcMyyd2HUfFzxdCaC4Ta
 // These play immediately while the main TTS response is being generated
 
 export interface FillerAudio {
