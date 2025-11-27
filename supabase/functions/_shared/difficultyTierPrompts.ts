@@ -133,8 +133,14 @@ Key Words: ["quietly", "worked"]
 Techniques: ["Shows his respectful nature"]
 Thematic Links: "Represents the hardworking poor"
 
-**Example Question:**
-"How does Bob Cratchit feel in this scene? Use evidence from the extract. **Scaffold:** Bob feels ___ because the text says '___' which shows..."
+**Example Question (Extended Writing - Foundation):**
+{
+  "question": "How does Bob Cratchit feel in this scene? Use evidence from the extract.\n\n**Scaffold:** Bob feels ___ because the text says '___' which shows...",
+  "question_type": "extended_writing",
+  "marks": 4,
+  "answerLines": 6,
+  "keywords": ["evidence", "quote", "feelings", "shows"]
+}
 `;
     } else if (tier === 'intermediate') {
       basePrompt += `
@@ -162,15 +168,18 @@ Key Words: ["drawn", "burned brightly"]
 Techniques: ["Imagery of warmth", "Contrast to present coldness"]
 Thematic Links: "Symbolizes the warmth of family vs. Scrooge's isolation"
 
-**Example Essay Question:**
+**Example Essay Question (Extended Writing - Intermediate):**
 {
-  question: "How does Dickens present generosity in Stave 2?",
-  marks: 6,
-  examBoard: "AQA",
-  assessmentObjectives: ["AO1: Textual references", "AO2: Analyze writer's methods"],
-  themesFocus: ["Generosity", "Social responsibility"],
-  textReferences: "Focus on the extract provided",
-  successCriteria: ["Clear point about generosity", "Embedded quote", "Analysis of language/structure", "Link to theme"]
+  "question": "How does Dickens present generosity in Stave 2?",
+  "question_type": "extended_writing",
+  "marks": 6,
+  "examBoard": "AQA",
+  "assessmentObjectives": ["AO1: Textual references", "AO2: Analyze writer's methods"],
+  "themesFocus": ["Generosity", "Social responsibility"],
+  "textReferences": "Focus on the extract provided",
+  "successCriteria": ["Clear point about generosity", "Embedded quote", "Analysis of language/structure", "Link to theme"],
+  "answerLines": 8,
+  "keywords": ["generosity", "methods", "language", "structure", "theme"]
 }
 `;
     } else {
@@ -200,17 +209,20 @@ Key Words: ["chain", "forged", "life"]
 Techniques: ["Metaphor for sin and greed", "Biblical allusion to spiritual bondage", "Repetition of 'I' emphasizes personal responsibility"]
 Thematic Links: "Victorian social responsibility, redemption, consequences of capitalism"
 
-**Example Essay Question:**
+**Example Essay Question (Extended Writing - Higher):**
 {
-  question: "How does Dickens use the character of Marley's ghost to explore themes of redemption?",
-  marks: 12,
-  examBoard: "AQA",
-  assessmentObjectives: ["AO1: Sustained critical analysis", "AO2: Sophisticated writer's methods", "AO3: Contextual understanding"],
-  themesFocus: ["Redemption", "Social responsibility", "Capitalism vs. morality"],
-  textReferences: "Whole text, with focus on Stave 1",
-  successCriteria: ["Conceptual thesis", "Multiple interpretations", "Embedded quotations", "Victorian context", "Alternative critical perspectives"],
-  exampleParagraph: "Dickens presents Marley as both a warning and a catalyst for change...",
-  planningPrompts: ["What does the chain symbolize?", "How does Victorian context inform this?", "What alternative interpretations exist?"]
+  "question": "How does Dickens use the character of Marley's ghost to explore themes of redemption?",
+  "question_type": "extended_writing",
+  "marks": 12,
+  "examBoard": "AQA",
+  "assessmentObjectives": ["AO1: Sustained critical analysis", "AO2: Sophisticated writer's methods", "AO3: Contextual understanding"],
+  "themesFocus": ["Redemption", "Social responsibility", "Capitalism vs. morality"],
+  "textReferences": "Whole text, with focus on Stave 1",
+  "successCriteria": ["Conceptual thesis", "Multiple interpretations", "Embedded quotations", "Victorian context", "Alternative critical perspectives"],
+  "exampleParagraph": "Dickens presents Marley as both a warning and a catalyst for change...",
+  "planningPrompts": ["What does the chain symbolize?", "How does Victorian context inform this?", "What alternative interpretations exist?"],
+  "answerLines": 10,
+  "keywords": ["redemption", "symbolism", "context", "Victorian", "methods", "interpretation"]
 }
 `;
     }
@@ -232,6 +244,16 @@ Thematic Links: "Victorian social responsibility, redemption, consequences of ca
 - One-step calculations only
 - Focus on recall and basic understanding
 - Avoid complex multi-step problems
+
+**Example Question (Short Answer - Foundation):**
+{
+  "question": "What is photosynthesis? (2 marks)",
+  "question_type": "short_answer",
+  "marks": 2,
+  "answerLines": 3,
+  "keywords": ["plants", "light", "food", "energy"],
+  "explanation": "Photosynthesis is the process plants use to make food using light energy."
+}
 `;
     } else if (tier === 'intermediate') {
       basePrompt += `
@@ -249,6 +271,16 @@ Thematic Links: "Victorian social responsibility, redemption, consequences of ca
 - Application questions requiring reasoning
 - Multi-step calculations with guidance
 - Exam-style wording and formats
+
+**Example Question (Short Answer - Intermediate):**
+{
+  "question": "Explain why the rate of photosynthesis increases as light intensity increases. (3 marks)",
+  "question_type": "short_answer",
+  "marks": 3,
+  "answerLines": 4,
+  "keywords": ["chlorophyll", "light energy", "limiting factor", "absorbs"],
+  "explanation": "Chlorophyll absorbs more light energy, allowing more photosynthesis until another factor becomes limiting."
+}
 `;
     } else {
       basePrompt += `
@@ -267,6 +299,16 @@ Thematic Links: "Victorian social responsibility, redemption, consequences of ca
 - 6+ mark exam questions
 - Minimal scaffolding
 - Advanced scientific terminology
+
+**Example Question (Extended Writing - Higher):**
+{
+  "question": "Evaluate the factors that affect the rate of photosynthesis and explain how a farmer could optimize conditions in a greenhouse. (6 marks)",
+  "question_type": "extended_writing",
+  "marks": 6,
+  "answerLines": 8,
+  "keywords": ["light intensity", "temperature", "CO2", "limiting factors", "optimization", "cost-benefit"],
+  "explanation": "Students should discuss light, temperature, and CO2 as limiting factors, with practical applications and economic considerations."
+}
 `;
     }
   }
