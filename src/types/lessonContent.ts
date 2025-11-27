@@ -24,6 +24,7 @@ export interface QuestionContent {
   assessmentObjective?: string; // e.g., "AQA AO2: Analyze writer's methods"
   marks?: number; // For displaying [X marks]
   questionNumber?: number; // For exam numbering
+  examDate?: string; // e.g., "June 2019", "November 2023"
 }
 
 export interface DefinitionContent {
