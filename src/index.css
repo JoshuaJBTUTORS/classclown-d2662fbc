@@ -1707,96 +1707,130 @@
 }
 
 /* ============================================ */
-/* Exam Paper Question Styling */
+/* Exam Paper Question Styling - GCSE Edexcel Style */
 /* ============================================ */
 
 .exam-question-paper {
   background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 24px 28px;
+  border: 2px solid #000000;
+  border-radius: 0;
+  padding: 20px 24px;
+  padding-right: 80px;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: none;
+  font-family: Georgia, "Times New Roman", serif;
+  margin: 20px 0;
 }
 
 .dark .exam-question-paper {
-  background: #1f2937;
-  border-color: #374151;
+  background: #ffffff;
+  border-color: #000000;
 }
 
-.exam-question-header {
+/* Right margin stripe - "DO NOT WRITE IN THIS AREA" */
+.exam-margin-stripe {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 60px;
+  background: repeating-linear-gradient(
+    45deg,
+    #e5e7eb,
+    #e5e7eb 10px,
+    #f3f4f6 10px,
+    #f3f4f6 20px
+  );
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.exam-margin-stripe span {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 1px;
+  font-family: Arial, sans-serif;
+}
+
+/* Question row with inline number */
+.exam-question-row {
+  display: flex;
+  gap: 12px;
   margin-bottom: 16px;
+  align-items: flex-start;
 }
 
 .exam-question-number {
   font-weight: 700;
-  font-size: 18px;
-  color: #111827;
+  font-size: 16px;
+  color: #000000;
+  flex-shrink: 0;
+  min-width: 24px;
 }
 
 .dark .exam-question-number {
-  color: #f9fafb;
-}
-
-.exam-marks-badge {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  background: #f3f4f6;
-  padding: 4px 12px;
-  border-radius: 4px;
-}
-
-.dark .exam-marks-badge {
-  color: #d1d5db;
-  background: #374151;
+  color: #000000;
 }
 
 .exam-question-text {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.6;
-  color: #111827;
-  margin-bottom: 20px;
+  color: #000000;
+  flex: 1;
 }
 
 .dark .exam-question-text {
-  color: #e5e7eb;
+  color: #000000;
 }
 
+/* Answer space with dotted lines */
+.exam-answer-space {
+  margin: 20px 0;
+  padding-left: 36px;
+}
+
+.exam-dotted-line {
+  border-bottom: 1px dotted #6b7280;
+  height: 28px;
+  margin-bottom: 2px;
+}
+
+/* MCQ Options - Simple checkbox style */
 .exam-options-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  padding-left: 36px;
+  margin-bottom: 20px;
 }
 
 .exam-option-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  padding: 8px 0;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.15s ease;
-  background: #fafafa;
+  background: transparent;
 }
 
 .dark .exam-option-row {
-  background: #111827;
-  border-color: #374151;
+  background: transparent;
+  border-color: transparent;
 }
 
 .exam-option-row:hover:not(:disabled) {
-  border-color: #9ca3af;
   background: #f9fafb;
 }
 
 .dark .exam-option-row:hover:not(:disabled) {
-  border-color: #6b7280;
-  background: #1f2937;
+  background: #f9fafb;
 }
 
 .exam-option-row:disabled {
@@ -1804,59 +1838,42 @@
 }
 
 .exam-option-letter {
-  width: 28px;
-  height: 28px;
-  border: 2px solid #d1d5db;
-  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #000000;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 14px;
-  color: #374151;
+  color: #000000;
   flex-shrink: 0;
+  background: #ffffff;
 }
 
 .dark .exam-option-letter {
-  border-color: #4b5563;
-  color: #d1d5db;
+  border-color: #000000;
+  color: #000000;
+  background: #ffffff;
 }
 
 .exam-option-text {
   font-size: 15px;
-  color: #1f2937;
+  color: #000000;
   flex: 1;
 }
 
 .dark .exam-option-text {
-  color: #e5e7eb;
+  color: #000000;
 }
 
-/* Selected states */
-.exam-option-row.selected-correct {
-  border-color: #22c55e;
-  background: #f0fdf4;
-}
-
-.dark .exam-option-row.selected-correct {
-  background: #14532d;
-  border-color: #16a34a;
-}
-
-.exam-option-row.selected-correct .exam-option-letter {
+/* Selected states - checkbox fill */
+.exam-option-row.selected-correct .exam-option-letter,
+.exam-option-row.correct-answer .exam-option-letter {
   background: #22c55e;
   border-color: #22c55e;
   color: white;
-}
-
-.exam-option-row.selected-incorrect {
-  border-color: #ef4444;
-  background: #fef2f2;
-}
-
-.dark .exam-option-row.selected-incorrect {
-  background: #7f1d1d;
-  border-color: #dc2626;
 }
 
 .exam-option-row.selected-incorrect .exam-option-letter {
@@ -1865,47 +1882,61 @@
   color: white;
 }
 
-.exam-option-row.correct-answer {
-  border-color: #22c55e;
-  background: #f0fdf4;
+/* Marks footer - Total for Question X is X marks */
+.exam-marks-footer {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #000000;
+  text-align: right;
 }
 
-.dark .exam-option-row.correct-answer {
-  background: #14532d;
-  border-color: #16a34a;
+.exam-marks-footer span {
+  font-size: 14px;
+  color: #000000;
+  font-style: italic;
 }
 
+.dark .exam-marks-footer span {
+  color: #000000;
+}
+
+/* Assessment Objective badge */
 .exam-ao-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 11px;
   color: #6b7280;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  padding: 6px 12px;
-  border-radius: 4px;
-  margin-top: 16px;
-  margin-bottom: 16px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  margin-left: 36px;
+  font-family: Arial, sans-serif;
 }
 
 .dark .exam-ao-badge {
-  color: #9ca3af;
-  background: #1f2937;
-  border-color: #374151;
+  color: #6b7280;
+  background: #f9fafb;
+  border-color: #e5e7eb;
 }
 
+/* Explanation box */
 .exam-explanation-box {
   margin-top: 20px;
   padding: 16px 20px;
   background: #f0fdf4;
   border-left: 4px solid #22c55e;
   border-radius: 0 4px 4px 0;
+  margin-left: 36px;
+  font-family: Arial, sans-serif;
 }
 
 .dark .exam-explanation-box {
-  background: #14532d;
-  border-left-color: #16a34a;
+  background: #f0fdf4;
+  border-left-color: #22c55e;
 }
 
 /* ============================================ */
