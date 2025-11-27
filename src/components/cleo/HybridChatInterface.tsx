@@ -65,9 +65,10 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showRulesCard, setShowRulesCard] = useState(true);
-  const rulesCardTimerRef = useRef<NodeJS.Timeout>();
   const [questionStartTimes, setQuestionStartTimes] = useState<Record<string, number>>({});
+  
+  // Rules card visibility: show until move_to_step is called (content becomes visible)
+  const shouldShowRulesCard = !visibleContentIds || visibleContentIds.length === 0;
 
   useEffect(() => {
     // Only scroll within the content container, never affect page scroll
@@ -99,31 +100,6 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
     }
   }, [visibleContentIds, contentBlocks]);
   
-  // Rules card timing: keep visible for 4 seconds after voice connects, then hide
-  useEffect(() => {
-    if (isVoiceConnected && isVoiceSpeaking) {
-      // Clear any existing timer
-      if (rulesCardTimerRef.current) {
-        clearTimeout(rulesCardTimerRef.current);
-      }
-      
-      // Set timer to hide rules card after 4 seconds
-      rulesCardTimerRef.current = setTimeout(() => {
-        setShowRulesCard(false);
-      }, 4000);
-      
-      return () => {
-        if (rulesCardTimerRef.current) {
-          clearTimeout(rulesCardTimerRef.current);
-        }
-      };
-    }
-    
-    // Reset to show rules card if disconnected
-    if (!isVoiceConnected) {
-      setShowRulesCard(true);
-    }
-  }, [isVoiceConnected, isVoiceSpeaking]);
 
   const handleAnswerQuestion = async (questionId: string, answerId: string, isCorrect: boolean) => {
     const timeTaken = questionStartTimes[questionId] 
@@ -173,13 +149,8 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
     <div className="flex flex-col h-full">
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto space-y-6 mb-4 px-4">
-        {/* Show Rules Card before voice connects or for 4 seconds after */}
-        {showRulesCard && !isVoiceConnected && <LessonRulesCard />}
-        {showRulesCard && isVoiceConnected && (
-          <div className="animate-in fade-in duration-300">
-            <LessonRulesCard />
-          </div>
-        )}
+        {/* Show Rules Card until move_to_step is called (content becomes visible) */}
+        {shouldShowRulesCard && <LessonRulesCard />}
         
         {/* Content Blocks - Show after voice connects */}
         {isVoiceConnected && contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
