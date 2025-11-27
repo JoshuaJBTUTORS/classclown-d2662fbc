@@ -16,7 +16,7 @@ export const QuickPromptButtons: React.FC<QuickPromptButtonsProps> = ({
 }) => {
   const prompts = [
     { text: "I have a question", icon: MessageCircle },
-    { text: "Can you explain that again?", icon: RefreshCw },
+    { text: "Explain like I am 5 👶🍼", icon: RefreshCw },
     { text: "I don't understand", icon: HelpCircle },
   ];
 
