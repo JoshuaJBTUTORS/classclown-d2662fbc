@@ -401,6 +401,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               console.log(`📚 Step ID: ${stepId}`);
               console.log(`📚 Step Title: ${stepTitle}`);
               
+              // Stop any ongoing audio from previous step to prevent overlap
+              elevenLabsPlayerRef.current?.stop();
+              textAccumulator.current = '';
+              fullMessageRef.current = '';
+              ttsPromiseChain.current = Promise.resolve();
+              
               // Emit content marker event to show step content
               if (onContentEvent) {
                 onContentEvent({
@@ -434,6 +440,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               console.log(`✅ ========== COMPLETE_STEP CALLED ==========`);
               console.log(`✅ Step ID: ${stepId}`);
               
+              // Stop any ongoing audio before completing step to prevent overlap
+              elevenLabsPlayerRef.current?.stop();
+              textAccumulator.current = '';
+              fullMessageRef.current = '';
+              ttsPromiseChain.current = Promise.resolve();
+              
               // Emit event to mark step as complete
               if (onContentEvent) {
                 onContentEvent({
@@ -466,6 +478,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               
               console.log(`🎓 ========== COMPLETE_LESSON CALLED ==========`);
               console.log(`🎓 Summary: ${summary}`);
+              
+              // Stop any ongoing audio to prevent overlap
+              elevenLabsPlayerRef.current?.stop();
+              textAccumulator.current = '';
+              fullMessageRef.current = '';
+              ttsPromiseChain.current = Promise.resolve();
               
               // Emit event to complete lesson
               if (onContentEvent) {
