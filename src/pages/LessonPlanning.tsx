@@ -5,6 +5,7 @@ import { LessonPlanningScreen } from '@/components/cleo/LessonPlanningScreen';
 import { LessonPlanDisplay } from '@/components/cleo/LessonPlanDisplay';
 import { CleoInteractiveLearning } from '@/components/cleo/CleoInteractiveLearning';
 import { DifficultySelectionScreen } from '@/components/cleo/DifficultySelectionScreen';
+import { LessonContentPreview } from '@/components/cleo/LessonContentPreview';
 import { useLessonPlan } from '@/hooks/useLessonPlan';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +31,7 @@ const LessonPlanning: React.FC = () => {
   const courseId = searchParams.get('courseId') || undefined;
   const isCompletedParam = searchParams.get('isCompleted') === 'true';
   const difficultyTier = searchParams.get('difficultyTier') as 'foundation' | 'intermediate' | 'higher' | null;
+  const isPreviewMode = searchParams.get('preview') === 'true';
 
   // Generate or retrieve conversation ID to prevent duplicate lesson plans
   const [conversationId] = useState(() => {
@@ -266,7 +268,7 @@ const LessonPlanning: React.FC = () => {
   }
 
   // Show loading spinner if we're waiting for lesson plan data
-  if (showLearning && lessonPlanId && loading) {
+  if ((showLearning || isPreviewMode) && lessonPlanId && loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -274,6 +276,19 @@ const LessonPlanning: React.FC = () => {
           <p className="text-muted-foreground">Loading lesson...</p>
         </div>
       </div>
+    );
+  }
+
+  // Preview mode - show all content without voice
+  if (isPreviewMode && lessonPlan && contentBlocks.length > 0 && !loading) {
+    return (
+      <LessonContentPreview
+        lessonPlan={lessonPlan}
+        contentBlocks={contentBlocks}
+        topic={topic}
+        courseId={courseId}
+        moduleId={moduleId}
+      />
     );
   }
 
