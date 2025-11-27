@@ -25,6 +25,8 @@ import { TranscriptPanel } from './TranscriptPanel';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { MinuteUsageTracker } from '@/components/voice/MinuteUsageTracker';
 import { VoiceSpeedControl } from './VoiceSpeedControl';
+import { QuickPromptButtons } from './QuickPromptButtons';
+import { Loader2 } from 'lucide-react';
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
   conversationId?: string;
@@ -121,6 +123,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const modeSwitchCountRef = useRef(0);
   const preWorkedExampleSpeedRef = useRef<number | null>(null); // Store speed before worked example
   const currentWorkedExampleStepRef = useRef<string | null>(null); // Track which step is a worked example
+  const [lastCleoResponses, setLastCleoResponses] = useState<string[]>([]); // Track last 2 Cleo responses for repeat
 
   // Check for saved state and show resume dialog
   useEffect(() => {
@@ -213,6 +216,12 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           created_at: newMessage.created_at
         }];
         console.log('📝 Updated messages. New count:', updated.length);
+        
+        // Track last 2 Cleo responses for repeat functionality
+        if (newMessage.role === 'assistant') {
+          setLastCleoResponses(prev => [...prev.slice(-1), newMessage.content]);
+        }
+        
         return updated;
       });
     }).subscribe(status => {
@@ -377,6 +386,16 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       controlsRef.current?.connect();
     }
   };
+  
+  const handleQuickPrompt = (prompt: string) => {
+    controlsRef.current?.sendUserMessage(prompt);
+  };
+  
+  const handleRepeatLast = () => {
+    if (lastCleoResponses.length > 0) {
+      controlsRef.current?.sendUserMessage("Can you repeat what you just said?");
+    }
+  };
   const handleVoiceDisconnect = async () => {
     await controlsRef.current?.disconnect();
   };
@@ -426,6 +445,13 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         description: "Connection closed to save costs."
       });
     }
+    
+    // PRIORITY 1: Mark conversation as completed
+    await supabase
+      .from('cleo_conversations')
+      .update({ status: 'completed' })
+      .eq('id', conversationId);
+    
     const totalSteps = lessonData.steps.length;
     await lessonState.completeLesson({
       conversation_id: conversationId,
@@ -598,7 +624,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 message
               });
               controlsRef.current?.sendUserMessage(message);
-            }} onToggleMute={() => controlsRef.current?.toggleMute?.()} isMuted={isMuted} isConnecting={connectionState === 'connecting'} subject={lessonData.yearGroup} />
+            }} onToggleMute={() => controlsRef.current?.toggleMute?.()} isMuted={isMuted} isConnecting={connectionState === 'connecting'} subject={lessonData.yearGroup} onQuickPrompt={handleQuickPrompt} onRepeatLast={handleRepeatLast} isSaving={lessonState.isSaving} />
             </div>
           </section>
 

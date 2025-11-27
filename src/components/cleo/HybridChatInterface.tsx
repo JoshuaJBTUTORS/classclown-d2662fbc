@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { VoiceControls } from './VoiceControls';
 import { ContentDisplay } from './ContentDisplay';
 import { LessonRulesCard } from './LessonRulesCard';
-import { Send } from 'lucide-react';
+import { QuickPromptButtons } from './QuickPromptButtons';
+import { Send, Loader2 } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { ContentBlock } from '@/types/lessonContent';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
@@ -32,6 +33,9 @@ interface HybridChatInterfaceProps {
   isMuted?: boolean;
   isConnecting?: boolean;
   subject?: string;
+  onQuickPrompt?: (prompt: string) => void;
+  onRepeatLast?: () => void;
+  isSaving?: boolean;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -55,9 +59,14 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   isMuted,
   isConnecting,
   subject,
+  onQuickPrompt,
+  onRepeatLast,
+  isSaving,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showRulesCard, setShowRulesCard] = useState(true);
+  const rulesCardTimerRef = useRef<NodeJS.Timeout>();
   const [questionStartTimes, setQuestionStartTimes] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -89,6 +98,32 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
       });
     }
   }, [visibleContentIds, contentBlocks]);
+  
+  // Rules card timing: keep visible for 4 seconds after voice connects, then hide
+  useEffect(() => {
+    if (isVoiceConnected && isVoiceSpeaking) {
+      // Clear any existing timer
+      if (rulesCardTimerRef.current) {
+        clearTimeout(rulesCardTimerRef.current);
+      }
+      
+      // Set timer to hide rules card after 4 seconds
+      rulesCardTimerRef.current = setTimeout(() => {
+        setShowRulesCard(false);
+      }, 4000);
+      
+      return () => {
+        if (rulesCardTimerRef.current) {
+          clearTimeout(rulesCardTimerRef.current);
+        }
+      };
+    }
+    
+    // Reset to show rules card if disconnected
+    if (!isVoiceConnected) {
+      setShowRulesCard(true);
+    }
+  }, [isVoiceConnected, isVoiceSpeaking]);
 
   const handleAnswerQuestion = async (questionId: string, answerId: string, isCorrect: boolean) => {
     const timeTaken = questionStartTimes[questionId] 
@@ -138,10 +173,15 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
     <div className="flex flex-col h-full">
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto space-y-6 mb-4 px-4">
-        {/* Show Rules Card before voice connects */}
-        {!isVoiceConnected && <LessonRulesCard />}
+        {/* Show Rules Card before voice connects or for 4 seconds after */}
+        {showRulesCard && !isVoiceConnected && <LessonRulesCard />}
+        {showRulesCard && isVoiceConnected && (
+          <div className="animate-in fade-in duration-300">
+            <LessonRulesCard />
+          </div>
+        )}
         
-        {/* Content Blocks - Only show after voice connects */}
+        {/* Content Blocks - Show after voice connects */}
         {isVoiceConnected && contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
           <ContentDisplay
             content={contentBlocks}
@@ -158,7 +198,24 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border p-4 space-y-3">
+        {/* Save Indicator */}
+        {isSaving && (
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Saving progress...
+          </div>
+        )}
+        
+        {/* Quick Prompt Buttons */}
+        {onQuickPrompt && (
+          <QuickPromptButtons 
+            onPromptClick={onQuickPrompt}
+            isConnected={isVoiceConnected}
+            isSpeaking={isVoiceSpeaking}
+          />
+        )}
+        
         {mode === 'voice' ? (
           <div className="flex justify-center">
             <VoiceControls
@@ -171,6 +228,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
               onToggleMute={onToggleMute}
               isMuted={isMuted}
               isConnecting={isConnecting}
+              onRepeatLast={onRepeatLast}
             />
           </div>
         ) : (

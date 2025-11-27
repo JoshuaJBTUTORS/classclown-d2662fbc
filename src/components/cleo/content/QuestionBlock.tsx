@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { QuestionContent } from '@/types/lessonContent';
-import { Check, X, HelpCircle } from 'lucide-react';
+import { Check, X, HelpCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CoinAnimation } from '@/components/cleo/CoinAnimation';
 import { LatexRenderer } from '../LatexRenderer';
@@ -19,6 +19,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [textAnswer, setTextAnswer] = useState('');
   const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
+  const [isSubmittingText, setIsSubmittingText] = useState(false); // Loading state for text submission
 
   // Defensive check for undefined data
   if (!data || !data.question) {
@@ -48,6 +49,8 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
 
   const handleTextSubmit = () => {
     if (!textAnswer.trim()) return;
+    
+    setIsSubmittingText(true); // Show loading state
     
     // Check if this is an English subject - skip keyword matching for English
     const isEnglishSubject = subject?.toLowerCase().includes('english');
@@ -81,6 +84,9 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
     }
     
     onAnswer(data.id, textAnswer, isCorrect);
+    
+    // Keep loading state until Cleo responds (simulated with timeout)
+    setTimeout(() => setIsSubmittingText(false), 2000);
   };
 
   const getOptionClassName = (optionId: string, isCorrect: boolean) => {
@@ -206,11 +212,26 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
                 />
                 <Button 
                   onClick={handleTextSubmit}
-                  disabled={!textAnswer.trim()}
+                  disabled={!textAnswer.trim() || isSubmittingText}
                   className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  Submit Answer
+                  {isSubmittingText ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Answer'
+                  )}
                 </Button>
+              </div>
+            )}
+            
+            {/* Loading State - Cleo is reviewing */}
+            {showFeedback && isSubmittingText && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Cleo is reviewing your answer...
               </div>
             )}
 
