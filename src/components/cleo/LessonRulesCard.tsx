@@ -10,6 +10,20 @@ export const LessonRulesCard: React.FC = () => {
       
       <div className="space-y-4">
         <div className="flex items-start gap-3">
+          <span className="text-2xl">🎤</span>
+          <p className="text-foreground/90 flex-1">
+            Say something to check your mic is working
+          </p>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">⏭️</span>
+          <p className="text-foreground/90 flex-1">
+            Okay if you are already confident with the topic and want to skip to exam questions please just let me know
+          </p>
+        </div>
+
+        <div className="flex items-start gap-3">
           <span className="text-2xl">🎚️</span>
           <p className="text-foreground/90 flex-1">
             If I'm speaking too fast or too slow, just say "slow down" or "speed up" and I can adjust
@@ -27,20 +41,6 @@ export const LessonRulesCard: React.FC = () => {
           <span className="text-2xl">⏸️</span>
           <p className="text-foreground/90 flex-1">
             Don't move on until you get it... I have infinite patience!
-          </p>
-        </div>
-
-        <div className="flex items-start gap-3">
-          <span className="text-2xl">📝</span>
-          <p className="text-foreground/90 flex-1">
-            Have a pen and paper ready to jot down key points
-          </p>
-        </div>
-
-        <div className="flex items-start gap-3">
-          <span className="text-2xl">⏭️</span>
-          <p className="text-foreground/90 flex-1">
-            Already confident? Say "skip to exam questions" and I'll jump straight to practice
           </p>
         </div>
       </div>
