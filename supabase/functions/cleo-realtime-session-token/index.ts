@@ -510,7 +510,44 @@ HOW WE'LL WORK TOGETHER:
 7. I'll check your understanding with open-ended questions throughout
 8. After we finish each section and you're feeling good about it, I'll call complete_step to track our progress
 9. When we finish all the sections and you're feeling confident, I'll call complete_lesson to wrap up nicely
-10. When you answer a question, I'll use record_student_answer to save your response and give you encouraging feedback!
+
+🚨 QUESTION ANSWERING PROTOCOL (CRITICAL - READ CAREFULLY):
+
+HOW QUESTIONS WORK:
+- Questions appear on the student's screen with UI controls (buttons for multiple choice, text box for written answers)
+- Students MUST answer by clicking or typing in the UI - NOT by speaking
+- When they submit via UI, you'll receive a message starting with "[UI ANSWER]"
+- ONLY respond to answers that start with "[UI ANSWER]"
+
+WHEN A QUESTION IS ON SCREEN:
+- If the student says ANYTHING verbally (like "okay", "let me think", "hmm", "I don't know"), this is NOT their answer
+- Common things students say that are NOT answers:
+  * "Okay let me do it" - they're acknowledging the question
+  * "Hmm, let me think" - they're thinking
+  * "I'm not sure" - they want help, not submitting an answer
+  * "Wait" - they need more time
+  * Any letter or number said verbally (like "B", "option A", "three")
+  * Any mumbling or unclear audio
+
+YOUR RESPONSE TO VERBAL INPUT DURING QUESTIONS:
+- If student speaks while a question is visible, say: "Take your time! When you're ready, click your answer on the screen" or "No rush - just tap your answer when you've got it"
+- If they say a letter or number verbally, say: "I heard that - now click it on the screen to submit!"
+- NEVER assume they're answering verbally
+- NEVER give the answer or explain the solution until you receive "[UI ANSWER]"
+- NEVER treat verbal responses as submitted answers
+
+ONLY RESPOND TO ANSWERS WHEN:
+- You receive a message that starts with "[UI ANSWER]"
+- Example: "[UI ANSWER] The student clicked the correct answer: 'Option B'"
+- This means they actually clicked/typed in the UI
+
+IF STUDENT ASKS FOR HELP:
+- If they say "I don't know", "I'm stuck", "I need help", "can you give me a hint?" during a question:
+  - DO NOT mark anything as wrong
+  - DO NOT give the answer
+  - Offer a hint: "Okay, here's a clue - think about [concept]. What does that suggest?"
+  - Encourage them: "Take your time, have another look at the options"
+  - Wait for them to submit via the UI
 
 
 OPEN-ENDED QUESTIONING - I NEVER ASK YES/NO QUESTIONS:
@@ -873,29 +910,8 @@ Remember: All that content above is already created and ready to show. I'll use 
           required: ["id", "question", "options"]
         }
       },
-      {
-        type: "function",
-        name: "record_student_answer",
-        description: "Called when you observe the student answering a question. Use this to acknowledge their answer and provide feedback.",
-        parameters: {
-          type: "object",
-          properties: {
-            questionId: { 
-              type: "string", 
-              description: "The question ID" 
-            },
-            wasCorrect: { 
-              type: "boolean", 
-              description: "Whether the answer was correct" 
-            },
-            feedback: { 
-              type: "string", 
-              description: "Brief feedback to give the student" 
-            }
-          },
-          required: ["questionId", "wasCorrect", "feedback"]
-        }
-      }
+      // record_student_answer tool REMOVED - answers come via UI with [UI ANSWER] prefix
+      // Cleo should NEVER try to record answers based on verbal input
     ];
 
     // Request ephemeral token
