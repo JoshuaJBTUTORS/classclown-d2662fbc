@@ -1,8 +1,9 @@
 import React from 'react';
 import { ContentDisplay } from './ContentDisplay';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LessonContentPreviewProps {
   lessonPlan: any;
@@ -20,6 +21,8 @@ export const LessonContentPreview: React.FC<LessonContentPreviewProps> = ({
   moduleId,
 }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { isAdmin } = useAuth();
   
   // Show all content IDs (no progressive reveal)
   const allContentIds = contentBlocks.map(block => block.id);
@@ -45,8 +48,25 @@ export const LessonContentPreview: React.FC<LessonContentPreviewProps> = ({
                 <p className="text-sm text-muted-foreground">Visual Preview Mode</p>
               </div>
             </div>
-            <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              {contentBlocks.length} Content Blocks
+            <div className="flex items-center gap-3">
+              <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                {contentBlocks.length} Content Blocks
+              </div>
+              {isAdmin && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.delete('preview');
+                    setSearchParams(newParams);
+                  }}
+                >
+                  <Play className="w-4 h-4" />
+                  Start Lesson
+                </Button>
+              )}
             </div>
           </div>
         </div>
