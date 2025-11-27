@@ -2,7 +2,6 @@ export class ElevenLabsPlayer {
   private audioContext: AudioContext;
   private queue: Uint8Array[] = [];
   private isPlaying: boolean = false;
-  private isPlayingFiller: boolean = false;
   private currentSource: AudioBufferSourceNode | null = null;
   private nextPlayTime: number = 0;
   private sentenceQueue: Array<{ text: string; voiceId: string; speed: number }> = [];
@@ -11,10 +10,36 @@ export class ElevenLabsPlayer {
   private scheduledSources: AudioBufferSourceNode[] = []; // Track all scheduled audio sources
   private abortController: AbortController | null = null; // Track ongoing fetch streams
   private onSpeakingChange?: (isSpeaking: boolean) => void;
+  
+  // Audio lock to prevent overlap
+  private audioLock: boolean = false;
 
   constructor(onSpeakingChange?: (isSpeaking: boolean) => void) {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
     this.onSpeakingChange = onSpeakingChange;
+  }
+  
+  // Acquire audio lock - returns true if acquired, false if already locked
+  private async acquireAudioLock(): Promise<boolean> {
+    if (this.audioLock) {
+      console.log('🔒 Audio lock already held, waiting...');
+      // Wait up to 100ms for lock to release
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        if (!this.audioLock) break;
+      }
+      if (this.audioLock) {
+        console.log('🔒 Failed to acquire audio lock after waiting');
+        return false;
+      }
+    }
+    this.audioLock = true;
+    return true;
+  }
+  
+  // Release audio lock
+  private releaseAudioLock(): void {
+    this.audioLock = false;
   }
 
   async playAudio(base64Audio: string) {
@@ -82,6 +107,8 @@ export class ElevenLabsPlayer {
   }
 
   stop() {
+    console.log('🛑 ElevenLabsPlayer.stop() called');
+    
     // Abort any ongoing fetch stream
     if (this.abortController) {
       this.abortController.abort();
@@ -107,6 +134,10 @@ export class ElevenLabsPlayer {
     this.isProcessingQueue = false;
     this.nextPlayTime = 0;
     this.pcmByteBuffer = new Uint8Array(0);
+    
+    // Release audio lock
+    this.releaseAudioLock();
+    
     this.onSpeakingChange?.(false);
   }
 
@@ -126,12 +157,20 @@ export class ElevenLabsPlayer {
     
     // If not already processing, start the queue
     if (!this.isProcessingQueue) {
+      // Acquire lock before processing
+      const lockAcquired = await this.acquireAudioLock();
+      if (!lockAcquired) {
+        console.log('⚠️ Could not acquire audio lock, queueing anyway');
+      }
       this.processQueue();
     }
   }
 
   private async processQueue(): Promise<void> {
-    if (this.isProcessingQueue || this.sentenceQueue.length === 0) return;
+    if (this.isProcessingQueue || this.sentenceQueue.length === 0) {
+      this.releaseAudioLock();
+      return;
+    }
     
     this.isProcessingQueue = true;
     
@@ -144,6 +183,7 @@ export class ElevenLabsPlayer {
     }
     
     this.isProcessingQueue = false;
+    this.releaseAudioLock();
   }
 
   private async streamSingleSentence(text: string, voiceId: string, speed: number): Promise<void> {
@@ -318,59 +358,4 @@ export class ElevenLabsPlayer {
     }
   }
 
-  async playFillerAudio(base64Audio: string): Promise<void> {
-    if (!base64Audio || base64Audio === '') {
-      console.warn('⚠️ Empty filler audio, skipping');
-      return;
-    }
-
-    // Resume AudioContext if suspended
-    if (this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
-      console.log('🔊 AudioContext resumed');
-    }
-
-    try {
-      // Decode base64 to binary
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      // Decode MP3 audio
-      const audioBuffer = await this.audioContext.decodeAudioData(bytes.slice().buffer);
-      
-      // Create source
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.audioContext.destination);
-      
-      // Mark as playing filler
-      this.isPlayingFiller = true;
-      this.onSpeakingChange?.(true);
-      
-      // When filler ends, continue with queued audio
-      source.onended = () => {
-        console.log('🎭 Filler audio complete');
-        this.isPlayingFiller = false;
-        
-        // If there's queued audio, start playing it
-        if (this.queue.length > 0 && !this.isPlaying) {
-          this.playNext();
-        } else if (this.queue.length === 0) {
-          // No queued audio yet, update speaking state
-          this.onSpeakingChange?.(false);
-        }
-      };
-      
-      source.start(0);
-      console.log(`🎭 Playing filler audio (${audioBuffer.duration.toFixed(2)}s)`);
-
-    } catch (error) {
-      console.error('Error playing filler audio:', error);
-      this.isPlayingFiller = false;
-      this.onSpeakingChange?.(false);
-    }
-  }
 }
