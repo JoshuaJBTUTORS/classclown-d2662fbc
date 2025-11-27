@@ -6,55 +6,24 @@ export class ElevenLabsPlayer {
   private nextPlayTime: number = 0;
   private sentenceQueue: Array<{ text: string; voiceId: string; speed: number }> = [];
   private isProcessingQueue: boolean = false;
-  private pcmByteBuffer: Uint8Array = new Uint8Array(0); // Accumulate incomplete PCM bytes
-  private scheduledSources: AudioBufferSourceNode[] = []; // Track all scheduled audio sources
-  private abortController: AbortController | null = null; // Track ongoing fetch streams
+  private pcmByteBuffer: Uint8Array = new Uint8Array(0);
+  private scheduledSources: AudioBufferSourceNode[] = [];
+  private abortController: AbortController | null = null;
   private onSpeakingChange?: (isSpeaking: boolean) => void;
-  
-  // Audio lock to prevent overlap
-  private audioLock: boolean = false;
 
   constructor(onSpeakingChange?: (isSpeaking: boolean) => void) {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
     this.onSpeakingChange = onSpeakingChange;
   }
-  
-  // Acquire audio lock - returns true if acquired, false if already locked
-  private async acquireAudioLock(): Promise<boolean> {
-    if (this.audioLock) {
-      console.log('🔒 Audio lock already held, waiting...');
-      // Wait up to 100ms for lock to release
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        if (!this.audioLock) break;
-      }
-      if (this.audioLock) {
-        console.log('🔒 Failed to acquire audio lock after waiting');
-        return false;
-      }
-    }
-    this.audioLock = true;
-    return true;
-  }
-  
-  // Release audio lock
-  private releaseAudioLock(): void {
-    this.audioLock = false;
-  }
 
   async playAudio(base64Audio: string) {
     try {
-      // Decode base64 to binary
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-
-      // Add to queue
       this.queue.push(bytes);
-
-      // Start playing if not already
       if (!this.isPlaying) {
         await this.playNext();
       }
@@ -76,25 +45,17 @@ export class ElevenLabsPlayer {
     const audioData = this.queue.shift()!;
 
     try {
-      // Decode MP3 audio - create a copy to avoid SharedArrayBuffer issues
       const audioBuffer = await this.audioContext.decodeAudioData(audioData.slice().buffer);
-      
-      // Create source
       this.currentSource = this.audioContext.createBufferSource();
       this.currentSource.buffer = audioBuffer;
       this.currentSource.connect(this.audioContext.destination);
-      
-      // Play next when done
       this.currentSource.onended = () => {
         this.playNext();
       };
-      
       this.currentSource.start(0);
       console.log(`🔊 Playing audio (${audioBuffer.duration.toFixed(2)}s)`);
-
     } catch (error) {
       console.error('Error decoding audio:', error);
-      // Continue with next chunk even if current fails
       this.playNext();
     }
   }
@@ -109,34 +70,27 @@ export class ElevenLabsPlayer {
   stop() {
     console.log('🛑 ElevenLabsPlayer.stop() called');
     
-    // Abort any ongoing fetch stream
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = null;
     }
     
-    // Stop the legacy currentSource (from playNext)
     if (this.currentSource) {
       try { this.currentSource.stop(); } catch (e) { /* Already stopped */ }
       this.currentSource = null;
     }
     
-    // Stop ALL scheduled streaming sources
     for (const source of this.scheduledSources) {
       try { source.stop(); } catch (e) { /* Already stopped */ }
     }
     this.scheduledSources = [];
     
-    // Clear all queues and state
     this.queue = [];
     this.isPlaying = false;
     this.sentenceQueue = [];
     this.isProcessingQueue = false;
     this.nextPlayTime = 0;
     this.pcmByteBuffer = new Uint8Array(0);
-    
-    // Release audio lock
-    this.releaseAudioLock();
     
     this.onSpeakingChange?.(false);
   }
@@ -146,7 +100,6 @@ export class ElevenLabsPlayer {
   }
 
   async playStreamingAudio(text: string, voiceId: string, speed: number = 1.0): Promise<void> {
-    // Resume AudioContext if suspended (browser autoplay policy)
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
       console.log('🔊 AudioContext resumed');
@@ -155,35 +108,25 @@ export class ElevenLabsPlayer {
     console.log(`🎙️ Adding "${text.substring(0, 30)}..." to sentence queue (speed: ${speed})`);
     this.sentenceQueue.push({ text, voiceId, speed });
     
-    // If not already processing, start the queue
     if (!this.isProcessingQueue) {
-      // Acquire lock before processing
-      const lockAcquired = await this.acquireAudioLock();
-      if (!lockAcquired) {
-        console.log('⚠️ Could not acquire audio lock, queueing anyway');
-      }
       this.processQueue();
     }
   }
 
   private async processQueue(): Promise<void> {
     if (this.isProcessingQueue || this.sentenceQueue.length === 0) {
-      this.releaseAudioLock();
       return;
     }
     
     this.isProcessingQueue = true;
-    
-    // Reset nextPlayTime only at start of fresh queue
     this.nextPlayTime = this.audioContext.currentTime;
     
     while (this.sentenceQueue.length > 0) {
       const { text, voiceId, speed } = this.sentenceQueue.shift()!;
-      await this.streamSingleSentence(text, voiceId, speed); // AWAIT - ensures order!
+      await this.streamSingleSentence(text, voiceId, speed);
     }
     
     this.isProcessingQueue = false;
-    this.releaseAudioLock();
   }
 
   private async streamSingleSentence(text: string, voiceId: string, speed: number): Promise<void> {
