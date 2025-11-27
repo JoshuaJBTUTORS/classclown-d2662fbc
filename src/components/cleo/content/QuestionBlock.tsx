@@ -72,6 +72,13 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
           </div>
         )}
         
+        {/* Exam date header - like real past papers */}
+        {data.examDate && (
+          <div className="exam-paper-date">
+            {data.examDate}
+          </div>
+        )}
+        
         {/* Right margin stripe - "DO NOT WRITE IN THIS AREA" */}
         <div className="exam-margin-stripe">
           <span>DO NOT WRITE IN THIS AREA</span>

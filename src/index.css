@@ -1710,6 +1710,17 @@
 /* Exam Paper Question Styling - GCSE Edexcel Style */
 /* ============================================ */
 
+.exam-paper-date {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  color: #333;
+  font-style: italic;
+  z-index: 1;
+}
+
 .exam-question-paper {
   background: #ffffff;
   border: 2px solid #000000;
