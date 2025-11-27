@@ -1707,6 +1707,208 @@
 }
 
 /* ============================================ */
+/* Exam Paper Question Styling */
+/* ============================================ */
+
+.exam-question-paper {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 24px 28px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.dark .exam-question-paper {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.exam-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.exam-question-number {
+  font-weight: 700;
+  font-size: 18px;
+  color: #111827;
+}
+
+.dark .exam-question-number {
+  color: #f9fafb;
+}
+
+.exam-marks-badge {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  background: #f3f4f6;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+.dark .exam-marks-badge {
+  color: #d1d5db;
+  background: #374151;
+}
+
+.exam-question-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #111827;
+  margin-bottom: 20px;
+}
+
+.dark .exam-question-text {
+  color: #e5e7eb;
+}
+
+.exam-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exam-option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #fafafa;
+}
+
+.dark .exam-option-row {
+  background: #111827;
+  border-color: #374151;
+}
+
+.exam-option-row:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.dark .exam-option-row:hover:not(:disabled) {
+  border-color: #6b7280;
+  background: #1f2937;
+}
+
+.exam-option-row:disabled {
+  cursor: default;
+}
+
+.exam-option-letter {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.dark .exam-option-letter {
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+.exam-option-text {
+  font-size: 15px;
+  color: #1f2937;
+  flex: 1;
+}
+
+.dark .exam-option-text {
+  color: #e5e7eb;
+}
+
+/* Selected states */
+.exam-option-row.selected-correct {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.dark .exam-option-row.selected-correct {
+  background: #14532d;
+  border-color: #16a34a;
+}
+
+.exam-option-row.selected-correct .exam-option-letter {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: white;
+}
+
+.exam-option-row.selected-incorrect {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.dark .exam-option-row.selected-incorrect {
+  background: #7f1d1d;
+  border-color: #dc2626;
+}
+
+.exam-option-row.selected-incorrect .exam-option-letter {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+}
+
+.exam-option-row.correct-answer {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.dark .exam-option-row.correct-answer {
+  background: #14532d;
+  border-color: #16a34a;
+}
+
+.exam-ao-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.dark .exam-ao-badge {
+  color: #9ca3af;
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.exam-explanation-box {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: #f0fdf4;
+  border-left: 4px solid #22c55e;
+  border-radius: 0 4px 4px 0;
+}
+
+.dark .exam-explanation-box {
+  background: #14532d;
+  border-left-color: #16a34a;
+}
+
+/* ============================================ */
 /* Cleo Course Detail Styles */
 /* ============================================ */
 

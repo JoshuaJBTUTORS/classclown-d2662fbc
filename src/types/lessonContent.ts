@@ -22,6 +22,8 @@ export interface QuestionContent {
   options: QuestionOption[];
   explanation?: string;
   assessmentObjective?: string; // e.g., "AQA AO2: Analyze writer's methods"
+  marks?: number; // For displaying [X marks]
+  questionNumber?: number; // For exam numbering
 }
 
 export interface DefinitionContent {

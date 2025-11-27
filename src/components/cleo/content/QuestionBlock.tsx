@@ -64,7 +64,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
       transition={{ duration: 0.4 }}
       className="w-full"
     >
-      <div className="cleo-question-card relative">
+      <div className="exam-question-paper relative">
         {/* Coin animation overlay */}
         {showCoinAnimation && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
@@ -72,27 +72,45 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
           </div>
         )}
         
-        <div className="cleo-question-text">
+        {/* Question Header with number and marks */}
+        <div className="exam-question-header">
+          <span className="exam-question-number">
+            {data.questionNumber ? `${data.questionNumber}.` : 'Question'}
+          </span>
+          {data.marks && (
+            <span className="exam-marks-badge">[{data.marks} {data.marks === 1 ? 'mark' : 'marks'}]</span>
+          )}
+        </div>
+
+        {/* Question text */}
+        <div className="exam-question-text">
           <LatexRenderer content={data.question} />
         </div>
 
+        {/* Assessment Objective badge */}
         {data.assessmentObjective && (
-          <div className="mt-2 mb-4">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-              📋 {data.assessmentObjective}
-            </span>
+          <div className="exam-ao-badge">
+            📋 {data.assessmentObjective}
           </div>
         )}
 
-        <div className="cleo-answers">
+        {/* Options as A, B, C, D */}
+        <div className="exam-options-list">
           {data.options.map((option, index) => {
             const optionId = option.id || `option-${index}`;
             const isSelected = selectedAnswer === optionId;
-            const className = showFeedback && isSelected
-              ? option.isCorrect
-                ? 'cleo-answer-btn selected-correct'
-                : 'cleo-answer-btn selected-incorrect'
-              : 'cleo-answer-btn';
+            const letter = String.fromCharCode(65 + index); // A, B, C, D
+            
+            let className = 'exam-option-row';
+            if (showFeedback) {
+              if (isSelected && option.isCorrect) {
+                className += ' selected-correct';
+              } else if (isSelected && !option.isCorrect) {
+                className += ' selected-incorrect';
+              } else if (option.isCorrect) {
+                className += ' correct-answer';
+              }
+            }
             
             return (
               <button
@@ -101,24 +119,27 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
                 disabled={showFeedback}
                 className={className}
               >
-                <LatexRenderer content={option.text} />
+                <span className="exam-option-letter">{letter}</span>
+                <span className="exam-option-text">
+                  <LatexRenderer content={option.text} />
+                </span>
               </button>
             );
           })}
         </div>
 
-
+        {/* Explanation */}
         {showFeedback && data.explanation && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            className="mt-4 p-4 bg-white rounded-lg"
+            className="exam-explanation-box"
           >
-            <p className="text-sm font-medium mb-2" style={{ color: 'hsl(var(--cleo-green))' }}>
+            <p className="text-sm font-semibold mb-2 text-green-700">
               Explanation:
             </p>
-            <div className="text-sm" style={{ color: 'hsl(var(--cleo-text-main))' }}>
+            <div className="text-sm text-gray-800">
               <LatexRenderer content={data.explanation} />
             </div>
           </motion.div>
