@@ -36,6 +36,13 @@ export const LessonRulesCard: React.FC = () => {
             Have a pen and paper ready to jot down key points
           </p>
         </div>
+
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">⏭️</span>
+          <p className="text-foreground/90 flex-1">
+            Already confident? Say "skip to exam questions" and I'll jump straight to practice
+          </p>
+        </div>
       </div>
     </Card>
   );
