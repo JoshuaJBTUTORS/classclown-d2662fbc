@@ -527,10 +527,29 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               // Find the question and answer text
               const questionBlock = content.find(b => b.id === qId);
               const questionData = questionBlock?.data as any;
-              const answerText = questionData?.options?.find((o: any) => o.id === aId)?.text || '';
+              
+              // Check if this is a text input question
+              const isTextInput = ['short_answer', 'extended_writing', 'calculation'].includes(questionData?.question_type);
+              
+              // For text input, aId IS the answer text; for MCQ, find from options
+              const answerText = isTextInput 
+                ? aId  // aId contains the typed answer for text input
+                : (questionData?.options?.find((o: any) => o.id === aId)?.text || '');
 
               // Send answer info to OpenAI so Cleo knows what was answered
-              const answerMessage = correct ? `The student answered correctly: "${answerText}". Acknowledge this briefly and continue teaching.` : `The student answered incorrectly: "${answerText}". Provide gentle correction and explanation.`;
+              let answerMessage = '';
+              
+              // For text input questions with keywords
+              if (isTextInput && questionData?.keywords?.length > 0) {
+                const keywordsStr = questionData.keywords.join(', ');
+                answerMessage = `The student submitted this written answer: "${answerText}". Keywords to look for: ${keywordsStr}. Provide brief, encouraging feedback on their answer quality and any key points they missed.`;
+              } else if (isTextInput) {
+                // Text input without keywords - Cleo evaluates freely
+                answerMessage = `The student submitted this written answer: "${answerText}". Provide brief, encouraging feedback on their answer quality.`;
+              } else {
+                // MCQ feedback (existing logic)
+                answerMessage = correct ? `The student answered correctly: "${answerText}". Acknowledge this briefly and continue teaching.` : `The student answered incorrectly: "${answerText}". Provide gentle correction and explanation.`;
+              }
               if (connectionState === 'connected') {
                 controlsRef.current?.sendUserMessage(answerMessage);
               }
