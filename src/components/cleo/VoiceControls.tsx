@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Square, Volume2, Mic, MicOff } from 'lucide-react';
+import { Play, Square, Volume2, Mic, MicOff, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,8 @@ interface VoiceControlsProps {
   onToggleMute?: () => void;
   isMuted?: boolean;
   isConnecting?: boolean;
-  sessionStage?: string;  // NEW
+  sessionStage?: string;
+  onRepeatLast?: () => void;
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
@@ -30,7 +31,8 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   onToggleMute,
   isMuted,
   isConnecting,
-  sessionStage,  // NEW
+  sessionStage,
+  onRepeatLast,
 }) => {
   const [hasQuota, setHasQuota] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -201,6 +203,18 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
           )}
           
           <div className="flex gap-2">
+            {onRepeatLast && (
+              <Button
+                onClick={onRepeatLast}
+                variant="outline"
+                size="sm"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Repeat
+              </Button>
+            )}
+            
             {onToggleMute && (
               <Button
                 onClick={onToggleMute}
