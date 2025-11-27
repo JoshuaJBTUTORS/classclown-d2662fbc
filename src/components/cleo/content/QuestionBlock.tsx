@@ -72,19 +72,19 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
           </div>
         )}
         
-        {/* Question Header with number and marks */}
-        <div className="exam-question-header">
-          <span className="exam-question-number">
-            {data.questionNumber ? `${data.questionNumber}.` : 'Question'}
-          </span>
-          {data.marks && (
-            <span className="exam-marks-badge">[{data.marks} {data.marks === 1 ? 'mark' : 'marks'}]</span>
-          )}
+        {/* Right margin stripe - "DO NOT WRITE IN THIS AREA" */}
+        <div className="exam-margin-stripe">
+          <span>DO NOT WRITE IN THIS AREA</span>
         </div>
 
-        {/* Question text */}
-        <div className="exam-question-text">
-          <LatexRenderer content={data.question} />
+        {/* Question row with inline number */}
+        <div className="exam-question-row">
+          <span className="exam-question-number">
+            {data.questionNumber || '1'}
+          </span>
+          <div className="exam-question-text">
+            <LatexRenderer content={data.question} />
+          </div>
         </div>
 
         {/* Assessment Objective badge */}
@@ -95,38 +95,57 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
         )}
 
         {/* Options as A, B, C, D */}
-        <div className="exam-options-list">
-          {data.options.map((option, index) => {
-            const optionId = option.id || `option-${index}`;
-            const isSelected = selectedAnswer === optionId;
-            const letter = String.fromCharCode(65 + index); // A, B, C, D
-            
-            let className = 'exam-option-row';
-            if (showFeedback) {
-              if (isSelected && option.isCorrect) {
-                className += ' selected-correct';
-              } else if (isSelected && !option.isCorrect) {
-                className += ' selected-incorrect';
-              } else if (option.isCorrect) {
-                className += ' correct-answer';
+        {data.options && data.options.length > 0 && (
+          <div className="exam-options-list">
+            {data.options.map((option, index) => {
+              const optionId = option.id || `option-${index}`;
+              const isSelected = selectedAnswer === optionId;
+              const letter = String.fromCharCode(65 + index); // A, B, C, D
+              
+              let className = 'exam-option-row';
+              if (showFeedback) {
+                if (isSelected && option.isCorrect) {
+                  className += ' selected-correct';
+                } else if (isSelected && !option.isCorrect) {
+                  className += ' selected-incorrect';
+                } else if (option.isCorrect) {
+                  className += ' correct-answer';
+                }
               }
-            }
-            
-            return (
-              <button
-                key={optionId}
-                onClick={() => handleAnswerClick(optionId, option.isCorrect)}
-                disabled={showFeedback}
-                className={className}
-              >
-                <span className="exam-option-letter">{letter}</span>
-                <span className="exam-option-text">
-                  <LatexRenderer content={option.text} />
-                </span>
-              </button>
-            );
-          })}
-        </div>
+              
+              return (
+                <button
+                  key={optionId}
+                  onClick={() => handleAnswerClick(optionId, option.isCorrect)}
+                  disabled={showFeedback}
+                  className={className}
+                >
+                  <span className="exam-option-letter">{letter}</span>
+                  <span className="exam-option-text">
+                    <LatexRenderer content={option.text} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Answer space with dotted lines (for non-MCQ or after answer) */}
+        {(!data.options || data.options.length === 0 || showFeedback) && (
+          <div className="exam-answer-space">
+            <div className="exam-dotted-line"></div>
+            <div className="exam-dotted-line"></div>
+          </div>
+        )}
+
+        {/* Marks footer - "Total for Question X is X marks" */}
+        {data.marks && (
+          <div className="exam-marks-footer">
+            <span>
+              (Total for Question {data.questionNumber || '1'} is {data.marks} {data.marks === 1 ? 'mark' : 'marks'})
+            </span>
+          </div>
+        )}
 
         {/* Explanation */}
         {showFeedback && data.explanation && (
