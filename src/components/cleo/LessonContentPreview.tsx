@@ -11,6 +11,7 @@ interface LessonContentPreviewProps {
   topic: string;
   courseId?: string;
   moduleId?: string;
+  yearGroup?: string;
 }
 
 export const LessonContentPreview: React.FC<LessonContentPreviewProps> = ({
@@ -19,6 +20,7 @@ export const LessonContentPreview: React.FC<LessonContentPreviewProps> = ({
   topic,
   courseId,
   moduleId,
+  yearGroup,
 }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -93,6 +95,7 @@ export const LessonContentPreview: React.FC<LessonContentPreviewProps> = ({
           visibleContent={allContentIds}
           onAnswerQuestion={() => {}}
           onContentAction={() => {}}
+          subject={yearGroup}
         />
       </div>
     </div>

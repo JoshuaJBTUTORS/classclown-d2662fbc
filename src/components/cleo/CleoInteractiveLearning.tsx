@@ -598,7 +598,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 message
               });
               controlsRef.current?.sendUserMessage(message);
-            }} onToggleMute={() => controlsRef.current?.toggleMute?.()} isMuted={isMuted} isConnecting={connectionState === 'connecting'} />
+            }} onToggleMute={() => controlsRef.current?.toggleMute?.()} isMuted={isMuted} isConnecting={connectionState === 'connecting'} subject={lessonData.yearGroup} />
             </div>
           </section>
 

@@ -290,6 +290,7 @@ const LessonPlanning: React.FC = () => {
         topic={topic}
         courseId={courseId}
         moduleId={moduleId}
+        yearGroup={yearGroup}
       />
     );
   }

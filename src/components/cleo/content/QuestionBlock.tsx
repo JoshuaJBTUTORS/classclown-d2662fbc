@@ -10,9 +10,10 @@ interface QuestionBlockProps {
   data: QuestionContent;
   onAnswer: (questionId: string, answerId: string, isCorrect: boolean) => void;
   onAskHelp?: (questionId: string, questionText: string) => void;
+  subject?: string;
 }
 
-export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp }) => {
+export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp, subject }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
@@ -48,21 +49,25 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
   const handleTextSubmit = () => {
     if (!textAnswer.trim()) return;
     
-    // Evaluate against keywords if available
+    // Check if this is an English subject - skip keyword matching for English
+    const isEnglishSubject = subject?.toLowerCase().includes('english');
+    
     let isCorrect = false;
     let matched: string[] = [];
     
-    if (data.keywords && data.keywords.length > 0) {
+    // For English: skip keyword matching, let Cleo evaluate verbally
+    if (isEnglishSubject) {
+      isCorrect = true; // Default to true, Cleo provides verbal feedback
+      matched = []; // Don't evaluate keywords
+    } else if (data.keywords && data.keywords.length > 0) {
+      // For other subjects: use keyword matching
       const answerLower = textAnswer.toLowerCase();
       matched = data.keywords.filter(kw => 
         answerLower.includes(kw.toLowerCase())
       );
-      
-      // Consider correct if at least 50% of keywords matched
       const threshold = Math.ceil(data.keywords.length * 0.5);
       isCorrect = matched.length >= threshold;
     } else {
-      // No keywords defined - let Cleo evaluate verbally
       isCorrect = true;
     }
     
@@ -219,8 +224,8 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
               </div>
             )}
 
-            {/* Keywords/Marking scheme - show matched vs missed */}
-            {showFeedback && data.keywords && data.keywords.length > 0 && (
+            {/* Keywords Feedback Section - Only for non-English subjects */}
+            {showFeedback && data.keywords && data.keywords.length > 0 && !subject?.toLowerCase().includes('english') && (
               <div className="exam-keywords-box mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 p-3 rounded">
                 <p className="text-sm font-semibold mb-2 text-blue-700">
                   Mark Scheme Keywords ({matchedKeywords.length}/{data.keywords.length} matched):
