@@ -16,15 +16,20 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
+  const [textAnswer, setTextAnswer] = useState('');
 
   // Defensive check for undefined data
-  if (!data || !data.question || !data.options || !Array.isArray(data.options)) {
+  if (!data || !data.question) {
     return (
       <div className="bg-muted/50 border border-border rounded-lg p-4">
         <p className="text-sm text-muted-foreground">Question content not available</p>
       </div>
     );
   }
+
+  // Determine question type - default to multiple_choice if not specified
+  const questionType = data.question_type || 'multiple_choice';
+  const isTextInput = questionType === 'short_answer' || questionType === 'extended_writing' || questionType === 'calculation';
 
   const handleAnswerClick = (optionId: string, isCorrect: boolean) => {
     setSelectedAnswer(optionId);
@@ -37,6 +42,16 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
     }
     
     onAnswer(data.id, optionId, isCorrect);
+  };
+
+  const handleTextSubmit = () => {
+    if (!textAnswer.trim()) return;
+    
+    setShowFeedback(true);
+    // For text input, we always mark as correct for now (Cleo will provide feedback verbally)
+    setShowCoinAnimation(true);
+    setTimeout(() => setShowCoinAnimation(false), 1500);
+    onAnswer(data.id, textAnswer, true);
   };
 
   const getOptionClassName = (optionId: string, isCorrect: boolean) => {
@@ -101,8 +116,8 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
           </div>
         )}
 
-        {/* Options as A, B, C, D */}
-        {data.options && data.options.length > 0 && (
+        {/* Multiple Choice Options (A, B, C, D) */}
+        {!isTextInput && data.options && data.options.length > 0 && (
           <div className="exam-options-list">
             {data.options.map((option, index) => {
               const optionId = option.id || `option-${index}`;
@@ -137,11 +152,64 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
           </div>
         )}
 
-        {/* Answer space with dotted lines (for non-MCQ or after answer) */}
-        {(!data.options || data.options.length === 0 || showFeedback) && (
-          <div className="exam-answer-space">
-            <div className="exam-dotted-line"></div>
-            <div className="exam-dotted-line"></div>
+        {/* Text Input Answer Space (for short_answer, extended_writing, calculation) */}
+        {isTextInput && (
+          <div className="exam-text-input-section">
+            {/* Dotted lines for writing simulation */}
+            <div className="exam-dotted-lines">
+              {Array.from({ length: data.answerLines || (questionType === 'extended_writing' ? 8 : 4) }).map((_, i) => (
+                <div key={i} className="exam-dotted-line"></div>
+              ))}
+            </div>
+
+            {/* Answer textarea */}
+            {!showFeedback && (
+              <div className="exam-answer-box">
+                <label className="text-sm font-semibold mb-2 block text-gray-700">
+                  Your answer:
+                </label>
+                <textarea
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
+                  className="exam-answer-textarea"
+                  rows={questionType === 'extended_writing' ? 8 : 4}
+                  placeholder="Type your answer here..."
+                />
+                <Button 
+                  onClick={handleTextSubmit}
+                  disabled={!textAnswer.trim()}
+                  className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Submit Answer
+                </Button>
+              </div>
+            )}
+
+            {/* Show submitted answer after feedback */}
+            {showFeedback && textAnswer && (
+              <div className="exam-answer-box mt-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 p-4 rounded">
+                <p className="text-sm font-semibold mb-2 text-green-700">
+                  Your submitted answer:
+                </p>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">{textAnswer}</p>
+              </div>
+            )}
+
+            {/* Keywords/Marking scheme */}
+            {showFeedback && data.keywords && data.keywords.length > 0 && (
+              <div className="exam-keywords-box mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 p-3 rounded">
+                <p className="text-sm font-semibold mb-2 text-blue-700">
+                  Mark Scheme Keywords:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {data.keywords.map((keyword, idx) => (
+                    <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -19,12 +19,15 @@ export interface QuestionOption {
 export interface QuestionContent {
   id: string;
   question: string;
-  options: QuestionOption[];
+  question_type?: 'multiple_choice' | 'short_answer' | 'extended_writing' | 'calculation'; // NEW: Determines input format
+  options?: QuestionOption[]; // Make optional - not needed for text input questions
   explanation?: string;
   assessmentObjective?: string; // e.g., "AQA AO2: Analyze writer's methods"
   marks?: number; // For displaying [X marks]
   questionNumber?: number; // For exam numbering
   examDate?: string; // e.g., "June 2019", "November 2023"
+  answerLines?: number; // NEW: Number of dotted lines to show (3-8) for text input
+  keywords?: string[]; // NEW: Keywords for marking scheme display
 }
 
 export interface DefinitionContent {

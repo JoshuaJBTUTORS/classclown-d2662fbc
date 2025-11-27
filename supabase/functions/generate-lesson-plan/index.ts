@@ -402,7 +402,7 @@ CONTENT BLOCKS FOR STEP 2 (Practice):
 - YOU MUST GENERATE EXACTLY 20 QUESTION BLOCKS - NO MORE, NO LESS
 - Count them as you generate: Question 1/20, Question 2/20, ... Question 20/20
 - ALL blocks must be type "question"
-- Format: { type: "question", data: { question: "...", options: [...], explanation: "..." } }
+- Format: { type: "question", data: { question: "...", question_type: "multiple_choice", options: [...], explanation: "..." } }
 - Questions 1-7: Basic application (7 questions)
 - Questions 8-14: Intermediate difficulty (7 questions)
 - Questions 15-20: Advanced/challenging (6 questions)
@@ -432,6 +432,29 @@ ${examBoardSpecs}
 - Add teaching notes that explicitly mention ${examBoard}
 - Example teaching note: "Remind students that ${examBoard} Paper 1 focuses heavily on this skill"
 - For questions: Include which AO the question targets in the optional assessmentObjective field
+
+✅ QUESTION TYPE SELECTION BY SUBJECT:
+- **Maths**: Use "multiple_choice" for most questions, "calculation" for show-your-working questions
+- **English Literature**: Use "extended_writing" (8 answerLines) for essay questions, "short_answer" (3-4 answerLines) for analysis
+- **English Language**: Use "extended_writing" for paragraphs, "short_answer" for comprehension
+- **Science**: Use "short_answer" (3-4 answerLines) for explain/describe questions, "calculation" for numerical problems, "multiple_choice" for recall
+- **Computer Science**: Use "short_answer" (3-4 answerLines) for definitions/explanations, "extended_writing" for algorithms/design
+
+✅ TEXT INPUT QUESTION FORMAT (for non-MCQ):
+{
+  "type": "question",
+  "data": {
+    "question": "Explain why the rate of photosynthesis increases as light intensity increases.",
+    "question_type": "short_answer",
+    "marks": 3,
+    "questionNumber": 2,
+    "examDate": "November 2021",
+    "assessmentObjective": "AQA AO2: Application of knowledge",
+    "answerLines": 4,
+    "keywords": ["chlorophyll", "light energy", "limiting factor"],
+    "explanation": "Students should mention that chlorophyll absorbs light energy..."
+  }
+}
 - Example assessmentObjective: "${examBoard} AO3: Compare texts"
 
 ✅ SPECIFIC EXAM BOARD INTEGRATION:
