@@ -17,6 +17,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
   const [showFeedback, setShowFeedback] = useState(false);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [textAnswer, setTextAnswer] = useState('');
+  const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
 
   // Defensive check for undefined data
   if (!data || !data.question) {
@@ -47,11 +48,34 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
   const handleTextSubmit = () => {
     if (!textAnswer.trim()) return;
     
+    // Evaluate against keywords if available
+    let isCorrect = false;
+    let matched: string[] = [];
+    
+    if (data.keywords && data.keywords.length > 0) {
+      const answerLower = textAnswer.toLowerCase();
+      matched = data.keywords.filter(kw => 
+        answerLower.includes(kw.toLowerCase())
+      );
+      
+      // Consider correct if at least 50% of keywords matched
+      const threshold = Math.ceil(data.keywords.length * 0.5);
+      isCorrect = matched.length >= threshold;
+    } else {
+      // No keywords defined - let Cleo evaluate verbally
+      isCorrect = true;
+    }
+    
     setShowFeedback(true);
-    // For text input, we always mark as correct for now (Cleo will provide feedback verbally)
-    setShowCoinAnimation(true);
-    setTimeout(() => setShowCoinAnimation(false), 1500);
-    onAnswer(data.id, textAnswer, true);
+    setMatchedKeywords(matched);
+    
+    // Only show coin animation if actually correct
+    if (isCorrect) {
+      setShowCoinAnimation(true);
+      setTimeout(() => setShowCoinAnimation(false), 1500);
+    }
+    
+    onAnswer(data.id, textAnswer, isCorrect);
   };
 
   const getOptionClassName = (optionId: string, isCorrect: boolean) => {
@@ -195,18 +219,28 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
               </div>
             )}
 
-            {/* Keywords/Marking scheme */}
+            {/* Keywords/Marking scheme - show matched vs missed */}
             {showFeedback && data.keywords && data.keywords.length > 0 && (
               <div className="exam-keywords-box mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 p-3 rounded">
                 <p className="text-sm font-semibold mb-2 text-blue-700">
-                  Mark Scheme Keywords:
+                  Mark Scheme Keywords ({matchedKeywords.length}/{data.keywords.length} matched):
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {data.keywords.map((keyword, idx) => (
-                    <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      {keyword}
-                    </span>
-                  ))}
+                  {data.keywords.map((keyword, idx) => {
+                    const isMatched = matchedKeywords.includes(keyword);
+                    return (
+                      <span 
+                        key={idx} 
+                        className={`text-xs px-2 py-1 rounded ${
+                          isMatched 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800 line-through'
+                        }`}
+                      >
+                        {keyword} {isMatched ? '✓' : '✗'}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}
