@@ -411,6 +411,20 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               console.log(`📚 Step ID: ${stepId}`);
               console.log(`📚 Step Title: ${stepTitle}`);
               
+              // 🔇 STOP current audio before transitioning to new step
+              console.log(`🔇 Stopping audio for step transition...`);
+              elevenLabsPlayerRef.current?.stop();
+              
+              // Clear pending text accumulators to prevent old content mixing with new
+              textAccumulator.current = '';
+              fullMessageRef.current = '';
+              
+              // Reset TTS promise chain for clean start
+              ttsPromiseChain.current = Promise.resolve();
+              
+              // Clear current transcript display
+              setCurrentTranscript('');
+              
               // Emit content marker event to show step content
               if (onContentEvent) {
                 onContentEvent({
