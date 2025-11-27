@@ -668,7 +668,20 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       currentConversationId.current = result.conversationId;
       onConversationCreated?.(result.conversationId);
 
-      // Fetch and notify parent of user's voice speed preference
+      // 🔇 Auto-mute user for 3 seconds on initial connection
+      // This prevents background noise from interrupting Cleo's intro
+      console.log('🔇 Auto-muting user for initial 3 seconds...');
+      rtcRef.current?.mute();
+      setIsMuted(true);
+
+      // Auto-unmute after 3 seconds
+      setTimeout(() => {
+        if (rtcRef.current) {
+          console.log('🎤 Auto-unmuting user after initial delay');
+          rtcRef.current.unmute();
+          setIsMuted(false);
+        }
+      }, 3000);
       
       console.log("✅ WebRTC connection established with unified introduction flow");
 
