@@ -9,14 +9,16 @@ import { LessonContentPreview } from '@/components/cleo/LessonContentPreview';
 import { useLessonPlan } from '@/hooks/useLessonPlan';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Play, ArrowLeft } from 'lucide-react';
+import { Play, ArrowLeft, Eye } from 'lucide-react';
 
 const LessonPlanning: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [lessonPlanId, setLessonPlanId] = useState<string | null>(null);
   const [showPlanDisplay, setShowPlanDisplay] = useState(false);
   const [showLearning, setShowLearning] = useState(false);
@@ -297,6 +299,22 @@ const LessonPlanning: React.FC = () => {
     if (lessonPlan && contentBlocks.length > 0 && !loading) {
       return (
         <>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="fixed top-4 right-4 z-50 gap-2"
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.set('preview', 'true');
+                setSearchParams(newParams);
+              }}
+            >
+              <Eye className="w-4 h-4" />
+              Preview Mode
+            </Button>
+          )}
+          
           {/* Learn Again Dialog */}
           <Dialog open={showLearnAgainDialog} onOpenChange={setShowLearnAgainDialog}>
             <DialogContent>
