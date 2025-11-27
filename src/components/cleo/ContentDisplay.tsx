@@ -15,6 +15,7 @@ interface ContentDisplayProps {
   onContentAction?: (contentId: string, action: string, message: string) => void;
   onAskHelp?: (questionId: string, questionText: string) => void;
   isExamPractice?: boolean;
+  subject?: string;
 }
 
 export const ContentDisplay: React.FC<ContentDisplayProps> = ({
@@ -24,6 +25,7 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
   onContentAction,
   onAskHelp,
   isExamPractice,
+  subject,
 }) => {
   const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const lastVisibleRef = useRef<string | null>(null);
@@ -83,7 +85,7 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'table':
         return <TableBlock data={block.data} onContentAction={handleContentAction} />;
       case 'question':
-        return <QuestionBlock data={block.data} onAnswer={onAnswerQuestion} onAskHelp={onAskHelp} />;
+        return <QuestionBlock data={block.data} onAnswer={onAnswerQuestion} onAskHelp={onAskHelp} subject={subject} />;
       case 'definition':
         return <DefinitionBlock data={block.data} onContentAction={handleContentAction} />;
       case 'diagram':
