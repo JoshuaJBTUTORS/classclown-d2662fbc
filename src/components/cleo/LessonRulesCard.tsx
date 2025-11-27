@@ -10,9 +10,9 @@ export const LessonRulesCard: React.FC = () => {
       
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">🔄</span>
+          <span className="text-2xl">🎚️</span>
           <p className="text-foreground/90 flex-1">
-            I don't like being interrupted, so let's take turns speaking 😋
+            If I'm speaking too fast or too slow, just say "slow down" or "speed up" and I can adjust
           </p>
         </div>
 
@@ -24,13 +24,6 @@ export const LessonRulesCard: React.FC = () => {
         </div>
 
         <div className="flex items-start gap-3">
-          <span className="text-2xl">🔇</span>
-          <p className="text-foreground/90 flex-1">
-            If you're in a loud background, use the mute/unmute button during the lesson
-          </p>
-        </div>
-
-        <div className="flex items-start gap-3">
           <span className="text-2xl">⏸️</span>
           <p className="text-foreground/90 flex-1">
             Don't move on until you get it... I have infinite patience!
@@ -38,9 +31,9 @@ export const LessonRulesCard: React.FC = () => {
         </div>
 
         <div className="flex items-start gap-3">
-          <span className="text-2xl">⚡</span>
+          <span className="text-2xl">📝</span>
           <p className="text-foreground/90 flex-1">
-            If I'm speaking too slow or too fast, use the speed button on screen to adjust
+            Have a pen and paper ready to jot down key points
           </p>
         </div>
       </div>
