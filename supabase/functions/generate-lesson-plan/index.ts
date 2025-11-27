@@ -609,6 +609,38 @@ OTHER RULES:
 - Make content age-appropriate for ${yearGroup}
 - Focus on core concepts - avoid unnecessary detail
 
+⚠️ QUESTION TYPE RULES (CRITICAL - FOLLOW EXACTLY):
+
+📊 MATHS:
+- Use: multiple_choice (most questions), calculation (show working)
+- Include 4 options with A/B/C/D format
+- All questions MUST include examDate and marks
+
+📚 ENGLISH (Literature & Language):
+- Use: extended_writing (6-12 mark essay questions)
+- answerLines: 8-10
+- Include scaffolding/sentence starters for foundation tier
+- Example: "How does Shakespeare present guilt? Use evidence from the extract. [8 marks]"
+- ALL questions MUST include: examDate (e.g., "June 2023"), marks, keywords
+
+🔬 SCIENCE (Biology, Chemistry, Physics):
+- Use: short_answer (2-4 marks), calculation (with working)
+- answerLines: 3-5
+- Example: "Explain why the rate of reaction increases with temperature. [3 marks]"
+- ALL questions MUST include: examDate, marks, keywords
+
+💻 COMPUTER SCIENCE:
+- Use: short_answer (2-4 marks), extended_writing (6-8 marks)
+- answerLines: 4-6
+- Example: "Describe two advantages of using subroutines. [4 marks]"
+- ALL questions MUST include: examDate, marks, keywords
+
+ALL QUESTIONS MUST INCLUDE:
+- examDate: Real past paper date (June/November + year 2019-2024). This will display as "exam question - June 2023"
+- examBoard: The user's selected exam board
+- marks: Appropriate for question type
+- keywords: 3-6 key terms for marking (for text input questions)
+
 ⚠️ FOR ENGLISH LITERATURE LESSONS - MANDATORY STRUCTURE:
 
 QUOTE ANALYSIS BLOCKS (CRITICAL - MUST INCLUDE):
@@ -763,11 +795,20 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                 },
                                 {
                                   type: 'object',
-                                  description: 'Question',
+                                  description: 'Question - Use multiple_choice for Maths, short_answer/extended_writing for English/Science/Computer Science. MUST include examDate from past papers.',
                                   properties: {
-                                    question: { type: 'string' },
+                                    question: { 
+                                      type: 'string',
+                                      description: 'The question text. For extended writing, include any scaffolding or sentence starters.'
+                                    },
+                                    question_type: { 
+                                      type: 'string',
+                                      enum: ['multiple_choice', 'short_answer', 'extended_writing', 'calculation'],
+                                      description: 'REQUIRED. multiple_choice for Maths, short_answer for Science/CS (2-4 marks), extended_writing for English (6-12 marks), calculation for Maths working'
+                                    },
                                     options: {
                                       type: 'array',
+                                      description: 'ONLY include for multiple_choice questions. 4 options with exactly 1 correct.',
                                       items: {
                                         type: 'object',
                                         properties: {
@@ -777,13 +818,38 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
                                         required: ['text', 'isCorrect']
                                       }
                                     },
-                                    explanation: { type: 'string' },
+                                    marks: { 
+                                      type: 'number', 
+                                      description: 'REQUIRED. Number of marks (e.g., 2, 3, 4, 6, 8, 12)'
+                                    },
+                                    questionNumber: { 
+                                      type: 'number', 
+                                      description: 'Question number in sequence (1, 2, 3...)'
+                                    },
+                                    examDate: { 
+                                      type: 'string', 
+                                      description: 'REQUIRED. Reference to a real past paper date (e.g., "June 2023", "November 2022"). Use realistic GCSE exam session dates. This will be displayed as "exam question - June 2023".'
+                                    },
+                                    examBoard: {
+                                      type: 'string',
+                                      description: 'The exam board (AQA, Edexcel, OCR, etc.)'
+                                    },
+                                    answerLines: { 
+                                      type: 'number', 
+                                      description: 'Number of dotted answer lines (3-4 for short_answer, 6-10 for extended_writing)'
+                                    },
+                                    keywords: { 
+                                      type: 'array',
+                                      items: { type: 'string' },
+                                      description: 'REQUIRED for text input questions. Key terms for marking (e.g., ["chlorophyll", "light energy", "glucose"])'
+                                    },
+                                    explanation: { type: 'string', description: 'Model answer or explanation' },
                                     assessmentObjective: { 
                                       type: 'string',
-                                      description: 'OPTIONAL: The Assessment Objective this question targets (e.g., "AO2: Analyze writer\'s methods" or "AO3: Compare texts"). Include exam board name if available (e.g., "AQA AO1: Knowledge and understanding").'
+                                      description: 'The AO targeted (e.g., "AQA AO2: Analyze writer\'s methods", "OCR AO3: Apply knowledge")'
                                     }
                                   },
-                                  required: ['question', 'options']
+                                  required: ['question', 'question_type', 'marks']
                                 },
                                 {
                                   type: 'object',
