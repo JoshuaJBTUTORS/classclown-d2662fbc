@@ -1829,7 +1829,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   background: transparent;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .dark .exam-option-row {
@@ -1839,7 +1839,7 @@
 
 .exam-option-row:hover:not(:disabled) {
   background: #f9fafb;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 .dark .exam-option-row:hover:not(:disabled) {
