@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export type WebRTCConnectionState = 'new' | 'connecting' | 'connected' | 'disconnected' | 'failed' | 'closed';
+
 export class RealtimeChat {
   private pc: RTCPeerConnection | null = null;
   private dc: RTCDataChannel | null = null;
@@ -12,14 +14,17 @@ export class RealtimeChat {
   private sessionStartTime: Date | null = null;
   private previousSpeed: number = 0.90; // Track previous speed
   private sessionConfigured: boolean = false; // Track if session.update was confirmed
+  private onConnectionStateChange?: (state: WebRTCConnectionState) => void;
 
   constructor(
     private onMessage: (event: any) => void,
     microphoneId?: string,
-    speakerId?: string
+    speakerId?: string,
+    onConnectionStateChange?: (state: WebRTCConnectionState) => void
   ) {
     this.microphoneId = microphoneId;
     this.speakerId = speakerId;
+    this.onConnectionStateChange = onConnectionStateChange;
     this.audioEl = document.createElement("audio");
     this.audioEl.autoplay = true;
   }
@@ -79,6 +84,31 @@ export class RealtimeChat {
       // Create RTCPeerConnection
       console.log("🌐 Creating RTCPeerConnection...");
       this.pc = new RTCPeerConnection();
+
+      // Monitor connection health
+      this.pc.onconnectionstatechange = () => {
+        const state = this.pc?.connectionState as WebRTCConnectionState;
+        console.log(`🔌 WebRTC connection state: ${state}`);
+        this.onConnectionStateChange?.(state);
+        
+        if (state === 'disconnected') {
+          console.warn('⚠️ Connection degraded - network may be weak');
+        } else if (state === 'failed') {
+          console.error('❌ Connection failed - network issue');
+        }
+      };
+      
+      // Monitor ICE connection (network layer)
+      this.pc.oniceconnectionstatechange = () => {
+        const iceState = this.pc?.iceConnectionState;
+        console.log(`🧊 ICE connection state: ${iceState}`);
+        
+        if (iceState === 'disconnected') {
+          console.warn('⚠️ ICE disconnected - possible network interruption');
+        } else if (iceState === 'failed') {
+          console.error('❌ ICE failed - network connection lost');
+        }
+      };
 
       // NO remote audio track - ElevenLabs handles TTS
       console.log("🔇 Audio output disabled (using ElevenLabs TTS)");
