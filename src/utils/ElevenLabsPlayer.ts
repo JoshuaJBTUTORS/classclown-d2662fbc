@@ -135,8 +135,12 @@ export class ElevenLabsPlayer {
     
     this.isProcessingQueue = true;
     
-    // Reset nextPlayTime only at start of fresh queue
-    this.nextPlayTime = this.audioContext.currentTime;
+    // Only reset nextPlayTime if no audio is scheduled ahead
+    // If nextPlayTime is in the future, keep it so new audio queues AFTER existing audio
+    if (this.nextPlayTime <= this.audioContext.currentTime) {
+      this.nextPlayTime = this.audioContext.currentTime;
+    }
+    // Otherwise, keep nextPlayTime as-is - new audio will naturally queue after existing
     
     while (this.sentenceQueue.length > 0) {
       const { text, voiceId, speed } = this.sentenceQueue.shift()!;
