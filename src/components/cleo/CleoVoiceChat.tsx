@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { RealtimeChat } from '@/utils/RealtimeChat';
+import { RealtimeChat, WebRTCConnectionState } from '@/utils/RealtimeChat';
 import { ElevenLabsPlayer } from '@/utils/ElevenLabsPlayer';
 import { supabase } from '@/integrations/supabase/client';
 import { ContentEvent, ContentBlock } from '@/types/lessonContent';
@@ -41,6 +41,7 @@ interface CleoVoiceChatProps {
     updateVoiceSpeed?: (speed: number) => void;
   }) => void;
   onSpeedChange?: (speed: number) => void;
+  onWebRTCStateChange?: (state: WebRTCConnectionState) => void;
   voiceSpeed?: number;
   selectedMicrophoneId?: string;
   selectedSpeakerId?: string;
@@ -59,6 +60,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onSpeakingChange,
   onProvideControls,
   onSpeedChange,
+  onWebRTCStateChange,
   voiceSpeed,
   selectedMicrophoneId,
   selectedSpeakerId
@@ -815,11 +817,26 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         }
       };
 
+      // Handle WebRTC connection state changes
+      const handleWebRTCStateChange = (state: WebRTCConnectionState) => {
+        onWebRTCStateChange?.(state);
+        
+        if (state === 'disconnected' || state === 'failed') {
+          toast({
+            title: "Connection Issue",
+            description: "Your internet connection is unstable. Cleo might have trouble hearing you.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
+      };
+
       // Initialize RealtimeChat
       rtcRef.current = new RealtimeChat(
         handleMessage,
         selectedMicrophoneId,
-        selectedSpeakerId
+        selectedSpeakerId,
+        handleWebRTCStateChange
       );
 
       const result = await rtcRef.current.init(

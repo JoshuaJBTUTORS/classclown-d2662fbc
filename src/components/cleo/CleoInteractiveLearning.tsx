@@ -14,7 +14,7 @@ import CleoAvatar from './CleoAvatar';
 import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pause, CheckCircle, Trophy } from 'lucide-react';
+import { ArrowLeft, Pause, CheckCircle, Trophy, WifiOff } from 'lucide-react';
 import { getSubjectTheme } from '@/utils/subjectTheming';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,7 @@ import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator'
 import { MinuteUsageTracker } from '@/components/voice/MinuteUsageTracker';
 import { VoiceSpeedControl } from './VoiceSpeedControl';
 import { QuickPromptButtons } from './QuickPromptButtons';
+import { WebRTCConnectionState } from '@/utils/RealtimeChat';
 import { Loader2 } from 'lucide-react';
 interface CleoInteractiveLearningProps {
   lessonData: LessonData;
@@ -124,6 +125,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const preWorkedExampleSpeedRef = useRef<number | null>(null); // Store speed before worked example
   const currentWorkedExampleStepRef = useRef<string | null>(null); // Track which step is a worked example
   const [lastCleoResponses, setLastCleoResponses] = useState<string[]>([]); // Track last 2 Cleo responses for repeat
+  const [webRTCConnectionState, setWebRTCConnectionState] = useState<WebRTCConnectionState>('new');
 
   // Check for saved state and show resume dialog
   useEffect(() => {
@@ -528,6 +530,28 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         </div>
       </div>
 
+      {/* Connection Warning Banner */}
+      {(webRTCConnectionState === 'disconnected' || webRTCConnectionState === 'failed') && connectionState === 'connected' && (
+        <div className="max-w-[1120px] mx-auto px-8 mb-2">
+          <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <WifiOff className="h-5 w-5 text-yellow-600" />
+              <span className="text-yellow-800 text-sm font-medium">
+                Connection unstable - check your internet
+              </span>
+            </div>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={handleVoiceConnect}
+              className="border-yellow-600 text-yellow-700 hover:bg-yellow-50"
+            >
+              Reconnect
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Wrapper */}
       <div className="cleo-interactive-wrapper">
         <div className="cleo-layout">
@@ -752,6 +776,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
             }
           }} 
           onSpeedChange={speed => setVoiceSpeed(speed)} 
+          onWebRTCStateChange={setWebRTCConnectionState}
           voiceSpeed={voiceSpeed} 
           selectedMicrophoneId={selectedMicrophone?.deviceId} 
           selectedSpeakerId={selectedSpeaker?.deviceId} 
