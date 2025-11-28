@@ -560,7 +560,20 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
               // For text input, aId IS the answer text; for MCQ, find from options
               const answerText = isTextInput 
                 ? aId  // aId contains the typed answer for text input
-                : (questionData?.options?.find((o: any) => o.id === aId)?.text || '');
+                : (() => {
+                    // For MCQ: aId is either option.id or fallback "option-{index}"
+                    // First try exact ID match
+                    const directMatch = questionData?.options?.find((o: any) => o.id === aId);
+                    if (directMatch) return directMatch.text;
+                    
+                    // Extract index from "option-0", "option-1" format (used when options lack IDs)
+                    const indexMatch = aId.match(/^option-(\d+)$/);
+                    if (indexMatch) {
+                      const index = parseInt(indexMatch[1], 10);
+                      return questionData?.options?.[index]?.text || '';
+                    }
+                    return '';
+                  })();
 
               // Validate answer text exists - don't send empty answers to Cleo
               if (!answerText || answerText.trim() === '') {
