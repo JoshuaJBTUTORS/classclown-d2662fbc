@@ -716,17 +716,33 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
       {/* Hidden Voice Chat Component */}
       <div className="hidden">
-        <CleoVoiceChat conversationId={currentConversationId} topic={lessonData.topic} yearGroup={lessonData.yearGroup} lessonPlan={lessonPlan} onContentEvent={handleContentEventWithUpsert} onConnectionStateChange={setConnectionState} onListeningChange={setIsListening} onSpeakingChange={setIsSpeaking} onConversationCreated={id => {
-        console.log('🎯 Conversation created, setting ID:', id);
-        console.log('🎯 Current state before update:', currentConversationId);
-        setCurrentConversationId(id);
-        console.log('🎯 State update triggered for:', id);
-      }} onProvideControls={controls => {
-        controlsRef.current = controls;
-        if (controls.isMuted !== undefined) {
-          setIsMuted(controls.isMuted);
-        }
-      }} onSpeedChange={speed => setVoiceSpeed(speed)} voiceSpeed={voiceSpeed} selectedMicrophoneId={selectedMicrophone?.deviceId} selectedSpeakerId={selectedSpeaker?.deviceId} />
+        <CleoVoiceChat 
+          conversationId={currentConversationId} 
+          topic={lessonData.topic} 
+          yearGroup={lessonData.yearGroup} 
+          lessonPlan={lessonPlan} 
+          lessonContent={lessonData.content}
+          onContentEvent={handleContentEventWithUpsert} 
+          onConnectionStateChange={setConnectionState} 
+          onListeningChange={setIsListening} 
+          onSpeakingChange={setIsSpeaking} 
+          onConversationCreated={id => {
+            console.log('🎯 Conversation created, setting ID:', id);
+            console.log('🎯 Current state before update:', currentConversationId);
+            setCurrentConversationId(id);
+            console.log('🎯 State update triggered for:', id);
+          }} 
+          onProvideControls={controls => {
+            controlsRef.current = controls;
+            if (controls.isMuted !== undefined) {
+              setIsMuted(controls.isMuted);
+            }
+          }} 
+          onSpeedChange={speed => setVoiceSpeed(speed)} 
+          voiceSpeed={voiceSpeed} 
+          selectedMicrophoneId={selectedMicrophone?.deviceId} 
+          selectedSpeakerId={selectedSpeaker?.deviceId} 
+        />
       </div>
 
       {/* Resume Dialog */}
