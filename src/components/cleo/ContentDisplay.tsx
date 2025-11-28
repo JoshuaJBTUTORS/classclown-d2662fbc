@@ -85,7 +85,17 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'table':
         return <TableBlock data={block.data} onContentAction={handleContentAction} />;
       case 'question':
-        return <QuestionBlock data={block.data} onAnswer={onAnswerQuestion} onAskHelp={onAskHelp} subject={subject} />;
+        return (
+          <QuestionBlock 
+            data={block.data} 
+            onAnswer={(questionId, answerId, isCorrect) => {
+              // Use block.id instead of data.id since question data doesn't have an id field
+              onAnswerQuestion(block.id, answerId, isCorrect);
+            }}
+            onAskHelp={onAskHelp} 
+            subject={subject} 
+          />
+        );
       case 'definition':
         return <DefinitionBlock data={block.data} onContentAction={handleContentAction} />;
       case 'diagram':
