@@ -3,7 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RealtimeChat } from '@/utils/RealtimeChat';
 import { ElevenLabsPlayer } from '@/utils/ElevenLabsPlayer';
 import { supabase } from '@/integrations/supabase/client';
-import { ContentEvent } from '@/types/lessonContent';
+import { ContentEvent, ContentBlock } from '@/types/lessonContent';
 import { getRandomFiller } from '@/assets/audio/cleoFillers';
 
 interface Message {
@@ -26,6 +26,7 @@ interface CleoVoiceChatProps {
       duration_minutes?: number;
     }>;
   };
+  lessonContent?: ContentBlock[]; // All content blocks for screen state tracking
   onConversationCreated?: (id: string) => void;
   onContentEvent?: (event: ContentEvent) => void;
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
@@ -50,6 +51,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   topic,
   yearGroup,
   lessonPlan,
+  lessonContent,
   onConversationCreated,
   onContentEvent,
   onConnectionStateChange,
@@ -78,10 +80,37 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const ttsPromiseChain = useRef<Promise<void>>(Promise.resolve()); // Chain TTS requests sequentially
   const currentSpeedRef = useRef<number>(voiceSpeed || 0.9); // Track current speed
   
+  // Screen state tracking for Cleo awareness
+  const visibleContentIds = useRef<Set<string>>(new Set());
+  const currentStepContentIds = useRef<string[]>([]); // All content IDs for current step
+  
   // Speech confirmation buffer refs (NOT USED - VAD handled server-side by OpenAI)
   const speechStartTime = useRef<number | null>(null);
   const interruptionTimer = useRef<NodeJS.Timeout | null>(null);
   const isSpeakingRef = useRef(false);
+
+  // Helper: Get meaningful title from content block for Cleo's screen state awareness
+  const getContentTitle = (block: ContentBlock): string => {
+    switch (block.type) {
+      case 'definition':
+        return block.data?.term || 'Definition';
+      case 'text':
+        const text = typeof block.data === 'string' ? block.data : block.data?.content;
+        return text?.substring(0, 50) + (text?.length > 50 ? '...' : '') || 'Text';
+      case 'worked_example':
+        return block.data?.title || 'Worked Example';
+      case 'question':
+        return block.data?.question?.substring(0, 40) + (block.data?.question?.length > 40 ? '...' : '') || 'Question';
+      case 'table':
+        return block.data?.title || 'Table';
+      case 'diagram':
+        return block.data?.title || 'Diagram';
+      case 'quote_analysis':
+        return block.data?.quote?.substring(0, 30) + (block.data?.quote?.length > 30 ? '...' : '') || 'Quote';
+      default:
+        return block.type;
+    }
+  };
 
   // Helper: Detect complete sentences (but NOT decimal points in numbers)
   const detectSentenceEnd = (text: string): number => {
@@ -425,6 +454,29 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               // Clear current transcript display
               setCurrentTranscript('');
               
+              // Build screen state for Cleo's awareness
+              const stepBlocks = lessonContent?.filter(b => b.stepId === stepId) || [];
+              currentStepContentIds.current = stepBlocks.map(b => b.id);
+              
+              // First block will be visible
+              const firstBlock = stepBlocks[0];
+              if (firstBlock) {
+                visibleContentIds.current.add(firstBlock.id);
+              }
+              
+              // Build detailed descriptions for Cleo
+              const visibleDesc = firstBlock 
+                ? `[${firstBlock.type.toUpperCase()}] "${getContentTitle(firstBlock)}"`
+                : 'None';
+              
+              const hiddenBlocks = stepBlocks.slice(1);
+              const hiddenDesc = hiddenBlocks.length > 0
+                ? hiddenBlocks.map(b => `[${b.type}] "${getContentTitle(b)}"`).join(', ')
+                : 'None';
+              
+              console.log(`📚 Screen state - Visible: ${visibleDesc}`);
+              console.log(`📚 Screen state - Hidden: ${hiddenDesc}`);
+              
               // Emit content marker event to show step content
               if (onContentEvent) {
                 onContentEvent({
@@ -433,7 +485,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 });
               }
               
-              // Confirm to OpenAI
+              // Confirm to OpenAI with rich screen state
               rtcRef.current?.sendEvent({
                 type: 'conversation.item.create',
                 item: {
@@ -441,7 +493,13 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                   call_id: callId,
                   output: JSON.stringify({ 
                     success: true, 
-                    message: `Moved to step: ${stepTitle}. The FIRST content block is now visible. Call show_next_content to reveal additional pieces one at a time.` 
+                    step: stepTitle,
+                    screen_state: {
+                      now_visible: visibleDesc,
+                      still_hidden: hiddenDesc,
+                      total_items_in_step: stepBlocks.length,
+                      instruction: "ONLY discuss the 'now_visible' content. Do NOT mention hidden items. Call show_next_content to reveal additional pieces one at a time."
+                    }
                   })
                 }
               });
@@ -491,6 +549,12 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               console.log(`📚 ========== SHOW_NEXT_CONTENT CALLED ==========`);
               console.log(`📚 Reason: ${reason}`);
               
+              // Find the next unrevealed content in current step
+              const nextBlock = lessonContent?.find(b => 
+                currentStepContentIds.current.includes(b.id) && 
+                !visibleContentIds.current.has(b.id)
+              );
+              
               // Emit event to show next content block
               if (onContentEvent) {
                 onContentEvent({
@@ -498,18 +562,59 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 });
               }
               
-              // Confirm to OpenAI
-              rtcRef.current?.sendEvent({
-                type: 'conversation.item.create',
-                item: {
-                  type: 'function_call_output',
-                  call_id: callId,
-                  output: JSON.stringify({ 
-                    success: true, 
-                    message: `Next content revealed: ${reason}` 
-                  })
-                }
-              });
+              if (nextBlock) {
+                visibleContentIds.current.add(nextBlock.id);
+                
+                // Count remaining hidden
+                const remainingCount = currentStepContentIds.current.filter(
+                  id => !visibleContentIds.current.has(id)
+                ).length;
+                
+                // Get remaining hidden descriptions
+                const remainingHidden = lessonContent?.filter(b => 
+                  currentStepContentIds.current.includes(b.id) && 
+                  !visibleContentIds.current.has(b.id)
+                ) || [];
+                
+                const remainingDesc = remainingHidden.length > 0
+                  ? remainingHidden.map(b => `[${b.type}] "${getContentTitle(b)}"`).join(', ')
+                  : 'None';
+                
+                console.log(`📚 Just revealed: [${nextBlock.type}] "${getContentTitle(nextBlock)}"`);
+                console.log(`📚 Remaining hidden (${remainingCount}): ${remainingDesc}`);
+                
+                // Confirm to OpenAI with rich screen state
+                rtcRef.current?.sendEvent({
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'function_call_output',
+                    call_id: callId,
+                    output: JSON.stringify({ 
+                      success: true,
+                      just_revealed: `[${nextBlock.type.toUpperCase()}] "${getContentTitle(nextBlock)}"`,
+                      remaining_hidden: remainingCount,
+                      still_hidden: remainingDesc,
+                      instruction: remainingCount > 0 
+                        ? `${remainingCount} more item(s) in this step. Discuss the just_revealed content NOW. Call show_next_content when ready to reveal more.`
+                        : "All content for this step is now visible. You may complete this step when done discussing."
+                    })
+                  }
+                });
+              } else {
+                // No more content to show
+                console.log(`📚 No more content to reveal in this step`);
+                rtcRef.current?.sendEvent({
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'function_call_output',
+                    call_id: callId,
+                    output: JSON.stringify({ 
+                      success: false,
+                      message: "All content for this step is already visible. Complete this step with complete_step, then move to the next step with move_to_step."
+                    })
+                  }
+                });
+              }
               
               // Trigger next response
               rtcRef.current?.sendEvent({ type: 'response.create' });
