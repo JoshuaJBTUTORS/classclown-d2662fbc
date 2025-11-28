@@ -22,6 +22,11 @@ export function getDifficultyTierPrompt(
       basePrompt += `
 📚 MATHS FOUNDATION LEVEL STRUCTURE:
 
+⚠️ GCSE SCOPE REMINDER:
+- This is GCSE Foundation tier content (Grades 1-4)
+- All content must be within GCSE Foundation specification
+- Focus on accessible, confidence-building material
+
 **Lesson Structure (15-20 minutes):**
 1. **Starter** (2 min): Quick recap with simple retrieval question
 2. **Worked Example 1** (3 min): Very simple, highly scaffolded, single operations
@@ -51,6 +56,11 @@ Answer: "8"
       basePrompt += `
 📚 MATHS INTERMEDIATE LEVEL STRUCTURE:
 
+⚠️ GCSE SCOPE REMINDER:
+- This is GCSE content bridging Foundation and Higher (Grades 4-6)
+- All content must be within GCSE specification
+- Mix of Foundation and Higher tier GCSE content
+
 **Lesson Structure (15-20 minutes):**
 1. **Starter** (2 min): Recap with simple retrieval question
 2. **Worked Example 1** (3 min): Multi-step problem with moderate scaffolding
@@ -79,19 +89,40 @@ Answer: "$$4x + 2$$"
       basePrompt += `
 📚 MATHS HIGHER LEVEL STRUCTURE:
 
+⚠️ CRITICAL GCSE BOUNDARY WARNING:
+- "Higher" means GCSE Higher tier (Grades 6-9) - NOT A-Level content
+- ALL content MUST be within GCSE specification
+- When in doubt, simplify rather than escalate complexity
+- Do NOT include content that would only appear at A-Level
+
+🚫 STAY WITHIN GCSE - WHAT NOT TO INCLUDE:
+- ❌ Calculus (differentiation, integration) - A-Level only
+- ❌ Complex numbers - A-Level only
+- ❌ Matrices beyond basic 2x2 - A-Level only
+- ❌ Advanced statistics (binomial distribution, etc.) - A-Level only
+- ❌ Logarithms beyond basic log laws - A-Level only
+
+✅ GCSE HIGHER TIER INCLUDES:
+- ✅ Algebraic fractions, surds, indices
+- ✅ Quadratics (factoring, formula, completing square)
+- ✅ Simultaneous equations (linear & quadratic)
+- ✅ Circle theorems, trigonometry (sine/cosine rules)
+- ✅ Algebraic proofs, iteration
+- ✅ Vectors (basic), transformations
+
 **Lesson Structure (15-20 minutes):**
 1. **Starter** (2 min): Challenge retrieval question
-2. **Worked Example 1** (3 min): Advanced, algebra-heavy, minimal scaffolding
-3. **Worked Example 2** (3 min): Complex multi-concept problem
+2. **Worked Example 1** (3 min): Advanced GCSE, algebra-heavy, minimal scaffolding
+3. **Worked Example 2** (3 min): Complex multi-concept GCSE problem
 4. **Guided Practice x2** (6 min): Challenging reasoning, minimal support
-5. **Independent Practice** (4 min): Higher-tier 6+ mark exam questions
+5. **Independent Practice** (4 min): Higher-tier 6+ mark GCSE exam questions
 
 **Content Requirements:**
-- Worked examples: Advanced algebraic manipulation with concise explanations
+- Worked examples: Advanced algebraic manipulation within GCSE scope
 - Questions: Minimal hints, expect independent problem-solving
-- Higher-tier exam questions with multiple steps
-- Include proof, reasoning, and problem-solving questions
-- Use advanced mathematical notation and terminology
+- Higher-tier GCSE exam questions with multiple steps
+- Include proof, reasoning, and problem-solving questions from GCSE papers
+- Use GCSE-level mathematical notation and terminology
 
 **Example Worked Example:**
 Question: "Prove that the sum of three consecutive integers is always divisible by 3"
@@ -104,12 +135,22 @@ Answer: "Proven: $$3(n + 1)$$ is divisible by 3"
 
 **Example Question:**
 "Find the exact value of $$x$$ when $$2^{x+1} = 32$$. Show all working."
+
+✅ VALIDATION CHECK:
+Before finalizing, ask: "Would this question appear on a GCSE Higher tier paper?"
+- If YES → Include it
+- If NO → Simplify or remove
 `;
     }
   } else if (isEnglishLit) {
     if (tier === 'foundation') {
       basePrompt += `
 📚 ENGLISH LITERATURE FOUNDATION LEVEL STRUCTURE:
+
+⚠️ GCSE SCOPE REMINDER:
+- This is GCSE Foundation tier content (Grades 1-4)
+- Focus on plot understanding and basic interpretation
+- All texts and analysis within GCSE set texts
 
 **Lesson Structure (15-20 minutes):**
 1. **Context & Theme Introduction** (3 min): Very short recap, simple comprehension ("What is happening?")
@@ -145,6 +186,11 @@ Thematic Links: "Represents the hardworking poor"
     } else if (tier === 'intermediate') {
       basePrompt += `
 📚 ENGLISH LITERATURE INTERMEDIATE LEVEL STRUCTURE:
+
+⚠️ GCSE SCOPE REMINDER:
+- This is GCSE content bridging Foundation and Higher (Grades 4-6)
+- Focus on extract-based analysis with writer's methods
+- All analysis within GCSE assessment objectives
 
 **Lesson Structure (15-20 minutes):**
 1. **Context & Theme Introduction** (2 min): Retrieval + inference about the Act/Stave
@@ -186,6 +232,27 @@ Thematic Links: "Symbolizes the warmth of family vs. Scrooge's isolation"
       basePrompt += `
 📚 ENGLISH LITERATURE HIGHER LEVEL STRUCTURE:
 
+⚠️ CRITICAL GCSE BOUNDARY WARNING:
+- "Higher" means GCSE Higher tier (Grades 6-9) - NOT A-Level content
+- ALL analysis MUST be within GCSE assessment objectives (AO1-AO4)
+- When in doubt, keep analysis accessible rather than overly academic
+- Do NOT include A-Level critical theory or university-level literary criticism
+
+🚫 STAY WITHIN GCSE - WHAT NOT TO INCLUDE:
+- ❌ Extended critical theory (Marxism, feminism, postcolonialism as frameworks)
+- ❌ University-level literary terminology
+- ❌ Extensive secondary critical sources/critics
+- ❌ Cross-text comparison with non-GCSE texts
+- ❌ Overly philosophical or abstract interpretations
+
+✅ GCSE HIGHER TIER INCLUDES:
+- ✅ Sophisticated analysis of writer's methods (language, structure, form)
+- ✅ Contextual understanding (historical, social, literary context)
+- ✅ Alternative interpretations and viewpoints
+- ✅ Embedded quotations with analysis
+- ✅ Clear thesis statements and sustained arguments
+- ✅ Symbolism, motifs, foreshadowing within the text
+
 **Lesson Structure (15-20 minutes):**
 1. **Context & Theme Introduction** (2 min): High-level conceptual question
 2. **Worked Example 1** (4 min): Model Grade 8-9 paragraph with thesis, alternatives, context
@@ -196,10 +263,10 @@ Thematic Links: "Symbolizes the warmth of family vs. Scrooge's isolation"
 **Content Requirements:**
 - Focus: Deep interpretation, conceptual arguments, alternative readings, context
 - Grade 8-9 paragraph structures with thesis statements
-- Alternative interpretations and critical viewpoints
-- Contextual insight (historical, social, literary)
+- Alternative interpretations within GCSE scope (not academic critical theory)
+- Contextual insight (Victorian era, social issues, literary conventions)
 - Symbolism, foreshadowing, motifs, structure
-- Advanced terminology and sophisticated analysis
+- Advanced but accessible terminology
 
 **Example Quote Analysis Block:**
 Quote: "I wear the chain I forged in life"
@@ -218,18 +285,28 @@ Thematic Links: "Victorian social responsibility, redemption, consequences of ca
   "assessmentObjectives": ["AO1: Sustained critical analysis", "AO2: Sophisticated writer's methods", "AO3: Contextual understanding"],
   "themesFocus": ["Redemption", "Social responsibility", "Capitalism vs. morality"],
   "textReferences": "Whole text, with focus on Stave 1",
-  "successCriteria": ["Conceptual thesis", "Multiple interpretations", "Embedded quotations", "Victorian context", "Alternative critical perspectives"],
+  "successCriteria": ["Conceptual thesis", "Multiple interpretations", "Embedded quotations", "Victorian context", "Alternative viewpoints"],
   "exampleParagraph": "Dickens presents Marley as both a warning and a catalyst for change...",
   "planningPrompts": ["What does the chain symbolize?", "How does Victorian context inform this?", "What alternative interpretations exist?"],
   "answerLines": 10,
   "keywords": ["redemption", "symbolism", "context", "Victorian", "methods", "interpretation"]
 }
+
+✅ VALIDATION CHECK:
+Before finalizing, ask: "Would this analysis be expected in a GCSE Grade 8-9 response?"
+- If YES → Include it
+- If NO → Simplify to GCSE-appropriate level
 `;
     }
   } else if (isScience) {
     if (tier === 'foundation') {
       basePrompt += `
 📚 SCIENCE FOUNDATION LEVEL STRUCTURE:
+
+⚠️ GCSE SCOPE REMINDER:
+- This is GCSE Foundation tier content (Grades 1-4)
+- All content must be within GCSE Foundation specification
+- Focus on basic recall and simple understanding
 
 **Lesson Structure (15-20 minutes):**
 1. **Starter** (2 min): Quick recap
@@ -259,6 +336,11 @@ Thematic Links: "Victorian social responsibility, redemption, consequences of ca
       basePrompt += `
 📚 SCIENCE INTERMEDIATE LEVEL STRUCTURE:
 
+⚠️ GCSE SCOPE REMINDER:
+- This is GCSE content bridging Foundation and Higher (Grades 4-6)
+- All content must be within GCSE specification
+- Mix of Foundation and Higher tier GCSE content
+
 **Lesson Structure (15-20 minutes):**
 1. **Starter** (2 min): Recap with simple retrieval
 2. **Worked Example 1** (4 min): Standard multi-step explanation
@@ -286,19 +368,49 @@ Thematic Links: "Victorian social responsibility, redemption, consequences of ca
       basePrompt += `
 📚 SCIENCE HIGHER LEVEL STRUCTURE:
 
+⚠️ CRITICAL GCSE BOUNDARY WARNING:
+- "Higher" means GCSE Higher tier (Grades 6-9) - NOT A-Level content
+- ALL content MUST be within GCSE specification
+- When in doubt, simplify rather than escalate complexity
+- Do NOT include content that would only appear at A-Level
+
+🚫 STAY WITHIN GCSE - WHAT NOT TO INCLUDE:
+
+PHYSICS:
+- ❌ Calculus-based kinematics or mechanics
+- ❌ Complex vector analysis beyond basic resolution
+- ❌ Quantum mechanics, wave-particle duality details
+- ❌ Electromagnetic induction beyond basic concepts
+- ✅ Include: $$v = u + at$$, $$s = ut + \\dfrac{1}{2}at^2$$, $$F = ma$$, $$P = IV$$, basic circuits
+
+CHEMISTRY:
+- ❌ Henderson-Hasselbalch equation
+- ❌ Complex organic mechanisms (nucleophilic substitution details)
+- ❌ Entropy calculations, Gibbs free energy
+- ❌ Advanced electrochemistry beyond basic cells
+- ✅ Include: Moles calculations, balancing equations, rates of reaction, equilibrium basics
+
+BIOLOGY:
+- ❌ Krebs cycle detailed steps
+- ❌ Complex biochemical pathways
+- ❌ Advanced genetics beyond Punnett squares and inheritance patterns
+- ❌ Detailed immunology beyond basic immune response
+- ✅ Include: Photosynthesis/respiration equations, inheritance crosses, limiting factors, organ systems
+
 **Lesson Structure (15-20 minutes):**
 1. **Starter** (2 min): Challenge question
-2. **Worked Example 1** (4 min): Complex calculation or multi-concept problem
-3. **Worked Example 2** (3 min): 6-mark reasoning/exam style
+2. **Worked Example 1** (4 min): Complex GCSE calculation or multi-concept problem
+3. **Worked Example 2** (3 min): 6-mark reasoning/exam style from GCSE papers
 4. **Guided Practice x2** (6 min): Minimal support
-5. **Independent Practice** (5 min): Higher-tier exam questions
+5. **Independent Practice** (5 min): Higher-tier GCSE exam questions
 
 **Content Requirements:**
-- Complex reasoning questions
-- Multi-concept integration
-- 6+ mark exam questions
+- Complex reasoning questions WITHIN GCSE specification
+- Multi-concept integration of GCSE-level concepts
+- 6+ mark exam questions from GCSE past papers
 - Minimal scaffolding
-- Advanced scientific terminology
+- Advanced GCSE terminology (not A-Level terminology)
+- Triple Science (separate sciences) level complexity maximum
 
 **Example Question (Extended Writing - Higher):**
 {
@@ -309,6 +421,11 @@ Thematic Links: "Victorian social responsibility, redemption, consequences of ca
   "keywords": ["light intensity", "temperature", "CO2", "limiting factors", "optimization", "cost-benefit"],
   "explanation": "Students should discuss light, temperature, and CO2 as limiting factors, with practical applications and economic considerations."
 }
+
+✅ VALIDATION CHECK:
+Before finalizing, ask: "Would this question appear on a GCSE Higher tier paper?"
+- If YES → Include it
+- If NO → Simplify or remove
 `;
     }
   }
