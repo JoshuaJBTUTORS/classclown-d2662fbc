@@ -23,27 +23,51 @@ export function convertLatexToSpeech(text: string): string {
   result = result.replace(/\\left/g, '');
   result = result.replace(/\\right/g, '');
   
-  // Fractions: \frac{a}{b} or \dfrac{a}{b} → "a over b"
-  result = result.replace(/\\d?frac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
+  // Remove \text{} wrapper but keep content
+  result = result.replace(/\\text\{([^}]+)\}/g, '$1');
   
-  // Powers: x^2 → "x squared", x^3 → "x cubed", x^{n} → "x to the power of n"
-  result = result.replace(/\^2(?![0-9])/g, ' squared');
-  result = result.replace(/\^3(?![0-9])/g, ' cubed');
-  result = result.replace(/\^\{([^}]+)\}/g, ' to the power of $1');
-  result = result.replace(/\^([0-9]+)/g, ' to the power of $1');
+  // Fractions: \frac{a}{b}, \dfrac{a}{b}, \tfrac{a}{b} → "a over b"
+  result = result.replace(/\\d?frac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
+  result = result.replace(/\\tfrac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
   
   // Roots: \sqrt{x} → "square root of x", \sqrt[3]{x} → "cube root of x"
   result = result.replace(/\\sqrt\[3\]\{([^}]+)\}/g, 'cube root of $1');
   result = result.replace(/\\sqrt\{([^}]+)\}/g, 'square root of $1');
+  
+  // Subscripts: a_{c} or a_c → "a sub c"
+  result = result.replace(/_\{([^}]+)\}/g, ' sub $1');
+  result = result.replace(/_([a-zA-Z0-9])/g, ' sub $1');
+  
+  // Powers: x^2 → "x squared", x^3 → "x cubed", x^{n} → "x to the power of n"
+  result = result.replace(/\^\{2\}/g, ' squared');
+  result = result.replace(/\^\{3\}/g, ' cubed');
+  result = result.replace(/\^\{([^}]+)\}/g, ' to the power of $1');
+  result = result.replace(/\^2(?![0-9])/g, ' squared');
+  result = result.replace(/\^3(?![0-9])/g, ' cubed');
+  result = result.replace(/\^([0-9]+)/g, ' to the power of $1');
+  
+  // Comparison/approximation symbols
+  result = result.replace(/\\approx/g, 'approximately');
+  result = result.replace(/\\sim/g, 'approximately');
+  result = result.replace(/\\leq/g, 'less than or equal to');
+  result = result.replace(/\\geq/g, 'greater than or equal to');
+  result = result.replace(/\\neq/g, 'not equal to');
+  result = result.replace(/\\lt/g, 'less than');
+  result = result.replace(/\\gt/g, 'greater than');
   
   // Operations
   result = result.replace(/\\times/g, ' times ');
   result = result.replace(/\\div/g, ' divided by ');
   result = result.replace(/\\pm/g, ' plus or minus ');
   result = result.replace(/\\cdot/g, ' times ');
+  result = result.replace(/\\pi/g, 'pi');
+  result = result.replace(/\\infty/g, 'infinity');
   
   // Percentages: 25\% → "25 percent"
   result = result.replace(/\\%/g, ' percent');
+  
+  // Catch-all: remove any remaining backslash commands
+  result = result.replace(/\\[a-zA-Z]+/g, '');
   
   // Clean up extra spaces
   result = result.replace(/\s+/g, ' ').trim();
