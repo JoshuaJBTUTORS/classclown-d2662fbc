@@ -1,10 +1,23 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { LessonData, ContentEvent } from '@/types/lessonContent';
 
 export const useContentSync = (lessonData: LessonData, onStateChange?: (state: { activeStep: number; visibleContent: string[]; completedSteps: string[] }) => void) => {
   const [activeStep, setActiveStep] = useState(0);
   const [visibleContent, setVisibleContent] = useState<string[]>([]);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+
+  // Refs to always have access to latest state values (fixes stale closure bug)
+  const activeStepRef = useRef(activeStep);
+  const visibleContentRef = useRef(visibleContent);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    activeStepRef.current = activeStep;
+  }, [activeStep]);
+
+  useEffect(() => {
+    visibleContentRef.current = visibleContent;
+  }, [visibleContent]);
 
   const showContent = useCallback((contentId: string) => {
     console.log('📚 Showing content:', contentId);
@@ -68,7 +81,7 @@ export const useContentSync = (lessonData: LessonData, onStateChange?: (state: {
               console.warn('⚠️ No content blocks found for step:', event.stepId);
             }
             
-            // ✅ NEW: Only show the FIRST content block, not all
+            // ✅ Only show the FIRST content block, not all
             if (stepContent.length > 0) {
               const firstContentId = stepContent[0];
               setVisibleContent(prev => {
@@ -110,22 +123,50 @@ export const useContentSync = (lessonData: LessonData, onStateChange?: (state: {
           break;
         
         case 'show_next_content':
-          // Reveal the next unrevealed content block for the current step
-          const currentStepId = lessonData.steps[activeStep]?.id;
+          // Use refs to get LATEST state values (fixes stale closure bug)
+          const currentActiveStep = activeStepRef.current;
+          const currentVisibleContent = visibleContentRef.current;
+          
+          console.log('📚 ========== PROCESSING SHOW_NEXT_CONTENT ==========');
+          console.log('📚 Current activeStep (from ref):', currentActiveStep);
+          console.log('📚 Current visibleContent (from ref):', currentVisibleContent);
+          
+          const currentStepId = lessonData.steps[currentActiveStep]?.id;
           if (currentStepId) {
             const currentStepContent = lessonData.content
               .filter(block => block.stepId === currentStepId)
               .map(block => block.id);
             
+            console.log('📚 Content blocks for current step:', currentStepContent);
+            
             // Find the first unrevealed content block in this step
-            const nextContentId = currentStepContent.find(id => !visibleContent.includes(id));
+            const nextContentId = currentStepContent.find(id => !currentVisibleContent.includes(id));
             
             if (nextContentId) {
               console.log('📚 ➕ show_next_content: Revealing:', nextContentId);
               setVisibleContent(prev => [...prev, nextContentId]);
             } else {
               console.log('📚 ℹ️ show_next_content: All content for step already visible');
+              console.log('📚 Looking for content in NEXT step...');
+              
+              // Try to find content in the next step
+              const nextStepIndex = currentActiveStep + 1;
+              if (nextStepIndex < lessonData.steps.length) {
+                const nextStepId = lessonData.steps[nextStepIndex]?.id;
+                const nextStepContent = lessonData.content
+                  .filter(block => block.stepId === nextStepId)
+                  .map(block => block.id);
+                
+                const firstNextStepContent = nextStepContent.find(id => !currentVisibleContent.includes(id));
+                if (firstNextStepContent) {
+                  console.log('📚 ➕ Revealing first content of next step:', firstNextStepContent);
+                  setVisibleContent(prev => [...prev, firstNextStepContent]);
+                  setActiveStep(nextStepIndex);
+                }
+              }
             }
+          } else {
+            console.warn('📚 ⚠️ No current step ID found for activeStep:', currentActiveStep);
           }
           break;
         case 'lesson_complete':
