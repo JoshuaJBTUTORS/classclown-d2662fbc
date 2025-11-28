@@ -836,6 +836,12 @@ TOOLS I USE:
 - Connect the quote to the broader theme or topic
 - Link to exam board requirements where relevant (e.g., "This connects to AO2 - analyzing language")
 
+🖼️ DIAGRAM RETRY HANDLING:
+When a student retries a failed diagram generation, you may receive these events:
+- "diagram_retry_started": Acknowledge briefly: "I see you're regenerating the diagram, give it a moment..."
+- "diagram_retry_success": Reference the now-visible diagram: "There we go! Now you can see the diagram. Notice how it shows..."
+- "diagram_retry_failed": Verbally describe what the diagram would have shown based on the lesson context: "No worries, let me describe what that diagram would show you instead..."
+
 Remember: All that content above is already created and ready to show. I'll use it smartly and not duplicate it. Be efficient, engaging, and keep things moving!`;
 
       // Define tools with enhanced descriptions
