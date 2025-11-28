@@ -20,6 +20,7 @@ interface SlideContentDisplayProps {
   onAskHelp?: (questionId: string, questionText: string) => void;
   isExamPractice?: boolean;
   subject?: string;
+  allowForwardNavigation?: boolean; // Control whether user can navigate forward (peek ahead)
 }
 
 export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
@@ -32,6 +33,7 @@ export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
   onAskHelp,
   isExamPractice,
   subject,
+  allowForwardNavigation = false, // Default: no peeking ahead - Cleo controls content reveal
 }) => {
   // Filter to only visible content blocks
   const visibleBlocks = content.filter(
@@ -126,8 +128,13 @@ export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
         currentIndex={currentSlideIndex}
         totalSlides={totalSlides}
         onPrevious={handlePrevious}
-        onNext={handleNext}
-        onDotClick={onSlideChange}
+        onNext={allowForwardNavigation ? handleNext : undefined}
+        onDotClick={(index) => {
+          // Only allow clicking on past/current slides unless forward navigation allowed
+          if (allowForwardNavigation || index <= currentSlideIndex) {
+            onSlideChange(index);
+          }
+        }}
       />
     </div>
   );

@@ -429,40 +429,47 @@ When a user says things like:
 Then briefly acknowledge: "Of course! I'll slow down a bit." or "Sure, I'll speed up!"
 Speed adjusts by 0.1 each time within range 0.7-1.2.
 
-🚨🚨🚨 MOVE_TO_STEP MANDATORY RULE (MOST CRITICAL RULE - READ THIS FIRST) 🚨🚨🚨
+🚨🚨🚨 CONTENT DELIVERY SYSTEM (MOST CRITICAL - READ FIRST) 🚨🚨🚨
 
-YOU **MUST** CALL move_to_step BEFORE EXPLAINING ANY TEACHING CONTENT.
+📚 ONE CONTENT BLOCK AT A TIME:
+The student sees content ONE piece at a time like a slideshow. You control what they see:
 
-⛔ IF YOU DO NOT CALL move_to_step:
+1. move_to_step → Shows ONLY the FIRST content block for that step
+2. show_next_content → Reveals the NEXT content block (one at a time)
+
+⛔ IF YOU DO NOT CALL THESE TOOLS:
 - The student will see a COMPLETELY BLANK screen
 - They CANNOT see the tables, definitions, questions, or worked examples
 - The lesson WILL NOT WORK - you'll be talking about content they can't see!
-- This is the #1 cause of confusing lessons
 
-✅ WHEN TO CALL move_to_step (EVERY TIME):
-1. Immediately after completing the 5-step introduction (after "Brilliant, let's do it!")
-2. Before teaching EACH new step/section
-3. After a student confirms they're ready to move on
+✅ CORRECT FLOW FOR EACH STEP:
+1. Ask: "Ready for [step name]?"
+2. Student: "Yes"
+3. Call move_to_step({stepId: "...", stepTitle: "..."}) → FIRST block appears (e.g., definition)
+4. Explain what's now on screen (2-3 sentences)
+5. Say: "Now let me show you an example..."
+6. Call show_next_content({reason: "showing worked example"}) → NEXT block appears
+7. Explain that content
+8. Repeat show_next_content for each additional piece (questions, etc.)
+
+📝 EXAMPLE:
+- You: "Let's start with fractions. Have a look at your screen..."
+- [CALL move_to_step] → Definition appears
+- You: "So a fraction is a way of showing parts of a whole..." (explain)
+- You: "Right, let me show you how this works in practice..."
+- [CALL show_next_content({reason: "showing worked example"})] → Worked example appears  
+- You: "Look at this example. We have three over four..." (explain)
+- You: "Ready to have a go yourself?"
+- [CALL show_next_content({reason: "showing practice question"})] → Question appears
+- You: "Have a look at this question and use the buttons on screen to answer."
 
 ❌ NEVER:
-- Start explaining a step's content without first calling move_to_step
-- Reference content (tables, diagrams, questions) that isn't visible yet
-- Skip the tool call and go straight to teaching
-- Say "look at your screen" without actually calling the function
+- Start explaining content without first calling move_to_step
+- Reference content that hasn't been revealed yet
+- Skip show_next_content and expect all content to be visible
+- Describe the next piece before revealing it
 
-✅ CORRECT FLOW (MEMORIZE THIS):
-1. Ask: "Ready to move on to [step name]?"
-2. Student: "Yes" / "Sure" / "Let's go"
-3. YOU: "Okay, have a look at your screen..." 
-4. **IMMEDIATELY CALL move_to_step({stepId: "...", stepTitle: "..."})**
-5. THEN explain the content that now appears on their screen
-
-❌ INCORRECT FLOW (CAUSES BLANK SCREEN):
-1. Ask: "Ready to move on to [step name]?"
-2. Student: "Yes"  
-3. YOU: Start explaining the content ❌ ← WRONG! Student sees nothing!
-
-🔴 REMINDER: Before EVERY explanation, ask yourself: "Did I call move_to_step?" If no, STOP and call it NOW.
+🔴 REMEMBER: Student can ONLY see content you've revealed. They CANNOT peek ahead!
 
 ⏭️ SKIP TO EXAM QUESTIONS:
 When a user says things like:
@@ -907,6 +914,21 @@ Remember: All that content above is already created and ready to show. I'll use 
             analysis: { type: "string", description: "Analysis linking the quote to the topic (2-4 sentences)" }
           },
           required: ["id", "quote", "analysis"]
+        }
+      },
+      {
+        type: "function",
+        name: "show_next_content",
+        description: "Reveal the NEXT content block for the current step. When you call move_to_step, only the FIRST content block appears. Call show_next_content to reveal each additional piece (worked example, question, etc.) one at a time. This gives you control over pacing - the student cannot peek ahead.",
+        parameters: {
+          type: "object",
+          properties: {
+            reason: { 
+              type: "string", 
+              description: "Brief note about what content is being revealed next (e.g., 'showing worked example', 'showing practice question')" 
+            }
+          },
+          required: ["reason"]
         }
       },
       {
