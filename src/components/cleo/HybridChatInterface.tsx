@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { VoiceControls } from './VoiceControls';
-import { ContentDisplay } from './ContentDisplay';
+import { SlideContentDisplay } from './SlideContentDisplay';
 import { LessonRulesCard } from './LessonRulesCard';
 import { QuickPromptButtons } from './QuickPromptButtons';
 import { Send, Loader2 } from 'lucide-react';
@@ -36,6 +36,8 @@ interface HybridChatInterfaceProps {
   onQuickPrompt?: (prompt: string) => void;
   onRepeatLast?: () => void;
   isSaving?: boolean;
+  currentSlideIndex?: number;
+  onSlideChange?: (index: number) => void;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -62,10 +64,17 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   onQuickPrompt,
   onRepeatLast,
   isSaving,
+  currentSlideIndex = 0,
+  onSlideChange,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [questionStartTimes, setQuestionStartTimes] = useState<Record<string, number>>({});
+  const [internalSlideIndex, setInternalSlideIndex] = useState(0);
+  
+  // Use external slide index if provided, otherwise internal
+  const slideIndex = onSlideChange ? currentSlideIndex : internalSlideIndex;
+  const handleSlideChange = onSlideChange || setInternalSlideIndex;
   
   // Rules card visibility: show until move_to_step is called (content becomes visible)
   const shouldShowRulesCard = !visibleContentIds || visibleContentIds.length === 0;
@@ -145,18 +154,37 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
     }
   };
 
+  // Auto-advance to latest slide when new content appears
+  useEffect(() => {
+    if (visibleContentIds && visibleContentIds.length > 0 && contentBlocks) {
+      const visibleBlocks = contentBlocks.filter(
+        block => block && block.id && visibleContentIds.includes(block.id)
+      );
+      // Auto-advance to the last (newest) slide when content is added
+      if (visibleBlocks.length > 0 && slideIndex < visibleBlocks.length - 1) {
+        handleSlideChange(visibleBlocks.length - 1);
+      }
+    }
+  }, [visibleContentIds?.length]);
+
   return (
     <div className="flex flex-col h-full">
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto space-y-6 mb-4 px-4">
+      {/* Content Area - Slide View */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Show Rules Card until move_to_step is called (content becomes visible) */}
-        {shouldShowRulesCard && <LessonRulesCard />}
+        {shouldShowRulesCard && (
+          <div className="flex-1 flex items-center justify-center px-4">
+            <LessonRulesCard />
+          </div>
+        )}
         
-        {/* Content Blocks - Show after voice connects */}
+        {/* Slide Content - Show after voice connects */}
         {isVoiceConnected && contentBlocks && visibleContentIds && visibleContentIds.length > 0 && (
-          <ContentDisplay
+          <SlideContentDisplay
             content={contentBlocks}
             visibleContent={visibleContentIds}
+            currentSlideIndex={slideIndex}
+            onSlideChange={handleSlideChange}
             onAnswerQuestion={handleAnswerQuestion}
             onContentAction={onContentAction}
             onAskHelp={onAskHelp}
@@ -164,8 +192,6 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
             subject={subject}
           />
         )}
-        
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
