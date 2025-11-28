@@ -160,6 +160,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     speakable = speakable.replace(/\\pi/g, 'pi');
     speakable = speakable.replace(/\\infty/g, 'infinity');
     
+    // Convert word-connecting hyphens to spaces (prevents TTS saying "minus")
+    // Examples: "twenty-five" → "twenty five", "step-by-step" → "step by step"
+    // Must be BEFORE math operator conversion to preserve " - " as "minus"
+    speakable = speakable.replace(/([a-zA-Z])-([a-zA-Z])/g, '$1 $2');
+    
     // Convert basic operators (after LaTeX commands to avoid conflicts)
     speakable = speakable.replace(/\+/g, ' plus ');
     speakable = speakable.replace(/ - /g, ' minus ');
