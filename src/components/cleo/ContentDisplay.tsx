@@ -89,7 +89,7 @@ export const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'definition':
         return <DefinitionBlock data={block.data} onContentAction={handleContentAction} />;
       case 'diagram':
-        return <DiagramBlock data={block.data} onContentAction={handleContentAction} />;
+        return <DiagramBlock data={block.data} onContentAction={handleContentAction} yearGroup={subject} />;
       case 'worked_example':
         return <WorkedExampleBlock data={block.data} onContentAction={handleContentAction} />;
       case 'quote_analysis':
