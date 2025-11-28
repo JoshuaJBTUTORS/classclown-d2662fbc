@@ -134,31 +134,53 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     // Remove LaTeX delimiters
     speakable = speakable.replace(/\\\(|\\\)|\\\[|\\\]|\$\$?/g, '');
     
-    // Convert fractions: \frac{a}{b} → "a over b"
-    speakable = speakable.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
+    // Remove \left and \right
+    speakable = speakable.replace(/\\left/g, '');
+    speakable = speakable.replace(/\\right/g, '');
     
-    // Convert tfrac (text fraction): \tfrac{a}{b} → "a over b"
+    // Remove \text{} wrapper but keep content
+    speakable = speakable.replace(/\\text\{([^}]+)\}/g, '$1');
+    
+    // Convert fractions: \frac{a}{b}, \dfrac{a}{b}, \tfrac{a}{b} → "a over b"
+    speakable = speakable.replace(/\\d?frac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
     speakable = speakable.replace(/\\tfrac\{([^}]+)\}\{([^}]+)\}/g, '$1 over $2');
     
     // Convert square root: \sqrt{x} → "square root of x"
+    speakable = speakable.replace(/\\sqrt\[3\]\{([^}]+)\}/g, 'cube root of $1');
     speakable = speakable.replace(/\\sqrt\{([^}]+)\}/g, 'square root of $1');
+    
+    // Convert subscripts: a_{c} or a_c → "a sub c"
+    speakable = speakable.replace(/_\{([^}]+)\}/g, ' sub $1');
+    speakable = speakable.replace(/_([a-zA-Z0-9])/g, ' sub $1');
     
     // Convert powers: ^{2} → "squared", ^{3} → "cubed", ^{n} → "to the power of n"
     speakable = speakable.replace(/\^\{2\}/g, ' squared');
     speakable = speakable.replace(/\^\{3\}/g, ' cubed');
     speakable = speakable.replace(/\^\{([^}]+)\}/g, ' to the power of $1');
-    speakable = speakable.replace(/\^2/g, ' squared');
-    speakable = speakable.replace(/\^3/g, ' cubed');
+    speakable = speakable.replace(/\^2(?![0-9])/g, ' squared');
+    speakable = speakable.replace(/\^3(?![0-9])/g, ' cubed');
+    speakable = speakable.replace(/\^([0-9]+)/g, ' to the power of $1');
     
-    // Convert common symbols
-    speakable = speakable.replace(/\\times/g, 'times');
-    speakable = speakable.replace(/\\div/g, 'divided by');
-    speakable = speakable.replace(/\\pm/g, 'plus or minus');
+    // Convert comparison/approximation symbols
+    speakable = speakable.replace(/\\approx/g, 'approximately');
+    speakable = speakable.replace(/\\sim/g, 'approximately');
     speakable = speakable.replace(/\\leq/g, 'less than or equal to');
     speakable = speakable.replace(/\\geq/g, 'greater than or equal to');
     speakable = speakable.replace(/\\neq/g, 'not equal to');
+    speakable = speakable.replace(/\\lt/g, 'less than');
+    speakable = speakable.replace(/\\gt/g, 'greater than');
+    
+    // Convert common symbols
+    speakable = speakable.replace(/\\times/g, ' times ');
+    speakable = speakable.replace(/\\div/g, ' divided by ');
+    speakable = speakable.replace(/\\pm/g, ' plus or minus ');
+    speakable = speakable.replace(/\\cdot/g, ' times ');
     speakable = speakable.replace(/\\pi/g, 'pi');
     speakable = speakable.replace(/\\infty/g, 'infinity');
+    speakable = speakable.replace(/\\%/g, ' percent');
+    
+    // Catch-all: remove any remaining backslash commands
+    speakable = speakable.replace(/\\[a-zA-Z]+/g, '');
     
     // Convert word-connecting hyphens to spaces (prevents TTS saying "minus")
     // Examples: "twenty-five" → "twenty five", "step-by-step" → "step by step"
