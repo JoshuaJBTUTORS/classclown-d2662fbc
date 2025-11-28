@@ -441,7 +441,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                   call_id: callId,
                   output: JSON.stringify({ 
                     success: true, 
-                    message: `Moved to step: ${stepTitle}. All content for this step is now visible to the student.` 
+                    message: `Moved to step: ${stepTitle}. The FIRST content block is now visible. Call show_next_content to reveal additional pieces one at a time.` 
                   })
                 }
               });
@@ -475,6 +475,38 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                   output: JSON.stringify({ 
                     success: true, 
                     message: `Step ${stepId} marked as complete.` 
+                  })
+                }
+              });
+              
+              // Trigger next response
+              rtcRef.current?.sendEvent({ type: 'response.create' });
+              break;
+            }
+            
+            // Handle show_next_content
+            if (functionName === 'show_next_content') {
+              const { reason } = args;
+              
+              console.log(`📚 ========== SHOW_NEXT_CONTENT CALLED ==========`);
+              console.log(`📚 Reason: ${reason}`);
+              
+              // Emit event to show next content block
+              if (onContentEvent) {
+                onContentEvent({
+                  type: 'show_next_content'
+                });
+              }
+              
+              // Confirm to OpenAI
+              rtcRef.current?.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify({ 
+                    success: true, 
+                    message: `Next content revealed: ${reason}` 
                   })
                 }
               });

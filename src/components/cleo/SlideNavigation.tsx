@@ -7,7 +7,7 @@ interface SlideNavigationProps {
   currentIndex: number;
   totalSlides: number;
   onPrevious: () => void;
-  onNext: () => void;
+  onNext?: () => void; // Optional - hide next button when undefined
   onDotClick: (index: number) => void;
 }
 
@@ -91,16 +91,20 @@ export const SlideNavigation: React.FC<SlideNavigationProps> = ({
         })}
       </div>
 
-      {/* Next Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onNext}
-        disabled={currentIndex === totalSlides - 1}
-        className="h-9 w-9 p-0 rounded-full"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </Button>
+      {/* Next Button - Only show if onNext is provided (forward navigation allowed) */}
+      {onNext ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onNext}
+          disabled={currentIndex === totalSlides - 1}
+          className="h-9 w-9 p-0 rounded-full"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      ) : (
+        <div className="h-9 w-9" /> // Spacer to maintain layout
+      )}
 
       {/* Slide Counter */}
       <span className="text-xs text-muted-foreground ml-2">

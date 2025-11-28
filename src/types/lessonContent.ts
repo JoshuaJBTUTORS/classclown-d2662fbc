@@ -68,7 +68,7 @@ export interface LessonData {
 }
 
 export interface ContentEvent {
-  type: 'show_content' | 'next_step' | 'complete_step' | 'ask_question' | 'upsert_content' | 'move_to_step' | 'lesson_complete';
+  type: 'show_content' | 'next_step' | 'complete_step' | 'ask_question' | 'upsert_content' | 'move_to_step' | 'lesson_complete' | 'show_next_content';
   contentId?: string;
   stepId?: string;
   questionId?: string;
