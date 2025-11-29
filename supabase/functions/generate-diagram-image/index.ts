@@ -11,9 +11,9 @@ serve(async (req) => {
   }
 
   try {
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const { prompt } = await req.json();
@@ -25,23 +25,25 @@ serve(async (req) => {
       );
     }
 
-    console.log('Generating diagram image with prompt:', prompt.substring(0, 100) + '...');
+    console.log('Generating diagram image with GPT-Image-1:', prompt.substring(0, 100) + '...');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Enhanced prompt for educational diagrams with clear text
+    const enhancedPrompt = `Educational diagram for students: ${prompt}. 
+Style: Clean white background, professional educational illustration with clearly readable text labels. 
+All text must be sharp, properly positioned, and easy to read. Use clear lines and simple shapes.`;
+
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        modalities: ['image', 'text']
+        model: 'gpt-image-1',
+        prompt: enhancedPrompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'high',
       }),
     });
 
@@ -67,14 +69,17 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const imageData = data.data?.[0]?.b64_json;
 
-    if (!imageUrl) {
+    if (!imageData) {
       console.error('No image generated in response:', JSON.stringify(data));
       throw new Error('No image generated');
     }
 
-    console.log('Image generated successfully');
+    // Convert base64 to data URL
+    const imageUrl = `data:image/png;base64,${imageData}`;
+
+    console.log('Diagram image generated successfully with GPT-Image-1');
 
     return new Response(
       JSON.stringify({ imageUrl }),
