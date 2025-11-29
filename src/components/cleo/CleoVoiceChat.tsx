@@ -27,6 +27,14 @@ interface CleoVoiceChatProps {
     }>;
   };
   lessonContent?: ContentBlock[]; // All content blocks for screen state tracking
+  resumeState?: {
+    isResuming: boolean;
+    activeStep: number;
+    visibleContentIds: string[];
+    completedSteps: string[];
+    lastStepTitle?: string;
+    lastContentBlockId?: string;
+  };
   onConversationCreated?: (id: string) => void;
   onContentEvent?: (event: ContentEvent) => void;
   onConnectionStateChange?: (state: 'idle' | 'connecting' | 'connected' | 'disconnected') => void;
@@ -44,6 +52,7 @@ interface CleoVoiceChatProps {
   }) => void;
   onSpeedChange?: (speed: number) => void;
   onWebRTCStateChange?: (state: WebRTCConnectionState) => void;
+  onPauseRequested?: () => void;
   voiceSpeed?: number;
   selectedMicrophoneId?: string;
   selectedSpeakerId?: string;
@@ -55,6 +64,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   yearGroup,
   lessonPlan,
   lessonContent,
+  resumeState,
   onConversationCreated,
   onContentEvent,
   onConnectionStateChange,
@@ -63,6 +73,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   onProvideControls,
   onSpeedChange,
   onWebRTCStateChange,
+  onPauseRequested,
   voiceSpeed,
   selectedMicrophoneId,
   selectedSpeakerId
@@ -255,14 +266,19 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
 
   const togglePause = () => {
     if (isPaused) {
-      // Resume: unmute mic
+      // Resume: unmute mic and send context-aware resume message
       rtcRef.current?.unmute();
       setIsMuted(false);
       setIsPaused(false);
       console.log('▶️ Session resumed');
       
-      // Optionally prompt Cleo to continue
-      sendUserMessage("Please continue where we left off.");
+      // Get last visible content for context
+      const lastVisibleId = Array.from(visibleContentIds.current).pop();
+      const lastContent = lessonContent?.find(b => b.id === lastVisibleId);
+      const lastContentTitle = lastContent ? getContentTitle(lastContent) : 'the lesson';
+      
+      // Send structured resume message with context
+      sendUserMessage(`[RESUME] User unpaused. Last visible content was: ${lastContentTitle}. Please do a quick mic check then continue.`);
     } else {
       // Pause: stop audio and mute mic
       elevenLabsPlayerRef.current?.stop();
@@ -270,6 +286,9 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       setIsMuted(true);
       setIsPaused(true);
       console.log('⏸️ Session paused');
+      
+      // Trigger state save callback
+      onPauseRequested?.();
     }
   };
 
@@ -913,7 +932,8 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         currentConversationId.current,
         lessonPlan?.id,
         topic,
-        yearGroup
+        yearGroup,
+        resumeState
       );
 
       currentConversationId.current = result.conversationId;

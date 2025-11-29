@@ -13,6 +13,19 @@ export interface LessonState {
   completion_percentage: number;
   created_at?: string;
   updated_at?: string;
+  // Resume tracking fields
+  last_step_title?: string;
+  last_content_block_id?: string;
+  last_cleo_message?: string;
+}
+
+export interface ResumeState {
+  isResuming: boolean;
+  activeStep: number;
+  visibleContentIds: string[];
+  completedSteps: string[];
+  lastStepTitle?: string;
+  lastContentBlockId?: string;
 }
 
 export const cleoLessonStateService = {
@@ -32,6 +45,9 @@ export const cleoLessonStateService = {
         completion_percentage: state.completion_percentage,
         paused_at: state.paused_at,
         completed_at: state.completed_at,
+        last_step_title: state.last_step_title,
+        last_content_block_id: state.last_content_block_id,
+        last_cleo_message: state.last_cleo_message,
       }, {
         onConflict: 'conversation_id'
       });
@@ -53,6 +69,9 @@ export const cleoLessonStateService = {
       ...data,
       visible_content_ids: (Array.isArray(data.visible_content_ids) ? data.visible_content_ids : []) as string[],
       completed_steps: (Array.isArray(data.completed_steps) ? data.completed_steps : []) as string[],
+      last_step_title: data.last_step_title || undefined,
+      last_content_block_id: data.last_content_block_id || undefined,
+      last_cleo_message: data.last_cleo_message || undefined,
     };
   },
 
