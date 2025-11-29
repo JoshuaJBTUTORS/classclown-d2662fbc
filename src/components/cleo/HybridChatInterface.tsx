@@ -38,6 +38,8 @@ interface HybridChatInterfaceProps {
   isSaving?: boolean;
   currentSlideIndex?: number;
   onSlideChange?: (index: number) => void;
+  isPaused?: boolean;
+  onTogglePause?: () => void;
 }
 
 export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
@@ -66,6 +68,8 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   isSaving,
   currentSlideIndex = 0,
   onSlideChange,
+  isPaused,
+  onTogglePause,
 }) => {
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -226,6 +230,8 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
               isMuted={isMuted}
               isConnecting={isConnecting}
               onRepeatLast={onRepeatLast}
+              isPaused={isPaused}
+              onTogglePause={onTogglePause}
             />
           </div>
         ) : (
