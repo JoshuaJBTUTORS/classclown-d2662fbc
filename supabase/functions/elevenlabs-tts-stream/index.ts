@@ -23,9 +23,9 @@ serve(async (req) => {
     // Clamp speed to ElevenLabs range (0.7-1.2)
     const clampedSpeed = Math.max(0.7, Math.min(1.2, speed))
 
-    // Call ElevenLabs streaming API
+    // Call ElevenLabs streaming API with optimized stability settings
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=pcm_24000&optimize_streaming_latency=3`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=pcm_24000&optimize_streaming_latency=2`,
       {
         method: 'POST',
         headers: {
@@ -37,8 +37,9 @@ serve(async (req) => {
           text,
           model_id: 'eleven_turbo_v2_5',
           voice_settings: {
-            stability: 0.5,
+            stability: 0.70,
             similarity_boost: 0.75,
+            style: 0.0,
             use_speaker_boost: false,
             speed: clampedSpeed
           }

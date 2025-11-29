@@ -25,7 +25,7 @@ serve(async (req) => {
 
     console.log(`🎙️ Generating speech for ${text.length} characters with voice ${voiceId}`);
 
-    // Call ElevenLabs streaming API
+    // Call ElevenLabs streaming API with optimized stability settings
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=mp3_22050_32`,
       {
@@ -36,10 +36,10 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_turbo_v2_5', // Fast, low-latency model
-          optimize_streaming_latency: 4, // Maximum latency optimization (0-4)
+          model_id: 'eleven_turbo_v2_5',
+          optimize_streaming_latency: 2, // Balanced latency/quality (0-4)
           voice_settings: {
-            stability: 0.5,
+            stability: 0.70,
             similarity_boost: 0.75,
             style: 0.0,
             use_speaker_boost: false
