@@ -33,7 +33,15 @@ export class RealtimeChat {
     conversationId?: string, 
     lessonPlanId?: string, 
     topic?: string, 
-    yearGroup?: string
+    yearGroup?: string,
+    resumeState?: {
+      isResuming: boolean;
+      activeStep: number;
+      visibleContentIds: string[];
+      completedSteps: string[];
+      lastStepTitle?: string;
+      lastContentBlockId?: string;
+    }
   ) {
     // Guard against duplicate connections
     if (this.pc && this.pc.connectionState !== 'closed') {
@@ -44,6 +52,9 @@ export class RealtimeChat {
     
     try {
       console.log("🔗 Initializing WebRTC connection...");
+      if (resumeState?.isResuming) {
+        console.log("🔄 Resume mode - activeStep:", resumeState.activeStep, "lastStepTitle:", resumeState.lastStepTitle);
+      }
 
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession();
@@ -61,7 +72,8 @@ export class RealtimeChat {
             conversationId,
             lessonPlanId,
             topic,
-            yearGroup
+            yearGroup,
+            resumeState
           }
         }
       );

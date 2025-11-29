@@ -909,6 +909,9 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          last_cleo_message: string | null
+          last_content_block_id: string | null
+          last_step_title: string | null
           lesson_plan_id: string | null
           paused_at: string | null
           updated_at: string
@@ -923,6 +926,9 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          last_cleo_message?: string | null
+          last_content_block_id?: string | null
+          last_step_title?: string | null
           lesson_plan_id?: string | null
           paused_at?: string | null
           updated_at?: string
@@ -937,6 +943,9 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          last_cleo_message?: string | null
+          last_content_block_id?: string | null
+          last_step_title?: string | null
           lesson_plan_id?: string | null
           paused_at?: string | null
           updated_at?: string

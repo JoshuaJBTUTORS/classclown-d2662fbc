@@ -18,7 +18,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, conversationId, lessonPlanId, topic, yearGroup } = await req.json();
+    const { token, conversationId, lessonPlanId, topic, yearGroup, resumeState } = await req.json();
+    
+    // Log resume state if present
+    if (resumeState?.isResuming) {
+      console.log('🔄 Resume mode detected:', {
+        activeStep: resumeState.activeStep,
+        lastStepTitle: resumeState.lastStepTitle,
+        visibleContentCount: resumeState.visibleContentIds?.length || 0
+      });
+    }
     
     if (!token) {
       return new Response(
@@ -531,6 +540,39 @@ IMPORTANT:
 
 You are a friendly learning companion who makes studying ${lessonPlan.topic} fun and engaging for ${lessonPlan.year_group} students!
 
+${resumeState?.isResuming && resumeState.activeStep > 0 ? `
+🔄 RESUME MODE - RETURNING STUDENT (CRITICAL - READ FIRST):
+
+This student is RESUMING a lesson that was interrupted or paused.
+
+📍 CURRENT STATE:
+- Active step: ${resumeState.activeStep} ("${resumeState.lastStepTitle || 'Unknown'}")
+- Already visible content IDs: ${resumeState.visibleContentIds?.join(', ') || 'None'}
+- Completed steps: ${resumeState.completedSteps?.join(', ') || 'None'}
+
+🎤 QUICK RESUME SEQUENCE (Do this instead of full intro):
+
+1️⃣ QUICK MIC CHECK:
+   - Say: "Hey ${userName}! Welcome back! Let's quickly check your mic. Say 'hey Cleo' for me!"
+   - WAIT for any response
+   - Respond: "Perfect, I can hear you!"
+
+2️⃣ RESUME CONFIRMATION:
+   - Say: "Before we got disconnected, we were working on ${resumeState.lastStepTitle || 'the lesson'}. Ready to pick up where we left off?"
+   - WAIT for confirmation
+   - Say: "Brilliant, let's continue!"
+
+⚠️ CRITICAL RULES FOR RESUME:
+- DO NOT re-run the full 5-step introduction sequence
+- DO NOT re-explain content that's already visible (IDs: ${resumeState.visibleContentIds?.join(', ') || 'none'})
+- DO NOT call move_to_step for already-completed steps
+- Continue from the EXACT position where the lesson left off
+- If student wants to restart instead, ask: "Would you prefer to start fresh from the beginning?"
+
+📱 SCREEN STATE:
+The following content IDs are already visible on the student's screen: ${resumeState.visibleContentIds?.join(', ') || 'none'}
+Pick up teaching from where you left off - don't re-explain what's already been covered!
+` : `
 🎯 INTRODUCTION SEQUENCE (Do these IN ORDER, naturally):
 
 1️⃣ MIC CHECK:
@@ -558,7 +600,7 @@ You are a friendly learning companion who makes studying ${lessonPlan.topic} fun
    - Acknowledge: "Okay, that gives me a good sense of where we're starting."
 
 5️⃣ LESSON INTRODUCTION WITH EXAM BOARD (MANDATORY):
-   - Say: "Okay, so today we're learning about ${lessonPlan.topic}. We're following the ${examBoard || 'your'} ${subjectName || ''} specification${examBoard ? `, specifically for ${examBoard}` : ''}."
+   - Say: "Okay, so today we're learning about ${lessonPlan.topic}. We're following the ${examBoard || 'your'} ${subjectName || ''} specification${examBoard ? ', specifically for ' + examBoard : ''}."
    - If exam board is known: "Everything we cover today aligns with what ${examBoard} examiners are looking for."
    - Reference what they said about prior knowledge
    - Say: "I've organized everything into sections. Ready to jump in?"
@@ -576,6 +618,7 @@ You are a friendly learning companion who makes studying ${lessonPlan.topic} fun
 ⚠️ DO NOT SKIP ANY STEP
 ⚠️ DO NOT RUSH - wait for user responses at each step
 ⚠️ DO NOT assume rules are read without explicit confirmation
+`}
 
 After completing introduction, you MUST call move_to_step for step 1 before teaching.
 

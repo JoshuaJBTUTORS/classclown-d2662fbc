@@ -74,17 +74,26 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     setVisibleContent,
     setCompletedSteps
   } = useContentSync(lessonData, state => {
-    // Auto-save state changes
+    // Auto-save state changes with enhanced tracking
     if (conversationId && connectionState === 'connected') {
       const totalSteps = lessonData.steps.length;
       const completionPercentage = totalSteps > 0 ? Math.round(state.completedSteps.length / totalSteps * 100) : 0;
+      
+      // Get current step title for resume tracking
+      const currentStepTitle = lessonData.steps[state.activeStep]?.title || 'Unknown Step';
+      const lastContentBlockId = state.visibleContent.length > 0 
+        ? state.visibleContent[state.visibleContent.length - 1] 
+        : undefined;
+      
       lessonState.debouncedSave({
         conversation_id: conversationId,
         lesson_plan_id: lessonPlan?.id,
         active_step: state.activeStep,
         visible_content_ids: state.visibleContent,
         completed_steps: state.completedSteps,
-        completion_percentage: completionPercentage
+        completion_percentage: completionPercentage,
+        last_step_title: currentStepTitle,
+        last_content_block_id: lastContentBlockId,
       });
     }
   });
@@ -130,6 +139,36 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [lastCleoResponses, setLastCleoResponses] = useState<string[]>([]); // Track last 2 Cleo responses for repeat
   const [webRTCConnectionState, setWebRTCConnectionState] = useState<WebRTCConnectionState>('new');
 
+  // Build resume state for passing to voice chat
+  const buildResumeState = useCallback(() => {
+    const savedState = lessonState.savedState;
+    if (!savedState || savedState.completed_at) return undefined;
+    
+    // Only build resume state if there's actual progress
+    if (savedState.active_step === 0 && savedState.visible_content_ids.length === 0) {
+      return undefined;
+    }
+    
+    // Get last step title from lesson data
+    const lastStepTitle = lessonData.steps[savedState.active_step]?.title || 'Unknown Step';
+    
+    // Get last content block ID
+    const lastContentBlockId = savedState.visible_content_ids.length > 0 
+      ? savedState.visible_content_ids[savedState.visible_content_ids.length - 1] 
+      : undefined;
+    
+    return {
+      isResuming: true,
+      activeStep: savedState.active_step,
+      visibleContentIds: savedState.visible_content_ids,
+      completedSteps: savedState.completed_steps,
+      lastStepTitle,
+      lastContentBlockId
+    };
+  }, [lessonState.savedState, lessonData.steps]);
+  
+  const [currentResumeState, setCurrentResumeState] = useState<ReturnType<typeof buildResumeState>>(undefined);
+
   // Check for saved state and show resume dialog
   useEffect(() => {
     const checkSavedState = async () => {
@@ -137,16 +176,17 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         const state = lessonState.savedState;
         if (state.paused_at && !state.completed_at) {
           setShowResumeDialog(true);
-        } else if (state.active_step || state.visible_content_ids.length > 0) {
-          // Auto-resume if not explicitly paused
+        } else if (state.active_step > 0 || state.visible_content_ids.length > 0) {
+          // Auto-resume if not explicitly paused - set resume state for voice chat
           setActiveStep(state.active_step);
           setVisibleContent(state.visible_content_ids);
           setCompletedSteps(state.completed_steps);
+          setCurrentResumeState(buildResumeState());
         }
       }
     };
     checkSavedState();
-  }, [conversationId, lessonState.savedState]);
+  }, [conversationId, lessonState.savedState, buildResumeState]);
 
   // Load messages on mount and subscribe to real-time updates
   useEffect(() => {
@@ -410,6 +450,19 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       setActiveStep(state.active_step);
       setVisibleContent(state.visible_content_ids);
       setCompletedSteps(state.completed_steps);
+      
+      // Build resume state for voice chat
+      const resumeStateForVoice = {
+        isResuming: true,
+        activeStep: state.active_step,
+        visibleContentIds: state.visible_content_ids,
+        completedSteps: state.completed_steps,
+        lastStepTitle: lessonData.steps[state.active_step]?.title || 'Unknown Step',
+        lastContentBlockId: state.visible_content_ids.length > 0 
+          ? state.visible_content_ids[state.visible_content_ids.length - 1] 
+          : undefined
+      };
+      setCurrentResumeState(resumeStateForVoice);
     }
     setShowResumeDialog(false);
   };
@@ -418,7 +471,35 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     setActiveStep(0);
     setVisibleContent([]);
     setCompletedSteps([]);
+    setCurrentResumeState(undefined); // Clear resume state for fresh start
     setShowResumeDialog(false);
+  };
+  
+  // Handle pause request from voice chat
+  const handlePauseRequested = async () => {
+    if (!conversationId) return;
+    
+    // Get current step title
+    const currentStepTitle = lessonData.steps[activeStep]?.title || 'Unknown Step';
+    const lastContentBlockId = visibleContent.length > 0 
+      ? visibleContent[visibleContent.length - 1] 
+      : undefined;
+    
+    const totalSteps = lessonData.steps.length;
+    const completionPercentage = totalSteps > 0 ? Math.round(completedSteps.length / totalSteps * 100) : 0;
+    
+    await lessonState.pauseLesson({
+      conversation_id: conversationId,
+      lesson_plan_id: lessonPlan?.id,
+      active_step: activeStep,
+      visible_content_ids: visibleContent,
+      completed_steps: completedSteps,
+      completion_percentage: completionPercentage,
+      last_step_title: currentStepTitle,
+      last_content_block_id: lastContentBlockId,
+    });
+    
+    console.log('📌 Lesson state saved on pause');
   };
   const handlePauseLesson = async () => {
     if (!conversationId) return;
@@ -771,6 +852,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           yearGroup={lessonData.yearGroup} 
           lessonPlan={lessonPlan} 
           lessonContent={lessonData.content}
+          resumeState={currentResumeState}
           onContentEvent={handleContentEventWithUpsert} 
           onConnectionStateChange={setConnectionState} 
           onListeningChange={setIsListening} 
@@ -789,6 +871,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           }} 
           onSpeedChange={speed => setVoiceSpeed(speed)} 
           onWebRTCStateChange={setWebRTCConnectionState}
+          onPauseRequested={handlePauseRequested}
           voiceSpeed={voiceSpeed} 
           selectedMicrophoneId={selectedMicrophone?.deviceId} 
           selectedSpeakerId={selectedSpeaker?.deviceId} 
