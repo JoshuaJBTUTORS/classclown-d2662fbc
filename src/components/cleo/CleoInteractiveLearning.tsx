@@ -610,20 +610,26 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
               // Send answer info to OpenAI so Cleo knows what was answered
               // Use [UI ANSWER] prefix so Cleo knows this is a real UI submission, not verbal input
+              // Include correct answer for incorrect responses so Cleo TRUSTS the validation
               let answerMessage = '';
               
               // For text input questions with keywords
               if (isTextInput && questionData?.keywords?.length > 0) {
                 const keywordsStr = questionData.keywords.join(', ');
-                answerMessage = `[UI ANSWER] The student submitted this written answer: "${answerText}". Keywords to look for: ${keywordsStr}. Provide brief, encouraging feedback on their answer quality and any key points they missed.`;
+                answerMessage = correct
+                  ? `[UI ANSWER] Correct! The student submitted: "${answerText}". Keywords matched. Praise briefly and continue.`
+                  : `[UI ANSWER] Incorrect. The student submitted: "${answerText}". Missing keywords: ${keywordsStr}. Gently explain what they missed.`;
               } else if (isTextInput) {
                 // Text input without keywords - Cleo evaluates freely
                 answerMessage = `[UI ANSWER] The student submitted this written answer: "${answerText}". Provide brief, encouraging feedback on their answer quality.`;
               } else {
-                // MCQ feedback (existing logic)
+                // MCQ feedback - include correct answer when wrong so Cleo doesn't recalculate
+                const correctOption = questionData?.options?.find((o: any) => o.isCorrect);
+                const correctText = correctOption?.text || '';
+                
                 answerMessage = correct 
-                  ? `[UI ANSWER] The student clicked the correct answer: "${answerText}". Acknowledge this briefly and continue teaching.` 
-                  : `[UI ANSWER] The student clicked an incorrect answer: "${answerText}". Provide gentle correction and explanation.`;
+                  ? `[UI ANSWER] Correct! The student answered: "${answerText}". Praise briefly and continue teaching.` 
+                  : `[UI ANSWER] Incorrect. The student answered: "${answerText}". The correct answer is: "${correctText}". Trust this validation - do NOT recalculate. Gently explain why the correct answer is right using the pre-generated explanation.`;
               }
               if (connectionState === 'connected') {
                 controlsRef.current?.sendUserMessage(answerMessage);

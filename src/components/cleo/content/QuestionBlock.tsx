@@ -38,12 +38,18 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
     setSelectedAnswer(optionId);
     setShowFeedback(true);
     
+    // Get the selected option text for clearer feedback
+    const selectedOption = data.options?.find(opt => (opt.id || `option-${data.options?.indexOf(opt)}`) === optionId);
+    const correctOption = data.options?.find(opt => opt.isCorrect);
+    
     // Trigger coin animation for correct answers
     if (isCorrect) {
       setShowCoinAnimation(true);
       setTimeout(() => setShowCoinAnimation(false), 1500);
     }
     
+    // Send answer with validation result for Cleo to trust
+    // Format: "[UI ANSWER] Correct! ..." or "[UI ANSWER] Incorrect. ..."
     onAnswer(data.id, optionId, isCorrect);
   };
 
