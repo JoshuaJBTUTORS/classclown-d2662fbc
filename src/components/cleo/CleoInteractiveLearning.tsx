@@ -103,6 +103,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [showPracticeDialog, setShowPracticeDialog] = useState(false);
   const [questionStats, setQuestionStats] = useState<any>(null);
   const [sessionStartTime] = useState(Date.now());
+  const [showReconnectChoice, setShowReconnectChoice] = useState(false); // Track if user stopped mid-lesson
 
   // PHASE 3: Goodbye loop detection (safety net)
   const goodbyeCounter = useRef(0);
@@ -426,10 +427,23 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
   };
   const handleVoiceConnect = () => {
-    if (mode === 'voice') {
-      hasDisconnectedOnComplete.current = false; // Reset flag for reconnection
-      controlsRef.current?.connect();
+    if (mode !== 'voice') return;
+    
+    // Check if there's existing progress - show dialog instead of auto-connecting
+    const hasProgress = activeStep > 0 || 
+                        visibleContent.length > 0 || 
+                        completedSteps.length > 0 ||
+                        showReconnectChoice;
+    
+    if (hasProgress && !currentResumeState) {
+      // Show resume dialog instead of auto-connecting
+      setShowResumeDialog(true);
+      return;
     }
+    
+    // No progress or already set to resume - proceed with connection
+    hasDisconnectedOnComplete.current = false;
+    controlsRef.current?.connect();
   };
   
   const handleQuickPrompt = (prompt: string) => {
@@ -442,10 +456,45 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
   };
   const handleVoiceDisconnect = async () => {
+    // Save current state before disconnecting (without marking as paused_at)
+    if (conversationId && connectionState === 'connected') {
+      const totalSteps = lessonData.steps.length;
+      const completionPercentage = totalSteps > 0 
+        ? Math.round(completedSteps.length / totalSteps * 100) 
+        : 0;
+      
+      const currentStepTitle = lessonData.steps[activeStep]?.title || 'Unknown Step';
+      const lastContentBlockId = visibleContent.length > 0 
+        ? visibleContent[visibleContent.length - 1] 
+        : undefined;
+      
+      // Save state without paused_at - just preserve progress
+      await lessonState.saveState({
+        conversation_id: conversationId,
+        lesson_plan_id: lessonPlan?.id,
+        active_step: activeStep,
+        visible_content_ids: visibleContent,
+        completed_steps: completedSteps,
+        completion_percentage: completionPercentage,
+        last_step_title: currentStepTitle,
+        last_content_block_id: lastContentBlockId,
+      });
+      
+      console.log('📌 Lesson state saved on stop');
+      
+      // If user had progress, set flag so next "Start" shows dialog
+      const hasProgress = activeStep > 0 || visibleContent.length > 0;
+      if (hasProgress) {
+        setShowReconnectChoice(true);
+      }
+    }
+    
     await controlsRef.current?.disconnect();
   };
   const handleResumeLesson = async () => {
+    // Try to resume from saved state, or use current in-memory state
     const state = await lessonState.resumeLesson();
+    
     if (state) {
       setActiveStep(state.active_step);
       setVisibleContent(state.visible_content_ids);
@@ -463,9 +512,29 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           : undefined
       };
       setCurrentResumeState(resumeStateForVoice);
+    } else {
+      // Use current in-memory state if no saved state
+      const resumeStateForVoice = {
+        isResuming: true,
+        activeStep: activeStep,
+        visibleContentIds: visibleContent,
+        completedSteps: completedSteps,
+        lastStepTitle: lessonData.steps[activeStep]?.title || 'Unknown Step',
+        lastContentBlockId: visibleContent.length > 0 
+          ? visibleContent[visibleContent.length - 1] 
+          : undefined
+      };
+      setCurrentResumeState(resumeStateForVoice);
     }
+    
     setShowResumeDialog(false);
+    setShowReconnectChoice(false);
+    
+    // Auto-connect after setting resume state
+    hasDisconnectedOnComplete.current = false;
+    controlsRef.current?.connect();
   };
+  
   const handleRestartLesson = async () => {
     await lessonState.clearState();
     setActiveStep(0);
@@ -473,6 +542,11 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     setCompletedSteps([]);
     setCurrentResumeState(undefined); // Clear resume state for fresh start
     setShowResumeDialog(false);
+    setShowReconnectChoice(false);
+    
+    // Auto-connect after resetting
+    hasDisconnectedOnComplete.current = false;
+    controlsRef.current?.connect();
   };
   
   // Handle pause request from voice chat
@@ -879,7 +953,24 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       </div>
 
       {/* Resume Dialog */}
-      <LessonResumeDialog isOpen={showResumeDialog} onClose={() => setShowResumeDialog(false)} onResume={handleResumeLesson} onRestart={handleRestartLesson} savedState={lessonState.savedState} />
+      <LessonResumeDialog 
+        isOpen={showResumeDialog} 
+        onClose={() => {
+          setShowResumeDialog(false);
+          // Don't reset showReconnectChoice so next Start still shows dialog
+        }} 
+        onResume={handleResumeLesson} 
+        onRestart={handleRestartLesson} 
+        savedState={lessonState.savedState || (showReconnectChoice ? {
+          // Use in-memory state if no DB state but user stopped mid-lesson
+          active_step: activeStep,
+          visible_content_ids: visibleContent,
+          completed_steps: completedSteps,
+          completion_percentage: lessonData.steps.length > 0 
+            ? Math.round(completedSteps.length / lessonData.steps.length * 100) 
+            : 0,
+        } as any : null)} 
+      />
 
       {/* Complete Dialog */}
       <LessonCompleteDialog isOpen={showCompleteDialog} onClose={() => setShowCompleteDialog(false)} onReturnToCourse={handleBackToModule} onAssignPractice={() => setShowPracticeDialog(true)} questionStats={questionStats} totalTimeMinutes={sessionTimeMinutes} lessonTitle={lessonData.title} conversationId={conversationId} />
