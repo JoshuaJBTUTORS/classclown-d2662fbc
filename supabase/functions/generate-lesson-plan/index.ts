@@ -635,10 +635,41 @@ OTHER RULES:
 - Example: "Describe two advantages of using subroutines. [4 marks]"
 - ALL questions MUST include: examDate, marks, keywords
 
+⚠️ MARK ALLOCATION RULES (GCSE STANDARD - STRICTLY ENFORCED):
+
+MULTIPLE CHOICE QUESTIONS:
+- MAXIMUM 1-2 marks per question
+- NEVER assign more than 2 marks to a multiple choice question
+
+SHORT ANSWER / CALCULATION:
+- "State/Give/Name one..." = 1 mark ONLY
+- "State/Give two..." = 2 marks ONLY
+- "Describe..." = 2-3 marks (1 mark per valid point)
+- "Explain why/how..." = 3-4 marks (reason + explanation)
+- "Calculate..." = 2-4 marks (method + answer)
+
+EXTENDED WRITING:
+- "Compare/Contrast..." = 4-6 marks
+- "Evaluate/Analyze/Discuss..." = 6-12 marks
+- Extended writing questions MUST be minimum 6 marks
+
+MARK LIMITS BY QUESTION TYPE:
+| Question Type    | Min Marks | Max Marks |
+|------------------|-----------|-----------|
+| multiple_choice  | 1         | 2         |
+| short_answer     | 1         | 4         |
+| calculation      | 2         | 6         |
+| extended_writing | 6         | 12        |
+
+❌ NEVER DO:
+- 6 marks for a "Name one..." question
+- 4 marks for multiple choice
+- 2 marks for an essay question
+
 ALL QUESTIONS MUST INCLUDE:
 - examDate: Real past paper date (June/November + year 2019-2024). This will display as "exam question - June 2023"
 - examBoard: The user's selected exam board
-- marks: Appropriate for question type
+- marks: Appropriate for question type (FOLLOW RULES ABOVE)
 - keywords: 3-6 key terms for marking (for text input questions)
 
 ⚠️ FOR ENGLISH LITERATURE LESSONS - MANDATORY STRUCTURE:

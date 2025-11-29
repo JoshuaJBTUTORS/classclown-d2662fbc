@@ -61,7 +61,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -201,16 +201,35 @@ For Maths answers:
 - Partial marks for partially correct approaches`;
   }
 
+  // Sanity check for question marks vs type
+  let marksSanityNote = '';
+  if (questionType === 'multiple_choice' && marks > 4) {
+    marksSanityNote = `\n⚠️ NOTE: This multiple choice question is marked as ${marks} marks which seems high. Multiple choice typically = 1-2 marks. Mark fairly but note this in feedback if the question seems over-valued.`;
+  } else if (questionType === 'short_answer' && marks > 6) {
+    marksSanityNote = `\n⚠️ NOTE: This short answer question is marked as ${marks} marks which seems high. Short answers typically = 2-4 marks. Mark fairly but note this in feedback if the question seems over-valued.`;
+  } else if (questionType === 'extended_writing' && marks < 4) {
+    marksSanityNote = `\n⚠️ NOTE: This extended writing question is marked as only ${marks} marks which seems low. Extended writing typically = 6-12 marks. Mark the student fairly based on the actual marks available.`;
+  }
+
   return `You are an expert GCSE examiner marking a ${questionType} question worth ${marks} marks.
 ${subjectGuidance}
+${marksSanityNote}
 
-MARKING RULES:
+STRICT MARKING RULES:
 - Be fair but accurate - award marks the student genuinely deserves
 - A blank or irrelevant answer = 0 marks
 - Partial credit is allowed for partially correct answers
-- For ${marks}-mark questions, consider what each mark point requires
+- For ${marks}-mark questions, each mark requires a specific point/skill demonstrated
+- NEVER award full marks unless the answer fully addresses all required points
 - Keep feedback encouraging but honest
 - Focus on 1-3 specific strengths and improvements
+
+MARK ALLOCATION GUIDANCE (GCSE Standard):
+- 1 mark = One correct fact/point
+- 2 marks = Two correct facts OR one explained point
+- 3-4 marks = Explanation with supporting detail
+- 5-6 marks = Detailed explanation with multiple points
+- 6+ marks = Extended response with analysis and evidence
 
 You MUST use the submit_marking tool to return your assessment.`;
 }
