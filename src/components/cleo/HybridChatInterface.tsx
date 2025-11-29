@@ -8,7 +8,7 @@ import { LessonRulesCard } from './LessonRulesCard';
 import { QuickPromptButtons } from './QuickPromptButtons';
 import { Send, Loader2 } from 'lucide-react';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
-import { ContentBlock } from '@/types/lessonContent';
+import { ContentBlock, AIMarkingResult } from '@/types/lessonContent';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
 import { toast } from 'sonner';
 
@@ -24,7 +24,7 @@ interface HybridChatInterfaceProps {
   onTextSend: (message: string) => void;
   contentBlocks?: ContentBlock[];
   visibleContentIds?: string[];
-  onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean) => void;
+  onAnswerQuestion?: (questionId: string, answerId: string, isCorrect: boolean, markingResult?: AIMarkingResult) => void;
   onContentAction?: (contentId: string, action: string, message: string) => void;
   onAskHelp?: (questionId: string, questionText: string) => void;
   isExamPractice?: boolean;
@@ -114,7 +114,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   }, [visibleContentIds, contentBlocks]);
   
 
-  const handleAnswerQuestion = async (questionId: string, answerId: string, isCorrect: boolean) => {
+  const handleAnswerQuestion = async (questionId: string, answerId: string, isCorrect: boolean, markingResult?: AIMarkingResult) => {
     const timeTaken = questionStartTimes[questionId] 
       ? Math.floor((Date.now() - questionStartTimes[questionId]) / 1000)
       : undefined;
@@ -129,14 +129,27 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
           question_id: questionId,
           question_text: questionData?.question || '',
           answer_id: answerId,
-          answer_text: questionData?.options?.find((o: any) => o.id === answerId)?.text || '',
+          answer_text: questionData?.options?.find((o: any) => o.id === answerId)?.text || answerId,
           is_correct: isCorrect,
           time_taken_seconds: timeTaken,
           step_id: questionBlock.stepId || '',
         });
 
-        // Show coin notification for correct answers
-        if (isCorrect) {
+        // Show coin notification based on AI marking result
+        if (markingResult) {
+          const percentage = (markingResult.marksAwarded / markingResult.maxMarks) * 100;
+          if (percentage >= 75) {
+            toast.success('🪙 +2 coins earned!', {
+              description: 'Excellent answer!',
+              duration: 2000,
+            });
+          } else if (percentage >= 50) {
+            toast.success('🪙 +1 coin earned!', {
+              description: 'Good effort!',
+              duration: 2000,
+            });
+          }
+        } else if (isCorrect) {
           toast.success('🪙 +2 coins earned!', {
             description: 'Keep going to unlock mastery levels!',
             duration: 2000,
@@ -147,7 +160,7 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
       }
     }
 
-    onAnswerQuestion?.(questionId, answerId, isCorrect);
+    onAnswerQuestion?.(questionId, answerId, isCorrect, markingResult);
   };
 
   const handleTextSubmit = (e: React.FormEvent) => {

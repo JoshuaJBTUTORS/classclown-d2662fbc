@@ -94,3 +94,13 @@ export interface ExamGenerationResponse {
   totalMarks?: number;
   error?: string;
 }
+
+// AI Marking Result for text input questions
+export interface AIMarkingResult {
+  marksAwarded: number;
+  maxMarks: number;
+  isCorrect: boolean;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
+}

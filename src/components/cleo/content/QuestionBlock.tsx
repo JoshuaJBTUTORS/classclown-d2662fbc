@@ -1,25 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { QuestionContent } from '@/types/lessonContent';
-import { Check, X, HelpCircle, Loader2 } from 'lucide-react';
+import { QuestionContent, AIMarkingResult } from '@/types/lessonContent';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CoinAnimation } from '@/components/cleo/CoinAnimation';
 import { LatexRenderer } from '../LatexRenderer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QuestionBlockProps {
   data: QuestionContent;
-  onAnswer: (questionId: string, answerId: string, isCorrect: boolean) => void;
+  onAnswer: (questionId: string, answerId: string, isCorrect: boolean, markingResult?: AIMarkingResult) => void;
   onAskHelp?: (questionId: string, questionText: string) => void;
   subject?: string;
+  examBoard?: string;
 }
 
-export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp, subject }) => {
+export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp, subject, examBoard }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [textAnswer, setTextAnswer] = useState('');
-  const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
-  const [isSubmittingText, setIsSubmittingText] = useState(false); // Loading state for text submission
+  const [isSubmittingText, setIsSubmittingText] = useState(false);
+  const [markingResult, setMarkingResult] = useState<AIMarkingResult | null>(null);
 
   // Defensive check for undefined data
   if (!data || !data.question) {
@@ -53,46 +55,53 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
     onAnswer(data.id, optionId, isCorrect);
   };
 
-  const handleTextSubmit = () => {
+  const handleTextSubmit = async () => {
     if (!textAnswer.trim()) return;
     
-    setIsSubmittingText(true); // Show loading state
-    
-    // Check if this is an English subject - skip keyword matching for English
-    const isEnglishSubject = subject?.toLowerCase().includes('english');
-    
-    let isCorrect = false;
-    let matched: string[] = [];
-    
-    // For English: skip keyword matching, let Cleo evaluate verbally
-    if (isEnglishSubject) {
-      isCorrect = true; // Default to true, Cleo provides verbal feedback
-      matched = []; // Don't evaluate keywords
-    } else if (data.keywords && data.keywords.length > 0) {
-      // For other subjects: use keyword matching
-      const answerLower = textAnswer.toLowerCase();
-      matched = data.keywords.filter(kw => 
-        answerLower.includes(kw.toLowerCase())
-      );
-      const threshold = Math.ceil(data.keywords.length * 0.5);
-      isCorrect = matched.length >= threshold;
-    } else {
-      isCorrect = true;
-    }
-    
+    setIsSubmittingText(true);
     setShowFeedback(true);
-    setMatchedKeywords(matched);
     
-    // Only show coin animation if actually correct
-    if (isCorrect) {
-      setShowCoinAnimation(true);
-      setTimeout(() => setShowCoinAnimation(false), 1500);
+    try {
+      // Call AI marking edge function
+      const { data: result, error } = await supabase.functions.invoke('ai-mark-cleo-question', {
+        body: {
+          questionText: data.question,
+          studentAnswer: textAnswer,
+          questionType: data.question_type || 'short_answer',
+          marks: data.marks || 1,
+          keywords: data.keywords,
+          subject: subject || 'General',
+          examBoard: examBoard,
+          correctAnswer: data.explanation, // Use explanation as model answer hint
+        }
+      });
+
+      if (error) {
+        console.error('AI Marking error:', error);
+        // Fallback: treat as submitted, let Cleo evaluate
+        onAnswer(data.id, textAnswer, true, undefined);
+        setIsSubmittingText(false);
+        return;
+      }
+
+      const aiResult: AIMarkingResult = result;
+      setMarkingResult(aiResult);
+      
+      // Show coin animation based on marks percentage
+      if (aiResult.marksAwarded >= Math.ceil(aiResult.maxMarks * 0.5)) {
+        setShowCoinAnimation(true);
+        setTimeout(() => setShowCoinAnimation(false), 1500);
+      }
+      
+      onAnswer(data.id, textAnswer, aiResult.isCorrect, aiResult);
+      
+    } catch (err) {
+      console.error('AI Marking failed:', err);
+      // Fallback: submit without AI marking
+      onAnswer(data.id, textAnswer, true, undefined);
+    } finally {
+      setIsSubmittingText(false);
     }
-    
-    onAnswer(data.id, textAnswer, isCorrect);
-    
-    // Keep loading state until Cleo responds (simulated with timeout)
-    setTimeout(() => setIsSubmittingText(false), 2000);
   };
 
   const getOptionClassName = (optionId: string, isCorrect: boolean) => {
@@ -233,47 +242,83 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, on
               </div>
             )}
             
-            {/* Loading State - Cleo is reviewing */}
+            {/* Loading State - AI is marking */}
             {showFeedback && isSubmittingText && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Cleo is reviewing your answer...
+                🤖 AI is marking your answer...
               </div>
             )}
 
             {/* Show submitted answer after feedback */}
-            {showFeedback && textAnswer && (
-              <div className="exam-answer-box mt-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 p-4 rounded">
-                <p className="text-sm font-semibold mb-2 text-green-700">
+            {showFeedback && textAnswer && !isSubmittingText && (
+              <div className={`exam-answer-box mt-4 p-4 rounded border-2 ${
+                markingResult 
+                  ? markingResult.isCorrect 
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
+                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-500'
+                  : 'bg-gray-50 dark:bg-gray-900/20 border-gray-300'
+              }`}>
+                <p className={`text-sm font-semibold mb-2 ${
+                  markingResult?.isCorrect ? 'text-green-700' : 'text-amber-700'
+                }`}>
                   Your submitted answer:
                 </p>
                 <p className="text-sm text-gray-800 whitespace-pre-wrap">{textAnswer}</p>
               </div>
             )}
 
-            {/* Keywords Feedback Section - Only for non-English subjects */}
-            {showFeedback && data.keywords && data.keywords.length > 0 && !subject?.toLowerCase().includes('english') && (
-              <div className="exam-keywords-box mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 p-3 rounded">
-                <p className="text-sm font-semibold mb-2 text-blue-700">
-                  Mark Scheme Keywords ({matchedKeywords.length}/{data.keywords.length} matched):
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {data.keywords.map((keyword, idx) => {
-                    const isMatched = matchedKeywords.includes(keyword);
-                    return (
-                      <span 
-                        key={idx} 
-                        className={`text-xs px-2 py-1 rounded ${
-                          isMatched 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800 line-through'
-                        }`}
-                      >
-                        {keyword} {isMatched ? '✓' : '✗'}
-                      </span>
-                    );
-                  })}
+            {/* AI Marking Result */}
+            {showFeedback && markingResult && !isSubmittingText && (
+              <div className="mt-4 p-4 bg-white dark:bg-gray-800 border border-border rounded-lg shadow-sm">
+                {/* Marks Display */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-lg font-bold">
+                    {markingResult.marksAwarded}/{markingResult.maxMarks} marks
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    markingResult.marksAwarded === markingResult.maxMarks 
+                      ? 'bg-green-100 text-green-800' 
+                      : markingResult.isCorrect 
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-red-100 text-red-800'
+                  }`}>
+                    {markingResult.marksAwarded === markingResult.maxMarks 
+                      ? '✨ Full marks!' 
+                      : markingResult.isCorrect 
+                        ? '👍 Good effort' 
+                        : '📚 Keep practicing'}
+                  </span>
                 </div>
+                
+                {/* AI Feedback */}
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  {markingResult.feedback}
+                </p>
+                
+                {/* Strengths */}
+                {markingResult.strengths.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold text-green-700 mb-1">✓ Strengths:</p>
+                    <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                      {markingResult.strengths.map((s, i) => (
+                        <li key={i}>• {s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Improvements */}
+                {markingResult.improvements.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-amber-700 mb-1">→ To improve:</p>
+                    <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                      {markingResult.improvements.map((imp, i) => (
+                        <li key={i}>• {imp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>
