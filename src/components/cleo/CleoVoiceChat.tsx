@@ -41,7 +41,7 @@ interface CleoVoiceChatProps {
   onListeningChange?: (isListening: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
   onProvideControls?: (controls: { 
-    connect: () => void; 
+    connect: (overrideResumeState?: CleoVoiceChatProps['resumeState']) => void; 
     disconnect: () => void; 
     sendUserMessage: (text: string) => void;
     toggleMute?: () => void;
@@ -318,7 +318,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   }, []);
 
 
-  const connect = async () => {
+  const connect = async (overrideResumeState?: typeof resumeState) => {
     // SYNCHRONOUS check - prevents race conditions
     if (isConnectingRef.current) {
       console.log("⚠️ Connection already in progress, ignoring duplicate call");
@@ -329,6 +329,10 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       console.log("Already connecting or connected");
       return;
     }
+    
+    // Use override if provided (for immediate resume), otherwise fall back to prop
+    const effectiveResumeState = overrideResumeState ?? resumeState;
+    console.log('🔗 Connecting with resumeState:', effectiveResumeState);
 
     // Set flag IMMEDIATELY (synchronous)
     isConnectingRef.current = true;
@@ -933,7 +937,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
         lessonPlan?.id,
         topic,
         yearGroup,
-        resumeState
+        effectiveResumeState
       );
 
       currentConversationId.current = result.conversationId;
