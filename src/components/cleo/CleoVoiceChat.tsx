@@ -806,6 +806,51 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 },
                 visible: false
               };
+            } else if (functionName === 'show_diagram') {
+              // Handle show_diagram tool - generate and display a diagram
+              console.log(`📊 ========== SHOW_DIAGRAM CALLED ==========`);
+              console.log(`📊 Title: ${args.title}`);
+              console.log(`📊 Description: ${args.description}`);
+              console.log(`📊 Elements:`, args.elements);
+              
+              contentBlock = {
+                id: args.id || `diagram-${Date.now()}`,
+                stepId: 'current',
+                type: 'diagram',
+                data: {
+                  title: args.title,
+                  description: args.description,
+                  elements: args.elements || []
+                },
+                visible: false
+              };
+              
+              // Emit event to generate and display the diagram
+              if (onContentEvent) {
+                onContentEvent({
+                  type: 'upsert_content',
+                  block: contentBlock,
+                  autoShow: true
+                });
+              }
+              
+              // Confirm to OpenAI with instruction
+              rtcRef.current?.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify({ 
+                    success: true, 
+                    displayed: true,
+                    message: `Diagram "${args.title}" is being generated and displayed on screen. Say: "Have a look at this diagram on your screen..." then describe what it shows.`
+                  })
+                }
+              });
+              
+              // Trigger next response
+              rtcRef.current?.sendEvent({ type: 'response.create' });
+              break;
             }
             
             // Send content block to UI
