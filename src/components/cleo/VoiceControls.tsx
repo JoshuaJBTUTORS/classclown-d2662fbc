@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Square, Volume2, Mic, MicOff, RotateCcw } from 'lucide-react';
+import { Play, Square, Volume2, Mic, MicOff, RotateCcw, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,8 @@ interface VoiceControlsProps {
   isConnecting?: boolean;
   sessionStage?: string;
   onRepeatLast?: () => void;
+  isPaused?: boolean;
+  onTogglePause?: () => void;
 }
 
 export const VoiceControls: React.FC<VoiceControlsProps> = ({
@@ -33,6 +35,8 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   isConnecting,
   sessionStage,
   onRepeatLast,
+  isPaused,
+  onTogglePause,
 }) => {
   const [hasQuota, setHasQuota] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -92,6 +96,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   }, [isConnected]);
   const getStatusColor = () => {
     if (!isConnected) return 'bg-muted';
+    if (isPaused) return 'bg-amber-500';
     if (isListening) return 'bg-blue-500';
     if (isSpeaking) return 'bg-green-500';
     return 'bg-primary';
@@ -99,6 +104,7 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
 
   const getStatusText = () => {
     if (!isConnected) return 'Start Learning';
+    if (isPaused) return 'Paused';
     if (isListening) return 'Listening...';
     if (isSpeaking) return 'Cleo is speaking...';
     return 'Connected';
@@ -235,6 +241,31 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
                   <>
                     <Mic className="w-4 h-4 mr-2" />
                     Mute
+                  </>
+                )}
+              </Button>
+            )}
+            
+            {onTogglePause && (
+              <Button
+                onClick={onTogglePause}
+                variant={isPaused ? "default" : "outline"}
+                size="sm"
+                className={`${
+                  isPaused 
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                    : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
+                }`}
+              >
+                {isPaused ? (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    Resume
+                  </>
+                ) : (
+                  <>
+                    <Pause className="w-4 h-4 mr-2" />
+                    Pause
                   </>
                 )}
               </Button>

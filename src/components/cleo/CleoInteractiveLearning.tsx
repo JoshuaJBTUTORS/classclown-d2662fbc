@@ -106,6 +106,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [content, setContent] = useState<ContentBlock[]>(lessonData.content || []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [allMessages, setAllMessages] = useState<CleoMessage[]>([]);
@@ -119,6 +120,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     toggleMute?: () => void;
     isMuted?: boolean;
     updateVoiceSpeed?: (speed: number) => void;
+    togglePause?: () => void;
+    isPaused?: boolean;
   } | null>(null);
   const hasDisconnectedOnComplete = useRef(false);
   const modeSwitchCountRef = useRef(0);
@@ -670,7 +673,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 message
               });
               controlsRef.current?.sendUserMessage(message);
-            }} onToggleMute={() => controlsRef.current?.toggleMute?.()} isMuted={isMuted} isConnecting={connectionState === 'connecting'} subject={lessonData.yearGroup} onQuickPrompt={handleQuickPrompt} onRepeatLast={handleRepeatLast} isSaving={lessonState.isSaving} />
+            }} onToggleMute={() => controlsRef.current?.toggleMute?.()} isMuted={isMuted} isConnecting={connectionState === 'connecting'} subject={lessonData.yearGroup} onQuickPrompt={handleQuickPrompt} onRepeatLast={handleRepeatLast} isSaving={lessonState.isSaving} isPaused={isPaused} onTogglePause={() => {
+              controlsRef.current?.togglePause?.();
+              setIsPaused(prev => !prev);
+            }} />
             </div>
           </section>
 

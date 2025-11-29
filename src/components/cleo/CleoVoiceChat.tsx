@@ -39,6 +39,8 @@ interface CleoVoiceChatProps {
     toggleMute?: () => void;
     isMuted?: boolean;
     updateVoiceSpeed?: (speed: number) => void;
+    togglePause?: () => void;
+    isPaused?: boolean;
   }) => void;
   onSpeedChange?: (speed: number) => void;
   onWebRTCStateChange?: (state: WebRTCConnectionState) => void;
@@ -72,6 +74,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   const rtcRef = useRef<RealtimeChat | null>(null);
   const elevenLabsPlayerRef = useRef<ElevenLabsPlayer | null>(null);
@@ -250,6 +253,26 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     }
   };
 
+  const togglePause = () => {
+    if (isPaused) {
+      // Resume: unmute mic
+      rtcRef.current?.unmute();
+      setIsMuted(false);
+      setIsPaused(false);
+      console.log('▶️ Session resumed');
+      
+      // Optionally prompt Cleo to continue
+      sendUserMessage("Please continue where we left off.");
+    } else {
+      // Pause: stop audio and mute mic
+      elevenLabsPlayerRef.current?.stop();
+      rtcRef.current?.mute();
+      setIsMuted(true);
+      setIsPaused(true);
+      console.log('⏸️ Session paused');
+    }
+  };
+
   const updateVoiceSpeed = (speed: number) => {
     currentSpeedRef.current = speed;
     console.log(`🎙️ Voice speed updated to ${speed}`);
@@ -263,9 +286,11 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
       sendUserMessage, 
       toggleMute, 
       isMuted,
-      updateVoiceSpeed
+      updateVoiceSpeed,
+      togglePause,
+      isPaused
     });
-  }, [onProvideControls, isMuted]);
+  }, [onProvideControls, isMuted, isPaused]);
 
   useEffect(() => {
     return () => {
