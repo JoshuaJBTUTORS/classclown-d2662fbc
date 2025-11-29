@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ContentBlock } from '@/types/lessonContent';
+import { ContentBlock, AIMarkingResult } from '@/types/lessonContent';
 import { TableBlock } from './content/TableBlock';
 import { TextBlock } from './content/TextBlock';
 import { QuestionBlock } from './content/QuestionBlock';
@@ -15,12 +15,12 @@ interface SlideContentDisplayProps {
   visibleContent: string[];
   currentSlideIndex: number;
   onSlideChange: (index: number) => void;
-  onAnswerQuestion: (questionId: string, answerId: string, isCorrect: boolean) => void;
+  onAnswerQuestion: (questionId: string, answerId: string, isCorrect: boolean, markingResult?: AIMarkingResult) => void;
   onContentAction?: (contentId: string, action: string, message: string) => void;
   onAskHelp?: (questionId: string, questionText: string) => void;
   isExamPractice?: boolean;
   subject?: string;
-  allowForwardNavigation?: boolean; // Control whether user can navigate forward (peek ahead)
+  allowForwardNavigation?: boolean;
 }
 
 export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
@@ -90,9 +90,9 @@ export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
         return (
           <QuestionBlock 
             data={block.data} 
-            onAnswer={(questionId, answerId, isCorrect) => {
+            onAnswer={(questionId, answerId, isCorrect, markingResult) => {
               // Use block.id instead of data.id since question data doesn't have an id field
-              onAnswerQuestion(block.id, answerId, isCorrect);
+              onAnswerQuestion(block.id, answerId, isCorrect, markingResult);
             }}
             onAskHelp={onAskHelp} 
             subject={subject} 

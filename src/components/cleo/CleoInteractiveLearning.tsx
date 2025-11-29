@@ -11,7 +11,7 @@ import { useContentSync } from '@/hooks/useContentSync';
 import { useTextChat } from '@/hooks/useTextChat';
 import { useCleoLessonState } from '@/hooks/useCleoLessonState';
 import CleoAvatar from './CleoAvatar';
-import { LessonData, ContentBlock, ContentEvent } from '@/types/lessonContent';
+import { LessonData, ContentBlock, ContentEvent, AIMarkingResult } from '@/types/lessonContent';
 import { ChatMode, CleoMessage } from '@/types/cleoTypes';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Pause, CheckCircle, Trophy, WifiOff } from 'lucide-react';
@@ -738,11 +738,12 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
             {/* Content Display Area */}
             <div className="mt-6">
-              <HybridChatInterface mode={mode} messages={allMessages} isVoiceConnected={connectionState === 'connected'} isVoiceListening={isListening} isVoiceSpeaking={isSpeaking} isTextLoading={textChat.isLoading} onVoiceConnect={handleVoiceConnect} onVoiceDisconnect={handleVoiceDisconnect} onTextSend={textChat.sendMessage} contentBlocks={content} visibleContentIds={visibleContent} onAnswerQuestion={async (qId, aId, correct) => {
+              <HybridChatInterface mode={mode} messages={allMessages} isVoiceConnected={connectionState === 'connected'} isVoiceListening={isListening} isVoiceSpeaking={isSpeaking} isTextLoading={textChat.isLoading} onVoiceConnect={handleVoiceConnect} onVoiceDisconnect={handleVoiceDisconnect} onTextSend={textChat.sendMessage} contentBlocks={content} visibleContentIds={visibleContent} onAnswerQuestion={async (qId, aId, correct, markingResult?: AIMarkingResult) => {
               console.log('Question answered:', {
                 qId,
                 aId,
-                correct
+                correct,
+                hasMarkingResult: !!markingResult
               });
 
               // Find the question and answer text
@@ -778,18 +779,22 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
 
               // Send answer info to OpenAI so Cleo knows what was answered
               // Use [UI ANSWER] prefix so Cleo knows this is a real UI submission, not verbal input
-              // Include correct answer for incorrect responses so Cleo TRUSTS the validation
               let answerMessage = '';
               
-              // For text input questions with keywords
-              if (isTextInput && questionData?.keywords?.length > 0) {
-                const keywordsStr = questionData.keywords.join(', ');
-                answerMessage = correct
-                  ? `[UI ANSWER] Correct! The student submitted: "${answerText}". Keywords matched. Praise briefly and continue.`
-                  : `[UI ANSWER] Incorrect. The student submitted: "${answerText}". Missing keywords: ${keywordsStr}. Gently explain what they missed.`;
+              // For text input questions with AI marking result
+              if (isTextInput && markingResult) {
+                const { marksAwarded, maxMarks, feedback, strengths, improvements } = markingResult;
+                const strengthsStr = strengths.length > 0 ? `Strengths: ${strengths.join(', ')}. ` : '';
+                const improvementsStr = improvements.length > 0 ? `Areas to improve: ${improvements.join(', ')}.` : '';
+                
+                answerMessage = marksAwarded >= Math.ceil(maxMarks * 0.75)
+                  ? `[UI ANSWER] Excellent! The student scored ${marksAwarded}/${maxMarks} marks. They answered: "${answerText.substring(0, 200)}...". AI feedback: ${feedback}. ${strengthsStr}Praise them warmly and continue teaching.`
+                  : marksAwarded >= Math.ceil(maxMarks * 0.5)
+                    ? `[UI ANSWER] Good effort! The student scored ${marksAwarded}/${maxMarks} marks. They answered: "${answerText.substring(0, 200)}...". AI feedback: ${feedback}. ${strengthsStr}${improvementsStr} Encourage them and briefly explain how to improve.`
+                    : `[UI ANSWER] The student scored ${marksAwarded}/${maxMarks} marks. They answered: "${answerText.substring(0, 200)}...". AI feedback: ${feedback}. ${improvementsStr} Gently help them understand what was missing.`;
               } else if (isTextInput) {
-                // Text input without keywords - Cleo evaluates freely
-                answerMessage = `[UI ANSWER] The student submitted this written answer: "${answerText}". Provide brief, encouraging feedback on their answer quality.`;
+                // Text input without AI marking - Cleo evaluates freely
+                answerMessage = `[UI ANSWER] The student submitted this written answer: "${answerText.substring(0, 300)}...". Provide brief, encouraging feedback on their answer quality.`;
               } else {
                 // MCQ feedback - include correct answer when wrong so Cleo doesn't recalculate
                 const correctOption = questionData?.options?.find((o: any) => o.isCorrect);
@@ -803,7 +808,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 controlsRef.current?.sendUserMessage(answerMessage);
               }
 
-              // Record answer and award coins
+              // Record answer and award coins based on AI marking
               if (conversationId && questionBlock) {
                 try {
                   await cleoQuestionTrackingService.recordQuestionAnswer({
@@ -817,8 +822,21 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                     step_id: questionBlock.stepId || ''
                   });
 
-                  // Show success notification for correct answers
-                  if (correct) {
+                  // Show success notification based on marks
+                  if (markingResult) {
+                    const percentage = (markingResult.marksAwarded / markingResult.maxMarks) * 100;
+                    if (percentage >= 75) {
+                      toast({
+                        title: '🪙 +2 coins earned!',
+                        description: 'Excellent answer!'
+                      });
+                    } else if (percentage >= 50) {
+                      toast({
+                        title: '🪙 +1 coin earned!',
+                        description: 'Good effort, keep improving!'
+                      });
+                    }
+                  } else if (correct) {
                     toast({
                       title: '🪙 +2 coins earned!',
                       description: 'Keep going to unlock mastery levels!'
