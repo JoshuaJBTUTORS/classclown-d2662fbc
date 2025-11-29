@@ -429,13 +429,12 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const handleVoiceConnect = () => {
     if (mode !== 'voice') return;
     
-    // Check if there's existing progress - show dialog instead of auto-connecting
-    const hasProgress = activeStep > 0 || 
-                        visibleContent.length > 0 || 
-                        completedSteps.length > 0 ||
-                        showReconnectChoice;
+    // Check if there's ACTUAL progress (not just flags)
+    const hasActualProgress = activeStep > 0 || 
+                              visibleContent.length > 0 || 
+                              completedSteps.length > 0;
     
-    if (hasProgress && !currentResumeState) {
+    if (hasActualProgress && !currentResumeState) {
       // Show resume dialog instead of auto-connecting
       setShowResumeDialog(true);
       return;
@@ -443,6 +442,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     
     // No progress or already set to resume - proceed with connection
     hasDisconnectedOnComplete.current = false;
+    setShowReconnectChoice(false); // Reset flag when connecting
     controlsRef.current?.connect();
   };
   
@@ -456,7 +456,10 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     }
   };
   const handleVoiceDisconnect = async () => {
-    // Save current state before disconnecting (without marking as paused_at)
+    // Check for progress BEFORE any conditional logic
+    const hasProgress = activeStep > 0 || visibleContent.length > 0 || completedSteps.length > 0;
+    
+    // Try to save current state before disconnecting
     if (conversationId && connectionState === 'connected') {
       const totalSteps = lessonData.steps.length;
       const completionPercentage = totalSteps > 0 
@@ -481,15 +484,15 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       });
       
       console.log('📌 Lesson state saved on stop');
-      
-      // If user had progress, set flag so next "Start" shows dialog
-      const hasProgress = activeStep > 0 || visibleContent.length > 0;
-      if (hasProgress) {
-        setShowReconnectChoice(true);
-      }
     }
     
     await controlsRef.current?.disconnect();
+    
+    // Set flag AFTER disconnect if there was progress (regardless of save success)
+    if (hasProgress) {
+      setShowReconnectChoice(true);
+      console.log('🔄 Set showReconnectChoice - progress detected');
+    }
   };
   const handleResumeLesson = async () => {
     // Try to resume from saved state, or use current in-memory state
@@ -961,15 +964,17 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         }} 
         onResume={handleResumeLesson} 
         onRestart={handleRestartLesson} 
-        savedState={lessonState.savedState || (showReconnectChoice ? {
-          // Use in-memory state if no DB state but user stopped mid-lesson
+        savedState={lessonState.savedState || {
+          // Always provide in-memory state as fallback when dialog is open
           active_step: activeStep,
           visible_content_ids: visibleContent,
           completed_steps: completedSteps,
           completion_percentage: lessonData.steps.length > 0 
             ? Math.round(completedSteps.length / lessonData.steps.length * 100) 
             : 0,
-        } as any : null)} 
+          conversation_id: conversationId || '',
+          last_step_title: lessonData.steps[activeStep]?.title || 'Unknown Step',
+        } as any} 
       />
 
       {/* Complete Dialog */}
