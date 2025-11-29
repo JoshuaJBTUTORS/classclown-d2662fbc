@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CompactStepIndicator } from './CompactStepIndicator';
 import { cleoQuestionTrackingService } from '@/services/cleoQuestionTrackingService';
+import { ResumeState } from '@/services/cleoLessonStateService';
 import { useAudioDevices } from '@/hooks/useAudioDevices';
 import { TranscriptPanel } from './TranscriptPanel';
 import { VoiceSessionIndicator } from '@/components/voice/VoiceSessionIndicator';
@@ -124,7 +125,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   const [voiceSpeed, setVoiceSpeed] = useState<number>(0.9); // Default voice speed
   const hasLoadedMessagesRef = useRef(false);
   const controlsRef = useRef<{
-    connect: () => void;
+    connect: (resumeState?: ResumeState) => void;
     disconnect: () => void;
     sendUserMessage: (text: string) => void;
     toggleMute?: () => void;
@@ -498,13 +499,22 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     // Try to resume from saved state, or use current in-memory state
     const state = await lessonState.resumeLesson();
     
+    let resumeStateForVoice: {
+      isResuming: boolean;
+      activeStep: number;
+      visibleContentIds: string[];
+      completedSteps: string[];
+      lastStepTitle: string;
+      lastContentBlockId: string | undefined;
+    };
+    
     if (state) {
       setActiveStep(state.active_step);
       setVisibleContent(state.visible_content_ids);
       setCompletedSteps(state.completed_steps);
       
       // Build resume state for voice chat
-      const resumeStateForVoice = {
+      resumeStateForVoice = {
         isResuming: true,
         activeStep: state.active_step,
         visibleContentIds: state.visible_content_ids,
@@ -514,10 +524,9 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           ? state.visible_content_ids[state.visible_content_ids.length - 1] 
           : undefined
       };
-      setCurrentResumeState(resumeStateForVoice);
     } else {
       // Use current in-memory state if no saved state
-      const resumeStateForVoice = {
+      resumeStateForVoice = {
         isResuming: true,
         activeStep: activeStep,
         visibleContentIds: visibleContent,
@@ -527,15 +536,16 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
           ? visibleContent[visibleContent.length - 1] 
           : undefined
       };
-      setCurrentResumeState(resumeStateForVoice);
     }
     
+    // Set state for UI purposes
+    setCurrentResumeState(resumeStateForVoice);
     setShowResumeDialog(false);
     setShowReconnectChoice(false);
     
-    // Auto-connect after setting resume state
+    // Pass resume state DIRECTLY to connect - don't rely on async state update
     hasDisconnectedOnComplete.current = false;
-    controlsRef.current?.connect();
+    controlsRef.current?.connect(resumeStateForVoice);
   };
   
   const handleRestartLesson = async () => {
