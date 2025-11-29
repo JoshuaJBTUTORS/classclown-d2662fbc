@@ -11,10 +11,23 @@ export class ElevenLabsPlayer {
   private scheduledSources: AudioBufferSourceNode[] = []; // Track all scheduled audio sources
   private abortController: AbortController | null = null; // Track ongoing fetch streams
   private onSpeakingChange?: (isSpeaking: boolean) => void;
+  private isFirstChunk: boolean = true; // Track if this is the first chunk after connection
 
   constructor(onSpeakingChange?: (isSpeaking: boolean) => void) {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
     this.onSpeakingChange = onSpeakingChange;
+    
+    // Pre-warm: immediately request resume to satisfy autoplay policy
+    // This starts the process early so it's ready when audio arrives
+    this.audioContext.resume().then(() => {
+      console.log('🔊 AudioContext pre-warmed, state:', this.audioContext.state);
+      // Initialize nextPlayTime to current time once context is running
+      if (this.nextPlayTime === 0) {
+        this.nextPlayTime = this.audioContext.currentTime;
+      }
+    }).catch(err => {
+      console.warn('AudioContext pre-warm failed:', err);
+    });
   }
 
   async playAudio(base64Audio: string) {
@@ -107,6 +120,7 @@ export class ElevenLabsPlayer {
     this.isProcessingQueue = false;
     this.nextPlayTime = 0;
     this.pcmByteBuffer = new Uint8Array(0);
+    this.isFirstChunk = true; // Reset for next connection
     this.onSpeakingChange?.(false);
   }
 
@@ -115,10 +129,21 @@ export class ElevenLabsPlayer {
   }
 
   async playStreamingAudio(text: string, voiceId: string, speed: number = 1.0): Promise<void> {
-    // Resume AudioContext if suspended (browser autoplay policy)
-    if (this.audioContext.state === 'suspended') {
+    // CRITICAL: Wait for AudioContext to be fully running before proceeding
+    if (this.audioContext.state !== 'running') {
+      console.log('🔊 AudioContext not running, waiting for resume...');
       await this.audioContext.resume();
-      console.log('🔊 AudioContext resumed');
+      
+      // Small delay to let the context stabilize
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      console.log('🔊 AudioContext now running, state:', this.audioContext.state);
+    }
+    
+    // Initialize nextPlayTime if it's still 0 (first audio)
+    if (this.nextPlayTime === 0) {
+      this.nextPlayTime = this.audioContext.currentTime;
+      console.log('🔊 Initialized nextPlayTime to:', this.nextPlayTime);
     }
     
     console.log(`🎙️ Adding "${text.substring(0, 30)}..." to sentence queue (speed: ${speed})`);
@@ -135,10 +160,16 @@ export class ElevenLabsPlayer {
     
     this.isProcessingQueue = true;
     
-    // Only reset nextPlayTime if no audio is scheduled ahead
-    // If nextPlayTime is in the future, keep it so new audio queues AFTER existing audio
-    if (this.nextPlayTime <= this.audioContext.currentTime) {
-      this.nextPlayTime = this.audioContext.currentTime;
+    // Ensure AudioContext is running before processing
+    if (this.audioContext.state !== 'running') {
+      await this.audioContext.resume();
+    }
+    
+    // Only reset nextPlayTime if no audio is scheduled ahead AND time base is valid
+    const currentTime = this.audioContext.currentTime;
+    if (this.nextPlayTime <= currentTime || this.nextPlayTime === 0) {
+      this.nextPlayTime = currentTime;
+      console.log('🔊 Reset nextPlayTime to currentTime:', currentTime);
     }
     // Otherwise, keep nextPlayTime as-is - new audio will naturally queue after existing
     
@@ -169,7 +200,7 @@ export class ElevenLabsPlayer {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqeGJ4a3BlZ2NubmZqYnN4YXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MTE2NzIsImV4cCI6MjA2MzI4NzY3Mn0.QFNyi5omwRMPiL_nJlUOHo5ATwXd14PdQHfoG7oTnwA`,
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqeGJ4a3BlZ2NubmZqYnN4YXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MTE2NzIsImV4cCI6MjA2MzI4NzY3Mn0.QFNyi5omwRMPiL_nJlUOHo5ATwXd9PdQHfoG7oTnwA`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ text, voiceId, speed }),
@@ -298,8 +329,18 @@ export class ElevenLabsPlayer {
       // Track this source for cleanup
       this.scheduledSources.push(source);
       
-      // Schedule precisely after previous chunk for gapless playback
-      const startTime = Math.max(this.audioContext.currentTime, this.nextPlayTime);
+      // CRITICAL: Ensure valid time base before scheduling
+      const currentTime = this.audioContext.currentTime;
+      
+      // Add a tiny buffer (30ms) if this is the very first chunk
+      // This gives the audio system time to fully initialize
+      const minStartOffset = this.isFirstChunk ? 0.03 : 0;
+      if (this.isFirstChunk) {
+        console.log('🔊 First chunk detected, adding 30ms buffer');
+        this.isFirstChunk = false;
+      }
+      
+      const startTime = Math.max(currentTime + minStartOffset, this.nextPlayTime);
       this.nextPlayTime = startTime + audioBuffer.duration;
       
       source.onended = () => {
