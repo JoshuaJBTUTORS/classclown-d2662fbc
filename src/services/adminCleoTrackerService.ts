@@ -322,14 +322,16 @@ export const getConversationDetail = async (conversationId: string): Promise<Con
   
   if (!conversation) return null;
   
-  const messages = (conversation.cleo_messages as any[])?.map(m => ({
-    id: m.id,
-    role: m.role,
-    content: m.content,
-    mode: m.mode || 'text',
-    createdAt: m.created_at,
-    durationSeconds: m.duration_seconds,
-  })) || [];
+  const messages = (conversation.cleo_messages as any[])
+    ?.map(m => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      mode: m.mode || 'text',
+      createdAt: m.created_at,
+      durationSeconds: m.duration_seconds,
+    }))
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) || [];
   
   const questionAnswers = (conversation.cleo_question_answers as any[])?.map(qa => ({
     id: qa.id,
