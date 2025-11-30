@@ -44,6 +44,7 @@ interface CleoVoiceChatProps {
     connect: (overrideResumeState?: CleoVoiceChatProps['resumeState']) => void; 
     disconnect: () => void; 
     sendUserMessage: (text: string) => void;
+    interruptAndSend: (text: string) => void;
     toggleMute?: () => void;
     isMuted?: boolean;
     updateVoiceSpeed?: (speed: number) => void;
@@ -297,12 +298,34 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
     console.log(`🎙️ Voice speed updated to ${speed}`);
   };
 
+  // Interrupt current audio and send a message atomically
+  const interruptAndSend = (text: string) => {
+    console.log('🛑 Interrupting Cleo and sending:', text);
+    
+    // 1. Stop current audio immediately
+    elevenLabsPlayerRef.current?.stop();
+    
+    // 2. Clear any pending TTS queue
+    textAccumulator.current = '';
+    fullMessageRef.current = '';
+    
+    // 3. Reset TTS promise chain
+    ttsPromiseChain.current = Promise.resolve();
+    
+    // 4. Cancel OpenAI's current response
+    rtcRef.current?.cancelResponse?.();
+    
+    // 5. Send the new message
+    sendUserMessage(text);
+  };
+
   // Provide connect/disconnect controls to parent
   useEffect(() => {
     onProvideControls?.({ 
       connect, 
       disconnect: () => disconnect(false), 
       sendUserMessage, 
+      interruptAndSend,
       toggleMute, 
       isMuted,
       updateVoiceSpeed,
