@@ -2,18 +2,24 @@
 
 All files have been copied to this folder. Simply copy the entire `heycleo-export/` directory to your new project.
 
-## ✅ ALL FILES INCLUDED (~180+ files)
+## ✅ ALL FILES INCLUDED (~210+ files)
 
 ### Root Config Files Added
+- `App.tsx` - Main routing entry ✅
+- `App.css` - App styles ✅
 - `index.css` - Complete design system with Cleo variables ✅
 - `main.tsx` - App entry point ✅
 - `tailwind.config.ts` - Tailwind configuration ✅
 - `vite.config.ts` - Vite configuration ✅
+- `vite-env.d.ts` - Vite type declarations ✅
 
-### Pages (`pages/`) - 18 files
+### Pages (`pages/`) - 20 files
 - `Auth.tsx` - Login/authentication page ✅
+- `ComingSoon.tsx` - Coming soon placeholder ✅
 - `CourseDetail.tsx` - Course detail page ✅
 - `InteractiveSignup.tsx` - Multi-step signup flow ✅
+- `LandingPage.tsx` - Landing page ✅
+- `LearningHub.tsx` - Main learning hub browser ✅
 - `LearningHubAssessments.tsx` - Assessments/Cleo's Corner ✅
 - `LearningHubCleo.tsx` - Main Cleo learning page ✅
 - `LearningHubCleoID.tsx` - My Cleo ID (gamification) ✅
@@ -80,20 +86,48 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `ComputerScienceBinaryBlitz.tsx` ✅
 - `DefaultMemoryMatch.tsx` ✅
 
-### Learning Hub (`components/learningHub/`) - 13 files
+### Learning Hub (`components/learningHub/`) - 22 files
+- `AIAssessmentManager.tsx` ✅
+- `AssessmentNavigation.tsx` ✅
+- `AssessmentTimeScreen.tsx` ✅
 - `ContentViewer.tsx` ✅
 - `CourseAccessControl.tsx` ✅
 - `CourseCard.tsx` ✅
 - `CourseSidebar.tsx` ✅
 - `EnrolledCoursesSection.tsx` ✅
+- `LearningHubErrorBoundary.tsx` ✅
 - `LearningHubLayout.tsx` ✅
 - `LearningHubSidebar.tsx` ✅
 - `LessonSearchBar.tsx` ✅
 - `LiveTutoringUpgradeModal.tsx` ✅
+- `ModuleAssessmentDialog.tsx` ✅
 - `ProfileSettings.tsx` ✅
 - `ProgressBar.tsx` ✅
+- `RevisionCalendar.tsx` ✅
+- `RevisionSetupWizard.tsx` ✅
 - `SubscriptionManager.tsx` ✅
 - `SubscriptionSettings.tsx` ✅
+- `TopicPerformanceHeatMap.tsx` ✅
+
+### Learning Path (`components/learningHub/LearningPath/`) - 10 files
+- `LearningPathContainer.tsx` ✅
+- `EnhancedPathBackground.tsx` ✅
+- `PathBackground.tsx` ✅
+- `PathControls.tsx` ✅
+- `PathLine.tsx` ✅
+- `PathMinimap.tsx` ✅
+- `PathWaypoint.tsx` ✅
+- `SimplePathStop.tsx` ✅
+- `utils/pathGeneration.ts` ✅
+- `utils/progressCalculation.ts` ✅
+
+### Onboarding (`components/onboarding/`) - 6 files
+- `OnboardingWizard.tsx` ✅
+- `CourseMatchingStep.tsx` ✅
+- `RegionSelectionStep.tsx` ✅
+- `SubjectSelectionStep.tsx` ✅
+- `WelcomeStep.tsx` ✅
+- `YearGroupSelectionStep.tsx` ✅
 
 ### Auth (`components/auth/`) - 4 files
 - `ForgotPasswordForm.tsx` ✅
@@ -120,35 +154,46 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 ### SEO (`components/seo/`) - 1 file
 - `DomainSEO.tsx` ✅
 
-### Utils (`utils/`) - 7 files
+### Utils (`utils/`) - 8 files
 - `RealtimeChat.ts` - WebRTC manager ✅
 - `ElevenLabsPlayer.ts` - TTS player ✅
 - `audioRecorder.ts` - Mic recording ✅
 - `domainConfig.ts` - Domain configuration ✅
 - `modeManager.ts` - Mode management ✅
 - `realtimeAudio.ts` - Realtime audio ✅
+- `subjectTheming.ts` - Subject themes ✅
 - `validation.ts` - Form validation ✅
 
-### Types (`types/`) - 6 files
+### Types (`types/`) - 8 files
 - `adminCleoTracker.ts` ✅
 - `cleoTypes.ts` ✅
 - `course.ts` ✅
+- `learningPath.ts` ✅
 - `lessonContent.ts` ✅
 - `onboarding.ts` ✅
+- `revision.ts` ✅
 - `rive.d.ts` ✅
 
-### Services (`services/`) - 9 files
+### Services (`services/`) - 17 files
 - `adminCleoTrackerService.ts` ✅
+- `assessmentImprovementService.ts` ✅
 - `cleoLessonStateService.ts` ✅
 - `cleoQuestionTrackingService.ts` ✅
+- `courseMatchingService.ts` ✅
 - `gamificationService.ts` ✅
 - `learningHubService.ts` ✅
+- `lessonCompletionService.ts` ✅
+- `lessonDurationEstimator.ts` ✅
 - `lessonExportService.ts` ✅
+- `lessonSearchService.ts` ✅
 - `masterySystem.ts` ✅
 - `onboardingService.ts` ✅
 - `paymentService.ts` ✅
+- `revisionCalendarService.ts` ✅
+- `topicPerformanceService.ts` ✅
+- `uniquenessValidationService.ts` ✅
 
-### Hooks (`hooks/`) - 14 files
+### Hooks (`hooks/`) - 15 files
 - `use-mobile.tsx` ✅
 - `use-toast.ts` ✅
 - `useAdminCleoTracker.ts` ✅
@@ -160,9 +205,14 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `useGamification.ts` ✅
 - `useLessonCompletion.ts` ✅
 - `useLessonPlan.ts` ✅
+- `usePersonalizedLearningPath.ts` ✅
 - `useSubjects.ts` ✅
 - `useTextChat.ts` ✅
 - `useYearGroups.ts` ✅
+
+### Constants (`constants/`) - 2 files
+- `cleoTopics.ts` ✅
+- `subjects.ts` ✅
 
 ### Contexts (`contexts/`) - 2 files
 - `AuthContext.tsx` ✅
