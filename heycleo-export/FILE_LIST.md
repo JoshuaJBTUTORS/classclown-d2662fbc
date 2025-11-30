@@ -2,10 +2,24 @@
 
 All files have been copied to this folder. Simply copy the entire `heycleo-export/` directory to your new project.
 
-## ✅ ALL FILES INCLUDED
+## ✅ ALL FILES INCLUDED (~115 files)
 
-### Components (`components/cleo/`)
-**Main Components:**
+### Pages (`pages/`) - 13 files
+- `Auth.tsx` - Login/authentication page ✅
+- `CourseDetail.tsx` - Course detail page ✅
+- `InteractiveSignup.tsx` - Multi-step signup flow ✅
+- `LearningHubAssessments.tsx` - Assessments/Cleo's Corner ✅
+- `LearningHubCleo.tsx` - Main Cleo learning page ✅
+- `LearningHubCleoID.tsx` - My Cleo ID (gamification) ✅
+- `LearningHubDashboard.tsx` - Dashboard home ✅
+- `LearningHubMyCourses.tsx` - My Courses page ✅
+- `LearningHubSettings.tsx` - Settings page ✅
+- `LessonPlanning.tsx` - Lesson planning flow ✅
+- `ModuleDetail.tsx` - Module detail view ✅
+- `PricingPage.tsx` - Subscription pricing ✅
+- `SubscriptionManagement.tsx` - Subscription management ✅
+
+### Components (`components/cleo/`) - 36 files
 - `CleoInteractiveLearning.tsx` - Main lesson interface ✅
 - `CleoVoiceChat.tsx` - Voice chat with WebRTC/ElevenLabs ✅
 - `CleoVoiceChatWithRef.tsx` - Voice chat wrapper ✅
@@ -42,7 +56,7 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `QuickPromptButtons.tsx` - Prompts ✅
 - `AssignPracticeDialog.tsx` - Practice dialog ✅
 
-**Content Blocks (`components/cleo/content/`):**
+### Content Blocks (`components/cleo/content/`) - 8 files
 - `TextBlock.tsx` ✅
 - `QuestionBlock.tsx` ✅
 - `DiagramBlock.tsx` ✅
@@ -52,7 +66,7 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `QuoteAnalysisBlock.tsx` ✅
 - `ContentActionButtons.tsx` ✅
 
-**Minigames (`components/cleo/minigames/`):**
+### Minigames (`components/cleo/minigames/`) - 6 files
 - `MiniGameSelector.tsx` ✅
 - `MathsQuickCalc.tsx` ✅
 - `EnglishWordScramble.tsx` ✅
@@ -60,49 +74,94 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `ComputerScienceBinaryBlitz.tsx` ✅
 - `DefaultMemoryMatch.tsx` ✅
 
-**Supporting Components:**
-- `voice/VoiceSessionIndicator.tsx` ✅
-- `learningHub/ProgressBar.tsx` ✅
+### Learning Hub (`components/learningHub/`) - 13 files
+- `ContentViewer.tsx` ✅
+- `CourseAccessControl.tsx` ✅
+- `CourseCard.tsx` ✅
+- `CourseSidebar.tsx` ✅
+- `EnrolledCoursesSection.tsx` ✅
+- `LearningHubLayout.tsx` ✅
+- `LearningHubSidebar.tsx` ✅
+- `LessonSearchBar.tsx` ✅
+- `LiveTutoringUpgradeModal.tsx` ✅
+- `ProfileSettings.tsx` ✅
+- `ProgressBar.tsx` ✅
+- `SubscriptionManager.tsx` ✅
+- `SubscriptionSettings.tsx` ✅
 
-### Utils (`utils/`)
+### Auth (`components/auth/`) - 3 files
+- `ForgotPasswordForm.tsx` ✅
+- `ProtectedRoute.tsx` ✅
+- `ResetPasswordForm.tsx` ✅
+
+### Signup (`components/signup/`) - 7 files
+- `ExamBoardStep.tsx` ✅
+- `ParentInfoStep.tsx` ✅
+- `PasswordStep.tsx` ✅
+- `StudentInfoStep.tsx` ✅
+- `SubjectStep.tsx` ✅
+- `SuccessStep.tsx` ✅
+- `WelcomePage.tsx` ✅
+
+### Voice (`components/voice/`) - 2 files
+- `VoiceSessionIndicator.tsx` ✅
+- `MinuteUsageTracker.tsx` ✅
+
+### SEO (`components/seo/`) - 1 file
+- `DomainSEO.tsx` ✅
+
+### Utils (`utils/`) - 7 files
 - `RealtimeChat.ts` - WebRTC manager ✅
 - `ElevenLabsPlayer.ts` - TTS player ✅
 - `audioRecorder.ts` - Mic recording ✅
+- `domainConfig.ts` - Domain configuration ✅
+- `modeManager.ts` - Mode management ✅
+- `realtimeAudio.ts` - Realtime audio ✅
+- `validation.ts` - Form validation ✅
 
-### Types (`types/`)
+### Types (`types/`) - 5 files
 - `lessonContent.ts` ✅
 - `cleoTypes.ts` ✅
+- `course.ts` ✅
+- `onboarding.ts` ✅
+- `rive.d.ts` ✅
 
-### Services (`services/`)
+### Services (`services/`) - 7 files
 - `masterySystem.ts` ✅
 - `cleoQuestionTrackingService.ts` ✅
 - `cleoLessonStateService.ts` ✅
 - `lessonExportService.ts` ✅
 - `gamificationService.ts` ✅
+- `learningHubService.ts` ✅
+- `paymentService.ts` ✅
 
-### Hooks (`hooks/`)
+### Hooks (`hooks/`) - 13 files
+- `use-mobile.tsx` ✅
+- `use-toast.ts` ✅
+- `useAppVersion.ts` ✅
+- `useAudioDevices.ts` ✅
 - `useCleoLessonState.ts` ✅
 - `useContentSync.ts` ✅
-- `useLessonPlan.ts` ✅
-- `useTextChat.ts` ✅
+- `useCourseTopics.ts` ✅
 - `useGamification.ts` ✅
-- `useAudioDevices.ts` ✅
+- `useLessonCompletion.ts` ✅
+- `useLessonPlan.ts` ✅
+- `useSubjects.ts` ✅
+- `useTextChat.ts` ✅
+- `useYearGroups.ts` ✅
 
-### Pages (`pages/`)
-- `LessonPlanning.tsx` ✅
-- `LearningHubCleo.tsx` ✅
-
-### Contexts (`contexts/`)
+### Contexts (`contexts/`) - 1 file
 - `AuthContext.tsx` ✅
 
-### Data (`data/`)
+### Data (`data/`) - 2 files
 - `cleoFillers.ts` ✅
 - `lessons/vectorsScalars.ts` ✅
 
 ### Assets (`assets/`)
+- `cleo-logo.png` ✅
 - `rive/cleo-avatar.riv` ✅
 
-### Edge Functions (`edge-functions/`)
+### Edge Functions (`edge-functions/`) - 23 functions
 **Core Voice:**
 - `cleo-realtime-session-token/index.ts` ✅
 - `cleo-realtime-voice/index.ts` ✅
@@ -127,6 +186,13 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `log-voice-session/index.ts` ✅
 - `admin-add-voice-minutes/index.ts` ✅
 - `add-minutes-bal/index.ts` ✅
+
+**Subscriptions & Payments:**
+- `create-platform-subscription/index.ts` ✅
+- `create-subscription-checkout/index.ts` ✅
+- `platform-customer-portal/index.ts` ✅
+- `platform-subscription-webhook/index.ts` ✅
+- `sync-platform-subscription-status/index.ts` ✅
 
 **Shared:**
 - `_shared/cleoPromptHelpers.ts` ✅
@@ -164,13 +230,14 @@ Replace `sjxbxkpegcnnfjbsxazo` with your new Supabase project ID in:
 In Supabase Dashboard → Edge Functions → Secrets:
 - `OPENAI_API_KEY`
 - `ELEVENLABS_API_KEY`
+- `STRIPE_SECRET_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 ### 4. Install Dependencies
 ```bash
-npm install @rive-app/react-canvas katex react-katex framer-motion uuid date-fns
+npm install @rive-app/react-canvas katex react-katex framer-motion uuid date-fns @stripe/stripe-js @stripe/react-stripe-js
 ```
 
 ### 5. Enable Realtime
