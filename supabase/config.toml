@@ -162,6 +162,9 @@ verify_jwt = false
 [functions.ai-mark-cleo-question]
 verify_jwt = false
 
+[functions.export-heycleo-data]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328
