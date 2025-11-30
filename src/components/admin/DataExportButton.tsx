@@ -21,17 +21,19 @@ interface ExportResult {
 }
 
 const DataExportButton: React.FC = () => {
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting, setIsExporting] = useState<number | null>(null);
   const [lastExport, setLastExport] = useState<ExportResult | null>(null);
 
-  const handleExport = async () => {
-    setIsExporting(true);
+  const handleExport = async (part: number) => {
+    setIsExporting(part);
     setLastExport(null);
     
     try {
-      toast.info('Starting data export...', { duration: 3000 });
+      toast.info(`Starting Part ${part} export...`, { duration: 3000 });
       
-      const { data, error } = await supabase.functions.invoke('export-heycleo-data');
+      const { data, error } = await supabase.functions.invoke('export-heycleo-data', {
+        body: { part }
+      });
       
       if (error) {
         console.error('Export error:', error);
@@ -57,19 +59,19 @@ const DataExportButton: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `heycleo-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `heycleo-export-part${part}-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast.success(`Exported ${data.totalRows} rows from ${data.totalTables} tables!`);
+      toast.success(`Part ${part}: Exported ${data.totalRows} rows from ${data.totalTables} tables!`);
       
     } catch (err: any) {
       console.error('Export failed:', err);
       toast.error(err.message || 'Export failed. Check console for details.');
     } finally {
-      setIsExporting(false);
+      setIsExporting(null);
     }
   };
 
@@ -86,24 +88,49 @@ const DataExportButton: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button 
-          onClick={handleExport} 
-          disabled={isExporting}
-          size="lg"
-          className="w-full"
-        >
-          {isExporting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Exporting Data...
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              Export All HeyCleo Data
-            </>
-          )}
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            onClick={() => handleExport(1)} 
+            disabled={isExporting !== null}
+            size="lg"
+            className="w-full"
+          >
+            {isExporting === 1 ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Part 1: Core Data
+              </>
+            )}
+          </Button>
+          <Button 
+            onClick={() => handleExport(2)} 
+            disabled={isExporting !== null}
+            size="lg"
+            className="w-full"
+          >
+            {isExporting === 2 ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Part 2: Content
+              </>
+            )}
+          </Button>
+        </div>
+        
+        <div className="text-xs text-muted-foreground border rounded p-3 space-y-1">
+          <p><strong>Part 1:</strong> profiles, user_roles, subjects, year_groups, exam_board_specs, gamification, subscriptions, settings</p>
+          <p><strong>Part 2:</strong> courses, modules, lessons, lesson_plans, assessments, questions, responses</p>
+        </div>
 
         {lastExport && (
           <div className="mt-4 p-4 bg-muted rounded-lg space-y-3">
@@ -160,13 +187,6 @@ const DataExportButton: React.FC = () => {
             </details>
           </div>
         )}
-
-        <div className="text-xs text-muted-foreground">
-          <p className="font-medium mb-1">Exported Tables:</p>
-          <p>profiles, user_roles, subjects, courses, course_modules, course_lessons, 
-          cleo_conversations, cleo_messages, cleo_lesson_plans, voice_session_quotas, 
-          platform_subscriptions, ai_assessments, and more...</p>
-        </div>
       </CardContent>
     </Card>
   );

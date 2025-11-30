@@ -55,34 +55,27 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Data export initiated by user: ${user.email}`);
+    // Get the part parameter from request body
+    const { part = 1 } = await req.json().catch(() => ({ part: 1 }));
+    
+    console.log(`Data export Part ${part} initiated by user: ${user.email}`);
 
-    // Define all tables to export in dependency order
-    // EXCLUDES: cleo_conversations, cleo_messages, cleo_learning_progress, 
-    // cleo_lesson_state, cleo_question_answers (too large, session-specific data)
-    const tables = [
+    // Split tables into two parts for smaller file sizes
+    // Part 1: Core/User data (~smaller)
+    // Part 2: Content/Course data (~larger)
+    
+    const part1Tables = [
       // Core User Tables
       'profiles',
       'user_roles',
       
-      // Subjects & Curriculum (needed before courses)
+      // Subjects & Curriculum
       'subjects',
       'year_groups',
       'curriculum_year_groups',
       
       // Exam Board Tables
       'exam_board_specifications',
-      
-      // Course Content Tables
-      'courses',
-      'course_exam_board_specifications',
-      'course_modules',
-      'course_lessons',
-      'course_notes',
-      'course_purchases',
-      
-      // Cleo Lesson Plans (keep structure, not sessions)
-      'cleo_lesson_plans',
       
       // Gamification Tables
       'user_gamification_stats',
@@ -93,16 +86,31 @@ serve(async (req) => {
       'platform_subscriptions',
       'platform_subscription_plans',
       
+      // System Tables
+      'app_settings',
+    ];
+    
+    const part2Tables = [
+      // Course Content Tables
+      'courses',
+      'course_exam_board_specifications',
+      'course_modules',
+      'course_lessons',
+      'course_notes',
+      'course_purchases',
+      
+      // Cleo Lesson Plans (structure only, not sessions)
+      'cleo_lesson_plans',
+      
       // Assessment Tables
       'ai_assessments',
       'assessment_questions',
       'assessment_sessions',
       'student_responses',
       'assessment_improvements',
-      
-      // System Tables
-      'app_settings',
     ];
+    
+    const tables = part === 1 ? part1Tables : part2Tables;
 
     const exportData: Record<string, any> = {
       exportedAt: new Date().toISOString(),
@@ -151,7 +159,7 @@ serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'Content-Disposition': `attachment; filename="heycleo-data-export-${new Date().toISOString().split('T')[0]}.json"`
+          'Content-Disposition': `attachment; filename="heycleo-export-part${part}-${new Date().toISOString().split('T')[0]}.json"`
         }
       }
     );
