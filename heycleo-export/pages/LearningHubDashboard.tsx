@@ -45,13 +45,8 @@ const LearningHubDashboard = () => {
   const featuredCourses = courses?.filter(course => course.status === 'published').slice(0, 3) || [];
 
   const handleAccessLiveTutoring = () => {
-    // If user is parent or student, navigate to CRM
-    if (userRole === 'parent' || userRole === 'student' || userRole === 'admin' || userRole === 'owner' || userRole === 'tutor') {
-      navigate('/calendar');
-    } else {
-      // Otherwise show upgrade modal
-      setShowUpgradeModal(true);
-    }
+    // In standalone Cleo app, show upgrade modal or redirect to external tutoring
+    setShowUpgradeModal(true);
   };
 
   return (

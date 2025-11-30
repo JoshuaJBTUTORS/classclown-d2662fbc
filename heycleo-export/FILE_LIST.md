@@ -258,8 +258,9 @@ All shadcn components included
 - `utils.ts` ✅
 - `supabase.ts` ✅
 
-### Integrations (`integrations/supabase/`) - 1 file
+### Integrations (`integrations/supabase/`) - 2 files
 - `client.ts` ✅
+- `types.ts` - Auto-generated database types ✅
 
 ### Data (`data/`) - 2 files
 - `cleoFillers.ts` ✅
@@ -328,8 +329,8 @@ Copy the entire `heycleo-export/` folder to your new project, then reorganize:
 - `edge-functions/` → `supabase/functions/`
 - `database/schema.sql` → Run in SQL Editor
 
-### 2. Clean Up App.tsx
-**IMPORTANT:** The `App.tsx` contains routes for the full tutoring platform. For standalone Cleo, remove unused imports and routes. Keep only:
+### 2. App.tsx is Already Cleaned
+The `App.tsx` has been cleaned for standalone Cleo operation. It only includes:
 - `/` - Auth redirect
 - `/landing` - Landing page
 - `/login` - Login page
@@ -337,6 +338,10 @@ Copy the entire `heycleo-export/` folder to your new project, then reorganize:
 - `/auth` - Auth page
 - `/pricing` - Pricing page
 - `/heycleo/*` - All learning hub routes
+- `/admin/cleo-tracker` - Admin Cleo tracking
+- `/admin/hub-access` - Hub access management
+
+**Note:** The `components/navigation/Sidebar.tsx` has some legacy routes that won't work in standalone mode. This sidebar is only used by admin pages and can be simplified if needed.
 
 ### 3. Update Project IDs
 Replace `sjxbxkpegcnnfjbsxazo` with your new Supabase project ID in:
