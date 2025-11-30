@@ -172,17 +172,26 @@ export const HybridChatInterface: React.FC<HybridChatInterfaceProps> = ({
   };
 
   // Auto-advance to latest slide when new content appears
+  // Use the SAME ordering as SlideContentDisplay (visibleContentIds order)
   useEffect(() => {
     if (visibleContentIds && visibleContentIds.length > 0 && contentBlocks) {
-      const visibleBlocks = contentBlocks.filter(
-        block => block && block.id && visibleContentIds.includes(block.id)
-      );
+      // Order by visibleContentIds (reveal order), NOT contentBlocks array order
+      const visibleBlocks = visibleContentIds
+        .map(id => contentBlocks.find(block => block.id === id))
+        .filter((block): block is ContentBlock => 
+          block !== undefined && 
+          block !== null && 
+          block.type !== undefined && 
+          block.data !== undefined && 
+          block.data !== null
+        );
+      
       // Auto-advance to the last (newest) slide when content is added
       if (visibleBlocks.length > 0 && slideIndex < visibleBlocks.length - 1) {
         handleSlideChange(visibleBlocks.length - 1);
       }
     }
-  }, [visibleContentIds?.length]);
+  }, [visibleContentIds?.length, contentBlocks]);
 
   return (
     <div className="flex flex-col h-full">
