@@ -128,6 +128,7 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     connect: (resumeState?: ResumeState) => void;
     disconnect: () => void;
     sendUserMessage: (text: string) => void;
+    interruptAndSend?: (text: string) => void;
     toggleMute?: () => void;
     isMuted?: boolean;
     updateVoiceSpeed?: (speed: number) => void;
@@ -864,7 +865,12 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
                 action,
                 message
               });
-              controlsRef.current?.sendUserMessage(message);
+              // For diagram retry, interrupt Cleo immediately so she stops explaining
+              if (action === 'diagram_retry_started') {
+                controlsRef.current?.interruptAndSend?.(message);
+              } else {
+                controlsRef.current?.sendUserMessage(message);
+              }
             }} onToggleMute={() => controlsRef.current?.toggleMute?.()} isMuted={isMuted} isConnecting={connectionState === 'connecting'} subject={lessonData.yearGroup} onQuickPrompt={handleQuickPrompt} onRepeatLast={handleRepeatLast} isSaving={lessonState.isSaving} isPaused={isPaused} onTogglePause={() => {
               controlsRef.current?.togglePause?.();
               setIsPaused(prev => !prev);

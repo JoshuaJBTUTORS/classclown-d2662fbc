@@ -285,6 +285,13 @@ export class RealtimeChat {
     this.dc.send(JSON.stringify(event));
   }
 
+  cancelResponse() {
+    if (this.dc && this.dc.readyState === 'open') {
+      this.dc.send(JSON.stringify({ type: 'response.cancel' }));
+      console.log('🛑 Sent response.cancel to OpenAI');
+    }
+  }
+
   mute() {
     if (!this.localStream) {
       console.warn('No local stream to mute');
