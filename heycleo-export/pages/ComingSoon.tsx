@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Calendar } from 'lucide-react';
+import { Sparkles, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,12 +35,12 @@ const ComingSoon: React.FC = () => {
           <br />
           <br />
           You'll be notified when it's ready. In the meantime, 
-          feel free to explore your calendar and schedule sessions.
+          feel free to explore your courses and start learning.
         </p>
 
         {/* CTA Button */}
         <Button
-          onClick={() => navigate('/calendar')}
+          onClick={() => navigate('/heycleo/my-courses')}
           className="px-8 py-6 text-lg font-bold flex items-center gap-2 mx-auto"
           style={{
             background: 'linear-gradient(135deg, #1fb86b, #35d086)',
@@ -49,8 +49,8 @@ const ComingSoon: React.FC = () => {
             boxShadow: '0 12px 26px rgba(22, 160, 90, 0.35)'
           }}
         >
-          <Calendar className="w-5 h-5" />
-          Go to Calendar
+          <BookOpen className="w-5 h-5" />
+          Go to My Courses
         </Button>
 
         {/* Footer note */}

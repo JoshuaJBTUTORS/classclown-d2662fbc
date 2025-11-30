@@ -102,25 +102,15 @@ const LearningHubSidebar = () => {
               </Link>
             ))}
 
-            {/* Live Tutoring Button */}
-            {hasLiveTutoringAccess ? (
-              <Link
-                to="/calendar"
-                className="cleo-nav-button"
-              >
-                <span className="text-xl">💬</span>
-                <span>Live Tutoring</span>
-              </Link>
-            ) : (
-              <button
-                onClick={handleLiveTutoringClick}
-                className="cleo-nav-button relative"
-              >
-                <span className="text-xl">💬</span>
-                <span>Live Tutoring</span>
-                <Lock className="h-4 w-4 ml-auto text-yellow-600" />
-              </button>
-            )}
+            {/* Live Tutoring Button - Opens external booking */}
+            <button
+              onClick={handleLiveTutoringClick}
+              className="cleo-nav-button relative"
+            >
+              <span className="text-xl">💬</span>
+              <span>Live Tutoring</span>
+              <Lock className="h-4 w-4 ml-auto text-yellow-600" />
+            </button>
           </nav>
 
           {/* Footer */}
