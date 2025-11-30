@@ -1,0 +1,355 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { QuestionContent, AIMarkingResult } from '@/types/lessonContent';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CoinAnimation } from '@/components/cleo/CoinAnimation';
+import { LatexRenderer } from '../LatexRenderer';
+import { supabase } from '@/integrations/supabase/client';
+
+interface QuestionBlockProps {
+  data: QuestionContent;
+  onAnswer: (questionId: string, answerId: string, isCorrect: boolean, markingResult?: AIMarkingResult) => void;
+  onAskHelp?: (questionId: string, questionText: string) => void;
+  subject?: string;
+  examBoard?: string;
+}
+
+export const QuestionBlock: React.FC<QuestionBlockProps> = ({ data, onAnswer, onAskHelp, subject, examBoard }) => {
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showCoinAnimation, setShowCoinAnimation] = useState(false);
+  const [textAnswer, setTextAnswer] = useState('');
+  const [isSubmittingText, setIsSubmittingText] = useState(false);
+  const [markingResult, setMarkingResult] = useState<AIMarkingResult | null>(null);
+
+  // Defensive check for undefined data
+  if (!data || !data.question) {
+    return (
+      <div className="bg-muted/50 border border-border rounded-lg p-4">
+        <p className="text-sm text-muted-foreground">Question content not available</p>
+      </div>
+    );
+  }
+
+  // Determine question type - default to multiple_choice if not specified
+  const questionType = data.question_type || 'multiple_choice';
+  const isTextInput = questionType === 'short_answer' || questionType === 'extended_writing' || questionType === 'calculation';
+
+  const handleAnswerClick = (optionId: string, isCorrect: boolean) => {
+    setSelectedAnswer(optionId);
+    setShowFeedback(true);
+    
+    // Get the selected option text for clearer feedback
+    const selectedOption = data.options?.find(opt => (opt.id || `option-${data.options?.indexOf(opt)}`) === optionId);
+    const correctOption = data.options?.find(opt => opt.isCorrect);
+    
+    // Trigger coin animation for correct answers
+    if (isCorrect) {
+      setShowCoinAnimation(true);
+      setTimeout(() => setShowCoinAnimation(false), 1500);
+    }
+    
+    // Send answer with validation result for Cleo to trust
+    // Format: "[UI ANSWER] Correct! ..." or "[UI ANSWER] Incorrect. ..."
+    onAnswer(data.id, optionId, isCorrect);
+  };
+
+  const handleTextSubmit = async () => {
+    if (!textAnswer.trim()) return;
+    
+    setIsSubmittingText(true);
+    setShowFeedback(true);
+    
+    try {
+      // Call AI marking edge function
+      const { data: result, error } = await supabase.functions.invoke('ai-mark-cleo-question', {
+        body: {
+          questionText: data.question,
+          studentAnswer: textAnswer,
+          questionType: data.question_type || 'short_answer',
+          marks: data.marks || 1,
+          keywords: data.keywords,
+          subject: subject || 'General',
+          examBoard: examBoard,
+          correctAnswer: data.explanation, // Use explanation as model answer hint
+        }
+      });
+
+      if (error) {
+        console.error('AI Marking error:', error);
+        // Fallback: treat as submitted, let Cleo evaluate
+        onAnswer(data.id, textAnswer, true, undefined);
+        setIsSubmittingText(false);
+        return;
+      }
+
+      const aiResult: AIMarkingResult = result;
+      setMarkingResult(aiResult);
+      
+      // Show coin animation based on marks percentage
+      if (aiResult.marksAwarded >= Math.ceil(aiResult.maxMarks * 0.5)) {
+        setShowCoinAnimation(true);
+        setTimeout(() => setShowCoinAnimation(false), 1500);
+      }
+      
+      onAnswer(data.id, textAnswer, aiResult.isCorrect, aiResult);
+      
+    } catch (err) {
+      console.error('AI Marking failed:', err);
+      // Fallback: submit without AI marking
+      onAnswer(data.id, textAnswer, true, undefined);
+    } finally {
+      setIsSubmittingText(false);
+    }
+  };
+
+  const getOptionClassName = (optionId: string, isCorrect: boolean) => {
+    if (!showFeedback) {
+      return 'border-border hover:border-primary hover:bg-primary/5';
+    }
+
+    if (selectedAnswer === optionId) {
+      return isCorrect
+        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+        : 'border-red-500 bg-red-50 dark:bg-red-900/20';
+    }
+
+    if (isCorrect && showFeedback) {
+      return 'border-green-500 bg-green-50 dark:bg-green-900/20';
+    }
+
+    return 'border-border opacity-50';
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4 }}
+      className="w-full"
+    >
+      <div className="exam-question-paper relative">
+        {/* Coin animation overlay */}
+        {showCoinAnimation && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+            <CoinAnimation show={showCoinAnimation} />
+          </div>
+        )}
+        
+        {/* Exam date header - like real past papers */}
+        {data.examDate && (
+          <div className="exam-paper-date">
+            {data.examDate}
+          </div>
+        )}
+        
+        {/* Right margin stripe - "DO NOT WRITE IN THIS AREA" */}
+        <div className="exam-margin-stripe">
+          <span>DO NOT WRITE IN THIS AREA</span>
+        </div>
+
+        {/* Question row with inline number */}
+        <div className="exam-question-row">
+          <span className="exam-question-number">
+            {data.questionNumber || '1'}
+          </span>
+          <div className="exam-question-text">
+            <LatexRenderer content={data.question} />
+          </div>
+        </div>
+
+        {/* Assessment Objective badge */}
+        {data.assessmentObjective && (
+          <div className="exam-ao-badge">
+            📋 {data.assessmentObjective}
+          </div>
+        )}
+
+        {/* Multiple Choice Options (A, B, C, D) */}
+        {!isTextInput && data.options && data.options.length > 0 && (
+          <div className="exam-options-list">
+            {data.options.map((option, index) => {
+              const optionId = option.id || `option-${index}`;
+              const isSelected = selectedAnswer === optionId;
+              const letter = String.fromCharCode(65 + index); // A, B, C, D
+              
+              let className = 'exam-option-row';
+              if (showFeedback) {
+                if (isSelected && option.isCorrect) {
+                  className += ' selected-correct';
+                } else if (isSelected && !option.isCorrect) {
+                  className += ' selected-incorrect';
+                } else if (option.isCorrect) {
+                  className += ' correct-answer';
+                }
+              }
+              
+              return (
+                <button
+                  key={optionId}
+                  onClick={() => handleAnswerClick(optionId, option.isCorrect)}
+                  disabled={showFeedback}
+                  className={className}
+                >
+                  <span className="exam-option-letter">{letter}</span>
+                  <span className="exam-option-text">
+                    <LatexRenderer content={option.text} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Text Input Answer Space (for short_answer, extended_writing, calculation) */}
+        {isTextInput && (
+          <div className="exam-text-input-section">
+            {/* Dotted lines for writing simulation */}
+            <div className="exam-dotted-lines">
+              {Array.from({ length: data.answerLines || (questionType === 'extended_writing' ? 8 : 4) }).map((_, i) => (
+                <div key={i} className="exam-dotted-line"></div>
+              ))}
+            </div>
+
+            {/* Answer textarea */}
+            {!showFeedback && (
+              <div className="exam-answer-box">
+                <label className="text-sm font-semibold mb-2 block text-gray-700">
+                  Your answer:
+                </label>
+                <textarea
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
+                  className="exam-answer-textarea"
+                  rows={questionType === 'extended_writing' ? 8 : 4}
+                  placeholder="Type your answer here..."
+                />
+                <Button 
+                  onClick={handleTextSubmit}
+                  disabled={!textAnswer.trim() || isSubmittingText}
+                  className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {isSubmittingText ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Answer'
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {/* Loading State - AI is marking */}
+            {showFeedback && isSubmittingText && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                🤖 AI is marking your answer...
+              </div>
+            )}
+
+            {/* Show submitted answer after feedback */}
+            {showFeedback && textAnswer && !isSubmittingText && (
+              <div className={`exam-answer-box mt-4 p-4 rounded border-2 ${
+                markingResult 
+                  ? markingResult.isCorrect 
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
+                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-500'
+                  : 'bg-gray-50 dark:bg-gray-900/20 border-gray-300'
+              }`}>
+                <p className={`text-sm font-semibold mb-2 ${
+                  markingResult?.isCorrect ? 'text-green-700' : 'text-amber-700'
+                }`}>
+                  Your submitted answer:
+                </p>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">{textAnswer}</p>
+              </div>
+            )}
+
+            {/* AI Marking Result */}
+            {showFeedback && markingResult && !isSubmittingText && (
+              <div className="mt-4 p-4 bg-white dark:bg-gray-800 border border-border rounded-lg shadow-sm">
+                {/* Marks Display */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-lg font-bold">
+                    {markingResult.marksAwarded}/{markingResult.maxMarks} marks
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    markingResult.marksAwarded === markingResult.maxMarks 
+                      ? 'bg-green-100 text-green-800' 
+                      : markingResult.isCorrect 
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-red-100 text-red-800'
+                  }`}>
+                    {markingResult.marksAwarded === markingResult.maxMarks 
+                      ? '✨ Full marks!' 
+                      : markingResult.isCorrect 
+                        ? '👍 Good effort' 
+                        : '📚 Keep practicing'}
+                  </span>
+                </div>
+                
+                {/* AI Feedback */}
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  {markingResult.feedback}
+                </p>
+                
+                {/* Strengths */}
+                {markingResult.strengths.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold text-green-700 mb-1">✓ Strengths:</p>
+                    <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                      {markingResult.strengths.map((s, i) => (
+                        <li key={i}>• {s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Improvements */}
+                {markingResult.improvements.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-amber-700 mb-1">→ To improve:</p>
+                    <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                      {markingResult.improvements.map((imp, i) => (
+                        <li key={i}>• {imp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Marks footer - "Total for Question X is X marks" */}
+        {data.marks && (
+          <div className="exam-marks-footer">
+            <span>
+              (Total for Question {data.questionNumber || '1'} is {data.marks} {data.marks === 1 ? 'mark' : 'marks'})
+            </span>
+          </div>
+        )}
+
+        {/* Explanation */}
+        {showFeedback && data.explanation && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="exam-explanation-box"
+          >
+            <p className="text-sm font-semibold mb-2 text-green-700">
+              Explanation:
+            </p>
+            <div className="text-sm text-gray-800">
+              <LatexRenderer content={data.explanation} />
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
