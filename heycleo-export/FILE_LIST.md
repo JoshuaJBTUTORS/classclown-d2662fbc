@@ -84,6 +84,9 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `useCleoLessonState.ts` ✅
 - `useContentSync.ts` ✅
 - `useLessonPlan.ts` ✅
+- `useTextChat.ts` ✅
+- `useGamification.ts` ✅
+- `useAudioDevices.ts` ✅
 
 ### Pages (`pages/`)
 - `LessonPlanning.tsx` ✅
