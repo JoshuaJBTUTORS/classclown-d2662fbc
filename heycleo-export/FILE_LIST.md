@@ -2,7 +2,7 @@
 
 All files have been copied to this folder. Simply copy the entire `heycleo-export/` directory to your new project.
 
-## ✅ ALL FILES INCLUDED (~220+ files)
+## ✅ ALL FILES INCLUDED (~235+ files)
 
 ### Root Config Files Added
 - `App.tsx` - Main routing entry ✅
@@ -87,14 +87,24 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `ComputerScienceBinaryBlitz.tsx` ✅
 - `DefaultMemoryMatch.tsx` ✅
 
-### Learning Hub (`components/learningHub/`) - 22 files
+### Learning Hub (`components/learningHub/`) - 35 files
 - `AIAssessmentManager.tsx` ✅
+- `AIAssessmentViewer.tsx` ✅
+- `AssessmentAccessControl.tsx` ✅
+- `AssessmentCard.tsx` ✅
+- `AssessmentCompletion.tsx` ✅
+- `AssessmentCompletionDialog.tsx` ✅
 - `AssessmentNavigation.tsx` ✅
+- `AssessmentQuestion.tsx` ✅
 - `AssessmentTimeScreen.tsx` ✅
+- `AssessmentTimer.tsx` ✅
 - `ContentViewer.tsx` ✅
 - `CourseAccessControl.tsx` ✅
 - `CourseCard.tsx` ✅
 - `CourseSidebar.tsx` ✅
+- `CreateAIAssessmentDialog.tsx` ✅
+- `CreateAssessmentDialog.tsx` ✅
+- `CreateExamDialog.tsx` ✅
 - `EnrolledCoursesSection.tsx` ✅
 - `LearningHubErrorBoundary.tsx` ✅
 - `LearningHubLayout.tsx` ✅
@@ -104,11 +114,14 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `ModuleAssessmentDialog.tsx` ✅
 - `ProfileSettings.tsx` ✅
 - `ProgressBar.tsx` ✅
+- `QuestionFeedback.tsx` ✅
+- `QuizEmbed.tsx` ✅
 - `RevisionCalendar.tsx` ✅
 - `RevisionSetupWizard.tsx` ✅
 - `SubscriptionManager.tsx` ✅
 - `SubscriptionSettings.tsx` ✅
 - `TopicPerformanceHeatMap.tsx` ✅
+- `VideoEmbed.tsx` ✅
 
 ### Learning Path (`components/learningHub/LearningPath/`) - 10 files
 - `LearningPathContainer.tsx` ✅
