@@ -2,9 +2,15 @@
 
 All files have been copied to this folder. Simply copy the entire `heycleo-export/` directory to your new project.
 
-## ✅ ALL FILES INCLUDED (~115 files)
+## ✅ ALL FILES INCLUDED (~180+ files)
 
-### Pages (`pages/`) - 13 files
+### Root Config Files Added
+- `index.css` - Complete design system with Cleo variables ✅
+- `main.tsx` - App entry point ✅
+- `tailwind.config.ts` - Tailwind configuration ✅
+- `vite.config.ts` - Vite configuration ✅
+
+### Pages (`pages/`) - 18 files
 - `Auth.tsx` - Login/authentication page ✅
 - `CourseDetail.tsx` - Course detail page ✅
 - `InteractiveSignup.tsx` - Multi-step signup flow ✅
@@ -89,14 +95,18 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `SubscriptionManager.tsx` ✅
 - `SubscriptionSettings.tsx` ✅
 
-### Auth (`components/auth/`) - 3 files
+### Auth (`components/auth/`) - 4 files
 - `ForgotPasswordForm.tsx` ✅
+- `LoginForm.tsx` ✅
 - `ProtectedRoute.tsx` ✅
 - `ResetPasswordForm.tsx` ✅
 
-### Signup (`components/signup/`) - 7 files
+### Signup (`components/signup/`) - 11 files
+- `AccountCreationStep.tsx` ✅
+- `EducationLevelStep.tsx` ✅
 - `ExamBoardStep.tsx` ✅
 - `ParentInfoStep.tsx` ✅
+- `PasswordCreationForm.tsx` ✅
 - `PasswordStep.tsx` ✅
 - `StudentInfoStep.tsx` ✅
 - `SubjectStep.tsx` ✅
@@ -119,25 +129,29 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `realtimeAudio.ts` - Realtime audio ✅
 - `validation.ts` - Form validation ✅
 
-### Types (`types/`) - 5 files
-- `lessonContent.ts` ✅
+### Types (`types/`) - 6 files
+- `adminCleoTracker.ts` ✅
 - `cleoTypes.ts` ✅
 - `course.ts` ✅
+- `lessonContent.ts` ✅
 - `onboarding.ts` ✅
 - `rive.d.ts` ✅
 
-### Services (`services/`) - 7 files
-- `masterySystem.ts` ✅
-- `cleoQuestionTrackingService.ts` ✅
+### Services (`services/`) - 9 files
+- `adminCleoTrackerService.ts` ✅
 - `cleoLessonStateService.ts` ✅
-- `lessonExportService.ts` ✅
+- `cleoQuestionTrackingService.ts` ✅
 - `gamificationService.ts` ✅
 - `learningHubService.ts` ✅
+- `lessonExportService.ts` ✅
+- `masterySystem.ts` ✅
+- `onboardingService.ts` ✅
 - `paymentService.ts` ✅
 
-### Hooks (`hooks/`) - 13 files
+### Hooks (`hooks/`) - 14 files
 - `use-mobile.tsx` ✅
 - `use-toast.ts` ✅
+- `useAdminCleoTracker.ts` ✅
 - `useAppVersion.ts` ✅
 - `useAudioDevices.ts` ✅
 - `useCleoLessonState.ts` ✅
@@ -150,8 +164,25 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `useTextChat.ts` ✅
 - `useYearGroups.ts` ✅
 
-### Contexts (`contexts/`) - 1 file
+### Contexts (`contexts/`) - 2 files
 - `AuthContext.tsx` ✅
+- `LearningHubContext.tsx` ✅
+
+### Routing (`components/routing/`) - 4 files
+- `AuthRedirect.tsx` ✅
+- `DomainRouteGuard.tsx` ✅
+- `HubAccessGuard.tsx` ✅
+- `OnboardingGuard.tsx` ✅
+
+### UI Components (`components/ui/`) - 50 shadcn files ✅
+All shadcn components included
+
+### Lib (`lib/`) - 2 files
+- `utils.ts` ✅
+- `supabase.ts` ✅
+
+### Integrations (`integrations/supabase/`) - 1 file
+- `client.ts` ✅
 
 ### Data (`data/`) - 2 files
 - `cleoFillers.ts` ✅
