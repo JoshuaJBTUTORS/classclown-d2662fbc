@@ -1,204 +1,176 @@
-# HeyCleo Complete File List
+# HeyCleo Export - Complete File List
 
-Copy these files from the original project to your new project.
+All files have been copied to this folder. Simply copy the entire `heycleo-export/` directory to your new project.
 
-## ✅ INCLUDED IN EXPORT (ready to use)
-These files are fully included in this export folder:
+## ✅ ALL FILES INCLUDED
 
-```
-heycleo-export/
-├── README.md                           ✅
-├── FILE_LIST.md                        ✅ (this file)
-├── components/cleo/
-│   ├── CleoInteractiveLearning.tsx     ✅ (blueprint)
-│   ├── HybridChatInterface.tsx         ✅
-│   └── SlideContentDisplay.tsx         ✅
-├── utils/
-│   ├── RealtimeChat.ts                 ✅
-│   └── ElevenLabsPlayer.ts             ✅
-├── types/
-│   ├── lessonContent.ts                ✅
-│   └── cleoTypes.ts                    ✅
-├── services/
-│   └── masterySystem.ts                ✅
-├── database/
-│   └── schema.sql                      ✅
-└── edge-functions/
-    └── config.toml                     ✅
-```
+### Components (`components/cleo/`)
+**Main Components:**
+- `CleoInteractiveLearning.tsx` - Main lesson interface ✅
+- `CleoVoiceChat.tsx` - Voice chat with WebRTC/ElevenLabs ✅
+- `CleoVoiceChatWithRef.tsx` - Voice chat wrapper ✅
+- `CleoAvatar.tsx` - Animated Rive avatar ✅
+- `CleoChat.tsx` - Text chat ✅
+- `CleoInput.tsx` - Input with voice recording ✅
+- `CleoMessage.tsx` - Message bubble ✅
+- `CleoWelcome.tsx` - Welcome screen ✅
+- `HybridChatInterface.tsx` - Voice + text combo ✅
+- `SlideContentDisplay.tsx` - Slide-based view ✅
+- `ContentDisplay.tsx` - Scrolling content view ✅
+- `DifficultySelectionScreen.tsx` - Difficulty selection ✅
+- `TopicSelectionScreen.tsx` - Topic selection ✅
+- `LessonPlanningScreen.tsx` - Lesson generation UI ✅
+- `LessonPlanDisplay.tsx` - Lesson plan display ✅
+- `LessonPlanSidebar.tsx` - Sidebar ✅
+- `LessonContentPreview.tsx` - Content preview ✅
+- `LessonCompleteDialog.tsx` - Completion dialog ✅
+- `LessonResumeDialog.tsx` - Resume dialog ✅
+- `LessonRulesCard.tsx` - Rules card ✅
+- `LessonProgressBar.tsx` - Progress bar ✅
+- `LessonProgressIndicator.tsx` - Step progress ✅
+- `VoiceControls.tsx` - Play/stop/mute ✅
+- `VoiceWaveform.tsx` - Audio visualization ✅
+- `VoiceSpeedControl.tsx` - Speed control ✅
+- `AudioDeviceSelector.tsx` - Device selection ✅
+- `TranscriptPanel.tsx` - Live transcript ✅
+- `LatexRenderer.tsx` - Math rendering ✅
+- `CoinAnimation.tsx` - Coin animation ✅
+- `CompactStepIndicator.tsx` - Step indicator ✅
+- `SlideNavigation.tsx` - Slide navigation ✅
+- `TopicCompletionBadge.tsx` - Completion badge ✅
+- `QuickChatInput.tsx` - Quick input ✅
+- `QuickPromptButtons.tsx` - Prompts ✅
+- `AssignPracticeDialog.tsx` - Practice dialog ✅
 
-## 📋 COPY FROM ORIGINAL PROJECT
-Copy these files from `src/` in the original project:
+**Content Blocks (`components/cleo/content/`):**
+- `TextBlock.tsx` ✅
+- `QuestionBlock.tsx` ✅
+- `DiagramBlock.tsx` ✅
+- `TableBlock.tsx` ✅
+- `DefinitionBlock.tsx` ✅
+- `WorkedExampleBlock.tsx` ✅
+- `QuoteAnalysisBlock.tsx` ✅
+- `ContentActionButtons.tsx` ✅
 
-### Components (src/components/cleo/)
-```
-CleoAvatar.tsx
-CleoChat.tsx
-CleoInput.tsx
-CleoInteractiveLearning.tsx    ← Full version (blueprint here is partial)
-CleoMessage.tsx
-CleoVoiceChat.tsx
-CleoVoiceChatWithRef.tsx
-CleoWelcome.tsx
-CoinAnimation.tsx
-CompactStepIndicator.tsx
-ContentDisplay.tsx
-DifficultySelectionScreen.tsx
-LatexRenderer.tsx
-LessonCompleteDialog.tsx
-LessonContentPreview.tsx
-LessonPlanDisplay.tsx
-LessonPlanSidebar.tsx
-LessonPlanningScreen.tsx
-LessonProgressBar.tsx
-LessonProgressIndicator.tsx
-LessonResumeDialog.tsx
-LessonRulesCard.tsx
-QuickChatInput.tsx
-QuickPromptButtons.tsx
-SlideNavigation.tsx
-TopicCompletionBadge.tsx
-TopicSelectionScreen.tsx
-TranscriptPanel.tsx
-VoiceControls.tsx
-VoiceSpeedControl.tsx
-VoiceWaveform.tsx
-AssignPracticeDialog.tsx
-AudioDeviceSelector.tsx
-```
+**Minigames (`components/cleo/minigames/`):**
+- `MiniGameSelector.tsx` ✅
+- `MathsQuickCalc.tsx` ✅
+- `EnglishWordScramble.tsx` ✅
+- `ScienceElementMatch.tsx` ✅
+- `ComputerScienceBinaryBlitz.tsx` ✅
+- `DefaultMemoryMatch.tsx` ✅
 
-### Content Blocks (src/components/cleo/content/)
-```
-ContentActionButtons.tsx
-DefinitionBlock.tsx
-DiagramBlock.tsx
-QuestionBlock.tsx
-QuoteAnalysisBlock.tsx
-TableBlock.tsx
-TextBlock.tsx
-WorkedExampleBlock.tsx
-```
+**Supporting Components:**
+- `voice/VoiceSessionIndicator.tsx` ✅
+- `learningHub/ProgressBar.tsx` ✅
 
-### Hooks (src/hooks/)
-```
-useAudioDevices.ts
-useCleoLessonState.ts
-useContentSync.ts
-useGamification.ts
-useLessonPlan.ts
-useTextChat.ts
-use-toast.ts
-```
+### Utils (`utils/`)
+- `RealtimeChat.ts` - WebRTC manager ✅
+- `ElevenLabsPlayer.ts` - TTS player ✅
+- `audioRecorder.ts` - Mic recording ✅
 
-### Services (src/services/)
-```
-cleoLessonStateService.ts
-cleoQuestionTrackingService.ts
-gamificationService.ts
-masterySystem.ts              ← Already in export
-```
+### Types (`types/`)
+- `lessonContent.ts` ✅
+- `cleoTypes.ts` ✅
 
-### Utils (src/utils/)
-```
-ElevenLabsPlayer.ts           ← Already in export
-RealtimeChat.ts               ← Already in export
-modeManager.ts
-realtimeAudio.ts
-subjectTheming.ts
-```
+### Services (`services/`)
+- `masterySystem.ts` ✅
+- `cleoQuestionTrackingService.ts` ✅
+- `cleoLessonStateService.ts` ✅
+- `lessonExportService.ts` ✅
+- `gamificationService.ts` ✅
 
-### Pages (src/pages/)
-```
-Auth.tsx
-InteractiveSignup.tsx
-LearningHub.tsx
-LearningHubCleo.tsx
-LearningHubCleoID.tsx
-LearningHubDashboard.tsx
-LearningHubEntry.tsx
-LessonPlanning.tsx
-PricingPage.tsx (optional)
-```
+### Hooks (`hooks/`)
+- `useCleoLessonState.ts` ✅
+- `useContentSync.ts` ✅
+- `useLessonPlan.ts` ✅
 
-### Data (src/data/)
-```
-lessons/vectorsScalars.ts
-```
+### Pages (`pages/`)
+- `LessonPlanning.tsx` ✅
+- `LearningHubCleo.tsx` ✅
 
-### Assets (src/assets/)
-```
-rive/cleo-avatar.riv
-audio/cleoFillers.ts
-```
+### Contexts (`contexts/`)
+- `AuthContext.tsx` ✅
 
-## 🔧 EDGE FUNCTIONS TO COPY
-Copy from `supabase/functions/`:
+### Data (`data/`)
+- `cleoFillers.ts` ✅
+- `lessons/vectorsScalars.ts` ✅
 
-### Core Voice Functions
-```
-cleo-realtime-session-token/index.ts   ← Most important!
-elevenlabs-tts-stream/index.ts
-elevenlabs-tts/index.ts
-voice-to-text/index.ts
-log-voice-session/index.ts
-check-voice-quota/index.ts
-generate-filler-audio/index.ts
-```
+### Assets (`assets/`)
+- `rive/cleo-avatar.riv` ✅
 
-### Lesson & Content Functions
-```
-generate-lesson-plan/index.ts
-generate-diagram-image/index.ts
-ai-mark-cleo-question/index.ts
-cleo-text-chat/index.ts
-cleo-chat/index.ts
-```
+### Edge Functions (`edge-functions/`)
+**Core Voice:**
+- `cleo-realtime-session-token/index.ts` ✅
+- `cleo-realtime-voice/index.ts` ✅
+- `cleo-text-chat/index.ts` ✅
+- `cleo-chat/index.ts` ✅
 
-### Shared Helpers
-```
-_shared/cleoPromptHelpers.ts
-_shared/difficultyTierPrompts.ts
-```
+**Voice Infrastructure:**
+- `elevenlabs-tts/index.ts` ✅
+- `elevenlabs-tts-stream/index.ts` ✅
+- `voice-to-text/index.ts` ✅
+- `generate-filler-audio/index.ts` ✅
 
-## 🎨 UI COMPONENTS TO COPY
-Essential shadcn/ui components from `src/components/ui/`:
+**Lesson & Content:**
+- `generate-lesson-plan/index.ts` ✅
+- `generate-diagram-image/index.ts` ✅
+- `ai-mark-cleo-question/index.ts` ✅
+- `generate-flashcards/index.ts` ✅
+- `generate-lesson-exam/index.ts` ✅
 
-```
-button.tsx
-card.tsx
-input.tsx
-dialog.tsx
-toast.tsx
-toaster.tsx
-progress.tsx
-badge.tsx
-scroll-area.tsx
-tabs.tsx
-select.tsx
-```
+**Quota & Logging:**
+- `check-voice-quota/index.ts` ✅
+- `log-voice-session/index.ts` ✅
+- `admin-add-voice-minutes/index.ts` ✅
+- `add-minutes-bal/index.ts` ✅
 
-## 📝 NOTES
+**Shared:**
+- `_shared/cleoPromptHelpers.ts` ✅
+- `_shared/difficultyTierPrompts.ts` ✅
+- `config.toml` ✅
 
-### Update Project IDs
-After copying, update these with your new Supabase project ID:
-- All edge function fetch URLs
-- `ElevenLabsPlayer.ts` - update the edge function URL
-- `supabase/config.toml` - update project_id
+### Database (`database/`)
+- `schema.sql` - Complete schema with RLS ✅
 
-### Required Secrets
-Add these in Supabase Dashboard → Edge Functions → Secrets:
+---
+
+## 🔧 SETUP INSTRUCTIONS
+
+### 1. Copy Files
+Copy the entire `heycleo-export/` folder to your new project, then reorganize:
+- `components/` → `src/components/`
+- `utils/` → `src/utils/`
+- `types/` → `src/types/`
+- `services/` → `src/services/`
+- `hooks/` → `src/hooks/`
+- `pages/` → `src/pages/`
+- `contexts/` → `src/contexts/`
+- `data/` → `src/data/` and `src/assets/audio/`
+- `assets/` → `src/assets/`
+- `edge-functions/` → `supabase/functions/`
+- `database/schema.sql` → Run in SQL Editor
+
+### 2. Update Project IDs
+Replace `sjxbxkpegcnnfjbsxazo` with your new Supabase project ID in:
+- All edge function URLs
+- `ElevenLabsPlayer.ts`
+- `supabase/config.toml`
+
+### 3. Add Secrets
+In Supabase Dashboard → Edge Functions → Secrets:
 - `OPENAI_API_KEY`
 - `ELEVENLABS_API_KEY`
-- `STRIPE_SECRET_KEY` (optional)
-- `RESEND_API_KEY` (optional)
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-### Install Dependencies
+### 4. Install Dependencies
 ```bash
-npm install @rive-app/react-canvas katex react-katex framer-motion canvas-confetti
+npm install @rive-app/react-canvas katex react-katex framer-motion uuid date-fns
 ```
 
-### Enable Realtime
-Run in SQL Editor:
+### 5. Enable Realtime
 ```sql
 ALTER PUBLICATION supabase_realtime ADD TABLE cleo_messages;
 ```
