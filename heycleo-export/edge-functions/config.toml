@@ -1,0 +1,67 @@
+# Supabase Edge Functions Configuration for HeyCleo
+# Copy this to supabase/config.toml in your new project
+
+project_id = "YOUR_PROJECT_ID"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+# =============================================
+# EDGE FUNCTIONS
+# =============================================
+
+# Voice Session Token (PUBLIC - no JWT required)
+[functions.cleo-realtime-session-token]
+verify_jwt = false
+
+# Voice Session Logging
+[functions.log-voice-session]
+verify_jwt = true
+
+# Text Chat
+[functions.cleo-text-chat]
+verify_jwt = true
+
+# Lesson Plan Generation (PUBLIC for faster access)
+[functions.generate-lesson-plan]
+verify_jwt = false
+
+# Diagram Image Generation
+[functions.generate-diagram-image]
+verify_jwt = false
+
+# AI Question Marking
+[functions.ai-mark-cleo-question]
+verify_jwt = false
+
+# Voice Quota Check
+[functions.check-voice-quota]
+verify_jwt = true
+
+# ElevenLabs TTS
+[functions.elevenlabs-tts]
+verify_jwt = false
+
+# ElevenLabs TTS Streaming
+[functions.elevenlabs-tts-stream]
+verify_jwt = false
+
+# Voice to Text (Whisper)
+[functions.voice-to-text]
+verify_jwt = false
+
+# Filler Audio Generation
+[functions.generate-filler-audio]
+verify_jwt = false
