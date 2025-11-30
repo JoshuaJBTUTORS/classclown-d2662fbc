@@ -35,10 +35,17 @@ export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
   subject,
   allowForwardNavigation = false, // Default: no peeking ahead - Cleo controls content reveal
 }) => {
-  // Filter to only visible content blocks
-  const visibleBlocks = content.filter(
-    block => block && block.id && block.type && block.data !== undefined && block.data !== null && visibleContent.includes(block.id)
-  );
+  // Order visible blocks by the order they were revealed (visibleContent order)
+  // NOT by their position in the content array - this ensures dynamic diagrams appear in correct sequence
+  const visibleBlocks = visibleContent
+    .map(id => content.find(block => block.id === id))
+    .filter((block): block is ContentBlock => 
+      block !== undefined && 
+      block !== null && 
+      block.type !== undefined && 
+      block.data !== undefined && 
+      block.data !== null
+    );
 
   const totalSlides = visibleBlocks.length;
   const currentBlock = visibleBlocks[currentSlideIndex];
