@@ -58,6 +58,8 @@ serve(async (req) => {
     console.log(`Data export initiated by user: ${user.email}`);
 
     // Define all tables to export in dependency order
+    // EXCLUDES: cleo_conversations, cleo_messages, cleo_learning_progress, 
+    // cleo_lesson_state, cleo_question_answers (too large, session-specific data)
     const tables = [
       // Core User Tables
       'profiles',
@@ -79,13 +81,8 @@ serve(async (req) => {
       'course_notes',
       'course_purchases',
       
-      // Cleo Conversation Tables
-      'cleo_conversations',
-      'cleo_messages',
-      'cleo_learning_progress',
+      // Cleo Lesson Plans (keep structure, not sessions)
       'cleo_lesson_plans',
-      'cleo_lesson_state',
-      'cleo_question_answers',
       
       // Gamification Tables
       'user_gamification_stats',
