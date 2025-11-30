@@ -2,7 +2,7 @@
 
 All files have been copied to this folder. Simply copy the entire `heycleo-export/` directory to your new project.
 
-## ✅ ALL FILES INCLUDED (~210+ files)
+## ✅ ALL FILES INCLUDED (~220+ files)
 
 ### Root Config Files Added
 - `App.tsx` - Main routing entry ✅
@@ -13,7 +13,7 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `vite.config.ts` - Vite configuration ✅
 - `vite-env.d.ts` - Vite type declarations ✅
 
-### Pages (`pages/`) - 20 files
+### Pages (`pages/`) - 21 files
 - `Auth.tsx` - Login/authentication page ✅
 - `ComingSoon.tsx` - Coming soon placeholder ✅
 - `CourseDetail.tsx` - Course detail page ✅
@@ -27,6 +27,7 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `LearningHubMyCourses.tsx` - My Courses page ✅
 - `LearningHubSettings.tsx` - Settings page ✅
 - `LessonPlanning.tsx` - Lesson planning flow ✅
+- `LoginPage.tsx` - Standalone login page ✅
 - `ModuleDetail.tsx` - Module detail view ✅
 - `PricingPage.tsx` - Subscription pricing ✅
 - `SubscriptionManagement.tsx` - Subscription management ✅
@@ -164,18 +165,21 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `subjectTheming.ts` - Subject themes ✅
 - `validation.ts` - Form validation ✅
 
-### Types (`types/`) - 8 files
+### Types (`types/`) - 10 files
 - `adminCleoTracker.ts` ✅
 - `cleoTypes.ts` ✅
+- `content.ts` ✅
 - `course.ts` ✅
 - `learningPath.ts` ✅
 - `lessonContent.ts` ✅
 - `onboarding.ts` ✅
+- `organization.ts` ✅
 - `revision.ts` ✅
 - `rive.d.ts` ✅
 
-### Services (`services/`) - 17 files
+### Services (`services/`) - 19 files
 - `adminCleoTrackerService.ts` ✅
+- `aiAssessmentService.ts` ✅
 - `assessmentImprovementService.ts` ✅
 - `cleoLessonStateService.ts` ✅
 - `cleoQuestionTrackingService.ts` ✅
@@ -189,11 +193,13 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `masterySystem.ts` ✅
 - `onboardingService.ts` ✅
 - `paymentService.ts` ✅
+- `personalizedLearningPathService.ts` ✅
 - `revisionCalendarService.ts` ✅
 - `topicPerformanceService.ts` ✅
 - `uniquenessValidationService.ts` ✅
 
-### Hooks (`hooks/`) - 15 files
+### Hooks (`hooks/`) - 16 files
+- `use-debounce.ts` ✅
 - `use-mobile.tsx` ✅
 - `use-toast.ts` ✅
 - `useAdminCleoTracker.ts` ✅
@@ -214,15 +220,23 @@ All files have been copied to this folder. Simply copy the entire `heycleo-expor
 - `cleoTopics.ts` ✅
 - `subjects.ts` ✅
 
-### Contexts (`contexts/`) - 2 files
+### Contexts (`contexts/`) - 3 files
 - `AuthContext.tsx` ✅
 - `LearningHubContext.tsx` ✅
+- `OrganizationContext.tsx` ✅
 
 ### Routing (`components/routing/`) - 4 files
 - `AuthRedirect.tsx` ✅
 - `DomainRouteGuard.tsx` ✅
 - `HubAccessGuard.tsx` ✅
 - `OnboardingGuard.tsx` ✅
+
+### Layout (`components/layout/`) - 1 file
+- `MainLayout.tsx` ✅
+
+### Navigation (`components/navigation/`) - 2 files
+- `Navbar.tsx` ✅
+- `Sidebar.tsx` ✅
 
 ### UI Components (`components/ui/`) - 50 shadcn files ✅
 All shadcn components included
@@ -301,13 +315,23 @@ Copy the entire `heycleo-export/` folder to your new project, then reorganize:
 - `edge-functions/` → `supabase/functions/`
 - `database/schema.sql` → Run in SQL Editor
 
-### 2. Update Project IDs
+### 2. Clean Up App.tsx
+**IMPORTANT:** The `App.tsx` contains routes for the full tutoring platform. For standalone Cleo, remove unused imports and routes. Keep only:
+- `/` - Auth redirect
+- `/landing` - Landing page
+- `/login` - Login page
+- `/interactive-signup` - Signup flow
+- `/auth` - Auth page
+- `/pricing` - Pricing page
+- `/heycleo/*` - All learning hub routes
+
+### 3. Update Project IDs
 Replace `sjxbxkpegcnnfjbsxazo` with your new Supabase project ID in:
 - All edge function URLs
 - `ElevenLabsPlayer.ts`
 - `supabase/config.toml`
 
-### 3. Add Secrets
+### 4. Add Secrets
 In Supabase Dashboard → Edge Functions → Secrets:
 - `OPENAI_API_KEY`
 - `ELEVENLABS_API_KEY`
@@ -316,12 +340,19 @@ In Supabase Dashboard → Edge Functions → Secrets:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-### 4. Install Dependencies
+### 5. Install Dependencies
 ```bash
 npm install @rive-app/react-canvas katex react-katex framer-motion uuid date-fns @stripe/stripe-js @stripe/react-stripe-js
 ```
 
-### 5. Enable Realtime
+### 6. Enable Realtime
 ```sql
 ALTER PUBLICATION supabase_realtime ADD TABLE cleo_messages;
+```
+
+### 7. Generate Supabase Types
+After running the schema, regenerate types:
+```bash
+npx supabase gen types typescript --project-id YOUR_PROJECT_ID > src/integrations/supabase/types.ts
+```
 ```
