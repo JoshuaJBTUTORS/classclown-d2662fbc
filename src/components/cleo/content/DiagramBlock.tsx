@@ -13,6 +13,8 @@ interface DiagramBlockProps {
     alt?: string;
     description?: string;
     elements?: string[];
+    isGenerating?: boolean;
+    generationFailed?: boolean;
   };
   onContentAction?: (action: string, message: string) => void;
   yearGroup?: string;
@@ -94,7 +96,17 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({ data, onContentActio
         <span className="text-sm font-medium text-muted-foreground">Diagram</span>
       </div>
       
-      {hasUrl ? (
+      {data.isGenerating ? (
+        <div className="w-full rounded-2xl border-2 border-dashed border-blue-300 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/20 dark:to-sky-950/20 p-8">
+          <div className="flex flex-col items-center justify-center gap-4 text-center">
+            <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+            <div className="space-y-1">
+              <p className="text-foreground font-medium">Generating diagram...</p>
+              <p className="text-sm text-muted-foreground">This may take a few seconds</p>
+            </div>
+          </div>
+        </div>
+      ) : hasUrl ? (
         <div className="max-w-md mx-auto rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <img 
             src={imageUrl} 

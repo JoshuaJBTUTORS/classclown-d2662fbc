@@ -859,19 +859,24 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
               console.log(`📊 Description: ${args.description}`);
               console.log(`📊 Elements:`, args.elements);
               
+              const diagramId = args.id || `diagram-${Date.now()}`;
+              
+              // Create content block with loading state
               contentBlock = {
-                id: args.id || `diagram-${Date.now()}`,
+                id: diagramId,
                 stepId: 'current',
                 type: 'diagram',
                 data: {
                   title: args.title,
+                  caption: args.title,
                   description: args.description,
-                  elements: args.elements || []
+                  elements: args.elements || [],
+                  isGenerating: true
                 },
                 visible: false
               };
               
-              // Emit event to generate and display the diagram
+              // Emit event to show loading state immediately
               if (onContentEvent) {
                 onContentEvent({
                   type: 'upsert_content',
@@ -880,7 +885,62 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                 });
               }
               
-              // Confirm to OpenAI with instruction
+              // Generate image asynchronously (don't block Cleo)
+              const prompt = `Small compact educational diagram: ${args.description}. ${args.elements?.length ? `Must clearly show: ${args.elements.join(', ')}.` : ''} Style: minimalist icon-style illustration, simple and clean, white background.`;
+              
+              supabase.functions.invoke('generate-diagram-image', {
+                body: { prompt }
+              }).then(({ data: result, error }) => {
+                if (result?.imageUrl) {
+                  console.log('✅ Diagram auto-generated:', result.imageUrl);
+                  // Update content block with the generated image URL
+                  if (onContentEvent) {
+                    onContentEvent({
+                      type: 'upsert_content',
+                      block: {
+                        id: diagramId,
+                        stepId: 'current',
+                        type: 'diagram',
+                        data: {
+                          title: args.title,
+                          caption: args.title,
+                          description: args.description,
+                          elements: args.elements || [],
+                          url: result.imageUrl,
+                          isGenerating: false
+                        },
+                        visible: true
+                      },
+                      autoShow: false
+                    });
+                  }
+                } else {
+                  console.error('❌ Diagram generation failed:', error);
+                  // Update to show error state (user can retry)
+                  if (onContentEvent) {
+                    onContentEvent({
+                      type: 'upsert_content',
+                      block: {
+                        id: diagramId,
+                        stepId: 'current',
+                        type: 'diagram',
+                        data: {
+                          title: args.title,
+                          caption: args.title,
+                          description: args.description,
+                          elements: args.elements || [],
+                          isGenerating: false,
+                          generationFailed: true
+                        },
+                        visible: true
+                      },
+                      autoShow: false
+                    });
+                  }
+                }
+              });
+              
+              // Confirm to OpenAI - tell Cleo to mention diagram is generating
               rtcRef.current?.sendEvent({
                 type: 'conversation.item.create',
                 item: {
@@ -889,7 +949,7 @@ export const CleoVoiceChat: React.FC<CleoVoiceChatProps> = ({
                   output: JSON.stringify({ 
                     success: true, 
                     displayed: true,
-                    message: `Diagram "${args.title}" is being generated and displayed on screen. Say: "Have a look at this diagram on your screen..." then describe what it shows.`
+                    message: `Diagram "${args.title}" is being generated. Say: "I'm generating a diagram for you now - have a look at your screen in just a moment..." then continue with your explanation.`
                   })
                 }
               });
