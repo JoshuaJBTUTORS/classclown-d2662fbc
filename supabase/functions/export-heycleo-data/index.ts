@@ -60,9 +60,9 @@ serve(async (req) => {
     
     console.log(`Data export Part ${part} initiated by user: ${user.email}`);
 
-    // Split tables into two parts for smaller file sizes
-    // Part 1: Core/User data (~smaller)
-    // Part 2: Content/Course data (~larger)
+    // Split tables into two balanced parts (~10MB each)
+    // Part 1: Core + Cleo Lesson Plans (the big one)
+    // Part 2: Course Content + Assessments
     
     const part1Tables = [
       // Core User Tables
@@ -88,6 +88,9 @@ serve(async (req) => {
       
       // System Tables
       'app_settings',
+      
+      // Cleo Lesson Plans (big table - moved here for balance)
+      'cleo_lesson_plans',
     ];
     
     const part2Tables = [
@@ -98,9 +101,6 @@ serve(async (req) => {
       'course_lessons',
       'course_notes',
       'course_purchases',
-      
-      // Cleo Lesson Plans (structure only, not sessions)
-      'cleo_lesson_plans',
       
       // Assessment Tables
       'ai_assessments',
