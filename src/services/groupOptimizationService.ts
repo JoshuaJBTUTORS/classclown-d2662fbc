@@ -100,7 +100,8 @@ function timesOverlap(
 function matchesSubject(lesson: any, targetSubject: string): boolean {
   const lessonSubject = (lesson.subject || lesson.title || '').toLowerCase();
   const keywords = extractSubjectKeywords(targetSubject);
-  return keywords.some(keyword => lessonSubject.includes(keyword.toLowerCase()));
+  // ALL keywords must match (e.g., "KS3 English" requires both 'ks3' AND 'english')
+  return keywords.every(keyword => lessonSubject.includes(keyword.toLowerCase()));
 }
 
 /**
