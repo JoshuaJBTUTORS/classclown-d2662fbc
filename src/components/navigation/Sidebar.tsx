@@ -48,12 +48,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Core Operations',
       items: [
-        {
-          icon: BookOpen,
-          label: 'Learning Hub',
-          href: '/heycleo',
-          roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
-        },
+  {
+    icon: Sparkles,
+    label: 'HeyCleo',
+    href: '#',
+    roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+    onClick: () => heyCleoRedirectService.redirectToHeyCleo(),
+  },
         {
           icon: Calendar,
           label: 'Calendar',
@@ -327,25 +328,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* HeyCleo Cross-Platform Button */}
-          {hasCleoHubAccess && (
-            <div className="px-4 pt-4 pb-2 border-b border-gray-200">
-              <button
-                onClick={() => {
-                  heyCleoRedirectService.redirectToHeyCleo();
-                  onClose();
-                }}
-                className={cn(
-                  "w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg transition-all",
-                  "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700",
-                  "text-white font-semibold shadow-lg hover:shadow-xl",
-                  "transform hover:scale-105 active:scale-95"
-                )}
-              >
-                <Sparkles className="h-5 w-5" />
-                <span>Open HeyCleo</span>
-              </button>
-            </div>
-          )}
 
           <div className="flex-1 overflow-y-auto py-4">
             {filteredMenuGroups.map((group, groupIndex) => {
