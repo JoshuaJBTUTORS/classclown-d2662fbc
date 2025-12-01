@@ -25,538 +25,6 @@ export interface MergeOpportunity {
   availableSpots: number;
 }
 
-export interface AlternativeSlot {
-  dayOfWeek: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  tutor: { id: string; name: string };
-  existingGroupAtTime?: {
-    lessonId: string;
-    title: string;
-    currentStudents: number;
-    studentNames: string[];
-  };
-  conflicts: StudentConflict[];
-  isNewSlot: boolean;
-}
-
-export interface LessonDetails {
-  id: string;
-  title: string;
-  subject: string;
-  startTime: string;
-  endTime: string;
-  tutor: { id: string; name: string };
-  students: { id: number; name: string }[];
-}
-
-export interface GroupOptimizationResult {
-  currentLesson: LessonDetails;
-  mergeOpportunities: MergeOpportunity[];
-  alternativeSlots: AlternativeSlot[];
-  recommendations: string[];
-}
-
-const MAX_GROUP_CAPACITY = 6;
-const LOOKAHEAD_WEEKS = 4;
-
-/**
- * Find all group lessons with the same subject that have room for more students
- */
-async function findExistingGroupsForSubject(
-  subject: string,
-  excludeLessonId: string,
-  dateRange: { start: Date; end: Date }
-): Promise<MergeOpportunity['targetLesson'][]> {
-  // Extract core subject from title (e.g., "GCSE Physics Group" -> "Physics")
-  const subjectKeywords = extractSubjectKeywords(subject);
-  
-  const { data: lessons, error } = await supabase
-    .from('lessons')
-    .select(`
-      id,
-      title,
-      subject,
-      start_time,
-      end_time,
-      tutor_id,
-      tutors!inner(id, first_name, last_name),
-      lesson_students(
-        student_id,
-        students(id, first_name, last_name)
-      )
-    `)
-    .eq('is_group', true)
-    .eq('status', 'scheduled')
-    .gte('start_time', dateRange.start.toISOString())
-    .lte('start_time', dateRange.end.toISOString())
-    .neq('id', excludeLessonId);
-
-  if (error) {
-    console.error('Error fetching existing groups:', error);
-    return [];
-  }
-
-  // Filter by subject match and capacity
-  const matchingGroups = (lessons || [])
-    .filter(lesson => {
-      const lessonSubject = (lesson.subject || lesson.title || '').toLowerCase();
-      return subjectKeywords.some(keyword => lessonSubject.includes(keyword.toLowerCase()));
-    })
-    .filter(lesson => {
-      const studentCount = lesson.lesson_students?.length || 0;
-      return studentCount < MAX_GROUP_CAPACITY;
-    })
-    .map(lesson => {
-      const tutor = lesson.tutors as any;
-      const students = lesson.lesson_students || [];
-      return {
-        id: lesson.id,
-        title: lesson.title,
-        subject: lesson.subject || '',
-        startTime: lesson.start_time,
-        endTime: lesson.end_time,
-        tutor: {
-          id: tutor?.id || lesson.tutor_id,
-          name: `${tutor?.first_name || ''} ${tutor?.last_name || ''}`.trim()
-        },
-        currentStudents: students.length,
-        maxCapacity: MAX_GROUP_CAPACITY,
-        studentNames: students.map((ls: any) => 
-          `${ls.students?.first_name || ''} ${ls.students?.last_name || ''}`.trim()
-        )
-      };
-    });
-
-  return matchingGroups;
-}
-
-/**
- * Check if students have conflicts at a given time
- */
-async function checkStudentConflicts(
-  studentIds: number[],
-  targetStartTime: string,
-  targetEndTime: string,
-  excludeLessonId?: string
-): Promise<StudentConflict[]> {
-  const conflicts: StudentConflict[] = [];
-  
-  for (const studentId of studentIds) {
-    const { data: studentLessons, error } = await supabase
-      .from('lesson_students')
-      .select(`
-        lesson_id,
-        lessons!inner(id, title, start_time, end_time, status),
-        students!inner(id, first_name, last_name)
-      `)
-      .eq('student_id', studentId);
-
-    if (error) {
-      console.error('Error checking student conflicts:', error);
-      continue;
-    }
-
-    const targetStart = new Date(targetStartTime);
-    const targetEnd = new Date(targetEndTime);
-
-    for (const sl of studentLessons || []) {
-      const lesson = sl.lessons as any;
-      if (lesson.status !== 'scheduled') continue;
-      if (excludeLessonId && lesson.id === excludeLessonId) continue;
-
-      const lessonStart = new Date(lesson.start_time);
-      const lessonEnd = new Date(lesson.end_time);
-
-      // Check for time overlap
-      if (lessonStart < targetEnd && lessonEnd > targetStart) {
-        const student = sl.students as any;
-        conflicts.push({
-          studentId,
-          studentName: `${student?.first_name || ''} ${student?.last_name || ''}`.trim(),
-          conflictingLessonId: lesson.id,
-          conflictingLessonTitle: lesson.title,
-          conflictTime: lesson.start_time
-        });
-      }
-    }
-  }
-
-  return conflicts;
-}
-
-/**
- * Find alternative time slots from tutors who teach this subject
- */
-async function findAlternativeTimeSlots(
-  subject: string,
-  studentIds: number[],
-  currentLessonId: string,
-  dateRange: { start: Date; end: Date }
-): Promise<AlternativeSlot[]> {
-  const subjectKeywords = extractSubjectKeywords(subject);
-  
-  // Get tutors who teach this subject
-  const { data: tutorSubjects, error: tsError } = await supabase
-    .from('tutor_subjects')
-    .select(`
-      tutor_id,
-      subjects!inner(id, name),
-      tutors!inner(id, first_name, last_name, status)
-    `);
-
-  if (tsError) {
-    console.error('Error fetching tutor subjects:', tsError);
-    return [];
-  }
-
-  // Filter to tutors who teach matching subjects
-  const relevantTutors = (tutorSubjects || [])
-    .filter(ts => {
-      const subjectName = (ts.subjects as any)?.name || '';
-      const tutor = ts.tutors as any;
-      return tutor?.status === 'active' && 
-        subjectKeywords.some(keyword => subjectName.toLowerCase().includes(keyword.toLowerCase()));
-    })
-    .map(ts => ({
-      id: ts.tutor_id,
-      name: `${(ts.tutors as any)?.first_name || ''} ${(ts.tutors as any)?.last_name || ''}`.trim()
-    }));
-
-  // Remove duplicates
-  const uniqueTutors = Array.from(new Map(relevantTutors.map(t => [t.id, t])).values());
-
-  if (uniqueTutors.length === 0) {
-    return [];
-  }
-
-  // Get tutor availability
-  const tutorIds = uniqueTutors.map(t => t.id);
-  const { data: availability, error: avError } = await supabase
-    .from('tutor_availability')
-    .select('*')
-    .in('tutor_id', tutorIds);
-
-  if (avError) {
-    console.error('Error fetching tutor availability:', avError);
-    return [];
-  }
-
-  // Get existing lessons for these tutors in date range
-  const { data: existingLessons, error: elError } = await supabase
-    .from('lessons')
-    .select(`
-      id,
-      title,
-      start_time,
-      end_time,
-      tutor_id,
-      is_group,
-      lesson_students(
-        student_id,
-        students(id, first_name, last_name)
-      )
-    `)
-    .in('tutor_id', tutorIds)
-    .eq('status', 'scheduled')
-    .gte('start_time', dateRange.start.toISOString())
-    .lte('start_time', dateRange.end.toISOString());
-
-  if (elError) {
-    console.error('Error fetching existing lessons:', elError);
-  }
-
-  const alternativeSlots: AlternativeSlot[] = [];
-  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-  // Generate slots for each day in range
-  const currentDate = new Date(dateRange.start);
-  while (currentDate <= dateRange.end) {
-    const dayName = daysOfWeek[currentDate.getDay()];
-    const dateStr = currentDate.toISOString().split('T')[0];
-
-    for (const tutor of uniqueTutors) {
-      // Find availability for this tutor on this day
-      const tutorAvail = (availability || []).filter(
-        a => a.tutor_id === tutor.id && a.day_of_week === dayName
-      );
-
-      for (const slot of tutorAvail) {
-        const slotStartTime = `${dateStr}T${slot.start_time}`;
-        const slotEndTime = `${dateStr}T${slot.end_time}`;
-
-        // Check if there's an existing group lesson at this time
-        const existingGroup = (existingLessons || []).find(l => {
-          if (l.tutor_id !== tutor.id) return false;
-          if (l.id === currentLessonId) return false;
-          
-          const lessonDate = l.start_time.split('T')[0];
-          if (lessonDate !== dateStr) return false;
-
-          // Check if same time slot (within 30 min window)
-          const lessonTime = l.start_time.split('T')[1]?.substring(0, 5);
-          const slotTime = slot.start_time.substring(0, 5);
-          return lessonTime === slotTime;
-        });
-
-        // Check student conflicts
-        const conflicts = await checkStudentConflicts(
-          studentIds,
-          slotStartTime,
-          slotEndTime,
-          currentLessonId
-        );
-
-        // Only include if no conflicts or if joining existing group with space
-        if (conflicts.length === 0 || (existingGroup?.is_group && (existingGroup.lesson_students?.length || 0) < MAX_GROUP_CAPACITY)) {
-          const existingGroupInfo = existingGroup ? {
-            lessonId: existingGroup.id,
-            title: existingGroup.title,
-            currentStudents: existingGroup.lesson_students?.length || 0,
-            studentNames: (existingGroup.lesson_students || []).map((ls: any) =>
-              `${ls.students?.first_name || ''} ${ls.students?.last_name || ''}`.trim()
-            )
-          } : undefined;
-
-          // Check if this matches the subject we're looking for
-          const isSubjectMatch = existingGroup ? 
-            subjectKeywords.some(keyword => 
-              (existingGroup.title || '').toLowerCase().includes(keyword.toLowerCase())
-            ) : true;
-
-          if (isSubjectMatch || !existingGroup) {
-            alternativeSlots.push({
-              dayOfWeek: dayName,
-              date: dateStr,
-              startTime: slot.start_time,
-              endTime: slot.end_time,
-              tutor,
-              existingGroupAtTime: existingGroupInfo,
-              conflicts,
-              isNewSlot: !existingGroup
-            });
-          }
-        }
-      }
-    }
-
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-
-  // Sort: existing groups first, then by date
-  return alternativeSlots.sort((a, b) => {
-    if (a.existingGroupAtTime && !b.existingGroupAtTime) return -1;
-    if (!a.existingGroupAtTime && b.existingGroupAtTime) return 1;
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
-  });
-}
-
-/**
- * Generate human-readable recommendations
- */
-function generateRecommendations(
-  currentLesson: LessonDetails,
-  mergeOpportunities: MergeOpportunity[],
-  alternativeSlots: AlternativeSlot[]
-): string[] {
-  const recommendations: string[] = [];
-  const studentNames = currentLesson.students.map(s => s.name).join(', ');
-
-  // Best merge opportunities
-  const viableMerges = mergeOpportunities.filter(m => m.canMerge && m.availableSpots > 0);
-  if (viableMerges.length > 0) {
-    const best = viableMerges[0];
-    const date = new Date(best.targetLesson.startTime);
-    const dayTime = `${date.toLocaleDateString('en-GB', { weekday: 'long' })} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-    recommendations.push(
-      `✅ BEST: Move ${studentNames} to ${dayTime} group with ${best.targetLesson.tutor.name} (joins ${best.targetLesson.currentStudents} students)`
-    );
-  }
-
-  // Existing groups they could join
-  const slotsWithGroups = alternativeSlots.filter(s => s.existingGroupAtTime && s.conflicts.length === 0);
-  if (slotsWithGroups.length > 0 && viableMerges.length === 0) {
-    const slot = slotsWithGroups[0];
-    recommendations.push(
-      `📅 Could join ${slot.existingGroupAtTime!.title} on ${slot.dayOfWeek} ${slot.startTime} with ${slot.tutor.name} (${slot.existingGroupAtTime!.currentStudents} students)`
-    );
-  }
-
-  // New slot options
-  const newSlots = alternativeSlots.filter(s => !s.existingGroupAtTime && s.conflicts.length === 0);
-  if (newSlots.length > 0) {
-    const uniqueDays = [...new Set(newSlots.slice(0, 3).map(s => `${s.dayOfWeek} ${s.startTime}`))];
-    recommendations.push(
-      `🕐 Alternative time slots available: ${uniqueDays.join(', ')}`
-    );
-  }
-
-  // Conflict warnings
-  const conflictingMerges = mergeOpportunities.filter(m => !m.canMerge);
-  if (conflictingMerges.length > 0) {
-    recommendations.push(
-      `⚠️ ${conflictingMerges.length} potential merge(s) blocked by student schedule conflicts`
-    );
-  }
-
-  if (recommendations.length === 0) {
-    recommendations.push('ℹ️ No immediate optimization opportunities found. Consider expanding search range.');
-  }
-
-  return recommendations;
-}
-
-/**
- * Extract subject keywords from a lesson title/subject
- */
-function extractSubjectKeywords(subject: string): string[] {
-  const normalized = subject.toLowerCase();
-  const keywords: string[] = [];
-
-  // Core subject extraction
-  const coreSubjects = ['physics', 'chemistry', 'biology', 'maths', 'math', 'english', 'science', 'history', 'geography'];
-  for (const core of coreSubjects) {
-    if (normalized.includes(core)) {
-      keywords.push(core);
-    }
-  }
-
-  // Level extraction
-  const levels = ['gcse', 'a-level', 'alevel', 'ks3', 'ks2', '11+', '11 plus'];
-  for (const level of levels) {
-    if (normalized.includes(level)) {
-      keywords.push(level);
-    }
-  }
-
-  // If no keywords found, use original
-  if (keywords.length === 0) {
-    keywords.push(subject);
-  }
-
-  return keywords;
-}
-
-/**
- * Main function: Find optimization opportunities for a lesson
- */
-export async function findGroupOptimizations(
-  lessonId: string
-): Promise<GroupOptimizationResult | null> {
-  // Get current lesson details
-  const { data: lesson, error: lessonError } = await supabase
-    .from('lessons')
-    .select(`
-      id,
-      title,
-      subject,
-      start_time,
-      end_time,
-      tutor_id,
-      tutors!inner(id, first_name, last_name),
-      lesson_students(
-        student_id,
-        students!inner(id, first_name, last_name)
-      )
-    `)
-    .eq('id', lessonId)
-    .single();
-
-  if (lessonError || !lesson) {
-    console.error('Error fetching lesson:', lessonError);
-    return null;
-  }
-
-  const tutor = lesson.tutors as any;
-  const students = (lesson.lesson_students || []).map((ls: any) => ({
-    id: ls.student_id,
-    name: `${ls.students?.first_name || ''} ${ls.students?.last_name || ''}`.trim()
-  }));
-
-  const currentLesson: LessonDetails = {
-    id: lesson.id,
-    title: lesson.title,
-    subject: lesson.subject || lesson.title,
-    startTime: lesson.start_time,
-    endTime: lesson.end_time,
-    tutor: {
-      id: tutor?.id || lesson.tutor_id,
-      name: `${tutor?.first_name || ''} ${tutor?.last_name || ''}`.trim()
-    },
-    students
-  };
-
-  const studentIds = students.map(s => s.id);
-  const subjectToSearch = lesson.subject || lesson.title;
-
-  // Date range: next 4 weeks
-  const dateRange = {
-    start: new Date(),
-    end: new Date(Date.now() + LOOKAHEAD_WEEKS * 7 * 24 * 60 * 60 * 1000)
-  };
-
-  // Find existing groups with same subject
-  const existingGroups = await findExistingGroupsForSubject(
-    subjectToSearch,
-    lessonId,
-    dateRange
-  );
-
-  // Check merge viability for each group
-  const mergeOpportunities: MergeOpportunity[] = [];
-  for (const group of existingGroups) {
-    const conflicts = await checkStudentConflicts(
-      studentIds,
-      group.startTime,
-      group.endTime,
-      lessonId
-    );
-
-    const availableSpots = group.maxCapacity - group.currentStudents;
-    const canMerge = conflicts.length === 0 && availableSpots >= students.length;
-
-    mergeOpportunities.push({
-      targetLesson: group,
-      studentConflicts: conflicts,
-      canMerge,
-      availableSpots
-    });
-  }
-
-  // Sort by viability and date
-  mergeOpportunities.sort((a, b) => {
-    if (a.canMerge && !b.canMerge) return -1;
-    if (!a.canMerge && b.canMerge) return 1;
-    return new Date(a.targetLesson.startTime).getTime() - new Date(b.targetLesson.startTime).getTime();
-  });
-
-  // Find alternative time slots
-  const alternativeSlots = await findAlternativeTimeSlots(
-    subjectToSearch,
-    studentIds,
-    lessonId,
-    dateRange
-  );
-
-  // Generate recommendations
-  const recommendations = generateRecommendations(
-    currentLesson,
-    mergeOpportunities,
-    alternativeSlots.slice(0, 10) // Limit for performance
-  );
-
-  return {
-    currentLesson,
-    mergeOpportunities: mergeOpportunities.slice(0, 10),
-    alternativeSlots: alternativeSlots.slice(0, 20),
-    recommendations
-  };
-}
-
-/**
- * Bulk optimization result for a single lesson
- */
 export interface BulkOptimizationResult {
   lessonId: string;
   lessonTitle: string;
@@ -575,28 +43,80 @@ export interface BulkOptimizationResult {
     canMerge: boolean;
     conflicts: string[];
   }[];
-  alternativeSlots: {
-    day: string;
-    time: string;
-    tutor: string;
-  }[];
   recommendation: string;
 }
 
+const MAX_GROUP_CAPACITY = 6;
+const LOOKAHEAD_WEEKS = 4;
+
 /**
- * Analyze ALL underfilled group lessons at once
+ * Extract subject keywords from a lesson title/subject
+ */
+function extractSubjectKeywords(subject: string): string[] {
+  const normalized = subject.toLowerCase();
+  const keywords: string[] = [];
+
+  const coreSubjects = ['physics', 'chemistry', 'biology', 'maths', 'math', 'english', 'science', 'history', 'geography'];
+  for (const core of coreSubjects) {
+    if (normalized.includes(core)) {
+      keywords.push(core);
+    }
+  }
+
+  const levels = ['gcse', 'a-level', 'alevel', 'ks3', 'ks2', '11+', '11 plus'];
+  for (const level of levels) {
+    if (normalized.includes(level)) {
+      keywords.push(level);
+    }
+  }
+
+  if (keywords.length === 0) {
+    keywords.push(subject);
+  }
+
+  return keywords;
+}
+
+/**
+ * Check if two time ranges overlap
+ */
+function timesOverlap(
+  start1: string,
+  end1: string,
+  start2: string,
+  end2: string
+): boolean {
+  const s1 = new Date(start1);
+  const e1 = new Date(end1);
+  const s2 = new Date(start2);
+  const e2 = new Date(end2);
+  return s1 < e2 && e1 > s2;
+}
+
+/**
+ * Check if a lesson subject matches the target subject
+ */
+function matchesSubject(lesson: any, targetSubject: string): boolean {
+  const lessonSubject = (lesson.subject || lesson.title || '').toLowerCase();
+  const keywords = extractSubjectKeywords(targetSubject);
+  return keywords.some(keyword => lessonSubject.includes(keyword.toLowerCase()));
+}
+
+/**
+ * Analyze ALL underfilled group lessons at once - OPTIMIZED VERSION
+ * Uses only 3 database queries and processes everything in-memory
  */
 export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]> {
   const results: BulkOptimizationResult[] = [];
 
-  // Get date range for next 4 weeks
+  // Date range for next 4 weeks
   const dateRange = {
     start: new Date(),
     end: new Date(Date.now() + LOOKAHEAD_WEEKS * 7 * 24 * 60 * 60 * 1000)
   };
 
-  // Fetch all underfilled group lessons (1-2 students)
-  const { data: underfilledLessons, error } = await supabase
+  // QUERY 1: Fetch ALL group lessons (both underfilled and potential targets)
+  const { data: allGroupLessons, error: lessonsError } = await supabase
     .from('lessons')
     .select(`
       id,
@@ -616,19 +136,52 @@ export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]>
     .gte('start_time', dateRange.start.toISOString())
     .lte('start_time', dateRange.end.toISOString());
 
-  if (error) {
-    console.error('Error fetching underfilled lessons:', error);
+  if (lessonsError || !allGroupLessons) {
+    console.error('Error fetching group lessons:', lessonsError);
     return [];
   }
 
-  // Filter to only underfilled lessons (1-2 students)
-  const smallGroups = (underfilledLessons || []).filter(lesson => {
+  // Filter to find underfilled lessons (1-2 students)
+  const underfilledLessons = allGroupLessons.filter(lesson => {
     const studentCount = lesson.lesson_students?.length || 0;
     return studentCount >= 1 && studentCount <= 2;
   });
 
-  // Process each underfilled lesson
-  for (const lesson of smallGroups) {
+  if (underfilledLessons.length === 0) {
+    return [];
+  }
+
+  // Collect all student IDs from underfilled lessons
+  const allStudentIds = [...new Set(
+    underfilledLessons.flatMap(l => (l.lesson_students || []).map((ls: any) => ls.student_id))
+  )];
+
+  // QUERY 2: Fetch ALL lessons for these students (for conflict checking)
+  const { data: allStudentLessons, error: studentLessonsError } = await supabase
+    .from('lesson_students')
+    .select(`
+      student_id,
+      lessons!inner(id, title, start_time, end_time, status)
+    `)
+    .in('student_id', allStudentIds)
+    .eq('lessons.status', 'scheduled');
+
+  if (studentLessonsError) {
+    console.error('Error fetching student lessons:', studentLessonsError);
+    return [];
+  }
+
+  // Build student lessons lookup map for fast in-memory conflict checking
+  const studentLessonsMap = new Map<number, any[]>();
+  (allStudentLessons || []).forEach(sl => {
+    if (!studentLessonsMap.has(sl.student_id)) {
+      studentLessonsMap.set(sl.student_id, []);
+    }
+    studentLessonsMap.get(sl.student_id)!.push(sl.lessons);
+  });
+
+  // PROCESS: Now process everything in-memory (NO MORE DB CALLS!)
+  for (const lesson of underfilledLessons) {
     const tutor = lesson.tutors as any;
     const students = (lesson.lesson_students || []).map((ls: any) => ({
       id: ls.student_id,
@@ -637,60 +190,56 @@ export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]>
     const studentIds = students.map(s => s.id);
     const subjectToSearch = lesson.subject || lesson.title;
 
-    // Find existing groups with same subject
-    const existingGroups = await findExistingGroupsForSubject(
-      subjectToSearch,
-      lesson.id,
-      dateRange
-    );
+    // Find potential target groups (same subject, has space, not the same lesson)
+    const potentialTargets = allGroupLessons.filter(target => {
+      if (target.id === lesson.id) return false; // Skip same lesson
+      if (!matchesSubject(target, subjectToSearch)) return false; // Different subject
+      const targetSize = target.lesson_students?.length || 0;
+      return targetSize < MAX_GROUP_CAPACITY; // Has space
+    });
 
-    // Check merge viability for each group
+    // Check conflicts for each target IN-MEMORY
     const mergeOpps: BulkOptimizationResult['mergeOpportunities'] = [];
-    for (const group of existingGroups.slice(0, 5)) { // Limit for performance
-      const conflicts = await checkStudentConflicts(
-        studentIds,
-        group.startTime,
-        group.endTime,
-        lesson.id
-      );
+    for (const target of potentialTargets) {
+      // Check student conflicts in-memory
+      const conflicts: string[] = [];
+      for (const studentId of studentIds) {
+        const studentLessons = studentLessonsMap.get(studentId) || [];
+        for (const stdLesson of studentLessons) {
+          if (stdLesson.id === lesson.id || stdLesson.id === target.id) continue;
+          
+          // Check time overlap
+          if (timesOverlap(stdLesson.start_time, stdLesson.end_time, target.start_time, target.end_time)) {
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+              conflicts.push(student.name);
+            }
+          }
+        }
+      }
 
-      const availableSpots = group.maxCapacity - group.currentStudents;
+      const targetTutor = target.tutors as any;
+      const targetSize = target.lesson_students?.length || 0;
+      const availableSpots = MAX_GROUP_CAPACITY - targetSize;
       const canMerge = conflicts.length === 0 && availableSpots >= students.length;
 
       mergeOpps.push({
-        targetLessonId: group.id,
-        targetLesson: group.title,
-        targetDateTime: group.startTime,
-        targetTutor: group.tutor.name,
-        currentSize: group.currentStudents,
+        targetLessonId: target.id,
+        targetLesson: target.title,
+        targetDateTime: target.start_time,
+        targetTutor: `${targetTutor?.first_name || ''} ${targetTutor?.last_name || ''}`.trim(),
+        currentSize: targetSize,
         canMerge,
-        conflicts: conflicts.map(c => c.studentName)
+        conflicts: [...new Set(conflicts)] // Remove duplicates
       });
     }
 
-    // Sort merge opportunities
+    // Sort merge opportunities: viable merges first, then by date
     mergeOpps.sort((a, b) => {
       if (a.canMerge && !b.canMerge) return -1;
       if (!a.canMerge && b.canMerge) return 1;
-      return 0;
+      return new Date(a.targetDateTime).getTime() - new Date(b.targetDateTime).getTime();
     });
-
-    // Find alternative time slots (simplified for bulk)
-    const alternativeSlots = await findAlternativeTimeSlots(
-      subjectToSearch,
-      studentIds,
-      lesson.id,
-      dateRange
-    );
-
-    const altSlotsSummary = alternativeSlots
-      .filter(s => s.conflicts.length === 0)
-      .slice(0, 3)
-      .map(s => ({
-        day: s.dayOfWeek,
-        time: s.startTime,
-        tutor: s.tutor.name
-      }));
 
     // Generate recommendation
     let recommendation = '';
@@ -698,10 +247,10 @@ export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]>
     if (viableMerge) {
       const date = new Date(viableMerge.targetDateTime);
       recommendation = `✅ Merge into ${viableMerge.targetLesson} (${date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}) with ${viableMerge.targetTutor} - ${viableMerge.currentSize} students`;
-    } else if (altSlotsSummary.length > 0) {
-      recommendation = `🕐 Alternative slots: ${altSlotsSummary.map(s => `${s.day} ${s.time}`).join(', ')}`;
+    } else if (mergeOpps.length > 0) {
+      recommendation = `⚠️ ${mergeOpps.length} potential merge(s) blocked by student conflicts`;
     } else {
-      recommendation = '⚠️ No immediate merge opportunities found';
+      recommendation = 'ℹ️ No alternative groups found for this subject';
     }
 
     results.push({
@@ -713,13 +262,12 @@ export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]>
       tutorId: tutor?.id || lesson.tutor_id,
       currentStudents: students.map(s => s.name),
       studentCount: students.length,
-      mergeOpportunities: mergeOpps.slice(0, 3),
-      alternativeSlots: altSlotsSummary,
+      mergeOpportunities: mergeOpps.slice(0, 5), // Top 5 opportunities
       recommendation
     });
   }
 
-  // Sort by student count (1-student groups first), then by date
+  // Sort results: 1-student groups first, then by date
   results.sort((a, b) => {
     if (a.studentCount !== b.studentCount) return a.studentCount - b.studentCount;
     return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
