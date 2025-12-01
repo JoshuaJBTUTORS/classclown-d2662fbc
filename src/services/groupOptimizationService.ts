@@ -44,6 +44,7 @@ export interface BulkOptimizationResult {
     conflicts: string[];
   }[];
   recommendation: string;
+  potentialSavings: number; // £12.50 if 1-student group can be eliminated
 }
 
 const MAX_GROUP_CAPACITY = 6;
@@ -234,19 +235,40 @@ export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]>
       });
     }
 
-    // Sort merge opportunities: viable merges first, then by date
+    // Sort merge opportunities: 
+    // Priority 1: 1-student merging into 2-student (creates 3-student, meets goal)
+    // Priority 2: Any viable merge
+    // Priority 3: By date
     mergeOpps.sort((a, b) => {
+      const aIsOptimal = students.length === 1 && a.currentSize === 2 && a.canMerge;
+      const bIsOptimal = students.length === 1 && b.currentSize === 2 && b.canMerge;
+      
+      if (aIsOptimal && !bIsOptimal) return -1;
+      if (!aIsOptimal && bIsOptimal) return 1;
       if (a.canMerge && !b.canMerge) return -1;
       if (!a.canMerge && b.canMerge) return 1;
       return new Date(a.targetDateTime).getTime() - new Date(b.targetDateTime).getTime();
     });
 
-    // Generate recommendation
+    // Generate recommendation and calculate savings
     let recommendation = '';
+    let potentialSavings = 0;
     const viableMerge = mergeOpps.find(m => m.canMerge);
+    
     if (viableMerge) {
       const date = new Date(viableMerge.targetDateTime);
-      recommendation = `✅ Merge into ${viableMerge.targetLesson} (${date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}) with ${viableMerge.targetTutor} - ${viableMerge.currentSize} students`;
+      const willCreate3Plus = students.length === 1 && viableMerge.currentSize === 2;
+      
+      // Calculate savings for 1-student groups that can be eliminated
+      if (students.length === 1) {
+        potentialSavings = 12.50;
+      }
+      
+      if (willCreate3Plus) {
+        recommendation = `✅ OPTIMAL: Merge into ${viableMerge.targetLesson} (${date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}) with ${viableMerge.targetTutor} - creates 3-student group (saves £12.50)`;
+      } else {
+        recommendation = `✅ Merge into ${viableMerge.targetLesson} (${date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}) with ${viableMerge.targetTutor} - ${viableMerge.currentSize} students${students.length === 1 ? ' (saves £12.50)' : ''}`;
+      }
     } else if (mergeOpps.length > 0) {
       recommendation = `⚠️ ${mergeOpps.length} potential merge(s) blocked by student conflicts`;
     } else {
@@ -263,7 +285,8 @@ export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]>
       currentStudents: students.map(s => s.name),
       studentCount: students.length,
       mergeOpportunities: mergeOpps.slice(0, 5), // Top 5 opportunities
-      recommendation
+      recommendation,
+      potentialSavings
     });
   }
 
