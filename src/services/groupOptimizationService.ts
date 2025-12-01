@@ -555,19 +555,175 @@ export async function findGroupOptimizations(
 }
 
 /**
- * Batch optimization: Find opportunities for multiple lessons
+ * Bulk optimization result for a single lesson
  */
-export async function findBatchOptimizations(
-  lessonIds: string[]
-): Promise<Map<string, GroupOptimizationResult>> {
-  const results = new Map<string, GroupOptimizationResult>();
+export interface BulkOptimizationResult {
+  lessonId: string;
+  lessonTitle: string;
+  subject: string;
+  dateTime: string;
+  tutor: string;
+  tutorId: string;
+  currentStudents: string[];
+  studentCount: number;
+  mergeOpportunities: {
+    targetLessonId: string;
+    targetLesson: string;
+    targetDateTime: string;
+    targetTutor: string;
+    currentSize: number;
+    canMerge: boolean;
+    conflicts: string[];
+  }[];
+  alternativeSlots: {
+    day: string;
+    time: string;
+    tutor: string;
+  }[];
+  recommendation: string;
+}
 
-  for (const lessonId of lessonIds) {
-    const result = await findGroupOptimizations(lessonId);
-    if (result) {
-      results.set(lessonId, result);
-    }
+/**
+ * Analyze ALL underfilled group lessons at once
+ */
+export async function analyzeAllUnderfilled(): Promise<BulkOptimizationResult[]> {
+  const results: BulkOptimizationResult[] = [];
+
+  // Get date range for next 4 weeks
+  const dateRange = {
+    start: new Date(),
+    end: new Date(Date.now() + LOOKAHEAD_WEEKS * 7 * 24 * 60 * 60 * 1000)
+  };
+
+  // Fetch all underfilled group lessons (1-2 students)
+  const { data: underfilledLessons, error } = await supabase
+    .from('lessons')
+    .select(`
+      id,
+      title,
+      subject,
+      start_time,
+      end_time,
+      tutor_id,
+      tutors!inner(id, first_name, last_name),
+      lesson_students(
+        student_id,
+        students!inner(id, first_name, last_name)
+      )
+    `)
+    .eq('is_group', true)
+    .eq('status', 'scheduled')
+    .gte('start_time', dateRange.start.toISOString())
+    .lte('start_time', dateRange.end.toISOString());
+
+  if (error) {
+    console.error('Error fetching underfilled lessons:', error);
+    return [];
   }
+
+  // Filter to only underfilled lessons (1-2 students)
+  const smallGroups = (underfilledLessons || []).filter(lesson => {
+    const studentCount = lesson.lesson_students?.length || 0;
+    return studentCount >= 1 && studentCount <= 2;
+  });
+
+  // Process each underfilled lesson
+  for (const lesson of smallGroups) {
+    const tutor = lesson.tutors as any;
+    const students = (lesson.lesson_students || []).map((ls: any) => ({
+      id: ls.student_id,
+      name: `${ls.students?.first_name || ''} ${ls.students?.last_name || ''}`.trim()
+    }));
+    const studentIds = students.map(s => s.id);
+    const subjectToSearch = lesson.subject || lesson.title;
+
+    // Find existing groups with same subject
+    const existingGroups = await findExistingGroupsForSubject(
+      subjectToSearch,
+      lesson.id,
+      dateRange
+    );
+
+    // Check merge viability for each group
+    const mergeOpps: BulkOptimizationResult['mergeOpportunities'] = [];
+    for (const group of existingGroups.slice(0, 5)) { // Limit for performance
+      const conflicts = await checkStudentConflicts(
+        studentIds,
+        group.startTime,
+        group.endTime,
+        lesson.id
+      );
+
+      const availableSpots = group.maxCapacity - group.currentStudents;
+      const canMerge = conflicts.length === 0 && availableSpots >= students.length;
+
+      mergeOpps.push({
+        targetLessonId: group.id,
+        targetLesson: group.title,
+        targetDateTime: group.startTime,
+        targetTutor: group.tutor.name,
+        currentSize: group.currentStudents,
+        canMerge,
+        conflicts: conflicts.map(c => c.studentName)
+      });
+    }
+
+    // Sort merge opportunities
+    mergeOpps.sort((a, b) => {
+      if (a.canMerge && !b.canMerge) return -1;
+      if (!a.canMerge && b.canMerge) return 1;
+      return 0;
+    });
+
+    // Find alternative time slots (simplified for bulk)
+    const alternativeSlots = await findAlternativeTimeSlots(
+      subjectToSearch,
+      studentIds,
+      lesson.id,
+      dateRange
+    );
+
+    const altSlotsSummary = alternativeSlots
+      .filter(s => s.conflicts.length === 0)
+      .slice(0, 3)
+      .map(s => ({
+        day: s.dayOfWeek,
+        time: s.startTime,
+        tutor: s.tutor.name
+      }));
+
+    // Generate recommendation
+    let recommendation = '';
+    const viableMerge = mergeOpps.find(m => m.canMerge);
+    if (viableMerge) {
+      const date = new Date(viableMerge.targetDateTime);
+      recommendation = `✅ Merge into ${viableMerge.targetLesson} (${date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}) with ${viableMerge.targetTutor} - ${viableMerge.currentSize} students`;
+    } else if (altSlotsSummary.length > 0) {
+      recommendation = `🕐 Alternative slots: ${altSlotsSummary.map(s => `${s.day} ${s.time}`).join(', ')}`;
+    } else {
+      recommendation = '⚠️ No immediate merge opportunities found';
+    }
+
+    results.push({
+      lessonId: lesson.id,
+      lessonTitle: lesson.title,
+      subject: lesson.subject || '',
+      dateTime: lesson.start_time,
+      tutor: `${tutor?.first_name || ''} ${tutor?.last_name || ''}`.trim(),
+      tutorId: tutor?.id || lesson.tutor_id,
+      currentStudents: students.map(s => s.name),
+      studentCount: students.length,
+      mergeOpportunities: mergeOpps.slice(0, 3),
+      alternativeSlots: altSlotsSummary,
+      recommendation
+    });
+  }
+
+  // Sort by student count (1-student groups first), then by date
+  results.sort((a, b) => {
+    if (a.studentCount !== b.studentCount) return a.studentCount - b.studentCount;
+    return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
+  });
 
   return results;
 }
