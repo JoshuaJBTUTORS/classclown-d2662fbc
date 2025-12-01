@@ -27,7 +27,7 @@ import {
   FileSignature,
   BookMarked,
   Activity,
-  Sparkles,
+  Hand,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Core Operations',
       items: [
   {
-    icon: Sparkles,
+    icon: Hand,
     label: 'HeyCleo',
     href: '#',
     roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
