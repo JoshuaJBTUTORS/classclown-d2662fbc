@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Core Operations',
       items: [
   {
-    icon: Hand,
+    icon: () => <span className="text-xl">👋</span>,
     label: 'HeyCleo',
     href: '#',
     roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
