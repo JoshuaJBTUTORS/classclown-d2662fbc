@@ -51,9 +51,10 @@ const GroupOptimizationReport: React.FC = () => {
   const oneStudentCount = results.filter(r => r.studentCount === 1).length;
   const twoStudentCount = results.filter(r => r.studentCount === 2).length;
   const mergeableCount = results.filter(r => r.mergeOpportunities.some(m => m.canMerge)).length;
+  const totalPotentialSavings = results.reduce((sum, r) => sum + r.potentialSavings, 0);
 
   const handleExportCSV = () => {
-    const headers = ['Lesson', 'Date/Time', 'Subject', 'Tutor', 'Students', 'Student Count', 'Recommendation', 'Merge Opportunities'];
+    const headers = ['Lesson', 'Date/Time', 'Subject', 'Tutor', 'Students', 'Student Count', 'Potential Savings', 'Recommendation', 'Merge Opportunities'];
     const rows = filteredResults.map(r => [
       r.lessonTitle,
       format(new Date(r.dateTime), 'dd/MM/yyyy HH:mm'),
@@ -61,6 +62,7 @@ const GroupOptimizationReport: React.FC = () => {
       r.tutor,
       r.currentStudents.join('; '),
       r.studentCount.toString(),
+      r.potentialSavings > 0 ? `£${r.potentialSavings.toFixed(2)}` : '£0.00',
       r.recommendation.replace(/[✅🕐⚠️]/g, ''),
       r.mergeOpportunities.filter(m => m.canMerge).map(m => `${m.targetLesson} (${m.currentSize} students)`).join('; ')
     ]);
@@ -91,7 +93,7 @@ const GroupOptimizationReport: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -136,6 +138,18 @@ const GroupOptimizationReport: React.FC = () => {
                 <p className="text-2xl font-bold text-green-600">{mergeableCount}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Potential Savings</p>
+                <p className="text-2xl font-bold text-green-600">£{totalPotentialSavings.toFixed(2)}</p>
+              </div>
+              <span className="text-3xl">💰</span>
             </div>
           </CardContent>
         </Card>
@@ -206,6 +220,7 @@ const GroupOptimizationReport: React.FC = () => {
                     <TableHead>Subject</TableHead>
                     <TableHead>Tutor</TableHead>
                     <TableHead>Students</TableHead>
+                    <TableHead>Savings</TableHead>
                     <TableHead className="min-w-[300px]">Merge Opportunities</TableHead>
                     <TableHead className="min-w-[250px]">Recommendation</TableHead>
                   </TableRow>
@@ -237,6 +252,15 @@ const GroupOptimizationReport: React.FC = () => {
                               {result.currentStudents.join(', ')}
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {result.potentialSavings > 0 ? (
+                            <div className="font-semibold text-green-600">
+                              £{result.potentialSavings.toFixed(2)}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {viableMerges.length > 0 ? (
