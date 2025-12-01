@@ -48,7 +48,7 @@ export interface BulkOptimizationResult {
 }
 
 const MAX_GROUP_CAPACITY = 6;
-const LOOKAHEAD_WEEKS = 4;
+const LOOKAHEAD_WEEKS = 1;
 
 /**
  * Extract subject keywords from a lesson title/subject
