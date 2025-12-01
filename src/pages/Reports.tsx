@@ -12,6 +12,7 @@ import TutorHoursReport from '@/components/reports/TutorHoursReport';
 import StudentAbsenceReport from '@/components/reports/StudentAbsenceReport';
 import ReportSummaryCards from '@/components/reports/ReportSummaryCards';
 import PayrollSummaryReport from '@/components/reports/PayrollSummaryReport';
+import GroupOptimizationReport from '@/components/reports/GroupOptimizationReport';
 import { cn } from '@/lib/utils';
 
 interface ReportFilters {
@@ -87,10 +88,11 @@ const Reports: React.FC = () => {
             <ReportSummaryCards filters={filters} />
 
             <Tabs defaultValue="tutor-hours" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="tutor-hours">Tutor Hours</TabsTrigger>
                 <TabsTrigger value="student-absence">Student Absences</TabsTrigger>
                 <TabsTrigger value="payroll-summary">Payroll Summary</TabsTrigger>
+                <TabsTrigger value="group-optimization">Group Optimization</TabsTrigger>
               </TabsList>
               
               <TabsContent value="tutor-hours" className="mt-6">
@@ -103,6 +105,10 @@ const Reports: React.FC = () => {
               
               <TabsContent value="payroll-summary" className="mt-6">
                 <PayrollSummaryReport filters={filters} />
+              </TabsContent>
+              
+              <TabsContent value="group-optimization" className="mt-6">
+                <GroupOptimizationReport />
               </TabsContent>
             </Tabs>
           </div>

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play, Sparkles } from 'lucide-react';
+import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,7 +16,6 @@ import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
-import { GroupOptimizationDialog } from './GroupOptimizationDialog';
 interface LessonDetailsDialogProps {
   lessonId: string | null;
   
@@ -45,7 +44,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isOptimizationDialogOpen, setIsOptimizationDialogOpen] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState({
     allMarked: false,
     totalStudents: 0,
@@ -353,17 +351,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       {validStudents.length > 0 && <span className="text-sm text-muted-foreground">
                           ({validStudents.length} students)
                         </span>}
-                      {/* Show optimization suggestion for small groups */}
-                      {validStudents.length <= 2 && validStudents.length > 0 && canEditLesson && (
-                        <Badge 
-                          variant="secondary" 
-                          className="bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer"
-                          onClick={() => setIsOptimizationDialogOpen(true)}
-                        >
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          Optimize
-                        </Badge>
-                      )}
                     </div>}
 
                   {lesson.is_recurring}
@@ -532,14 +519,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       attachment_url: homeworkStatus.homework.attachment_url,
       attachment_type: homeworkStatus.homework.attachment_type
     } : undefined} />}
-
-      {/* Group Optimization Dialog */}
-      <GroupOptimizationDialog 
-        lessonId={lessonId}
-        lessonTitle={lesson?.title}
-        open={isOptimizationDialogOpen}
-        onOpenChange={setIsOptimizationDialogOpen}
-      />
     </>;
 };
 export default LessonDetailsDialog;
