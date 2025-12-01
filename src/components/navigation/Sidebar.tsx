@@ -27,9 +27,11 @@ import {
   FileSignature,
   BookMarked,
   Activity,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
+import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -38,7 +40,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
-  const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly } = useAuth();
+  const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly, hasCleoHubAccess } = useAuth();
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
@@ -323,6 +325,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <X className="h-5 w-5" />
             </button>
           </div>
+
+          {/* HeyCleo Cross-Platform Button */}
+          {hasCleoHubAccess && (
+            <div className="px-4 pt-4 pb-2 border-b border-gray-200">
+              <button
+                onClick={() => {
+                  heyCleoRedirectService.redirectToHeyCleo();
+                  onClose();
+                }}
+                className={cn(
+                  "w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg transition-all",
+                  "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700",
+                  "text-white font-semibold shadow-lg hover:shadow-xl",
+                  "transform hover:scale-105 active:scale-95"
+                )}
+              >
+                <Sparkles className="h-5 w-5" />
+                <span>Open HeyCleo</span>
+              </button>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto py-4">
             {filteredMenuGroups.map((group, groupIndex) => {
