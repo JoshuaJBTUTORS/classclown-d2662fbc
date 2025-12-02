@@ -43,6 +43,19 @@ serve(async (req) => {
       );
     }
 
+    // Fetch user roles
+    const { data: userRoles, error: rolesError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    if (rolesError) {
+      console.error('Error fetching user roles:', rolesError);
+    }
+
+    const roles = userRoles?.map(r => r.role) || [];
+    console.log(`User ${email} has roles: ${roles.join(', ')}`);
+
     // Get the shared secret
     const secret = Deno.env.get('HEYCLEO_CROSS_PLATFORM_SECRET');
     if (!secret) {
@@ -66,27 +79,29 @@ serve(async (req) => {
       ['sign']
     );
     
-    // Sign the data (email:timestamp)
-    const data = encoder.encode(`${email}:${timestamp}`);
+    // Sign the data (email:timestamp:roles) - Sort roles for consistent signing
+    const rolesString = roles.sort().join(',');
+    const data = encoder.encode(`${email}:${timestamp}:${rolesString}`);
     const signatureBuffer = await crypto.subtle.sign('HMAC', key, data);
     const signature = Array.from(new Uint8Array(signatureBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    // Create token payload
+    // Create token payload with roles
     const tokenData = JSON.stringify({
       email,
       timestamp,
+      roles,
       signature
     });
     
     // Encode as base64
     const token = btoa(tokenData);
 
-    console.log(`Generated HeyCleo token for user: ${email}`);
+    console.log(`Generated HeyCleo token for user: ${email} with roles: ${roles.join(', ')}`);
 
     return new Response(
-      JSON.stringify({ token, email }),
+      JSON.stringify({ token, email, roles }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
