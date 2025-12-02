@@ -79,9 +79,8 @@ serve(async (req) => {
       ['sign']
     );
     
-    // Sign the data (email:timestamp:roles) - Sort roles for consistent signing
-    const rolesString = roles.sort().join(',');
-    const data = encoder.encode(`${email}:${timestamp}:${rolesString}`);
+    // Sign the data (email:timestamp) - Must match CRM format
+    const data = encoder.encode(`${email}:${timestamp}`);
     const signatureBuffer = await crypto.subtle.sign('HMAC', key, data);
     const signature = Array.from(new Uint8Array(signatureBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
