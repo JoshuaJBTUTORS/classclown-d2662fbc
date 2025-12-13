@@ -399,10 +399,14 @@ async function processAssessmentInBackground(
       throw new Error(`Failed to fetch assessment: ${assessmentError?.message}`);
     }
 
-    // Check if this is an English assessment (GCSE English, Year 11 English, KS3 English, etc.)
-    // Exclude English Literature as it doesn't need extracts (uses set texts)
+    // Check if this is a GCSE/Year 11 English assessment (not KS2, KS3, or Literature)
+    // Only GCSE-level English uses extract-based question generation
     const subjectLower = assessment.subject?.toLowerCase() || '';
-    const isEnglishLanguage = subjectLower.includes('english') && !subjectLower.includes('literature');
+    const isEnglishLanguage = subjectLower.includes('english') && 
+      !subjectLower.includes('literature') &&
+      !subjectLower.includes('ks2') &&
+      !subjectLower.includes('ks3') &&
+      (subjectLower.includes('gcse') || subjectLower.includes('year 11'));
     let extract: { text: string; source: string; type: string } | null = null;
 
     // For English Language, generate extract first
