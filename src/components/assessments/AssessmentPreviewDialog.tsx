@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Edit, Clock, Award, FileText, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Edit, Clock, Award, FileText, Loader2, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { aiAssessmentService } from "@/services/aiAssessmentService";
 
@@ -13,6 +14,14 @@ interface AssessmentPreviewDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface GenerationProgress {
+  total_questions: number;
+  generated_questions: number;
+  current_batch: number;
+  total_batches: number;
+  status: string;
+}
+
 export function AssessmentPreviewDialog({ 
   assessmentId, 
   open, 
@@ -20,19 +29,44 @@ export function AssessmentPreviewDialog({
 }: AssessmentPreviewDialogProps) {
   const navigate = useNavigate();
 
-  const { data: assessment, isLoading: loadingAssessment } = useQuery({
+  const { data: assessment, isLoading: loadingAssessment, refetch: refetchAssessment } = useQuery({
     queryKey: ['assessment', assessmentId],
     queryFn: () => aiAssessmentService.getAssessmentById(assessmentId!),
     enabled: !!assessmentId && open,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      // Auto-refresh every 3 seconds while processing
+      if (data?.processing_status === 'processing') {
+        return 3000;
+      }
+      return false;
+    },
   });
 
-  const { data: questions = [], isLoading: loadingQuestions } = useQuery({
+  const { data: questions = [], isLoading: loadingQuestions, refetch: refetchQuestions } = useQuery({
     queryKey: ['assessment-questions', assessmentId],
     queryFn: () => aiAssessmentService.getAssessmentQuestions(assessmentId!),
     enabled: !!assessmentId && open,
+    refetchInterval: (query) => {
+      // Auto-refresh questions while assessment is processing
+      if (assessment?.processing_status === 'processing') {
+        return 3000;
+      }
+      return false;
+    },
   });
 
   const isLoading = loadingAssessment || loadingQuestions;
+  const isProcessing = assessment?.processing_status === 'processing';
+  const isFailed = assessment?.processing_status === 'failed';
+  // Check for partial via progress data (since 'partial' may not be in type enum)
+  const isPartial = assessment?.ai_extraction_data?.progress?.status === 'partial';
+
+  // Extract progress from ai_extraction_data
+  const progress: GenerationProgress | null = assessment?.ai_extraction_data?.progress || null;
+  const progressPercent = progress 
+    ? Math.round((progress.generated_questions / progress.total_questions) * 100)
+    : 0;
 
   const getQuestionTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -42,6 +76,11 @@ export function AssessmentPreviewDialog({
       'calculation': 'Calculation',
     };
     return labels[type] || type;
+  };
+
+  const handleRefresh = () => {
+    refetchAssessment();
+    refetchQuestions();
   };
 
   return (
@@ -77,12 +116,47 @@ export function AssessmentPreviewDialog({
               </div>
             </DialogHeader>
 
+            {/* Progress indicator for processing assessments */}
+            {(isProcessing || isPartial) && progress && (
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    {isProcessing ? 'Generating questions...' : 'Generation incomplete'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {progress.generated_questions}/{progress.total_questions} questions
+                  </span>
+                </div>
+                <Progress value={progressPercent} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  Batch {progress.current_batch}/{progress.total_batches} • {progressPercent}% complete
+                </p>
+              </div>
+            )}
+
+            {/* Error state */}
+            {isFailed && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <p className="text-sm text-destructive font-medium">Generation failed</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {assessment.processing_error || 'An unknown error occurred'}
+                </p>
+              </div>
+            )}
+
             <div className="flex-1 min-h-0">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-medium flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Questions ({questions.length})
                 </h3>
+                {(isProcessing || isPartial) && (
+                  <Button variant="ghost" size="sm" onClick={handleRefresh}>
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Refresh
+                  </Button>
+                )}
               </div>
 
               {questions.length === 0 ? (
@@ -90,8 +164,8 @@ export function AssessmentPreviewDialog({
                   <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
                   <p>No questions yet</p>
                   <p className="text-sm">
-                    {assessment.processing_status === 'processing' 
-                      ? 'Questions are being generated...' 
+                    {isProcessing 
+                      ? 'Questions are being generated in batches...' 
                       : 'Add questions in the edit view'}
                   </p>
                 </div>
