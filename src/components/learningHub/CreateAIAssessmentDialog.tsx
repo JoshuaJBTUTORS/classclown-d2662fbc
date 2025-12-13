@@ -92,9 +92,13 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
   });
 
   const watchedSubject = form.watch('subject');
-  // Detect English subjects that need extract-based assessments (GCSE English, Year 11 English, KS3 English, etc.)
-  const isEnglishLanguage = watchedSubject?.toLowerCase().includes('english') && 
-    !watchedSubject?.toLowerCase().includes('literature');
+  // Only GCSE/Year 11 English uses extract-based assessments (not KS2, KS3, or Literature)
+  const subjectLower = watchedSubject?.toLowerCase() || '';
+  const isEnglishLanguage = subjectLower.includes('english') && 
+    !subjectLower.includes('literature') &&
+    !subjectLower.includes('ks2') &&
+    !subjectLower.includes('ks3') &&
+    (subjectLower.includes('gcse') || subjectLower.includes('year 11'));
 
   const createAssessmentMutation = useMutation({
     mutationFn: async (values: FormValues) => {
