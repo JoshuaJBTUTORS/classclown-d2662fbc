@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const HEYCLEO_URL = 'https://heycleo.io';
+const HEYCLEO_URL = 'https://app.heycleo.io';
 
 export const heyCleoRedirectService = {
   /**

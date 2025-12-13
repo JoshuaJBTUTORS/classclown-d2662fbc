@@ -4852,11 +4852,11 @@ export type Database = {
       advance_school_progress_cycle: { Args: never; Returns: undefined }
       calculate_course_completion:
         | {
-            Args: { course_id_param: string; student_id_param: string }
+            Args: { course_id_param: string; student_id_param: number }
             Returns: number
           }
         | {
-            Args: { course_id_param: string; student_id_param: number }
+            Args: { course_id_param: string; student_id_param: string }
             Returns: number
           }
       calculate_session_score: {
