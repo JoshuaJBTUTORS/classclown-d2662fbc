@@ -24,6 +24,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { 
@@ -35,18 +41,25 @@ import {
   Clock,
   Search,
   Trash2,
-  Eye
+  Eye,
+  Sparkles,
+  PenLine,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import CreateAssessmentDialog from '@/components/learningHub/CreateAssessmentDialog';
+import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmentDialog';
 
 const AssessmentAssignments = () => {
   const queryClient = useQueryClient();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [showManualCreateDialog, setShowManualCreateDialog] = useState(false);
+  const [showAICreateDialog, setShowAICreateDialog] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<string>('');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
@@ -217,10 +230,31 @@ const AssessmentAssignments = () => {
                   Assign assessments to students and track their progress
                 </p>
               </div>
-              <Button onClick={() => setShowAssignDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Assign Assessment
-              </Button>
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Assessment
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowManualCreateDialog(true)}>
+                      <PenLine className="h-4 w-4 mr-2" />
+                      Create Manual
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowAICreateDialog(true)}>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      AI Create
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Assign to Student
+                </Button>
+              </div>
             </div>
 
             {/* Search */}
@@ -386,6 +420,23 @@ const AssessmentAssignments = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create Assessment Dialogs */}
+      <CreateAssessmentDialog
+        isOpen={showManualCreateDialog}
+        onClose={() => setShowManualCreateDialog(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['published-assessments'] });
+        }}
+      />
+
+      <CreateAIAssessmentDialog
+        isOpen={showAICreateDialog}
+        onClose={() => setShowAICreateDialog(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['published-assessments'] });
+        }}
+      />
     </div>
   );
 };
