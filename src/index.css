@@ -2036,6 +2036,62 @@
 }
 
 /* ============================================ */
+/* Full Exam Paper Assessment Container Styles */
+/* ============================================ */
+
+.exam-paper-container {
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+.exam-paper-header {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.exam-questions-container {
+  padding: 0;
+}
+
+.exam-questions-container .exam-question-paper {
+  margin: 0;
+  border-top: none;
+}
+
+.exam-questions-container .exam-question-paper:first-child {
+  border-top: 2px solid #000;
+}
+
+/* Page separator between questions */
+.exam-questions-container .exam-question-paper + .exam-question-paper {
+  border-top: 1px dashed #ccc;
+}
+
+.exam-paper-footer {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* Print styles */
+@media print {
+  .exam-paper-container {
+    padding: 0;
+    background: white;
+  }
+  
+  .exam-question-paper {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .exam-margin-stripe {
+    display: none;
+  }
+  
+  button, .btn {
+    display: none !important;
+  }
+}
+
+/* ============================================ */
 /* Cleo Course Detail Styles */
 /* ============================================ */
 
