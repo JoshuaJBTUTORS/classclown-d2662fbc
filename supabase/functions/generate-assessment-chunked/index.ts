@@ -9,17 +9,61 @@ const corsHeaders = {
 const BATCH_SIZE = 10;
 
 function repairJSON(content: string): string {
-  let cleaned = content.replace(/```json\n?|\n?```/g, '').trim();
+  // Remove markdown code blocks
+  let cleaned = content.replace(/```json\n?/g, '').replace(/\n?```/g, '').trim();
+  
+  // Try to extract JSON object/array if there's extra text
+  const jsonStart = cleaned.indexOf('{');
+  const jsonEnd = cleaned.lastIndexOf('}');
+  if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+    cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+  }
+  
+  // Fix common JSON issues
+  // 1. Replace unescaped newlines in strings
+  cleaned = cleaned.replace(/([^\\])\\n(?!["\s\]}])/g, '$1\\\\n');
+  
+  // 2. Fix unescaped quotes within string values (more robust approach)
+  // First, let's try to parse it directly
+  try {
+    JSON.parse(cleaned);
+    return cleaned;
+  } catch (e) {
+    // Continue with repairs
+  }
+  
+  // 3. Replace control characters that break JSON
+  cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (char) => {
+    if (char === '\n' || char === '\r' || char === '\t') {
+      return char; // Keep these
+    }
+    return ''; // Remove other control chars
+  });
+  
+  // 4. Fix trailing commas before closing brackets
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+  
+  // 5. Try line-by-line repair for escaped quote issues
   const lines = cleaned.split('\n');
   const repairedLines = lines.map(line => {
-    const match = line.match(/^(\s*"[^"]+"\s*:\s*")(.*)("[,]?)$/);
+    // Match string value patterns and escape internal quotes
+    const match = line.match(/^(\s*"[^"]+"\s*:\s*")(.*)(",?\s*)$/);
     if (match) {
       const [, prefix, value, suffix] = match;
-      const repairedValue = value.replace(/(?<!\\)"/g, '\\"');
+      // Escape unescaped quotes in the value (not already escaped)
+      let repairedValue = '';
+      for (let i = 0; i < value.length; i++) {
+        if (value[i] === '"' && (i === 0 || value[i - 1] !== '\\')) {
+          repairedValue += '\\"';
+        } else {
+          repairedValue += value[i];
+        }
+      }
       return prefix + repairedValue + suffix;
     }
     return line;
   });
+  
   return repairedLines.join('\n');
 }
 
@@ -114,8 +158,26 @@ Requirements:
     throw new Error(`Empty response from OpenAI for batch ${batchNumber}`);
   }
 
-  const repairedContent = repairJSON(content);
-  const parsed = JSON.parse(repairedContent);
+  let parsed;
+  try {
+    const repairedContent = repairJSON(content);
+    parsed = JSON.parse(repairedContent);
+  } catch (parseError) {
+    console.error(`JSON parse error for batch ${batchNumber}:`, parseError.message);
+    console.error(`Raw content (first 500 chars):`, content.substring(0, 500));
+    
+    // Last resort: try to extract questions array manually
+    const questionsMatch = content.match(/"questions"\s*:\s*\[([\s\S]*?)\]/);
+    if (questionsMatch) {
+      try {
+        parsed = { questions: JSON.parse('[' + questionsMatch[1] + ']') };
+      } catch (e) {
+        throw new Error(`Failed to parse JSON after repair: ${parseError.message}`);
+      }
+    } else {
+      throw new Error(`Failed to parse JSON: ${parseError.message}`);
+    }
+  }
   
   if (!parsed.questions || !Array.isArray(parsed.questions)) {
     throw new Error(`Invalid response structure for batch ${batchNumber}`);
