@@ -399,8 +399,10 @@ async function processAssessmentInBackground(
       throw new Error(`Failed to fetch assessment: ${assessmentError?.message}`);
     }
 
-    // Check if this is an English Language assessment
-    const isEnglishLanguage = assessment.subject?.toLowerCase().includes('english language');
+    // Check if this is an English assessment (GCSE English, Year 11 English, KS3 English, etc.)
+    // Exclude English Literature as it doesn't need extracts (uses set texts)
+    const subjectLower = assessment.subject?.toLowerCase() || '';
+    const isEnglishLanguage = subjectLower.includes('english') && !subjectLower.includes('literature');
     let extract: { text: string; source: string; type: string } | null = null;
 
     // For English Language, generate extract first
