@@ -81,6 +81,9 @@ export type Database = {
           created_by: string | null
           description: string | null
           exam_board: string | null
+          extract_source: string | null
+          extract_text: string | null
+          extract_type: string | null
           id: string
           is_ai_generated: boolean | null
           lesson_id: string | null
@@ -106,6 +109,9 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           exam_board?: string | null
+          extract_source?: string | null
+          extract_text?: string | null
+          extract_type?: string | null
           id?: string
           is_ai_generated?: boolean | null
           lesson_id?: string | null
@@ -131,6 +137,9 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           exam_board?: string | null
+          extract_source?: string | null
+          extract_text?: string | null
+          extract_type?: string | null
           id?: string
           is_ai_generated?: boolean | null
           lesson_id?: string | null

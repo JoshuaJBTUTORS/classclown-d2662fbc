@@ -67,6 +67,178 @@ function repairJSON(content: string): string {
   return repairedLines.join('\n');
 }
 
+// Generate extract for English Language papers
+async function generateExtract(
+  openAIApiKey: string,
+  assessment: any,
+  prompt: string
+): Promise<{ text: string; source: string; type: string }> {
+  const extractType = assessment.extract_type || 'fiction';
+  
+  const extractPrompt = `
+You are an expert in creating authentic GCSE English Language exam extracts.
+
+Generate a ${extractType} extract suitable for GCSE English Language ${assessment.exam_board || 'AQA'} assessment.
+
+Requirements:
+- 400-600 words in length
+- Rich in literary techniques suitable for analysis (metaphors, similes, personification, etc.)
+- Age-appropriate content for 14-16 year olds
+- Include line numbers every 5 lines (format: "5 | text here")
+- Provide attribution (e.g., "Adapted from 'Title' by Author Name")
+- The text should allow for:
+  - Information retrieval questions
+  - Language analysis questions
+  - Structure analysis questions
+  - Evaluation/opinion questions
+
+Topic/Theme from user: ${prompt}
+
+Return JSON:
+{
+  "extract_text": "1 | First line of the extract...\\n2 | Second line...\\n...\\n5 | Fifth line with number marker...\\n...",
+  "source": "Adapted from 'Title of Work' by Author Name (Year)",
+  "type": "${extractType}"
+}
+
+IMPORTANT: Include line numbers in the text itself, formatted as "LINE_NUMBER | text content"
+`;
+
+  console.log(`Generating extract for English Language paper at ${new Date().toISOString()}`);
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-5-mini-2025-08-07',
+      messages: [
+        { role: 'system', content: 'You are an expert in creating GCSE English Language exam materials. Always return valid JSON.' },
+        { role: 'user', content: extractPrompt }
+      ],
+      max_completion_tokens: 4000,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to generate extract: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0]?.message?.content;
+  
+  if (!content) {
+    throw new Error('Empty response when generating extract');
+  }
+
+  try {
+    const repairedContent = repairJSON(content);
+    const parsed = JSON.parse(repairedContent);
+    return {
+      text: parsed.extract_text,
+      source: parsed.source,
+      type: parsed.type || extractType
+    };
+  } catch (e) {
+    console.error('Failed to parse extract JSON:', e);
+    throw new Error('Failed to parse extract response');
+  }
+}
+
+// Generate questions based on an extract (for English Language)
+async function generateQuestionsFromExtract(
+  openAIApiKey: string,
+  batchNumber: number,
+  batchSize: number,
+  startNumber: number,
+  extract: { text: string; source: string; type: string },
+  assessment: any
+): Promise<any[]> {
+  const generationPrompt = `
+You are an expert GCSE English Language examiner. Generate ${batchSize} exam questions based on THIS SPECIFIC EXTRACT.
+
+THE EXTRACT (Source: ${extract.source}):
+---
+${extract.text}
+---
+
+Assessment Details:
+- Exam Board: ${assessment.exam_board || 'AQA'}
+- Paper Type: ${assessment.paper_type || 'Paper 1'}
+
+Generate questions numbered ${startNumber} to ${startNumber + batchSize - 1}.
+
+QUESTION TYPES TO INCLUDE (in order):
+1. Information Retrieval (4 marks): "Read lines X-Y. List four things about..."
+2. Language Analysis (8 marks): "Look at lines X-Y. How does the writer use language to describe/present..."
+3. Structure Analysis (8 marks): "How does the writer structure the text to..."
+4. Evaluation (20 marks): "[Statement about the text]. To what extent do you agree?"
+
+Return JSON:
+{
+  "questions": [
+    {
+      "question_number": ${startNumber},
+      "question_text": "Read lines 1-10. List four things you learn about the character's feelings.",
+      "question_type": "short_answer",
+      "marks_available": 4,
+      "correct_answer": "Award 1 mark for each valid point from the text (max 4). Accept: [specific points from extract]",
+      "keywords": ["point1", "point2", "point3", "point4"],
+      "line_reference": "1-10"
+    }
+  ]
+}
+
+CRITICAL RULES:
+- EVERY question MUST reference specific line numbers from the extract
+- Questions must be answerable ONLY from the given extract
+- Mark allocations: Retrieval (4), Language (8), Structure (8), Evaluation (16-20)
+- Use extended_writing type for 8+ mark questions, short_answer for 4 marks
+`;
+
+  console.log(`[Batch ${batchNumber}] Generating questions from extract at ${new Date().toISOString()}`);
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-5-mini-2025-08-07',
+      messages: [
+        { role: 'system', content: 'You are an expert GCSE English Language examiner. Always return valid JSON with properly escaped quotes.' },
+        { role: 'user', content: generationPrompt }
+      ],
+      max_completion_tokens: 8000,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(`Empty response from OpenAI for batch ${batchNumber}`);
+  }
+
+  try {
+    const repairedContent = repairJSON(content);
+    const parsed = JSON.parse(repairedContent);
+    return parsed.questions || [];
+  } catch (e) {
+    console.error(`JSON parse error for batch ${batchNumber}:`, e);
+    throw new Error(`Failed to parse questions JSON: ${e.message}`);
+  }
+}
+
 async function generateQuestionBatch(
   openAIApiKey: string,
   batchNumber: number,
@@ -227,6 +399,50 @@ async function processAssessmentInBackground(
       throw new Error(`Failed to fetch assessment: ${assessmentError?.message}`);
     }
 
+    // Check if this is an English Language assessment
+    const isEnglishLanguage = assessment.subject?.toLowerCase().includes('english language');
+    let extract: { text: string; source: string; type: string } | null = null;
+
+    // For English Language, generate extract first
+    if (isEnglishLanguage) {
+      console.log('English Language assessment detected - generating extract first');
+      
+      await supabase.from('ai_assessments').update({
+        processing_status: 'processing',
+        processing_error: null,
+        ai_extraction_data: {
+          ...(assessment.ai_extraction_data || {}),
+          progress: {
+            total_questions: numberOfQuestions,
+            generated_questions: 0,
+            current_batch: 0,
+            total_batches: Math.ceil(numberOfQuestions / BATCH_SIZE),
+            status: 'generating_extract'
+          }
+        }
+      }).eq('id', assessmentId);
+
+      try {
+        extract = await generateExtract(openAIApiKey, assessment, prompt);
+        
+        // Save extract to assessment
+        await supabase.from('ai_assessments').update({
+          extract_text: extract.text,
+          extract_source: extract.source,
+          extract_type: extract.type
+        }).eq('id', assessmentId);
+        
+        console.log('Extract generated and saved successfully');
+      } catch (extractError) {
+        console.error('Failed to generate extract:', extractError);
+        await supabase.from('ai_assessments').update({
+          processing_status: 'failed',
+          processing_error: `Failed to generate extract: ${extractError.message}`
+        }).eq('id', assessmentId);
+        return;
+      }
+    }
+
     const totalBatches = Math.ceil(numberOfQuestions / BATCH_SIZE);
     let totalMarks = 0;
     let questionsGenerated = 0;
@@ -259,15 +475,28 @@ async function processAssessmentInBackground(
       console.log(`Processing batch ${batch + 1}/${totalBatches}: questions ${startNumber} to ${startNumber + batchSize - 1}`);
 
       try {
-        const questions = await generateQuestionBatch(
-          openAIApiKey,
-          batch + 1,
-          batchSize,
-          startNumber,
-          topic,
-          prompt,
-          assessment
-        );
+        // Use different generation method for English Language
+        let questions;
+        if (isEnglishLanguage && extract) {
+          questions = await generateQuestionsFromExtract(
+            openAIApiKey,
+            batch + 1,
+            batchSize,
+            startNumber,
+            extract,
+            assessment
+          );
+        } else {
+          questions = await generateQuestionBatch(
+            openAIApiKey,
+            batch + 1,
+            batchSize,
+            startNumber,
+            topic,
+            prompt,
+            assessment
+          );
+        }
 
         // Insert questions immediately after each batch
         for (let i = 0; i < questions.length; i++) {
