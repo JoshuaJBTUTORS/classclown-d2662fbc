@@ -82,6 +82,9 @@ import PricingPage from './pages/PricingPage';
 import HubAccessManagement from './pages/admin/HubAccessManagement';
 import CleoTracker from './pages/admin/CleoTracker';
 import CleoUserDetail from './pages/admin/CleoUserDetail';
+import AssessmentCenter from './pages/AssessmentCenter';
+import AssessmentTake from './pages/AssessmentTake';
+import AssessmentAssignments from './pages/admin/AssessmentAssignments';
 import Unauthorized from './pages/Unauthorized';
 
 // Component to monitor app version
@@ -159,6 +162,16 @@ function App() {
                     } 
                   />
                   <Route path="homework" element={<Homework />} />
+                  <Route path="assessment-center" element={<AssessmentCenter />} />
+                  <Route path="assessment-center/:assignmentId/take" element={<AssessmentTake />} />
+                  <Route 
+                    path="assessment-assignments" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <AssessmentAssignments />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route path="lesson-summaries" element={<LessonSummaries />} />
                   <Route 
                     path="earnings" 
