@@ -178,6 +178,59 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_assignments: {
+        Row: {
+          assessment_id: string
+          assigned_by: string
+          assigned_to: string
+          created_at: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          assigned_by: string
+          assigned_to: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          assigned_by?: string
+          assigned_to?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_assignments_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_improvements: {
         Row: {
           created_at: string

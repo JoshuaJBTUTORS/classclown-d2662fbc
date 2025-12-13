@@ -28,6 +28,7 @@ import {
   BookMarked,
   Activity,
   Hand,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -71,6 +72,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: FileText,
           label: 'Homework',
           href: '/homework',
+          roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
+        },
+        {
+          icon: ClipboardCheck,
+          label: 'Assessment Center',
+          href: '/assessment-center',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
         {
@@ -213,6 +220,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: BookMarked,
           label: 'Exam Board Specs',
           href: '/admin/exam-board-specifications',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: ClipboardList,
+          label: 'Assessment Assignments',
+          href: '/assessment-assignments',
           roles: ['admin', 'owner'],
         },
         {
