@@ -55,6 +55,7 @@ import { toast } from 'sonner';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import CreateAssessmentDialog from '@/components/learningHub/CreateAssessmentDialog';
+import { AssessmentPreviewDialog } from '@/components/assessments/AssessmentPreviewDialog';
 import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmentDialog';
 
 const AssessmentAssignments = () => {
@@ -70,6 +71,7 @@ const AssessmentAssignments = () => {
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
   const [activeTab, setActiveTab] = useState('assessments');
+  const [previewAssessmentId, setPreviewAssessmentId] = useState<string | null>(null);
 
   // Fetch all assignments
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
@@ -232,7 +234,7 @@ const AssessmentAssignments = () => {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => navigate(`/assessment/${assessment.id}/preview`)}
+              onClick={() => setPreviewAssessmentId(assessment.id)}
             >
               <Eye className="h-4 w-4 mr-1" />
               Preview
@@ -550,6 +552,13 @@ const AssessmentAssignments = () => {
           queryClient.invalidateQueries({ queryKey: ['published-assessments'] });
           queryClient.invalidateQueries({ queryKey: ['all-assessments'] });
         }}
+      />
+
+      {/* Assessment Preview Dialog */}
+      <AssessmentPreviewDialog
+        assessmentId={previewAssessmentId}
+        open={!!previewAssessmentId}
+        onOpenChange={(open) => !open && setPreviewAssessmentId(null)}
       />
     </div>
   );
