@@ -123,6 +123,8 @@ Requirements:
 - Include detailed correct answers and keywords
 `;
 
+  console.log(`[Batch ${batchNumber}] Starting OpenAI API call at ${new Date().toISOString()}`);
+  
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -130,7 +132,7 @@ Requirements:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5',
+      model: 'gpt-5-2025-08-07',
       messages: [
         {
           role: 'system',
@@ -145,17 +147,25 @@ Requirements:
     }),
   });
 
+  console.log(`[Batch ${batchNumber}] OpenAI API response status: ${response.status}`);
+
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[Batch ${batchNumber}] OpenAI API error response: ${errorText}`);
     throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
+  console.log(`[Batch ${batchNumber}] OpenAI API response received. Choices: ${data.choices?.length || 0}, Model: ${data.model || 'unknown'}`);
+  
   const content = data.choices[0]?.message?.content;
   
   if (!content || content.trim() === '') {
+    console.error(`[Batch ${batchNumber}] Empty content. Full response:`, JSON.stringify(data).substring(0, 1000));
     throw new Error(`Empty response from OpenAI for batch ${batchNumber}`);
   }
+  
+  console.log(`[Batch ${batchNumber}] Content received, length: ${content.length} chars`);
 
   let parsed;
   try {
