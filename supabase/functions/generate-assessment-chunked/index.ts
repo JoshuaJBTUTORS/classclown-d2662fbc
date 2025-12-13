@@ -61,6 +61,15 @@ Please format as JSON with this exact structure:
   ]
 }
 
+CRITICAL FORMATTING RULES FOR MATHS/SCIENCE:
+- ALL mathematical expressions MUST use LaTeX syntax wrapped in dollar signs
+- Powers/exponents: Use $3^2$ NOT 3^2
+- Fractions: Use $\\frac{1}{2}$ NOT 1/2
+- Square roots: Use $\\sqrt{16}$ NOT sqrt(16)
+- Subscripts: Use $H_2O$ NOT H2O
+- Equations: Use $x + 5 = 12$ NOT x + 5 = 12
+- Example: "Calculate the value of $3^2 + 4^2$ using BIDMAS" NOT "Calculate the value of 3^2 + 4^2"
+
 Requirements:
 - Generate exactly ${batchSize} unique, high-quality questions
 - Question types must be ONLY: short_answer, extended_writing
