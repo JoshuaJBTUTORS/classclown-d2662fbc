@@ -168,6 +168,9 @@ verify_jwt = true
 [functions.generate-heycleo-token]
 verify_jwt = true
 
+[functions.generate-assessment-chunked]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328

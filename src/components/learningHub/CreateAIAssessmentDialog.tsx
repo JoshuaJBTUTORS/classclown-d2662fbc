@@ -120,10 +120,10 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
 
       if (error) throw error;
 
-      // Start AI processing
+      // Start chunked AI processing (runs in background on server)
       setProcessingStatus({ processing: 'processing' });
       
-      const { error: processError } = await supabase.functions.invoke('ai-process-assessment', {
+      const { error: processError } = await supabase.functions.invoke('generate-assessment-chunked', {
         body: { 
           assessmentId: assessment.id,
           numberOfQuestions: values.numberOfQuestions,
@@ -134,7 +134,7 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
 
       if (processError) {
         console.error('AI processing error:', processError);
-        // Don't throw here - let the background process handle it
+        // Don't throw - the background process will handle status updates
       }
 
       setProcessingStatus({ processing: 'completed' });
