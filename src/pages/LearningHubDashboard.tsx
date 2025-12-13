@@ -16,8 +16,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DomainSEO } from '@/components/seo/DomainSEO';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import DataExportButton from '@/components/admin/DataExportButton';
-
 import cleoLogo from '@/assets/cleo-logo.png';
 
 const LearningHubDashboard = () => {
@@ -63,8 +61,7 @@ const LearningHubDashboard = () => {
       />
       <div className="w-full min-h-screen flex flex-col" style={{ background: '#fafaf9' }}>
       {/* Top Bar with Voice Minutes Indicator */}
-      <div className="w-full px-4 sm:px-8 md:px-16 lg:px-24 py-4 flex justify-end gap-4">
-        <DataExportButton />
+      <div className="w-full px-4 sm:px-8 md:px-16 lg:px-24 py-4 flex justify-end">
         <VoiceSessionIndicator />
       </div>
 
