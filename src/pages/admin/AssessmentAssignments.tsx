@@ -124,12 +124,24 @@ const AssessmentAssignments = () => {
     },
   });
 
-  // Delete mutation
-  const deleteMutation = useMutation({
+  // Delete assignment mutation
+  const deleteAssignmentMutation = useMutation({
     mutationFn: (assignmentId: string) => assessmentAssignmentService.deleteAssignment(assignmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-assignments'] });
       toast.success('Assignment deleted');
+    },
+  });
+
+  // Delete assessment mutation
+  const deleteAssessmentMutation = useMutation({
+    mutationFn: (assessmentId: string) => aiAssessmentService.deleteAssessment(assessmentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-assessments'] });
+      toast.success('Assessment deleted');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete assessment');
     },
   });
 
@@ -247,6 +259,13 @@ const AssessmentAssignments = () => {
               <Edit className="h-4 w-4 mr-1" />
               Edit
             </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => deleteAssessmentMutation.mutate(assessment.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
             {assessment.status === 'published' && (
               <Button 
                 size="sm"
@@ -301,7 +320,7 @@ const AssessmentAssignments = () => {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => deleteMutation.mutate(assignment.id)}
+              onClick={() => deleteAssignmentMutation.mutate(assignment.id)}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
