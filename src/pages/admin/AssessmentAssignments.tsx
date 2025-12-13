@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { assessmentAssignmentService, AssessmentAssignment } from '@/services/assessmentAssignmentService';
-import { aiAssessmentService } from '@/services/aiAssessmentService';
+import { aiAssessmentService, AIAssessment } from '@/services/aiAssessmentService';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,7 +45,10 @@ import {
   Eye,
   Sparkles,
   PenLine,
-  ChevronDown
+  ChevronDown,
+  Edit,
+  BookOpen,
+  MoreVertical
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -55,6 +59,7 @@ import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmen
 
 const AssessmentAssignments = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -64,11 +69,18 @@ const AssessmentAssignments = () => {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [activeTab, setActiveTab] = useState('assessments');
 
   // Fetch all assignments
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
     queryKey: ['all-assignments'],
     queryFn: () => assessmentAssignmentService.getAllAssignments(),
+  });
+
+  // Fetch ALL assessments (not just published) for the library view
+  const { data: allAssessments, isLoading: assessmentsLoading } = useQuery({
+    queryKey: ['all-assessments'],
+    queryFn: () => aiAssessmentService.getAllAssessments(),
   });
 
   // Fetch published assessments for assignment dialog
@@ -163,6 +175,90 @@ const AssessmentAssignments = () => {
     
     return filtered;
   };
+
+  const filterAssessments = () => {
+    let filtered = allAssessments || [];
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(a => 
+        a.title?.toLowerCase().includes(term) ||
+        a.subject?.toLowerCase().includes(term)
+      );
+    }
+    
+    return filtered;
+  };
+
+  const getAssessmentStatusBadge = (status: string) => {
+    const config: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string }> = {
+      draft: { variant: 'secondary', label: 'Draft' },
+      published: { variant: 'default', label: 'Published' },
+      archived: { variant: 'outline', label: 'Archived' },
+      processing: { variant: 'outline', label: 'Processing' },
+    };
+    const { variant, label } = config[status] || { variant: 'secondary', label: status };
+    return <Badge variant={variant}>{label}</Badge>;
+  };
+
+  const handleQuickAssign = (assessmentId: string) => {
+    setSelectedAssessment(assessmentId);
+    setShowAssignDialog(true);
+  };
+
+  const renderAssessmentCard = (assessment: AIAssessment) => (
+    <Card key={assessment.id} className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base truncate">
+              {assessment.title || 'Untitled Assessment'}
+            </CardTitle>
+            <CardDescription className="mt-1">
+              {assessment.subject} {assessment.exam_board && `• ${assessment.exam_board}`}
+            </CardDescription>
+          </div>
+          {getAssessmentStatusBadge(assessment.status)}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground space-y-1">
+            {assessment.total_marks && <p>{assessment.total_marks} marks</p>}
+            {assessment.time_limit_minutes && <p>{assessment.time_limit_minutes} mins</p>}
+            <p className="text-xs">Created: {format(new Date(assessment.created_at), 'dd MMM yyyy')}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate(`/assessment/${assessment.id}/preview`)}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Preview
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate(`/assessment/${assessment.id}/edit`)}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+            {assessment.status === 'published' && (
+              <Button 
+                size="sm"
+                onClick={() => handleQuickAssign(assessment.id)}
+              >
+                <Users className="h-4 w-4 mr-1" />
+                Assign
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const renderAssignmentCard = (assignment: AssessmentAssignment) => (
     <Card key={assignment.id} className="hover:shadow-md transition-shadow">
@@ -271,7 +367,7 @@ const AssessmentAssignments = () => {
             </div>
 
             {/* Tabs */}
-            {assignmentsLoading ? (
+            {(assignmentsLoading || assessmentsLoading) ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => (
                   <Card key={i}>
@@ -283,15 +379,31 @@ const AssessmentAssignments = () => {
                 ))}
               </div>
             ) : (
-              <Tabs defaultValue="all" className="space-y-4">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList>
-                  <TabsTrigger value="all">All ({filterAssignments().length})</TabsTrigger>
+                  <TabsTrigger value="assessments">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    My Assessments ({filterAssessments().length})
+                  </TabsTrigger>
+                  <TabsTrigger value="all">All Assignments ({filterAssignments().length})</TabsTrigger>
                   <TabsTrigger value="submitted">
                     Pending Review ({filterAssignments('submitted').length})
                   </TabsTrigger>
                   <TabsTrigger value="in_progress">In Progress ({filterAssignments('in_progress').length})</TabsTrigger>
                   <TabsTrigger value="reviewed">Reviewed ({filterAssignments('reviewed').length})</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="assessments" className="space-y-4">
+                  {filterAssessments().length ? (
+                    filterAssessments().map(renderAssessmentCard)
+                  ) : (
+                    <div className="text-center py-12">
+                      <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No assessments created yet</p>
+                      <p className="text-sm text-muted-foreground mt-1">Click "Create Assessment" to get started</p>
+                    </div>
+                  )}
+                </TabsContent>
 
                 <TabsContent value="all" className="space-y-4">
                   {filterAssignments().length ? (
@@ -427,6 +539,7 @@ const AssessmentAssignments = () => {
         onClose={() => setShowManualCreateDialog(false)}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['published-assessments'] });
+          queryClient.invalidateQueries({ queryKey: ['all-assessments'] });
         }}
       />
 
@@ -435,6 +548,7 @@ const AssessmentAssignments = () => {
         onClose={() => setShowAICreateDialog(false)}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['published-assessments'] });
+          queryClient.invalidateQueries({ queryKey: ['all-assessments'] });
         }}
       />
     </div>
