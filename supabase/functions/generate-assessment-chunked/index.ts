@@ -230,6 +230,7 @@ async function processAssessmentInBackground(
     const totalBatches = Math.ceil(numberOfQuestions / BATCH_SIZE);
     let totalMarks = 0;
     let questionsGenerated = 0;
+    const failedBatches: number[] = [];
 
     console.log(`Starting chunked generation: ${numberOfQuestions} questions in ${totalBatches} batches`);
 
@@ -244,6 +245,7 @@ async function processAssessmentInBackground(
           generated_questions: 0,
           current_batch: 0,
           total_batches: totalBatches,
+          failed_batches: [],
           status: 'generating'
         }
       }
@@ -252,7 +254,7 @@ async function processAssessmentInBackground(
     // Process each batch
     for (let batch = 0; batch < totalBatches; batch++) {
       const startNumber = batch * BATCH_SIZE + 1;
-      const batchSize = Math.min(BATCH_SIZE, numberOfQuestions - questionsGenerated);
+      const batchSize = Math.min(BATCH_SIZE, numberOfQuestions - (batch * BATCH_SIZE));
       
       console.log(`Processing batch ${batch + 1}/${totalBatches}: questions ${startNumber} to ${startNumber + batchSize - 1}`);
 
@@ -281,24 +283,23 @@ async function processAssessmentInBackground(
             .from('assessment_questions')
             .insert({
               assessment_id: assessmentId,
-              question_number: question.question_number || (questionsGenerated + i + 1),
+              question_number: question.question_number || (startNumber + i),
               question_text: question.question_text,
               question_type: question.question_type,
               marks_available: question.marks_available || 1,
               correct_answer: question.correct_answer || '',
               marking_scheme: {},
               keywords: question.keywords || [],
-              position: questionsGenerated + i + 1,
+              position: startNumber + i,
             });
 
           if (questionError) {
             console.error(`Error inserting question:`, questionError);
           } else {
             totalMarks += question.marks_available || 1;
+            questionsGenerated++;
           }
         }
-
-        questionsGenerated += questions.length;
 
         // Update progress after each batch
         await supabase.from('ai_assessments').update({
@@ -309,6 +310,7 @@ async function processAssessmentInBackground(
               generated_questions: questionsGenerated,
               current_batch: batch + 1,
               total_batches: totalBatches,
+              failed_batches: failedBatches,
               status: 'generating'
             }
           },
@@ -320,26 +322,26 @@ async function processAssessmentInBackground(
       } catch (batchError) {
         console.error(`Batch ${batch + 1} failed:`, batchError);
         
-        // If we have some questions, mark as partial
-        if (questionsGenerated > 0) {
-          await supabase.from('ai_assessments').update({
-            processing_status: 'partial',
-            processing_error: `Generated ${questionsGenerated}/${numberOfQuestions} questions. Batch ${batch + 1} failed: ${batchError.message}`,
-            ai_extraction_data: {
-              ...(assessment.ai_extraction_data || {}),
-              progress: {
-                total_questions: numberOfQuestions,
-                generated_questions: questionsGenerated,
-                current_batch: batch + 1,
-                total_batches: totalBatches,
-                status: 'partial'
-              }
+        // Track failed batch but CONTINUE to next batch
+        failedBatches.push(batch + 1);
+        
+        // Update progress with failed batch info
+        await supabase.from('ai_assessments').update({
+          ai_extraction_data: {
+            ...(assessment.ai_extraction_data || {}),
+            progress: {
+              total_questions: numberOfQuestions,
+              generated_questions: questionsGenerated,
+              current_batch: batch + 1,
+              total_batches: totalBatches,
+              failed_batches: failedBatches,
+              status: 'generating_with_errors'
             }
-          }).eq('id', assessmentId);
-          return;
-        } else {
-          throw batchError;
-        }
+          }
+        }).eq('id', assessmentId);
+        
+        console.log(`Batch ${batch + 1} failed, continuing to next batch...`);
+        continue; // Continue to next batch instead of stopping!
       }
 
       // Small delay between batches to avoid rate limiting
@@ -348,12 +350,20 @@ async function processAssessmentInBackground(
       }
     }
 
-    // Mark as completed
+    // Determine final status based on results
+    const finalStatus = failedBatches.length === 0 ? 'completed' : 
+                        questionsGenerated > 0 ? 'partial' : 'failed';
+    
+    const errorMessage = failedBatches.length > 0 
+      ? `Generated ${questionsGenerated}/${numberOfQuestions} questions. Failed batches: ${failedBatches.join(', ')}`
+      : null;
+
+    // Mark with final status
     await supabase.from('ai_assessments').update({
-      processing_status: 'completed',
-      processing_error: null,
+      processing_status: finalStatus,
+      processing_error: errorMessage,
       total_marks: totalMarks,
-      ai_confidence_score: 0.9,
+      ai_confidence_score: failedBatches.length === 0 ? 0.9 : 0.7,
       ai_extraction_data: {
         ...(assessment.ai_extraction_data || {}),
         progress: {
@@ -361,12 +371,13 @@ async function processAssessmentInBackground(
           generated_questions: questionsGenerated,
           current_batch: totalBatches,
           total_batches: totalBatches,
-          status: 'completed'
+          failed_batches: failedBatches,
+          status: finalStatus
         }
       }
     }).eq('id', assessmentId);
 
-    console.log(`Assessment generation completed: ${questionsGenerated} questions, ${totalMarks} total marks`);
+    console.log(`Assessment generation ${finalStatus}: ${questionsGenerated} questions, ${totalMarks} total marks, ${failedBatches.length} failed batches`);
 
   } catch (error) {
     console.error('Assessment generation failed:', error);
