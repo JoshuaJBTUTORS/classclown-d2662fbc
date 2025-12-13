@@ -51,6 +51,7 @@ const formSchema = z.object({
   prompt: z.string().min(10, "AI prompt must be at least 10 characters"),
   numberOfQuestions: z.coerce.number().int().min(1, "Must generate at least 1 question").max(50, "Maximum 50 questions"),
   topic: z.string().min(1, "Topic is required"),
+  extract_type: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -86,8 +87,12 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
       prompt: "",
       numberOfQuestions: 10,
       topic: "",
+      extract_type: "",
     },
   });
+
+  const watchedSubject = form.watch('subject');
+  const isEnglishLanguage = watchedSubject?.toLowerCase().includes('english language');
 
   const createAssessmentMutation = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -109,6 +114,7 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
           is_ai_generated: true,
           created_by: user.user?.id,
           status: 'draft',
+          extract_type: values.extract_type || null,
           ai_extraction_data: {
             numberOfQuestions: values.numberOfQuestions,
             topic: values.topic,
@@ -455,20 +461,59 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
             <div className="border-t pt-4">
               <h3 className="text-lg font-medium mb-4">AI Generation Settings</h3>
               
+              {/* English Language Extract Type Selection */}
+              {isEnglishLanguage && (
+                <FormField
+                  control={form.control}
+                  name="extract_type"
+                  render={({ field }) => (
+                    <FormItem className="mb-4">
+                      <FormLabel>Extract Type</FormLabel>
+                      <FormControl>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select extract type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fiction">Fiction (Narrative/Story)</SelectItem>
+                            <SelectItem value="non-fiction">Non-Fiction (Article/Essay)</SelectItem>
+                            <SelectItem value="19th-century">19th Century Text</SelectItem>
+                            <SelectItem value="21st-century">21st Century Text</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormDescription>
+                        The AI will generate an extract of this type, then create questions based on it
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
                 control={form.control}
                 name="topic"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Topic</FormLabel>
+                    <FormLabel>{isEnglishLanguage ? 'Extract Theme/Topic' : 'Topic'}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="e.g., Algebraic equations, Cell biology, etc." 
+                        placeholder={isEnglishLanguage 
+                          ? "e.g., Isolation, conflict, a stormy night, childhood memories..." 
+                          : "e.g., Algebraic equations, Cell biology, etc."
+                        }
                         {...field} 
                       />
                     </FormControl>
                     <FormDescription>
-                      The main topic for question generation
+                      {isEnglishLanguage 
+                        ? 'The theme or topic for the generated extract'
+                        : 'The main topic for question generation'
+                      }
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -506,18 +551,33 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
                     <FormLabel>AI Generation Prompt</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Create exam questions about algebraic equations suitable for GCSE level students. Include a mix of problem-solving and calculation questions with varying difficulty levels."
+                        placeholder={isEnglishLanguage 
+                          ? "Create a compelling extract about a character facing a difficult decision. Include descriptive language, dialogue, and sensory details suitable for GCSE English Language analysis."
+                          : "Create exam questions about algebraic equations suitable for GCSE level students. Include a mix of problem-solving and calculation questions with varying difficulty levels."
+                        }
                         className="min-h-[100px]"
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Detailed instructions for the AI to generate questions
+                      {isEnglishLanguage 
+                        ? 'Describe the extract content - the AI will generate a source text and then create questions based on it'
+                        : 'Detailed instructions for the AI to generate questions'
+                      }
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {isEnglishLanguage && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>English Language Mode:</strong> The AI will first generate a source extract based on your theme/topic, 
+                    then create comprehension, language analysis, structure, and evaluation questions based on that extract.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Processing Status */}

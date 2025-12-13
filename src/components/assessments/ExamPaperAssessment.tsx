@@ -30,6 +30,9 @@ interface Assessment {
   total_marks?: number;
   time_limit_minutes?: number;
   status: string;
+  extract_text?: string;
+  extract_source?: string;
+  extract_type?: string;
 }
 
 interface ExamPaperAssessmentProps {
@@ -146,6 +149,43 @@ export const ExamPaperAssessment: React.FC<ExamPaperAssessmentProps> = ({
           </ul>
         </div>
       </motion.div>
+
+      {/* Source Text / Extract Section - For English Language */}
+      {assessment.extract_text && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-white border-l-2 border-r-2 border-black"
+        >
+          <div className="border-b-2 border-black p-4 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-serif font-bold text-lg">Source A</h2>
+                {assessment.extract_source && (
+                  <p className="text-sm text-muted-foreground italic mt-1">
+                    {assessment.extract_source}
+                  </p>
+                )}
+              </div>
+              {assessment.extract_type && (
+                <span className="text-xs uppercase tracking-wider bg-primary/10 text-primary px-2 py-1 rounded">
+                  {assessment.extract_type}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="font-serif text-base leading-relaxed whitespace-pre-wrap extract-text">
+              {assessment.extract_text}
+            </div>
+          </div>
+          <div className="border-t border-gray-200 p-3 bg-gray-50 text-center">
+            <p className="text-sm text-muted-foreground font-serif italic">
+              Read the source carefully before answering the questions below
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Progress Bar */}
       {!previewMode && (
