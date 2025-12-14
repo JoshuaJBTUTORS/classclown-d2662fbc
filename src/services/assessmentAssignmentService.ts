@@ -11,6 +11,9 @@ export interface AssessmentSummary {
   total_marks: number;
   time_limit_minutes?: number;
   status: string;
+  extract_text?: string;
+  extract_source?: string;
+  extract_type?: string;
 }
 
 export interface AssessmentAssignment {
@@ -77,7 +80,8 @@ export const assessmentAssignmentService = {
         *,
         ai_assessments (
           id, title, description, subject, exam_board, year, 
-          paper_type, total_marks, time_limit_minutes, status
+          paper_type, total_marks, time_limit_minutes, status,
+          extract_text, extract_source, extract_type
         )
       `)
       .eq('assigned_to', targetUserId)
@@ -99,7 +103,8 @@ export const assessmentAssignmentService = {
         *,
         ai_assessments (
           id, title, description, subject, exam_board, year, 
-          paper_type, total_marks, time_limit_minutes, status
+          paper_type, total_marks, time_limit_minutes, status,
+          extract_text, extract_source, extract_type
         )
       `)
       .eq('id', assignmentId)
@@ -153,7 +158,8 @@ export const assessmentAssignmentService = {
         *,
         ai_assessments (
           id, title, description, subject, exam_board, year, 
-          paper_type, total_marks, time_limit_minutes, status
+          paper_type, total_marks, time_limit_minutes, status,
+          extract_text, extract_source, extract_type
         )
       `)
       .eq('status', 'submitted')
@@ -175,7 +181,8 @@ export const assessmentAssignmentService = {
         *,
         ai_assessments (
           id, title, description, subject, exam_board, year, 
-          paper_type, total_marks, time_limit_minutes, status
+          paper_type, total_marks, time_limit_minutes, status,
+          extract_text, extract_source, extract_type
         )
       `)
       .order('created_at', { ascending: false });
