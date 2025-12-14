@@ -175,8 +175,17 @@ export const ExamPaperAssessment: React.FC<ExamPaperAssessmentProps> = ({
             </div>
           </div>
           <div className="p-6">
-            <div className="font-serif text-base leading-relaxed whitespace-pre-wrap extract-text">
-              {assessment.extract_text}
+            <div className="font-serif text-base leading-relaxed extract-text">
+              {assessment.extract_text
+                ?.replace(/\\n(\d+)\s*\|/g, '\n')
+                ?.replace(/\\n/g, '\n')
+                ?.split('\n')
+                .map((line, index) => (
+                  <p key={index} className="mb-2">
+                    <span className="text-muted-foreground mr-3 select-none text-sm">{index + 1}</span>
+                    {line}
+                  </p>
+                ))}
             </div>
           </div>
           <div className="border-t border-gray-200 p-3 bg-gray-50 text-center">
