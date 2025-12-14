@@ -28,7 +28,8 @@ export default {
 				roboto: ['Roboto', 'sans-serif'],
 				bubble: ['Fredoka One', 'cursive'],
 				sans: ['Helvetica', 'Arial', 'sans-serif'],
-				sidebar: ['Inter', 'sans-serif']
+				sidebar: ['Inter', 'sans-serif'],
+				handwriting: ['Caveat', 'cursive'],
 			},
 			colors: {
 				'logo-white': 'hsl(0, 0%, 98%)', // Adding custom logo-white color
