@@ -372,7 +372,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       </div>}
                   </div>
 
-                  {lesson.lesson_space_room_url || lesson.lesson_space_room_id ? <VideoConferenceLink lessonId={lesson.id} lessonSpaceRoomUrl={lesson.lesson_space_room_url} lessonSpaceRoomId={lesson.lesson_space_room_id} lessonSpaceSpaceId={lesson.lesson_space_space_id} isGroupLesson={lesson.is_group} studentCount={validStudents.length} /> : <div className="space-y-3">
+                  {lesson.lesson_space_room_url || lesson.lesson_space_room_id ? <VideoConferenceLink lessonId={lesson.id} lessonSpaceRoomUrl={lesson.lesson_space_room_url} lessonSpaceRoomId={lesson.lesson_space_room_id} lessonSpaceSpaceId={lesson.lesson_space_space_id} lessonTitle={lesson.title} isGroupLesson={lesson.is_group} studentCount={validStudents.length} /> : <div className="space-y-3">
                       <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
                         <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-amber-700">
