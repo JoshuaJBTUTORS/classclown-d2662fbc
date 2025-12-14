@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { AssessmentQuestion } from '@/services/aiAssessmentService';
 import QuestionFeedback from './QuestionFeedback';
+import { LatexRenderer } from '@/components/cleo/LatexRenderer';
 interface AssessmentQuestionProps {
   question: AssessmentQuestion;
   studentAnswer: string;
@@ -97,7 +98,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             {key}
           </div>
           <div className="flex-1 cursor-pointer text-gray-800 leading-relaxed text-sm sm:text-base w-full break-words font-medium">
-            {String(value)}
+            <LatexRenderer content={String(value)} />
           </div>
           {studentAnswer === key && (
             <div className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full ${getCheckMarkClass(key)} flex items-center justify-center shadow-lg`}>
@@ -129,10 +130,10 @@ const AssessmentQuestionCard: React.FC<AssessmentQuestionProps> = ({
       </CardHeader>
       <CardContent className={embedded ? "px-0 pb-2 space-y-6" : "space-y-6 pt-0 px-6 sm:px-8 lg:px-10"}>
         <div className="bg-gradient-to-r from-purple-50/50 to-emerald-50/50 p-6 rounded-xl border border-purple-100/60 w-full">
-          <p className="text-gray-900 leading-relaxed text-lg font-medium break-words text-left">
-            {question.question_text}
+          <div className="text-gray-900 leading-relaxed text-lg font-medium break-words text-left">
+            <LatexRenderer content={question.question_text} />
             <span className="text-gray-500 ml-2">({question.marking_scheme?.marks || 1} marks)</span>
-          </p>
+          </div>
         </div>
         
         {/* Display question image if it exists */}

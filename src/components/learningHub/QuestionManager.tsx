@@ -18,6 +18,7 @@ import {
 import { AssessmentQuestion, aiAssessmentService } from '@/services/aiAssessmentService';
 import { useToast } from '@/hooks/use-toast';
 import CreateQuestionDialog from './CreateQuestionDialog';
+import { LatexRenderer } from '@/components/cleo/LatexRenderer';
 
 interface QuestionManagerProps {
   assessmentId: string;
@@ -207,7 +208,7 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
                     </div>
                     
                     <div className="space-y-3">
-                      <p className="text-gray-700">{question.question_text}</p>
+                      <div className="text-gray-700"><LatexRenderer content={question.question_text} /></div>
                       
                       {question.image_url && (
                         <div className="border rounded-lg p-2 bg-gray-50">
