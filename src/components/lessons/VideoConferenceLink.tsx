@@ -21,6 +21,7 @@ interface VideoConferenceLinkProps {
   lessonSpaceRoomUrl?: string | null;
   lessonSpaceRoomId?: string | null;
   lessonSpaceSpaceId?: string | null;
+  lessonTitle?: string | null;
   className?: string;
   isGroupLesson?: boolean;
   studentCount?: number;
@@ -31,6 +32,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   lessonSpaceRoomUrl,
   lessonSpaceRoomId,
   lessonSpaceSpaceId,
+  lessonTitle,
   className = "",
   isGroupLesson = false,
   studentCount = 0
@@ -52,6 +54,19 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     const examStart = new Date('2025-12-14T00:00:00');
     const examEnd = new Date('2025-12-22T23:59:59');
     return now >= examStart && now <= examEnd;
+  })();
+
+  // Shared exam period room for non-1-1 lessons
+  const EXAM_PERIOD_SHARED_ROOM = 'https://www.thelessonspace.com/space/0593eb31-d478-4e21-97e2-048c731598a1';
+
+  // Check if lesson is a 1-1 lesson based on title
+  const isOneToOneLesson = (() => {
+    if (!lessonTitle) return false;
+    const title = lessonTitle.toLowerCase();
+    return title.includes('1-1') || 
+           title.includes('1:1') || 
+           title.includes('one-to-one') ||
+           title.includes('1 to 1');
   })();
 
   // Get the appropriate URL based on user role
@@ -176,13 +191,18 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleOpenInNewTab = () => {
-    if (!videoUrl) {
+    // During exam period, non-1-1 lessons go to shared exam room
+    const urlToOpen = (isExamPeriod && !isOneToOneLesson) 
+      ? EXAM_PERIOD_SHARED_ROOM 
+      : videoUrl;
+
+    if (!urlToOpen) {
       toast.error('Video room URL not available');
       return;
     }
 
     try {
-      window.open(videoUrl, '_blank', 'noopener,noreferrer');
+      window.open(urlToOpen, '_blank', 'noopener,noreferrer');
       toast.success('Opening video room in new tab...');
     } catch (error) {
       console.error('Error opening video room:', error);

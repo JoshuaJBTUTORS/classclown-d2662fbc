@@ -287,7 +287,7 @@ const Lessons = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <VideoConferenceLink lessonId={lesson.id} />
+                              <VideoConferenceLink lessonId={lesson.id} lessonTitle={lesson.title} />
                               {canCreateLessons && (
                                 <>
                                   <Button
