@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, FileText, CheckCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
-import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
 import ExamPaperAssessment from '@/components/assessments/ExamPaperAssessment';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -29,7 +27,6 @@ const AssessmentTake = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [markedQuestions, setMarkedQuestions] = useState<Set<string>>(new Set());
@@ -220,38 +217,30 @@ const AssessmentTake = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={() => setSidebarOpen(true)} />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <Skeleton className="h-8 w-1/2" />
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-64 w-full" />
-            </div>
-          </main>
-        </div>
+      <div className="min-h-screen bg-gray-100">
+        <main className="p-6">
+          <div className="max-w-4xl mx-auto space-y-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!assignment || !questions) {
     return (
-      <div className="flex h-screen bg-background">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={() => setSidebarOpen(true)} />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-semibold">Assessment not found</h2>
-              <Button className="mt-4" onClick={() => navigate('/assessment-center')}>
-                Back to Assessment Center
-              </Button>
-            </div>
-          </main>
-        </div>
+      <div className="min-h-screen bg-gray-100">
+        <main className="p-6">
+          <div className="text-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold">Assessment not found</h2>
+            <Button className="mt-4" onClick={() => navigate('/assessment-center')}>
+              Back to Assessment Center
+            </Button>
+          </div>
+        </main>
       </div>
     );
   }
@@ -274,50 +263,44 @@ const AssessmentTake = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar toggleSidebar={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-100">
-          <div className="max-w-4xl mx-auto">
-            {/* Back Button */}
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/assessment-center')}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Assessment Center
-            </Button>
+    <div className="min-h-screen bg-gray-100">
+      <main className="p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Back Button */}
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/assessment-center')}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Assessment Center
+          </Button>
 
-            {isSubmitted && (
-              <Badge variant="secondary" className="mb-4">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Submitted
-              </Badge>
-            )}
+          {isSubmitted && (
+            <Badge variant="secondary" className="mb-4">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Submitted
+            </Badge>
+          )}
 
-            {/* Exam Paper Format */}
-            <ExamPaperAssessment
-              assessment={assessmentData}
-              questions={questions}
-              studentAnswers={answers}
-              onAnswerChange={handleAnswerChange}
-              onMarkQuestion={handleMarkQuestion}
-              markedQuestions={markedQuestions}
-              markingStates={markingStates}
-              feedback={feedback}
-              onComplete={handleComplete}
-              isCompleting={isSubmitting}
-              timeRemaining={null}
-              hasTimeLimit={false}
-              previewMode={isSubmitted}
-            />
-          </div>
-        </main>
-      </div>
+          {/* Exam Paper Format */}
+          <ExamPaperAssessment
+            assessment={assessmentData}
+            questions={questions}
+            studentAnswers={answers}
+            onAnswerChange={handleAnswerChange}
+            onMarkQuestion={handleMarkQuestion}
+            markedQuestions={markedQuestions}
+            markingStates={markingStates}
+            feedback={feedback}
+            onComplete={handleComplete}
+            isCompleting={isSubmitting}
+            timeRemaining={null}
+            hasTimeLimit={false}
+            previewMode={isSubmitted}
+          />
+        </div>
+      </main>
 
       {/* Recovery Dialog */}
       <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
