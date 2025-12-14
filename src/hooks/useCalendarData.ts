@@ -397,7 +397,7 @@ export const useCalendarData = ({
 
           // Exam period filter for tutors only - Dec 15-22, 2025: show only 1-1 lessons
           if (userRole === 'tutor' && startDate && endDate) {
-            const examStart = new Date('2025-12-15T00:00:00');
+            const examStart = new Date('2025-12-14T00:00:00');
             const examEnd = new Date('2025-12-22T23:59:59');
             
             // Check if current view overlaps with exam period

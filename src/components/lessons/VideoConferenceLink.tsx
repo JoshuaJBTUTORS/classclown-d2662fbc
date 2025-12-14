@@ -46,10 +46,10 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
-  // Check if we're in exam period (Dec 15-22, 2025) - temporary change
+  // Check if we're in exam period (Dec 14-22, 2025) - temporary change
   const isExamPeriod = (() => {
     const now = new Date();
-    const examStart = new Date('2025-12-15T00:00:00');
+    const examStart = new Date('2025-12-14T00:00:00');
     const examEnd = new Date('2025-12-22T23:59:59');
     return now >= examStart && now <= examEnd;
   })();
