@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assessmentAssignmentService } from '@/services/assessmentAssignmentService';
@@ -6,12 +6,24 @@ import { aiAssessmentService } from '@/services/aiAssessmentService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, FileText, CheckCircle } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import ExamPaperAssessment from '@/components/assessments/ExamPaperAssessment';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+const getDraftKey = (assignmentId: string) => `assessment_draft_${assignmentId}`;
 
 const AssessmentTake = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -23,6 +35,9 @@ const AssessmentTake = () => {
   const [markedQuestions, setMarkedQuestions] = useState<Set<string>>(new Set());
   const [markingStates, setMarkingStates] = useState<Record<string, boolean>>({});
   const [feedback, setFeedback] = useState<Record<string, any>>({});
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [savedDraft, setSavedDraft] = useState<Record<string, string> | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Fetch assignment details
   const { data: assignment, isLoading: assignmentLoading } = useQuery({
@@ -60,12 +75,71 @@ const AssessmentTake = () => {
     },
   });
 
+  // Load saved draft on mount
+  useEffect(() => {
+    if (!assignmentId) return;
+    
+    const draftKey = getDraftKey(assignmentId);
+    const saved = localStorage.getItem(draftKey);
+    
+    if (saved) {
+      try {
+        const parsedDraft = JSON.parse(saved);
+        if (Object.keys(parsedDraft).length > 0) {
+          setSavedDraft(parsedDraft);
+          setShowRecoveryDialog(true);
+        }
+      } catch (e) {
+        localStorage.removeItem(draftKey);
+      }
+    }
+  }, [assignmentId]);
+
+  // Auto-save answers to localStorage on change
+  useEffect(() => {
+    if (!assignmentId || Object.keys(answers).length === 0) return;
+    
+    const draftKey = getDraftKey(assignmentId);
+    localStorage.setItem(draftKey, JSON.stringify(answers));
+    setHasUnsavedChanges(true);
+  }, [answers, assignmentId]);
+
+  // Beforeunload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !isSubmitting) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved answers. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, isSubmitting]);
+
   // Auto-start when loaded
   useEffect(() => {
     if (assignment && assignment.status === 'assigned') {
       startMutation.mutate();
     }
   }, [assignment?.id, assignment?.status]);
+
+  const handleRestoreDraft = () => {
+    if (savedDraft) {
+      setAnswers(savedDraft);
+      toast.success('Previous answers restored');
+    }
+    setShowRecoveryDialog(false);
+  };
+
+  const handleDiscardDraft = () => {
+    if (assignmentId) {
+      localStorage.removeItem(getDraftKey(assignmentId));
+    }
+    setSavedDraft(null);
+    setShowRecoveryDialog(false);
+  };
 
   const handleAnswerChange = (questionId: string, answer: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: answer }));
@@ -128,6 +202,12 @@ const AssessmentTake = () => {
       
       // Submit the assignment
       await submitMutation.mutateAsync();
+      
+      // Clear draft on successful submission
+      if (assignmentId) {
+        localStorage.removeItem(getDraftKey(assignmentId));
+        setHasUnsavedChanges(false);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit assessment');
     } finally {
@@ -238,6 +318,30 @@ const AssessmentTake = () => {
           </div>
         </main>
       </div>
+
+      {/* Recovery Dialog */}
+      <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Resume Previous Progress?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              We found {savedDraft ? Object.keys(savedDraft).length : 0} saved answers from your previous session. 
+              Would you like to restore them or start fresh?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDiscardDraft}>
+              Start Fresh
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestoreDraft}>
+              Restore Answers
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
