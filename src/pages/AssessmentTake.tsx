@@ -152,29 +152,9 @@ const AssessmentTake = () => {
     setMarkingStates(prev => ({ ...prev, [questionId]: true }));
 
     try {
-      const question = questions?.find(q => q.id === questionId);
-      if (!question) return;
-
-      // Call AI marking function
-      const { data, error } = await supabase.functions.invoke('ai-mark-cleo-question', {
-        body: {
-          studentAnswer: answer,
-          correctAnswer: question.correct_answer,
-          questionText: question.question_text,
-          maxMarks: question.marks_available,
-          questionType: question.question_type,
-          keywords: question.keywords || [],
-          markingScheme: question.marking_scheme,
-        },
-      });
-
-      if (error) throw error;
-
-      setFeedback(prev => ({ ...prev, [questionId]: data }));
+      // In exam mode (assigned assessments), skip AI marking entirely
+      // Just record that the question was answered - no scoring revealed
       setMarkedQuestions(prev => new Set([...prev, questionId]));
-    } catch (error: any) {
-      console.error('Marking error:', error);
-      toast.error('Failed to mark question');
     } finally {
       setMarkingStates(prev => ({ ...prev, [questionId]: false }));
     }
