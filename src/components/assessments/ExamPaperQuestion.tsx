@@ -40,6 +40,7 @@ interface ExamPaperQuestionProps {
   subject?: string;
   examBoard?: string;
   disabled?: boolean;
+  examMode?: boolean; // When true, hide all scoring/marking feedback
 }
 
 export const ExamPaperQuestion: React.FC<ExamPaperQuestionProps> = ({
@@ -54,6 +55,7 @@ export const ExamPaperQuestion: React.FC<ExamPaperQuestionProps> = ({
   subject,
   examBoard,
   disabled = false,
+  examMode = false,
 }) => {
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [markingResult, setMarkingResult] = useState<AIMarkingResult | null>(null);
@@ -115,6 +117,12 @@ export const ExamPaperQuestion: React.FC<ExamPaperQuestionProps> = ({
     setIsSubmitting(true);
     
     try {
+      // In exam mode, just mark as submitted without AI marking or revealing correctness
+      if (examMode) {
+        onMark(question.id);
+        return;
+      }
+
       // For text input, use AI marking
       if (isTextInput) {
         const { data: result, error } = await supabase.functions.invoke('ai-mark-cleo-question', {
@@ -207,7 +215,8 @@ export const ExamPaperQuestion: React.FC<ExamPaperQuestionProps> = ({
               const isSelected = studentAnswer === option.id;
               
               let className = 'exam-option-row';
-              if (isMarked) {
+              // Only show correct/incorrect styling if NOT in exam mode
+              if (isMarked && !examMode) {
                 if (isSelected && option.isCorrect) {
                   className += ' selected-correct';
                 } else if (isSelected && !option.isCorrect) {
@@ -274,8 +283,8 @@ export const ExamPaperQuestion: React.FC<ExamPaperQuestionProps> = ({
               />
             </div>
 
-            {/* AI Marking Result */}
-            {isMarked && markingResult && (
+            {/* AI Marking Result - Only show if NOT in exam mode */}
+            {isMarked && markingResult && !examMode && (
               <div className="mt-4 p-4 bg-white border border-border rounded-lg shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-lg font-bold">
@@ -427,8 +436,8 @@ export const ExamPaperQuestion: React.FC<ExamPaperQuestionProps> = ({
           </span>
         </div>
 
-        {/* Show correct answer after marking for MCQ */}
-        {isMarked && !isTextInput && feedback && (
+        {/* Show correct answer after marking for MCQ - Only if NOT in exam mode */}
+        {isMarked && !isTextInput && feedback && !examMode && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
