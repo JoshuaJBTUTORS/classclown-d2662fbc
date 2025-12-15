@@ -298,6 +298,7 @@ const AssessmentTake = () => {
             timeRemaining={null}
             hasTimeLimit={false}
             previewMode={isSubmitted}
+            examMode={true}
           />
         </div>
       </main>

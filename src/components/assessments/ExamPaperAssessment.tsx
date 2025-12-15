@@ -49,6 +49,7 @@ interface ExamPaperAssessmentProps {
   timeRemaining?: number | null;
   hasTimeLimit: boolean;
   previewMode?: boolean;
+  examMode?: boolean; // When true, hide all scoring/marking feedback
 }
 
 export const ExamPaperAssessment: React.FC<ExamPaperAssessmentProps> = ({
@@ -65,6 +66,7 @@ export const ExamPaperAssessment: React.FC<ExamPaperAssessmentProps> = ({
   timeRemaining,
   hasTimeLimit,
   previewMode = false,
+  examMode = false,
 }) => {
   const [answeredCount, setAnsweredCount] = useState(0);
 
@@ -223,6 +225,7 @@ export const ExamPaperAssessment: React.FC<ExamPaperAssessmentProps> = ({
             subject={assessment.subject}
             examBoard={assessment.exam_board}
             disabled={previewMode}
+            examMode={examMode}
           />
         ))}
       </div>
