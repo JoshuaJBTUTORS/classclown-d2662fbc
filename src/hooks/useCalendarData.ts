@@ -395,7 +395,7 @@ export const useCalendarData = ({
             }
           }
 
-          // Exam period filter for tutors only - Dec 15-22, 2025: show only 1-1 lessons
+          // Exam period filter for tutors only - Dec 15-22, 2025: show only 1-1 lessons and trial lessons
           if (userRole === 'tutor' && startDate && endDate) {
             const examStart = new Date('2025-12-14T00:00:00');
             const examEnd = new Date('2025-12-22T23:59:59');
@@ -406,10 +406,12 @@ export const useCalendarData = ({
             if (isExamPeriod) {
               filteredData = filteredData.filter(lesson => {
                 const title = (lesson.title || '').toLowerCase();
-                return title.includes('1-1') || 
-                       title.includes('1:1') || 
-                       title.includes('one-to-one') ||
-                       title.includes('1 to 1');
+                const is1to1 = title.includes('1-1') || 
+                               title.includes('1:1') || 
+                               title.includes('one-to-one') ||
+                               title.includes('1 to 1');
+                const isTrial = lesson.lesson_type === 'trial';
+                return is1to1 || isTrial;
               });
             }
           }
