@@ -48,26 +48,6 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
-  // Check if we're in exam period (Dec 14-22, 2025) - temporary change
-  const isExamPeriod = (() => {
-    const now = new Date();
-    const examStart = new Date('2025-12-14T00:00:00');
-    const examEnd = new Date('2025-12-22T23:59:59');
-    return now >= examStart && now <= examEnd;
-  })();
-
-  // Shared exam period room for non-1-1 lessons
-  const EXAM_PERIOD_SHARED_ROOM = 'https://www.thelessonspace.com/space/0593eb31-d478-4e21-97e2-048c731598a1';
-
-  // Check if lesson is a 1-1 lesson based on title
-  const isOneToOneLesson = (() => {
-    if (!lessonTitle) return false;
-    const title = lessonTitle.toLowerCase();
-    return title.includes('1-1') || 
-           title.includes('1:1') || 
-           title.includes('one-to-one') ||
-           title.includes('1 to 1');
-  })();
 
   // Get the appropriate URL based on user role
   const getVideoRoomUrl = () => {
@@ -191,18 +171,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
   const handleOpenInNewTab = () => {
-    // During exam period, non-1-1 lessons go to shared exam room
-    const urlToOpen = (isExamPeriod && !isOneToOneLesson) 
-      ? EXAM_PERIOD_SHARED_ROOM 
-      : videoUrl;
-
-    if (!urlToOpen) {
+    if (!videoUrl) {
       toast.error('Video room URL not available');
       return;
     }
 
     try {
-      window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+      window.open(videoUrl, '_blank', 'noopener,noreferrer');
       toast.success('Opening video room in new tab...');
     } catch (error) {
       console.error('Error opening video room:', error);
@@ -247,49 +222,35 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         </div>
         
         <div className="flex items-center gap-2">
-          {isExamPeriod ? (
-            /* Exam period (Dec 15-22, 2025): Only show "Access your lesson" button */
-            <Button
-              onClick={handleOpenInNewTab}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Access your lesson
-            </Button>
-          ) : (
-            /* Normal: Show both buttons */
-            <>
-              <Button
-                onClick={handleOpenInNewTab}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <ExternalLink className="h-3 w-3" />
-                New Tab
-              </Button>
-              
-              <Button
-                onClick={handleJoinRoom}
-                disabled={isLoading || isJoining}
-                className={`flex items-center gap-2 ${
-                  isTeacherRole 
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
-                    : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
-                } text-white`}
-              >
-                {(isLoading || isJoining) ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Video className="h-4 w-4" />
-                    <Play className="h-3 w-3" />
-                  </>
-                )}
-                {isTeacherRole ? 'Host Room' : 'Join Lesson'}
-              </Button>
-            </>
-          )}
+          <Button
+            onClick={handleOpenInNewTab}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ExternalLink className="h-3 w-3" />
+            New Tab
+          </Button>
+          
+          <Button
+            onClick={handleJoinRoom}
+            disabled={isLoading || isJoining}
+            className={`flex items-center gap-2 ${
+              isTeacherRole 
+                ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
+                : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
+            } text-white`}
+          >
+            {(isLoading || isJoining) ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Video className="h-4 w-4" />
+                <Play className="h-3 w-3" />
+              </>
+            )}
+            {isTeacherRole ? 'Host Room' : 'Join Lesson'}
+          </Button>
         </div>
       </div>
 
