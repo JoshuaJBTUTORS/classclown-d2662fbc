@@ -43,6 +43,21 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Holiday period check - disable reminders until Jan 3rd 2026
+  const holidayCheckDate = new Date();
+  const resumeDate = new Date('2026-01-03T00:00:00Z');
+  if (holidayCheckDate < resumeDate) {
+    console.log('Reminders paused for holiday period until Jan 3rd 2026');
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'Reminders paused for holiday period',
+      paused: true
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
   try {
     console.log('Starting demo imminent reminder check...');
     
