@@ -18,6 +18,21 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Holiday period check - disable reminders until Jan 3rd 2026
+  const now = new Date();
+  const resumeDate = new Date('2026-01-03T00:00:00Z');
+  if (now < resumeDate) {
+    console.log('Reminders paused for holiday period until Jan 3rd 2026');
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'Reminders paused for holiday period',
+      paused: true
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
