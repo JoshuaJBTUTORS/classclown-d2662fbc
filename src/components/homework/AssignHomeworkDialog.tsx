@@ -276,6 +276,18 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
         }
       }
 
+      // Validate session before saving - ensures we have an authenticated user
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        console.error('Session error before homework save:', sessionError);
+        toast.error('Your session has expired. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('Session valid, user ID:', sessionData.session.user.id);
+
       // Prepare the homework data
       const homeworkData = {
         title: data.title,
