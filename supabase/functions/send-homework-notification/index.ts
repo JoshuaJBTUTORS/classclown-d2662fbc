@@ -17,6 +17,81 @@ interface HomeworkNotificationRequest {
   homeworkId: string;
 }
 
+// Generate HMAC token for HeyCleo cross-platform authentication
+async function generateCrossPlatformToken(email: string, secret: string): Promise<string> {
+  const timestamp = Date.now();
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(`${email}:${timestamp}`);
+  
+  const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', key, messageData);
+  const signatureHex = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return btoa(JSON.stringify({ email, timestamp, signature: signatureHex }));
+}
+
+// Send homework to HeyCleo platform
+async function sendHomeworkToHeyCleo(
+  tutorEmail: string,
+  studentEmails: string[],
+  homework: {
+    title: string;
+    description?: string;
+    attachmentUrl?: string;
+    dueDate?: string;
+    subject?: string;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const crossPlatformSecret = Deno.env.get('HEYCLEO_CROSS_PLATFORM_SECRET');
+  
+  if (!crossPlatformSecret) {
+    console.warn('HEYCLEO_CROSS_PLATFORM_SECRET not configured, skipping HeyCleo sync');
+    return { success: false, error: 'Secret not configured' };
+  }
+
+  if (studentEmails.length === 0) {
+    console.log('No student emails to sync to HeyCleo');
+    return { success: true };
+  }
+
+  try {
+    const token = await generateCrossPlatformToken(tutorEmail, crossPlatformSecret);
+    
+    const payload = {
+      token,
+      tutorEmail,
+      studentEmails,
+      pdfUrl: homework.attachmentUrl || null,
+      title: homework.title,
+      description: homework.description || null,
+      subject: homework.subject || null,
+      dueDate: homework.dueDate || null,
+    };
+
+    console.log(`Sending homework to HeyCleo for ${studentEmails.length} students`);
+
+    const response = await fetch('https://vfhftrmneaizgdvngfwe.supabase.co/functions/v1/receive-homework-from-crm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HeyCleo webhook failed: ${response.status} - ${errorText}`);
+      return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+    }
+
+    const result = await response.json();
+    console.log('HeyCleo webhook response:', result);
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending homework to HeyCleo:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -41,7 +116,7 @@ serve(async (req) => {
 
     console.log(`Fetching homework details for ID: ${homeworkId}`);
 
-    // Fetch homework details with lesson and student information
+    // Fetch homework details with lesson, tutor, and student information
     const { data: homeworkData, error: homeworkError } = await supabase
       .from('homework')
       .select(`
@@ -49,7 +124,14 @@ serve(async (req) => {
         lessons!inner (
           id,
           title,
+          subject,
           tutor_id,
+          tutors (
+            id,
+            email,
+            first_name,
+            last_name
+          ),
           lesson_students (
             student:students (
               id,
@@ -87,9 +169,17 @@ serve(async (req) => {
     const emailPromises = [];
     const notificationPromises = [];
 
+    // Collect student emails for HeyCleo
+    const studentEmails: string[] = [];
+
     // Process each student in the lesson
     for (const lessonStudent of homeworkData.lessons.lesson_students) {
       const student = lessonStudent.student;
+      
+      // Collect student email for HeyCleo sync
+      if (student.email) {
+        studentEmails.push(student.email);
+      }
       
       // Send email to student if they have an email
       if (student.email) {
@@ -254,6 +344,27 @@ serve(async (req) => {
 
     console.log(`Email sending complete: ${successCount} successful, ${failureCount} failed`);
 
+    // Send homework to HeyCleo (non-blocking - don't fail if this fails)
+    let heyCleoResult = { success: false, error: 'Not attempted' };
+    const tutorEmail = homeworkData.lessons.tutors?.email;
+    
+    if (tutorEmail && studentEmails.length > 0) {
+      heyCleoResult = await sendHomeworkToHeyCleo(
+        tutorEmail,
+        studentEmails,
+        {
+          title: homeworkData.title,
+          description: homeworkData.description,
+          attachmentUrl: homeworkData.attachment_url,
+          dueDate: homeworkData.due_date,
+          subject: homeworkData.lessons.subject,
+        }
+      );
+      console.log(`HeyCleo sync: ${heyCleoResult.success ? 'success' : 'failed'} - ${heyCleoResult.error || 'OK'}`);
+    } else {
+      console.log(`HeyCleo sync skipped: tutorEmail=${!!tutorEmail}, studentEmails=${studentEmails.length}`);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -261,7 +372,8 @@ serve(async (req) => {
         results: {
           successCount,
           failureCount,
-          totalRecipients: emailPromises.length
+          totalRecipients: emailPromises.length,
+          heyCleoSync: heyCleoResult.success
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
