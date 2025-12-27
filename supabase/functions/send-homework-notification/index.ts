@@ -169,8 +169,8 @@ serve(async (req) => {
     const emailPromises = [];
     const notificationPromises = [];
 
-    // Collect student emails for HeyCleo
-    const studentEmails: string[] = [];
+    // Collect emails for HeyCleo (both student and parent)
+    const heyCleoEmails: string[] = [];
 
     // Process each student in the lesson
     for (const lessonStudent of homeworkData.lessons.lesson_students) {
@@ -178,7 +178,12 @@ serve(async (req) => {
       
       // Collect student email for HeyCleo sync
       if (student.email) {
-        studentEmails.push(student.email);
+        heyCleoEmails.push(student.email);
+      }
+      
+      // Also collect parent email for HeyCleo sync (if different from student)
+      if (student.parent?.email && student.parent.email !== student.email) {
+        heyCleoEmails.push(student.parent.email);
       }
       
       // Send email to student if they have an email
@@ -351,10 +356,11 @@ serve(async (req) => {
     let heyCleoResult = { success: false, error: 'Not attempted' };
     const tutorEmail = homeworkData.lessons.tutors?.email;
     
-    if (tutorEmail && studentEmails.length > 0) {
+    if (tutorEmail && heyCleoEmails.length > 0) {
+      console.log(`HeyCleo sync: sending to ${heyCleoEmails.length} emails (students + parents)`);
       heyCleoResult = await sendHomeworkToHeyCleo(
         tutorEmail,
-        studentEmails,
+        heyCleoEmails,
         {
           title: homeworkData.title,
           description: homeworkData.description,
@@ -365,7 +371,7 @@ serve(async (req) => {
       );
       console.log(`HeyCleo sync: ${heyCleoResult.success ? 'success' : 'failed'} - ${heyCleoResult.error || 'OK'}`);
     } else {
-      console.log(`HeyCleo sync skipped: tutorEmail=${!!tutorEmail}, studentEmails=${studentEmails.length}`);
+      console.log(`HeyCleo sync skipped: tutorEmail=${!!tutorEmail}, heyCleoEmails=${heyCleoEmails.length} (no student or parent emails found)`);
     }
 
     return new Response(
