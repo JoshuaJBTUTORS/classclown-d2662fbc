@@ -278,13 +278,16 @@ serve(async (req) => {
     // Send WhatsApp messages after emails are processed
     const whatsappPromises = [];
     
-    for (const student of homeworkData.lessons.lesson_students) {
+    for (const lessonStudent of homeworkData.lessons.lesson_students) {
+      const student = lessonStudent.student;
+      if (!student) continue;
+      
       // Send WhatsApp to student if they have a phone number
-      if (student.students.phone || student.students.whatsapp_number) {
-        const phoneNumber = student.students.whatsapp_number || student.students.phone;
+      if (student.phone || student.whatsapp_number) {
+        const phoneNumber = student.whatsapp_number || student.phone;
         const whatsappText = WhatsAppTemplates.homeworkNotification(
-          student.students.first_name,
-          student.students.first_name,
+          student.first_name,
+          student.first_name,
           homeworkData.title,
           dueDate
         );
@@ -297,11 +300,11 @@ serve(async (req) => {
       }
 
       // Send WhatsApp to parent if they have a phone number
-      if (student.students.parent && (student.students.parent.phone || student.students.parent.whatsapp_number)) {
-        const phoneNumber = student.students.parent.whatsapp_number || student.students.parent.phone;
+      if (student.parent && (student.parent.phone || student.parent.whatsapp_number)) {
+        const phoneNumber = student.parent.whatsapp_number || student.parent.phone;
         const whatsappText = WhatsAppTemplates.homeworkNotification(
-          `${student.students.parent.first_name} ${student.students.parent.last_name}`,
-          student.students.first_name,
+          `${student.parent.first_name} ${student.parent.last_name}`,
+          student.first_name,
           homeworkData.title,
           dueDate
         );
