@@ -357,7 +357,7 @@ serve(async (req) => {
     const tutorEmail = homeworkData.lessons.tutors?.email;
     
     if (tutorEmail && heyCleoEmails.length > 0) {
-      console.log(`HeyCleo sync: sending to ${heyCleoEmails.length} emails (students + parents)`);
+      console.log(`HeyCleo sync: sending to ${heyCleoEmails.length} emails (students + parents): ${heyCleoEmails.join(', ')}`);
       heyCleoResult = await sendHomeworkToHeyCleo(
         tutorEmail,
         heyCleoEmails,
