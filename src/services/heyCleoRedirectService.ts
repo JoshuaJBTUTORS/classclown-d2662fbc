@@ -38,5 +38,41 @@ export const heyCleoRedirectService = {
       console.error('Error redirecting to HeyCleo:', error);
       toast.error('Failed to connect to HeyCleo');
     }
+  },
+
+  /**
+   * Generate a signed token and redirect user to HeyCleo homework page in a new tab
+   */
+  async redirectToHeyCleoHomework(): Promise<void> {
+    try {
+      // Call edge function to generate signed token
+      const { data, error } = await supabase.functions.invoke('generate-heycleo-token', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Error generating HeyCleo token:', error);
+        toast.error('Failed to connect to HeyCleo');
+        return;
+      }
+
+      if (!data?.token || !data?.email) {
+        console.error('Invalid token response from edge function');
+        toast.error('Failed to generate access token');
+        return;
+      }
+
+      // Construct redirect URL with token, email, and redirect to homework page
+      const redirectUrl = `${HEYCLEO_URL}/auto-login?token=${encodeURIComponent(data.token)}&email=${encodeURIComponent(data.email)}&redirect=${encodeURIComponent('/heycleo/homework')}`;
+      
+      console.log('Opening HeyCleo homework in new tab...');
+      
+      // Open HeyCleo homework page in a new tab
+      window.open(redirectUrl, '_blank');
+
+    } catch (error) {
+      console.error('Error redirecting to HeyCleo homework:', error);
+      toast.error('Failed to open HeyCleo homework');
+    }
   }
 };
