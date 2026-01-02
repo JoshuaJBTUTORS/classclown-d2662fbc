@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import LessonConsentDialog from './LessonConsentDialog';
 import { useStudentJoin } from '@/hooks/useStudentJoin';
+import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
 import { 
   Video,
   Users,
@@ -23,9 +24,12 @@ interface VideoConferenceLinkProps {
   lessonSpaceRoomId?: string | null;
   lessonSpaceSpaceId?: string | null;
   lessonTitle?: string | null;
+  lessonSubject?: string | null;
   className?: string;
   isGroupLesson?: boolean;
   studentCount?: number;
+  hasHomework?: boolean;
+  homeworkId?: string | null;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
@@ -34,9 +38,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   lessonSpaceRoomId,
   lessonSpaceSpaceId,
   lessonTitle,
+  lessonSubject,
   className = "",
   isGroupLesson = false,
-  studentCount = 0
+  studentCount = 0,
+  hasHomework = false,
+  homeworkId = null
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConsentDialog, setShowConsentDialog] = useState(false);
@@ -48,6 +55,25 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
+
+  // Check if lesson is GCSE or Year 11 (matches edge function pattern)
+  const isGcseOrYear11Lesson = () => {
+    const title = (lessonTitle || '').toLowerCase();
+    const subject = (lessonSubject || '').toLowerCase();
+    return title.includes('gcse') || title.includes('year 11') ||
+           subject.includes('gcse') || subject.includes('year 11');
+  };
+
+  // Handle homework button click
+  const handleHomeworkClick = async () => {
+    if (isGcseOrYear11Lesson()) {
+      // Open HeyCleo homework page in new tab with SSO
+      await heyCleoRedirectService.redirectToHeyCleoHomework();
+    } else {
+      // Navigate to internal homework page
+      navigate('/homework');
+    }
+  };
 
 
   // Get the appropriate URL based on user role
@@ -234,12 +260,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
           </Button>
           
           {/* Homework button - shows when homework has been submitted */}
-          {isTeacherRole && (
+          {hasHomework && (
             <Button
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
-              onClick={() => {}}
+              onClick={handleHomeworkClick}
             >
               <FileText className="h-3 w-3" />
               Homework
