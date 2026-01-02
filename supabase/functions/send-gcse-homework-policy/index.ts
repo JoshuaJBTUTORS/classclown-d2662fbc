@@ -221,7 +221,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         try {
           await sendEmailWithRetry({
-            from: "JB Tutors <hello@jb-tutors.com>",
+            from: "JB Tutors <enquiries@classbeyondacademy.io>",
             to: [testEmail],
             subject: "Important Update: GCSE Homework Expectations for 2026",
             html,
@@ -269,7 +269,7 @@ Britney Lawrence`;
           );
 
           await sendEmailWithRetry({
-            from: "JB Tutors <hello@jb-tutors.com>",
+            from: "JB Tutors <enquiries@classbeyondacademy.io>",
             to: [contact.email],
             subject: "Important Update: GCSE Homework Expectations for 2026",
             html,
