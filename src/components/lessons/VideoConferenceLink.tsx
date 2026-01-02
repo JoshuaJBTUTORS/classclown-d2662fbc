@@ -264,7 +264,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-pastel-lavender-100 border-pastel-lavender-200 hover:bg-pastel-lavender-200"
               onClick={handleHomeworkClick}
             >
               <FileText className="h-3 w-3" />
