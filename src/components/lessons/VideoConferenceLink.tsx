@@ -218,80 +218,95 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
 
   return (
     <>
-      <div className={`${className} flex items-center justify-between border rounded-lg p-4 bg-gray-50`}>
-        <div>
-          <h3 className="font-medium text-sm">LessonSpace Video Room</h3>
-          <p className="text-sm text-muted-foreground">
-            {isTeacherRole ? 'Manage your interactive video classroom' : 'Join your interactive video classroom'}
-          </p>
-          {isGroupLesson && (
-            <p className="text-xs text-muted-foreground mt-1">
-              <Users className="h-3 w-3 inline-block mr-1" />
-              Group lesson ({studentCount} students)
+      <div className={`${className} space-y-3`}>
+        {/* Video Conference Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border rounded-lg p-4 bg-muted/30 gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-sm">LessonSpace Video Room</h3>
+            <p className="text-sm text-muted-foreground">
+              {isTeacherRole ? 'Manage your interactive video classroom' : 'Join your interactive video classroom'}
             </p>
-          )}
-          {isTeacherRole && lessonSpaceRoomId && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Room ID: {lessonSpaceRoomId}
-            </p>
-          )}
-          {lessonSpaceSpaceId && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Space ID: {lessonSpaceSpaceId}
-            </p>
-          )}
-          {!isTeacherRole && (
-            <p className="text-xs text-green-600 mt-1">
-              <UserCheck className="h-3 w-3 inline-block mr-1" />
-              Student access - click to join
-            </p>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleOpenInNewTab}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <ExternalLink className="h-3 w-3" />
-            New Tab
-          </Button>
+            {isGroupLesson && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <Users className="h-3 w-3 inline-block mr-1" />
+                Group lesson ({studentCount} students)
+              </p>
+            )}
+            {isTeacherRole && lessonSpaceRoomId && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Room ID: {lessonSpaceRoomId}
+              </p>
+            )}
+            {lessonSpaceSpaceId && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Space ID: {lessonSpaceSpaceId}
+              </p>
+            )}
+            {!isTeacherRole && (
+              <p className="text-xs text-green-600 mt-1">
+                <UserCheck className="h-3 w-3 inline-block mr-1" />
+                Student access - click to join
+              </p>
+            )}
+          </div>
           
-          {/* Homework button - shows when homework has been submitted */}
-          {hasHomework && (
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <Button
+              onClick={handleOpenInNewTab}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-3 w-3" />
+              New Tab
+            </Button>
+            
+            <Button
+              onClick={handleJoinRoom}
+              disabled={isLoading || isJoining}
+              className={`flex items-center gap-2 ${
+                isTeacherRole 
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
+                  : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
+              } text-white`}
+            >
+              {(isLoading || isJoining) ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Video className="h-4 w-4" />
+                  <Play className="h-3 w-3" />
+                </>
+              )}
+              {isTeacherRole ? 'Host Room' : 'Join Lesson'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Homework Section - separate card below video */}
+        {hasHomework && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border rounded-lg p-4 bg-pastel-lavender-50 gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-sm flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Homework
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Access your homework for this lesson
+              </p>
+            </div>
+            
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 bg-pastel-lavender-100 border-pastel-lavender-200 hover:bg-pastel-lavender-200"
+              className="flex items-center gap-2 bg-pastel-lavender-100 border-pastel-lavender-200 hover:bg-pastel-lavender-200 w-full sm:w-auto justify-center"
               onClick={handleHomeworkClick}
             >
               <FileText className="h-3 w-3" />
-              Homework
+              View Homework
             </Button>
-          )}
-          
-          <Button
-            onClick={handleJoinRoom}
-            disabled={isLoading || isJoining}
-            className={`flex items-center gap-2 ${
-              isTeacherRole 
-                ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
-                : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
-            } text-white`}
-          >
-            {(isLoading || isJoining) ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <Video className="h-4 w-4" />
-                <Play className="h-3 w-3" />
-              </>
-            )}
-            {isTeacherRole ? 'Host Room' : 'Join Lesson'}
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Consent Dialog for Students */}
