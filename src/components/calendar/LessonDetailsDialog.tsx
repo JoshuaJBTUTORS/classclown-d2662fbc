@@ -154,15 +154,20 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   };
   const checkHomeworkStatus = async (lessonId: string) => {
     try {
-      const {
-        data: homework
-      } = await supabase.from('homework').select('*').eq('lesson_id', lessonId).maybeSingle();
+      const { data: homeworkList } = await supabase
+        .from('homework')
+        .select('*')
+        .eq('lesson_id', lessonId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      const homework = homeworkList?.[0] || null;
       setHomeworkStatus({
         exists: !!homework,
         homework: homework
       });
     } catch (error) {
-      // No homework found is expected, not an error
+      console.error('Error checking homework status:', error);
       setHomeworkStatus({
         exists: false,
         homework: null
