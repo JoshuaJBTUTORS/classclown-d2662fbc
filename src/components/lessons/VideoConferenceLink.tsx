@@ -13,7 +13,8 @@ import {
   Loader2,
   ExternalLink,
   Play,
-  UserCheck
+  UserCheck,
+  FileText
 } from 'lucide-react';
 
 interface VideoConferenceLinkProps {
@@ -231,6 +232,19 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
             <ExternalLink className="h-3 w-3" />
             New Tab
           </Button>
+          
+          {/* Homework button - shows when homework has been submitted */}
+          {isTeacherRole && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => {}}
+            >
+              <FileText className="h-3 w-3" />
+              Homework
+            </Button>
+          )}
           
           <Button
             onClick={handleJoinRoom}
