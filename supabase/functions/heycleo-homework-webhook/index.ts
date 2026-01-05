@@ -302,10 +302,18 @@ serve(async (req) => {
     }
 
     // Method 2: Title + Student matching (fallback)
+    // Try with ALL students matching this email (handles duplicates)
     if (!homework && payload.homework_title) {
       console.log("Attempting homework lookup by title:", payload.homework_title);
       
-      // Find homework assigned to this student via lesson_students
+      // Get all student IDs for this email to handle duplicates
+      const allStudentIds = students.map(s => s.id);
+      console.log("Searching for homework assigned to any of student IDs:", allStudentIds);
+      
+      // Use wildcard matching to handle trailing/leading whitespace in DB
+      const titlePattern = `%${payload.homework_title.trim()}%`;
+      
+      // Find homework assigned to ANY of these students via lesson_students
       // Join: homework -> lessons -> lesson_students -> students
       const { data: matchedHomework, error: matchError } = await supabase
         .from("homework")
@@ -321,8 +329,8 @@ serve(async (req) => {
             )
           )
         `)
-        .ilike("title", payload.homework_title)
-        .eq("lessons.lesson_students.student_id", student.id)
+        .ilike("title", titlePattern)
+        .in("lessons.lesson_students.student_id", allStudentIds)
         .order("created_at", { ascending: false })
         .limit(10);
 
