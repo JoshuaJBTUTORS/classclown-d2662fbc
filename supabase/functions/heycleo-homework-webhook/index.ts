@@ -38,7 +38,7 @@ interface HomeworkCompletionPayload {
   homework_id: string;
   student_email: string;
   user_id?: string;
-  conversation_id: string;
+  conversation_id?: string;
   completed_at: string;
   time_spent_seconds?: number;
   total_questions: number;
@@ -53,6 +53,21 @@ interface HomeworkCompletionPayload {
     time_taken_seconds?: number;
     step_id?: string;
   }>;
+}
+
+function asNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const s = value.trim();
+  return s.length ? s : undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
 }
 
 serve(async (req) => {
@@ -71,12 +86,70 @@ serve(async (req) => {
       );
     }
 
-    // Parse the request body
-    const payload: HomeworkCompletionPayload = await req.json();
+    // Parse + normalize the request body (support snake_case and camelCase keys)
+    const raw = await req.json();
+    const rawPayload = (raw && typeof raw === "object")
+      ? (raw as Record<string, unknown>)
+      : ({} as Record<string, unknown>);
+
+    const incomingSecret =
+      asNonEmptyString(rawPayload.secret) ||
+      asNonEmptyString(req.headers.get("x-heycleo-secret")) ||
+      asNonEmptyString(req.headers.get("x-webhook-secret")) ||
+      "";
+
+    const payload: HomeworkCompletionPayload = {
+      secret: incomingSecret,
+      homework_id:
+        asNonEmptyString(rawPayload.homework_id) ||
+        asNonEmptyString(rawPayload.homeworkId) ||
+        "",
+      student_email:
+        asNonEmptyString(rawPayload.student_email) ||
+        asNonEmptyString(rawPayload.studentEmail) ||
+        "",
+      user_id:
+        asNonEmptyString(rawPayload.user_id) ||
+        asNonEmptyString(rawPayload.userId),
+      conversation_id:
+        asNonEmptyString(rawPayload.conversation_id) ||
+        asNonEmptyString(rawPayload.conversationId) ||
+        asNonEmptyString(rawPayload.conversationID),
+      completed_at:
+        asNonEmptyString(rawPayload.completed_at) ||
+        asNonEmptyString(rawPayload.completedAt) ||
+        "",
+      time_spent_seconds:
+        asNumber(rawPayload.time_spent_seconds) ??
+        asNumber(rawPayload.timeSpentSeconds),
+      total_questions:
+        asNumber(rawPayload.total_questions) ??
+        asNumber(rawPayload.totalQuestions) ??
+        0,
+      correct_answers:
+        asNumber(rawPayload.correct_answers) ??
+        asNumber(rawPayload.correctAnswers) ??
+        0,
+      incorrect_answers:
+        asNumber(rawPayload.incorrect_answers) ??
+        asNumber(rawPayload.incorrectAnswers) ??
+        0,
+      accuracy_percentage:
+        asNumber(rawPayload.accuracy_percentage) ??
+        asNumber(rawPayload.accuracyPercentage) ??
+        0,
+      questions: Array.isArray(rawPayload.questions)
+        ? (rawPayload.questions as HomeworkCompletionPayload["questions"])
+        : undefined,
+    };
+
+    const payloadKeys = Object.keys(rawPayload);
     console.log("Received homework completion webhook:", {
+      payload_keys: payloadKeys,
       homework_id: payload.homework_id,
       student_email: payload.student_email,
       conversation_id: payload.conversation_id,
+      completed_at: payload.completed_at,
       total_questions: payload.total_questions,
       accuracy_percentage: payload.accuracy_percentage,
     });
@@ -99,18 +172,26 @@ serve(async (req) => {
       );
     }
 
-    // Validate required fields
-    if (!payload.homework_id || !payload.student_email || !payload.conversation_id || !payload.completed_at) {
+    // Validate required fields (conversation_id is optional)
+    const missing: string[] = [];
+    if (!payload.homework_id) missing.push("homework_id");
+    if (!payload.student_email) missing.push("student_email");
+    if (!payload.completed_at) missing.push("completed_at");
+
+    if (missing.length) {
       console.error("Missing required fields:", {
+        missing,
+        payloadKeys,
         hasHomeworkId: !!payload.homework_id,
         hasStudentEmail: !!payload.student_email,
         hasConversationId: !!payload.conversation_id,
         hasCompletedAt: !!payload.completed_at,
       });
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Missing required fields: homework_id, student_email, conversation_id, completed_at" 
+        JSON.stringify({
+          success: false,
+          error: `Missing required fields: ${missing.join(", ")}`,
+          missing,
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -121,15 +202,17 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const studentEmail = payload.student_email.trim().toLowerCase();
+
     // Look up the student by email
     const { data: student, error: studentError } = await supabase
       .from("students")
       .select("id, first_name, last_name")
-      .eq("email", payload.student_email)
+      .eq("email", studentEmail)
       .single();
 
     if (studentError || !student) {
-      console.error("Student not found:", payload.student_email, studentError);
+      console.error("Student not found:", studentEmail, studentError);
       return new Response(
         JSON.stringify({ success: false, error: "Student not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -160,7 +243,7 @@ serve(async (req) => {
       homework_id: payload.homework_id,
       student_id: student.id,
       heycleo_user_id: payload.user_id || null,
-      conversation_id: payload.conversation_id,
+      conversation_id: payload.conversation_id || null,
       completed_at: payload.completed_at,
       time_spent_seconds: payload.time_spent_seconds || null,
       total_questions: payload.total_questions || 0,
@@ -168,7 +251,7 @@ serve(async (req) => {
       incorrect_answers: payload.incorrect_answers || 0,
       accuracy_percentage: payload.accuracy_percentage || 0,
       question_details: payload.questions || null,
-      raw_payload: payload,
+      raw_payload: rawPayload,
       received_at: new Date().toISOString(),
     };
 
@@ -196,7 +279,7 @@ serve(async (req) => {
       .select("id")
       .eq("homework_id", payload.homework_id)
       .eq("student_id", student.id)
-      .single();
+      .maybeSingle();
 
     if (existingSubmission) {
       // Update existing submission with score
@@ -229,7 +312,9 @@ serve(async (req) => {
           percentage_score: payload.accuracy_percentage,
           grade: grade,
           submitted_at: payload.completed_at,
-          submission_text: `Completed via HeyCleo conversation: ${payload.conversation_id}`,
+          submission_text: payload.conversation_id
+            ? `Completed via HeyCleo conversation: ${payload.conversation_id}`
+            : "Completed via HeyCleo (conversation_id not provided)",
           feedback: `Completed via HeyCleo. Score: ${payload.correct_answers}/${payload.total_questions} (${payload.accuracy_percentage}%)`,
         });
 
