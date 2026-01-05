@@ -204,20 +204,40 @@ serve(async (req) => {
 
     const studentEmail = payload.student_email.trim().toLowerCase();
 
-    // Look up the student by email
-    const { data: student, error: studentError } = await supabase
+    // Look up the student by email - handle duplicates gracefully by taking most recent
+    const { data: students, error: studentError } = await supabase
       .from("students")
-      .select("id, first_name, last_name")
+      .select("id, first_name, last_name, email, created_at")
       .eq("email", studentEmail)
-      .single();
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-    if (studentError || !student) {
-      console.error("Student not found:", studentEmail, studentError);
+    if (studentError) {
+      console.error("Student lookup error:", studentEmail, studentError);
       return new Response(
-        JSON.stringify({ success: false, error: "Student not found" }),
+        JSON.stringify({ success: false, error: "Student lookup failed", details: studentError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!students || students.length === 0) {
+      console.error("Student not found:", studentEmail);
+      return new Response(
+        JSON.stringify({ success: false, error: "Student not found", details: `No student with email: ${studentEmail}` }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Warn if there are duplicate students with same email
+    if (students.length > 1) {
+      console.warn("Multiple students found with same email - using most recent:", {
+        email: studentEmail,
+        count: students.length,
+        studentIds: students.map(s => s.id),
+      });
+    }
+
+    const student = students[0];
 
     console.log("Found student:", student.id, student.first_name, student.last_name);
 
