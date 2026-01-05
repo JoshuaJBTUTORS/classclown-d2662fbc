@@ -12,17 +12,28 @@ const corsHeaders = {
  * Expected Payload from HeyCleo:
  * {
  *   secret: string;              // Must match HEYCLEO_CROSS_PLATFORM_SECRET
- *   homework_id: string;         // UUID of homework in Class Beyond
+ *   
+ *   // Primary lookup (optional - use if available)
+ *   homework_id?: string;        // UUID of homework in Class Beyond
+ *   
+ *   // Alternative lookup fields (used when homework_id not available)
+ *   homework_title?: string;     // Title of the homework assignment
+ *   due_date?: string;           // Due date for disambiguation
+ *   subject?: string;            // Subject for disambiguation
+ *   
+ *   // Required fields
  *   student_email: string;       // Student's email to match
- *   user_id?: string;            // HeyCleo user UUID (optional)
- *   conversation_id: string;     // HeyCleo conversation UUID
  *   completed_at: string;        // ISO timestamp
- *   time_spent_seconds?: number; // Total time spent (optional)
+ *   
+ *   // Optional fields
+ *   user_id?: string;            // HeyCleo user UUID
+ *   conversation_id?: string;    // HeyCleo conversation UUID
+ *   time_spent_seconds?: number; // Total time spent
  *   total_questions: number;
  *   correct_answers: number;
  *   incorrect_answers: number;
  *   accuracy_percentage: number;
- *   questions?: Array<{          // Detailed question breakdown (optional)
+ *   questions?: Array<{          // Detailed question breakdown
  *     question_id: string;
  *     question_text: string;
  *     answer_text: string;
@@ -35,11 +46,18 @@ const corsHeaders = {
 
 interface HomeworkCompletionPayload {
   secret: string;
-  homework_id: string;
+  // Primary lookup
+  homework_id?: string;
+  // Alternative lookup fields
+  homework_title?: string;
+  due_date?: string;
+  subject?: string;
+  // Required fields
   student_email: string;
+  completed_at: string;
+  // Optional fields
   user_id?: string;
   conversation_id?: string;
-  completed_at: string;
   time_spent_seconds?: number;
   total_questions: number;
   correct_answers: number;
@@ -100,14 +118,30 @@ serve(async (req) => {
 
     const payload: HomeworkCompletionPayload = {
       secret: incomingSecret,
+      // Primary lookup - now optional
       homework_id:
         asNonEmptyString(rawPayload.homework_id) ||
-        asNonEmptyString(rawPayload.homeworkId) ||
-        "",
+        asNonEmptyString(rawPayload.homeworkId),
+      // Alternative lookup fields
+      homework_title:
+        asNonEmptyString(rawPayload.homework_title) ||
+        asNonEmptyString(rawPayload.homeworkTitle) ||
+        asNonEmptyString(rawPayload.title),
+      due_date:
+        asNonEmptyString(rawPayload.due_date) ||
+        asNonEmptyString(rawPayload.dueDate),
+      subject:
+        asNonEmptyString(rawPayload.subject),
+      // Required fields
       student_email:
         asNonEmptyString(rawPayload.student_email) ||
         asNonEmptyString(rawPayload.studentEmail) ||
         "",
+      completed_at:
+        asNonEmptyString(rawPayload.completed_at) ||
+        asNonEmptyString(rawPayload.completedAt) ||
+        "",
+      // Optional fields
       user_id:
         asNonEmptyString(rawPayload.user_id) ||
         asNonEmptyString(rawPayload.userId),
@@ -115,10 +149,6 @@ serve(async (req) => {
         asNonEmptyString(rawPayload.conversation_id) ||
         asNonEmptyString(rawPayload.conversationId) ||
         asNonEmptyString(rawPayload.conversationID),
-      completed_at:
-        asNonEmptyString(rawPayload.completed_at) ||
-        asNonEmptyString(rawPayload.completedAt) ||
-        "",
       time_spent_seconds:
         asNumber(rawPayload.time_spent_seconds) ??
         asNumber(rawPayload.timeSpentSeconds),
@@ -146,7 +176,10 @@ serve(async (req) => {
     const payloadKeys = Object.keys(rawPayload);
     console.log("Received homework completion webhook:", {
       payload_keys: payloadKeys,
-      homework_id: payload.homework_id,
+      homework_id: payload.homework_id || "(not provided)",
+      homework_title: payload.homework_title || "(not provided)",
+      due_date: payload.due_date || "(not provided)",
+      subject: payload.subject || "(not provided)",
       student_email: payload.student_email,
       conversation_id: payload.conversation_id,
       completed_at: payload.completed_at,
@@ -172,17 +205,23 @@ serve(async (req) => {
       );
     }
 
-    // Validate required fields (conversation_id is optional)
+    // Validate required fields
+    // homework_id is now optional - we can match by title instead
     const missing: string[] = [];
-    if (!payload.homework_id) missing.push("homework_id");
     if (!payload.student_email) missing.push("student_email");
     if (!payload.completed_at) missing.push("completed_at");
+    
+    // Need either homework_id OR homework_title for matching
+    if (!payload.homework_id && !payload.homework_title) {
+      missing.push("homework_id or homework_title");
+    }
 
     if (missing.length) {
       console.error("Missing required fields:", {
         missing,
         payloadKeys,
         hasHomeworkId: !!payload.homework_id,
+        hasHomeworkTitle: !!payload.homework_title,
         hasStudentEmail: !!payload.student_email,
         hasConversationId: !!payload.conversation_id,
         hasCompletedAt: !!payload.completed_at,
@@ -238,29 +277,126 @@ serve(async (req) => {
     }
 
     const student = students[0];
-
     console.log("Found student:", student.id, student.first_name, student.last_name);
 
-    // Validate the homework exists
-    const { data: homework, error: homeworkError } = await supabase
-      .from("homework")
-      .select("id, title, lesson_id")
-      .eq("id", payload.homework_id)
-      .single();
+    // Find the homework - try by ID first, then fall back to title matching
+    let homework: { id: string; title: string; lesson_id: string } | null = null;
+    let matchMethod = "";
 
-    if (homeworkError || !homework) {
-      console.error("Homework not found:", payload.homework_id, homeworkError);
+    // Method 1: Direct ID lookup (preferred)
+    if (payload.homework_id) {
+      console.log("Attempting homework lookup by ID:", payload.homework_id);
+      const { data: homeworkById, error: homeworkError } = await supabase
+        .from("homework")
+        .select("id, title, lesson_id")
+        .eq("id", payload.homework_id)
+        .single();
+
+      if (!homeworkError && homeworkById) {
+        homework = homeworkById;
+        matchMethod = "id";
+        console.log("Found homework by ID:", homework.id, homework.title);
+      } else {
+        console.warn("Homework not found by ID, will try title matching:", payload.homework_id, homeworkError?.message);
+      }
+    }
+
+    // Method 2: Title + Student matching (fallback)
+    if (!homework && payload.homework_title) {
+      console.log("Attempting homework lookup by title:", payload.homework_title);
+      
+      // Find homework assigned to this student via lesson_students
+      // Join: homework -> lessons -> lesson_students -> students
+      const { data: matchedHomework, error: matchError } = await supabase
+        .from("homework")
+        .select(`
+          id,
+          title,
+          lesson_id,
+          due_date,
+          lessons!inner (
+            id,
+            lesson_students!inner (
+              student_id
+            )
+          )
+        `)
+        .ilike("title", payload.homework_title)
+        .eq("lessons.lesson_students.student_id", student.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (matchError) {
+        console.error("Homework title search error:", matchError);
+      } else if (matchedHomework && matchedHomework.length > 0) {
+        // If we have due_date, try to find exact match first
+        if (payload.due_date) {
+          const payloadDueDate = new Date(payload.due_date).toISOString().split("T")[0];
+          const exactMatch = matchedHomework.find(h => {
+            if (!h.due_date) return false;
+            const homeworkDueDate = new Date(h.due_date).toISOString().split("T")[0];
+            return homeworkDueDate === payloadDueDate;
+          });
+          if (exactMatch) {
+            homework = { id: exactMatch.id, title: exactMatch.title, lesson_id: exactMatch.lesson_id };
+            matchMethod = "title+due_date";
+            console.log("Found homework by title + due date:", homework.id, homework.title);
+          }
+        }
+        
+        // Otherwise take the most recent match
+        if (!homework) {
+          const firstMatch = matchedHomework[0];
+          homework = { id: firstMatch.id, title: firstMatch.title, lesson_id: firstMatch.lesson_id };
+          matchMethod = "title";
+          if (matchedHomework.length > 1) {
+            console.warn("Multiple homework matches found by title, using most recent:", {
+              title: payload.homework_title,
+              matchCount: matchedHomework.length,
+              selectedId: homework.id,
+              allIds: matchedHomework.map(h => h.id),
+            });
+          } else {
+            console.log("Found homework by title:", homework.id, homework.title);
+          }
+        }
+      } else {
+        console.warn("No homework found by title for this student:", payload.homework_title);
+      }
+    }
+
+    // If still no homework found, return error
+    if (!homework) {
+      const errorDetails = payload.homework_id
+        ? `No homework with ID: ${payload.homework_id}`
+        : `No homework with title "${payload.homework_title}" assigned to student ${studentEmail}`;
+      
+      console.error("Homework not found:", {
+        homework_id: payload.homework_id,
+        homework_title: payload.homework_title,
+        student_id: student.id,
+        student_email: studentEmail,
+      });
+      
       return new Response(
-        JSON.stringify({ success: false, error: "Homework not found" }),
+        JSON.stringify({ 
+          success: false, 
+          error: "Homework not found",
+          details: errorDetails,
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Found homework:", homework.id, homework.title);
+    console.log("Homework matched successfully:", {
+      id: homework.id,
+      title: homework.title,
+      matchMethod,
+    });
 
     // Insert or update the completion record
     const completionData = {
-      homework_id: payload.homework_id,
+      homework_id: homework.id,
       student_id: student.id,
       heycleo_user_id: payload.user_id || null,
       conversation_id: payload.conversation_id || null,
@@ -297,7 +433,7 @@ serve(async (req) => {
     const { data: existingSubmission } = await supabase
       .from("homework_submissions")
       .select("id")
-      .eq("homework_id", payload.homework_id)
+      .eq("homework_id", homework.id)
       .eq("student_id", student.id)
       .maybeSingle();
 
@@ -326,7 +462,7 @@ serve(async (req) => {
       const { error: insertError } = await supabase
         .from("homework_submissions")
         .insert({
-          homework_id: payload.homework_id,
+          homework_id: homework.id,
           student_id: student.id,
           status: "graded",
           percentage_score: payload.accuracy_percentage,
@@ -345,7 +481,7 @@ serve(async (req) => {
       }
     }
 
-    // Return success response
+    // Return success response with matched homework_id (so HeyCleo can cache it)
     return new Response(
       JSON.stringify({
         success: true,
@@ -354,8 +490,9 @@ serve(async (req) => {
           completion_id: completion.id,
           student_id: student.id,
           student_name: `${student.first_name} ${student.last_name}`,
-          homework_id: payload.homework_id,
+          homework_id: homework.id,
           homework_title: homework.title,
+          match_method: matchMethod,
           accuracy_percentage: payload.accuracy_percentage,
           recorded_at: completion.received_at,
         },
