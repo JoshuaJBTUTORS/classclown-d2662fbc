@@ -1939,6 +1939,78 @@ export type Database = {
           },
         ]
       }
+      heycleo_homework_completions: {
+        Row: {
+          accuracy_percentage: number | null
+          completed_at: string
+          conversation_id: string | null
+          correct_answers: number | null
+          created_at: string | null
+          heycleo_user_id: string | null
+          homework_id: string | null
+          id: string
+          incorrect_answers: number | null
+          question_details: Json | null
+          raw_payload: Json | null
+          received_at: string | null
+          student_id: number | null
+          time_spent_seconds: number | null
+          total_questions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy_percentage?: number | null
+          completed_at: string
+          conversation_id?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          heycleo_user_id?: string | null
+          homework_id?: string | null
+          id?: string
+          incorrect_answers?: number | null
+          question_details?: Json | null
+          raw_payload?: Json | null
+          received_at?: string | null
+          student_id?: number | null
+          time_spent_seconds?: number | null
+          total_questions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy_percentage?: number | null
+          completed_at?: string
+          conversation_id?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          heycleo_user_id?: string | null
+          homework_id?: string | null
+          id?: string
+          incorrect_answers?: number | null
+          question_details?: Json | null
+          raw_payload?: Json | null
+          received_at?: string | null
+          student_id?: number | null
+          time_spent_seconds?: number | null
+          total_questions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "heycleo_homework_completions_homework_id_fkey"
+            columns: ["homework_id"]
+            isOneToOne: false
+            referencedRelation: "homework"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heycleo_homework_completions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homework: {
         Row: {
           attachment_type: string | null
