@@ -429,7 +429,39 @@ serve(async (req) => {
 
     console.log("Saved completion record:", completion.id);
 
-    // Also update the homework_submissions table if a submission exists
+    // Build detailed feedback for tutors
+    const grade = getGradeFromPercentage(payload.accuracy_percentage);
+    const timeSpentMinutes = payload.time_spent_seconds 
+      ? Math.round(payload.time_spent_seconds / 60) 
+      : null;
+    
+    let feedback = `## HeyCleo AI Tutor Results\n\n`;
+    feedback += `**Score:** ${payload.correct_answers}/${payload.total_questions} (${payload.accuracy_percentage}%)\n`;
+    feedback += `**Grade:** ${grade}\n`;
+    if (timeSpentMinutes !== null) {
+      feedback += `**Time Spent:** ${timeSpentMinutes} minute${timeSpentMinutes !== 1 ? 's' : ''}\n`;
+    }
+    feedback += `**Completed:** ${new Date(payload.completed_at).toLocaleString('en-GB')}\n`;
+    
+    // Add question breakdown if available
+    if (payload.questions && payload.questions.length > 0) {
+      feedback += `\n### Question Breakdown\n\n`;
+      payload.questions.forEach((q, index) => {
+        const status = q.is_correct ? '✓' : '✗';
+        feedback += `${index + 1}. ${status} ${q.question_text}\n`;
+        feedback += `   Answer: ${q.answer_text}\n`;
+        if (q.time_taken_seconds) {
+          feedback += `   Time: ${q.time_taken_seconds}s\n`;
+        }
+        feedback += `\n`;
+      });
+    }
+    
+    if (payload.conversation_id) {
+      feedback += `\n---\n*Session ID: ${payload.conversation_id}*`;
+    }
+
+    // Create or update homework_submissions table for analytics tracking
     const { data: existingSubmission } = await supabase
       .from("homework_submissions")
       .select("id")
@@ -437,18 +469,21 @@ serve(async (req) => {
       .eq("student_id", student.id)
       .maybeSingle();
 
+    const submissionData = {
+      status: "graded",
+      percentage_score: payload.accuracy_percentage,
+      grade: grade,
+      submitted_at: payload.completed_at,
+      feedback: feedback,
+      submission_text: payload.conversation_id
+        ? `Completed via HeyCleo AI Tutor (Session: ${payload.conversation_id})`
+        : "Completed via HeyCleo AI Tutor",
+    };
+
     if (existingSubmission) {
-      // Update existing submission with score
-      const grade = getGradeFromPercentage(payload.accuracy_percentage);
       const { error: updateError } = await supabase
         .from("homework_submissions")
-        .update({
-          status: "graded",
-          percentage_score: payload.accuracy_percentage,
-          grade: grade,
-          submitted_at: payload.completed_at,
-          feedback: `Completed via HeyCleo. Score: ${payload.correct_answers}/${payload.total_questions} (${payload.accuracy_percentage}%)`,
-        })
+        .update(submissionData)
         .eq("id", existingSubmission.id);
 
       if (updateError) {
@@ -457,22 +492,15 @@ serve(async (req) => {
         console.log("Updated homework submission:", existingSubmission.id);
       }
     } else {
-      // Create new submission
-      const grade = getGradeFromPercentage(payload.accuracy_percentage);
-      const { error: insertError } = await supabase
+      const { data: newSubmission, error: insertError } = await supabase
         .from("homework_submissions")
         .insert({
           homework_id: homework.id,
           student_id: student.id,
-          status: "graded",
-          percentage_score: payload.accuracy_percentage,
-          grade: grade,
-          submitted_at: payload.completed_at,
-          submission_text: payload.conversation_id
-            ? `Completed via HeyCleo conversation: ${payload.conversation_id}`
-            : "Completed via HeyCleo (conversation_id not provided)",
-          feedback: `Completed via HeyCleo. Score: ${payload.correct_answers}/${payload.total_questions} (${payload.accuracy_percentage}%)`,
-        });
+          ...submissionData,
+        })
+        .select("id")
+        .single();
 
       if (insertError) {
         console.error("Failed to create homework submission:", insertError);
