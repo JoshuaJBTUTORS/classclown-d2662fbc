@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,85 +8,187 @@ const corsHeaders = {
 };
 
 /**
- * HeyCleo Homework Webhook Receiver
+ * HeyCleo Overdue Homework Reminder Webhook
  * 
  * Expected Payload from HeyCleo:
  * {
- *   secret: string;              // Must match HEYCLEO_CROSS_PLATFORM_SECRET
- *   
- *   // Primary lookup (optional - use if available)
- *   homework_id?: string;        // UUID of homework in Class Beyond
- *   
- *   // Alternative lookup fields (used when homework_id not available)
- *   homework_title?: string;     // Title of the homework assignment
- *   due_date?: string;           // Due date for disambiguation
- *   subject?: string;            // Subject for disambiguation
- *   
- *   // Required fields
- *   student_email: string;       // Student's email to match
- *   completed_at: string;        // ISO timestamp
- *   
- *   // Optional fields
- *   user_id?: string;            // HeyCleo user UUID
- *   conversation_id?: string;    // HeyCleo conversation UUID
- *   time_spent_seconds?: number; // Total time spent
- *   total_questions: number;
- *   correct_answers: number;
- *   incorrect_answers: number;
- *   accuracy_percentage: number;
- *   questions?: Array<{          // Detailed question breakdown
- *     question_id: string;
- *     question_text: string;
- *     answer_text: string;
- *     is_correct: boolean;
- *     time_taken_seconds?: number;
- *     step_id?: string;
- *   }>;
+ *   secret: string;           // Must match HEYCLEO_CROSS_PLATFORM_SECRET
+ *   student_name: string;     // Student's name
+ *   student_email: string;    // Student's email
+ *   homework_title: string;   // Title of the overdue homework
  * }
  */
 
-interface HomeworkCompletionPayload {
+interface OverdueHomeworkPayload {
   secret: string;
-  // Primary lookup
-  homework_id?: string;
-  // Alternative lookup fields
-  homework_title?: string;
-  due_date?: string;
-  subject?: string;
-  // Required fields
+  student_name: string;
   student_email: string;
-  completed_at: string;
-  // Optional fields
-  user_id?: string;
-  conversation_id?: string;
-  time_spent_seconds?: number;
-  total_questions: number;
-  correct_answers: number;
-  incorrect_answers: number;
-  accuracy_percentage: number;
-  questions?: Array<{
-    question_id: string;
-    question_text: string;
-    answer_text: string;
-    is_correct: boolean;
-    time_taken_seconds?: number;
-    step_id?: string;
-  }>;
+  homework_title: string;
 }
 
-function asNonEmptyString(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const s = value.trim();
-  return s.length ? s : undefined;
+const WhatsAppTemplates = {
+  overdueHomeworkReminder: (
+    recipientName: string,
+    studentName: string,
+    homeworkTitle: string,
+    isStudent: boolean
+  ) => `
+⚠️ Homework Overdue!
+
+Hi ${recipientName}!
+
+${isStudent ? 'Your' : `${studentName}'s`} homework is now overdue:
+
+📚 ${homeworkTitle}
+
+Please complete this as soon as possible via the Learning Hub.
+
+🔗 Login here: https://classclowncrm.com/learning-hub
+
+If you're having any difficulties, contact your tutor for support.
+
+Best regards,
+Class Beyond Team 🎯
+`.trim(),
+};
+
+function generateOverdueEmailHtml(
+  recipientName: string,
+  studentName: string,
+  homeworkTitle: string,
+  isStudent: boolean
+): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homework Overdue - Action Required</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header with urgent styling -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%); padding: 30px 40px; border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+                ⚠️ Homework Overdue
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Main content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Hi ${recipientName},
+              </p>
+              
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                ${isStudent ? 'Your' : `${studentName}'s`} homework is now <strong style="color: #dc2626;">overdue</strong> and requires immediate attention:
+              </p>
+              
+              <!-- Homework details box -->
+              <table role="presentation" style="width: 100%; margin: 25px 0; background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0; color: #991b1b; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                      OVERDUE HOMEWORK
+                    </p>
+                    <p style="margin: 8px 0 0; color: #1f2937; font-size: 18px; font-weight: 600;">
+                      📚 ${homeworkTitle}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 0 0 25px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Please complete this assignment as soon as possible via the Learning Hub.
+              </p>
+              
+              <!-- CTA Button -->
+              <table role="presentation" style="width: 100%;">
+                <tr>
+                  <td align="center">
+                    <a href="https://classclowncrm.com/learning-hub" 
+                       style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                      Go to Learning Hub →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 25px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                If you're having any difficulties with this homework, please contact your tutor for support.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 25px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">
+                Best regards,<br>
+                <strong style="color: #374151;">Class Beyond Team</strong> 🎯
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
 }
 
-function asNumber(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const n = Number(value);
-    if (Number.isFinite(n)) return n;
+async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
+  const wazzupApiKey = Deno.env.get("WAZZUP_API_KEY");
+  const wazzupChannelId = Deno.env.get("WAZZUP_CHANNEL_ID");
+
+  if (!wazzupApiKey || !wazzupChannelId) {
+    console.log("WhatsApp credentials not configured, skipping");
+    return false;
   }
-  return undefined;
+
+  // Format phone number
+  let formattedPhone = phone.replace(/\s+/g, "").replace(/[^\d+]/g, "");
+  if (formattedPhone.startsWith("0")) {
+    formattedPhone = "44" + formattedPhone.substring(1);
+  } else if (formattedPhone.startsWith("+")) {
+    formattedPhone = formattedPhone.substring(1);
+  }
+
+  try {
+    const response = await fetch("https://api.wazzup24.com/v3/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${wazzupApiKey}`,
+      },
+      body: JSON.stringify({
+        channelId: wazzupChannelId,
+        chatType: "whatsapp",
+        chatId: formattedPhone,
+        text: message,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("WhatsApp API error:", response.status, errorText);
+      return false;
+    }
+
+    console.log("WhatsApp message sent to:", formattedPhone);
+    return true;
+  } catch (error) {
+    console.error("WhatsApp send error:", error);
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -104,88 +207,22 @@ serve(async (req) => {
       );
     }
 
-    // Parse + normalize the request body (support snake_case and camelCase keys)
+    // Parse the request body
     const raw = await req.json();
-    const rawPayload = (raw && typeof raw === "object")
-      ? (raw as Record<string, unknown>)
-      : ({} as Record<string, unknown>);
-
-    const incomingSecret =
-      asNonEmptyString(rawPayload.secret) ||
-      asNonEmptyString(req.headers.get("x-heycleo-secret")) ||
-      asNonEmptyString(req.headers.get("x-webhook-secret")) ||
-      "";
-
-    const payload: HomeworkCompletionPayload = {
-      secret: incomingSecret,
-      // Primary lookup - now optional
-      homework_id:
-        asNonEmptyString(rawPayload.homework_id) ||
-        asNonEmptyString(rawPayload.homeworkId),
-      // Alternative lookup fields
-      homework_title:
-        asNonEmptyString(rawPayload.homework_title) ||
-        asNonEmptyString(rawPayload.homeworkTitle) ||
-        asNonEmptyString(rawPayload.title),
-      due_date:
-        asNonEmptyString(rawPayload.due_date) ||
-        asNonEmptyString(rawPayload.dueDate),
-      subject:
-        asNonEmptyString(rawPayload.subject),
-      // Required fields
-      student_email:
-        asNonEmptyString(rawPayload.student_email) ||
-        asNonEmptyString(rawPayload.studentEmail) ||
-        "",
-      completed_at:
-        asNonEmptyString(rawPayload.completed_at) ||
-        asNonEmptyString(rawPayload.completedAt) ||
-        "",
-      // Optional fields
-      user_id:
-        asNonEmptyString(rawPayload.user_id) ||
-        asNonEmptyString(rawPayload.userId),
-      conversation_id:
-        asNonEmptyString(rawPayload.conversation_id) ||
-        asNonEmptyString(rawPayload.conversationId) ||
-        asNonEmptyString(rawPayload.conversationID),
-      time_spent_seconds:
-        asNumber(rawPayload.time_spent_seconds) ??
-        asNumber(rawPayload.timeSpentSeconds),
-      total_questions:
-        asNumber(rawPayload.total_questions) ??
-        asNumber(rawPayload.totalQuestions) ??
-        0,
-      correct_answers:
-        asNumber(rawPayload.correct_answers) ??
-        asNumber(rawPayload.correctAnswers) ??
-        0,
-      incorrect_answers:
-        asNumber(rawPayload.incorrect_answers) ??
-        asNumber(rawPayload.incorrectAnswers) ??
-        0,
-      accuracy_percentage:
-        asNumber(rawPayload.accuracy_percentage) ??
-        asNumber(rawPayload.accuracyPercentage) ??
-        0,
-      questions: Array.isArray(rawPayload.questions)
-        ? (rawPayload.questions as HomeworkCompletionPayload["questions"])
-        : undefined,
-    };
-
-    const payloadKeys = Object.keys(rawPayload);
-    console.log("Received homework completion webhook:", {
-      payload_keys: payloadKeys,
-      homework_id: payload.homework_id || "(not provided)",
-      homework_title: payload.homework_title || "(not provided)",
-      due_date: payload.due_date || "(not provided)",
-      subject: payload.subject || "(not provided)",
-      student_email: payload.student_email,
-      conversation_id: payload.conversation_id,
-      completed_at: payload.completed_at,
-      total_questions: payload.total_questions,
-      accuracy_percentage: payload.accuracy_percentage,
+    console.log("Received overdue homework webhook:", {
+      keys: Object.keys(raw),
+      student_email: raw.student_email || raw.studentEmail,
+      student_name: raw.student_name || raw.studentName,
+      homework_title: raw.homework_title || raw.homeworkTitle,
     });
+
+    // Normalize payload (support snake_case and camelCase)
+    const payload: OverdueHomeworkPayload = {
+      secret: raw.secret || req.headers.get("x-heycleo-secret") || req.headers.get("x-webhook-secret") || "",
+      student_name: (raw.student_name || raw.studentName || "").trim(),
+      student_email: (raw.student_email || raw.studentEmail || "").trim().toLowerCase(),
+      homework_title: (raw.homework_title || raw.homeworkTitle || "").trim(),
+    };
 
     // Validate the shared secret
     const sharedSecret = Deno.env.get("HEYCLEO_CROSS_PLATFORM_SECRET");
@@ -206,352 +243,170 @@ serve(async (req) => {
     }
 
     // Validate required fields
-    // homework_id is now optional - we can match by title instead
     const missing: string[] = [];
+    if (!payload.student_name) missing.push("student_name");
     if (!payload.student_email) missing.push("student_email");
-    if (!payload.completed_at) missing.push("completed_at");
-    
-    // Need either homework_id OR homework_title for matching
-    if (!payload.homework_id && !payload.homework_title) {
-      missing.push("homework_id or homework_title");
-    }
+    if (!payload.homework_title) missing.push("homework_title");
 
     if (missing.length) {
-      console.error("Missing required fields:", {
-        missing,
-        payloadKeys,
-        hasHomeworkId: !!payload.homework_id,
-        hasHomeworkTitle: !!payload.homework_title,
-        hasStudentEmail: !!payload.student_email,
-        hasConversationId: !!payload.conversation_id,
-        hasCompletedAt: !!payload.completed_at,
-      });
+      console.error("Missing required fields:", missing);
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Missing required fields: ${missing.join(", ")}`,
-          missing,
-        }),
+        JSON.stringify({ success: false, error: `Missing required fields: ${missing.join(", ")}`, missing }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Initialize Supabase client with service role for database operations
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const studentEmail = payload.student_email.trim().toLowerCase();
+    // Initialize Resend
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-    // Look up the student by email - handle duplicates gracefully by taking most recent
-    const { data: students, error: studentError } = await supabase
+    // Look up the student by email
+    const { data: student, error: studentError } = await supabase
       .from("students")
-      .select("id, first_name, last_name, email, created_at")
-      .eq("email", studentEmail)
+      .select("id, first_name, last_name, email, phone, parent_id")
+      .eq("email", payload.student_email)
       .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (studentError) {
-      console.error("Student lookup error:", studentEmail, studentError);
-      return new Response(
-        JSON.stringify({ success: false, error: "Student lookup failed", details: studentError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!students || students.length === 0) {
-      console.error("Student not found:", studentEmail);
-      return new Response(
-        JSON.stringify({ success: false, error: "Student not found", details: `No student with email: ${studentEmail}` }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Warn if there are duplicate students with same email
-    if (students.length > 1) {
-      console.warn("Multiple students found with same email - using most recent:", {
-        email: studentEmail,
-        count: students.length,
-        studentIds: students.map(s => s.id),
-      });
-    }
-
-    const student = students[0];
-    console.log("Found student:", student.id, student.first_name, student.last_name);
-
-    // Find the homework - try by ID first, then fall back to title matching
-    let homework: { id: string; title: string; lesson_id: string } | null = null;
-    let matchMethod = "";
-
-    // Method 1: Direct ID lookup (preferred)
-    if (payload.homework_id) {
-      console.log("Attempting homework lookup by ID:", payload.homework_id);
-      const { data: homeworkById, error: homeworkError } = await supabase
-        .from("homework")
-        .select("id, title, lesson_id")
-        .eq("id", payload.homework_id)
-        .single();
-
-      if (!homeworkError && homeworkById) {
-        homework = homeworkById;
-        matchMethod = "id";
-        console.log("Found homework by ID:", homework.id, homework.title);
-      } else {
-        console.warn("Homework not found by ID, will try title matching:", payload.homework_id, homeworkError?.message);
-      }
-    }
-
-    // Method 2: Title + Student matching (fallback)
-    // Try with ALL students matching this email (handles duplicates)
-    if (!homework && payload.homework_title) {
-      console.log("Attempting homework lookup by title:", payload.homework_title);
-      
-      // Get all student IDs for this email to handle duplicates
-      const allStudentIds = students.map(s => s.id);
-      console.log("Searching for homework assigned to any of student IDs:", allStudentIds);
-      
-      // Use wildcard matching to handle trailing/leading whitespace in DB
-      const titlePattern = `%${payload.homework_title.trim()}%`;
-      
-      // Find homework assigned to ANY of these students via lesson_students
-      // Join: homework -> lessons -> lesson_students -> students
-      const { data: matchedHomework, error: matchError } = await supabase
-        .from("homework")
-        .select(`
-          id,
-          title,
-          lesson_id,
-          due_date,
-          lessons!inner (
-            id,
-            lesson_students!inner (
-              student_id
-            )
-          )
-        `)
-        .ilike("title", titlePattern)
-        .in("lessons.lesson_students.student_id", allStudentIds)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (matchError) {
-        console.error("Homework title search error:", matchError);
-      } else if (matchedHomework && matchedHomework.length > 0) {
-        // If we have due_date, try to find exact match first
-        if (payload.due_date) {
-          const payloadDueDate = new Date(payload.due_date).toISOString().split("T")[0];
-          const exactMatch = matchedHomework.find(h => {
-            if (!h.due_date) return false;
-            const homeworkDueDate = new Date(h.due_date).toISOString().split("T")[0];
-            return homeworkDueDate === payloadDueDate;
-          });
-          if (exactMatch) {
-            homework = { id: exactMatch.id, title: exactMatch.title, lesson_id: exactMatch.lesson_id };
-            matchMethod = "title+due_date";
-            console.log("Found homework by title + due date:", homework.id, homework.title);
-          }
-        }
-        
-        // Otherwise take the most recent match
-        if (!homework) {
-          const firstMatch = matchedHomework[0];
-          homework = { id: firstMatch.id, title: firstMatch.title, lesson_id: firstMatch.lesson_id };
-          matchMethod = "title";
-          if (matchedHomework.length > 1) {
-            console.warn("Multiple homework matches found by title, using most recent:", {
-              title: payload.homework_title,
-              matchCount: matchedHomework.length,
-              selectedId: homework.id,
-              allIds: matchedHomework.map(h => h.id),
-            });
-          } else {
-            console.log("Found homework by title:", homework.id, homework.title);
-          }
-        }
-      } else {
-        console.warn("No homework found by title for this student:", payload.homework_title);
-      }
-    }
-
-    // If still no homework found, return error
-    if (!homework) {
-      const errorDetails = payload.homework_id
-        ? `No homework with ID: ${payload.homework_id}`
-        : `No homework with title "${payload.homework_title}" assigned to student ${studentEmail}`;
-      
-      console.error("Homework not found:", {
-        homework_id: payload.homework_id,
-        homework_title: payload.homework_title,
-        student_id: student.id,
-        student_email: studentEmail,
-      });
-      
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Homework not found",
-          details: errorDetails,
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("Homework matched successfully:", {
-      id: homework.id,
-      title: homework.title,
-      matchMethod,
-    });
-
-    // Insert or update the completion record
-    const completionData = {
-      homework_id: homework.id,
-      student_id: student.id,
-      heycleo_user_id: payload.user_id || null,
-      conversation_id: payload.conversation_id || null,
-      completed_at: payload.completed_at,
-      time_spent_seconds: payload.time_spent_seconds || null,
-      total_questions: payload.total_questions || 0,
-      correct_answers: payload.correct_answers || 0,
-      incorrect_answers: payload.incorrect_answers || 0,
-      accuracy_percentage: payload.accuracy_percentage || 0,
-      question_details: payload.questions || null,
-      raw_payload: rawPayload,
-      received_at: new Date().toISOString(),
-    };
-
-    const { data: completion, error: completionError } = await supabase
-      .from("heycleo_homework_completions")
-      .upsert(completionData, {
-        onConflict: "homework_id,student_id,conversation_id",
-      })
-      .select()
+      .limit(1)
       .single();
 
-    if (completionError) {
-      console.error("Failed to save completion:", completionError);
+    if (studentError || !student) {
+      console.error("Student not found:", payload.student_email, studentError);
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to save completion record" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Student not found", details: `No student with email: ${payload.student_email}` }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Saved completion record:", completion.id);
+    console.log("Found student:", student.id, student.first_name, student.last_name);
 
-    // Build detailed feedback for tutors
-    const grade = getGradeFromPercentage(payload.accuracy_percentage);
-    const timeSpentMinutes = payload.time_spent_seconds 
-      ? Math.round(payload.time_spent_seconds / 60) 
-      : null;
-    
-    let feedback = `## HeyCleo AI Tutor Results\n\n`;
-    feedback += `**Score:** ${payload.correct_answers}/${payload.total_questions} (${payload.accuracy_percentage}%)\n`;
-    feedback += `**Grade:** ${grade}\n`;
-    if (timeSpentMinutes !== null) {
-      feedback += `**Time Spent:** ${timeSpentMinutes} minute${timeSpentMinutes !== 1 ? 's' : ''}\n`;
-    }
-    feedback += `**Completed:** ${new Date(payload.completed_at).toLocaleString('en-GB')}\n`;
-    
-    // Add question breakdown if available
-    if (payload.questions && payload.questions.length > 0) {
-      feedback += `\n### Question Breakdown\n\n`;
-      payload.questions.forEach((q, index) => {
-        const status = q.is_correct ? '✓' : '✗';
-        feedback += `${index + 1}. ${status} ${q.question_text}\n`;
-        feedback += `   Answer: ${q.answer_text}\n`;
-        if (q.time_taken_seconds) {
-          feedback += `   Time: ${q.time_taken_seconds}s\n`;
-        }
-        feedback += `\n`;
-      });
-    }
-    
-    if (payload.conversation_id) {
-      feedback += `\n---\n*Session ID: ${payload.conversation_id}*`;
-    }
-
-    // Create or update homework_submissions table for analytics tracking
-    const { data: existingSubmission } = await supabase
-      .from("homework_submissions")
-      .select("id")
-      .eq("homework_id", homework.id)
-      .eq("student_id", student.id)
-      .maybeSingle();
-
-    const submissionData = {
-      status: "graded",
-      percentage_score: payload.accuracy_percentage,
-      grade: grade,
-      submitted_at: payload.completed_at,
-      feedback: feedback,
-      submission_text: payload.conversation_id
-        ? `Completed via HeyCleo AI Tutor (Session: ${payload.conversation_id})`
-        : "Completed via HeyCleo AI Tutor",
-    };
-
-    if (existingSubmission) {
-      const { error: updateError } = await supabase
-        .from("homework_submissions")
-        .update(submissionData)
-        .eq("id", existingSubmission.id);
-
-      if (updateError) {
-        console.error("Failed to update homework submission:", updateError);
-      } else {
-        console.log("Updated homework submission:", existingSubmission.id);
-      }
-    } else {
-      const { data: newSubmission, error: insertError } = await supabase
-        .from("homework_submissions")
-        .insert({
-          homework_id: homework.id,
-          student_id: student.id,
-          ...submissionData,
-        })
-        .select("id")
+    // Look up parent if available
+    let parent: { id: string; first_name: string; last_name: string; email: string; phone: string } | null = null;
+    if (student.parent_id) {
+      const { data: parentData, error: parentError } = await supabase
+        .from("parents")
+        .select("id, first_name, last_name, email, phone")
+        .eq("id", student.parent_id)
         .single();
 
-      if (insertError) {
-        console.error("Failed to create homework submission:", insertError);
-      } else {
-        console.log("Created new homework submission for student:", student.id);
+      if (!parentError && parentData) {
+        parent = parentData;
+        console.log("Found parent:", parent.first_name, parent.last_name);
       }
     }
 
-    // Return success response with matched homework_id (so HeyCleo can cache it)
+    // Track what notifications were sent
+    const notificationsSent = {
+      student_email: false,
+      student_whatsapp: false,
+      parent_email: false,
+      parent_whatsapp: false,
+    };
+
+    const studentName = payload.student_name || `${student.first_name} ${student.last_name}`;
+
+    // Send student WhatsApp
+    if (student.phone) {
+      const studentMessage = WhatsAppTemplates.overdueHomeworkReminder(
+        student.first_name,
+        studentName,
+        payload.homework_title,
+        true
+      );
+      notificationsSent.student_whatsapp = await sendWhatsAppMessage(student.phone, studentMessage);
+    }
+
+    // Send parent WhatsApp
+    if (parent?.phone) {
+      const parentMessage = WhatsAppTemplates.overdueHomeworkReminder(
+        parent.first_name,
+        studentName,
+        payload.homework_title,
+        false
+      );
+      notificationsSent.parent_whatsapp = await sendWhatsAppMessage(parent.phone, parentMessage);
+    }
+
+    // Send student email
+    if (resend && student.email) {
+      try {
+        const studentEmailHtml = generateOverdueEmailHtml(
+          student.first_name,
+          studentName,
+          payload.homework_title,
+          true
+        );
+        await resend.emails.send({
+          from: "Class Beyond <notifications@classbeyond.online>",
+          to: [student.email],
+          subject: `⚠️ Homework Overdue: ${payload.homework_title}`,
+          html: studentEmailHtml,
+        });
+        notificationsSent.student_email = true;
+        console.log("Student email sent to:", student.email);
+      } catch (emailError) {
+        console.error("Failed to send student email:", emailError);
+      }
+    }
+
+    // Send parent email
+    if (resend && parent?.email) {
+      try {
+        const parentEmailHtml = generateOverdueEmailHtml(
+          parent.first_name,
+          studentName,
+          payload.homework_title,
+          false
+        );
+        await resend.emails.send({
+          from: "Class Beyond <notifications@classbeyond.online>",
+          to: [parent.email],
+          subject: `⚠️ Homework Overdue: ${payload.homework_title} - ${studentName}`,
+          html: parentEmailHtml,
+        });
+        notificationsSent.parent_email = true;
+        console.log("Parent email sent to:", parent.email);
+      } catch (emailError) {
+        console.error("Failed to send parent email:", emailError);
+      }
+    }
+
+    // Log notification in the notifications table
+    const notificationCount = Object.values(notificationsSent).filter(Boolean).length;
+    if (notificationCount > 0) {
+      await supabase.from("notifications").insert({
+        type: "homework_overdue",
+        subject: `Overdue homework reminder: ${payload.homework_title}`,
+        email: student.email,
+        status: "sent",
+        metadata: {
+          student_id: student.id,
+          student_name: studentName,
+          homework_title: payload.homework_title,
+          notifications_sent: notificationsSent,
+        },
+      });
+    }
+
+    console.log("Overdue reminder complete:", notificationsSent);
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Homework completion recorded successfully",
-        data: {
-          completion_id: completion.id,
-          student_id: student.id,
-          student_name: `${student.first_name} ${student.last_name}`,
-          homework_id: homework.id,
-          homework_title: homework.title,
-          match_method: matchMethod,
-          accuracy_percentage: payload.accuracy_percentage,
-          recorded_at: completion.received_at,
-        },
+        message: "Overdue reminder sent",
+        notifications_sent: notificationsSent,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Webhook error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: "Internal server error" }),
+      JSON.stringify({ success: false, error: "Internal server error", details: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
-
-// Helper function to convert percentage to grade
-function getGradeFromPercentage(percentage: number): string {
-  if (percentage >= 90) return "A*";
-  if (percentage >= 80) return "A";
-  if (percentage >= 70) return "B";
-  if (percentage >= 60) return "C";
-  if (percentage >= 50) return "D";
-  if (percentage >= 40) return "E";
-  return "F";
-}

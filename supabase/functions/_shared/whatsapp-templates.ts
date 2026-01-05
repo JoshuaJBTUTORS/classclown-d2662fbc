@@ -353,4 +353,28 @@ See you tomorrow! 👋
 
 _💬 If you'd like this sent to ${studentName} directly too, please reply._`;
   },
+
+  overdueHomeworkReminder: (
+    recipientName: string,
+    studentName: string,
+    homeworkTitle: string,
+    isStudent: boolean
+  ): string => {
+    return `⚠️ Homework Overdue!
+
+Hi ${recipientName}!
+
+${isStudent ? 'Your' : `${studentName}'s`} homework is now overdue:
+
+📚 ${homeworkTitle}
+
+Please complete this as soon as possible via the Learning Hub.
+
+🔗 Login here: https://classclowncrm.com/learning-hub
+
+If you're having any difficulties, contact your tutor for support.
+
+Best regards,
+Class Beyond Team 🎯`;
+  },
 };
