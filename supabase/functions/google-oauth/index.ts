@@ -80,9 +80,13 @@ serve(async (req) => {
       authUrl.searchParams.append("prompt", "consent");
       authUrl.searchParams.append("state", state);
       
-      return new Response(JSON.stringify({ url: authUrl.toString() }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200
+      // Redirect directly to Google OAuth
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          "Location": authUrl.toString()
+        }
       });
     }
     
