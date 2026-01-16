@@ -23,6 +23,7 @@ interface EmbeddedVideoRoomProps {
   lessonId?: string;
   isRecurring?: boolean;
   expectedStudents?: number;
+  googleMeetUrl?: string; // If set, "open in new tab" will redirect to Google Meet
 }
 
 const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
@@ -33,7 +34,8 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   className = "",
   lessonId,
   isRecurring = false,
-  expectedStudents = 0
+  expectedStudents = 0,
+  googleMeetUrl
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -96,8 +98,10 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   };
 
   const openInNewTab = () => {
-    window.open(displayUrl, '_blank', 'noopener,noreferrer');
-    toast.success('Opening video room in new tab...');
+    // Prefer Google Meet URL if available
+    const urlToOpen = googleMeetUrl || displayUrl;
+    window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+    toast.success(googleMeetUrl ? 'Opening Google Meet in new tab...' : 'Opening video room in new tab...');
   };
 
   if (!displayUrl) {
