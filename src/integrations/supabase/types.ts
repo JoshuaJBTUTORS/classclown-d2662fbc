@@ -1944,30 +1944,36 @@ export type Database = {
           access_token: string
           calendar_id: string | null
           created_at: string
+          expiry_date: number | null
           id: string
           organization_id: string
-          refresh_token: string
-          token_expiry: string
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
           updated_at: string
         }
         Insert: {
           access_token: string
           calendar_id?: string | null
           created_at?: string
+          expiry_date?: number | null
           id?: string
           organization_id: string
-          refresh_token: string
-          token_expiry: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
           updated_at?: string
         }
         Update: {
           access_token?: string
           calendar_id?: string | null
           created_at?: string
+          expiry_date?: number | null
           id?: string
           organization_id?: string
-          refresh_token?: string
-          token_expiry?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
           updated_at?: string
         }
         Relationships: [
