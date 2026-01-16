@@ -180,6 +180,12 @@ verify_jwt = false
 [functions.heycleo-homework-webhook]
 verify_jwt = false
 
+[functions.google-oauth]
+verify_jwt = false
+
+[functions.google-calendar-sync]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 port = 54328
