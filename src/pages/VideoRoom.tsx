@@ -159,6 +159,7 @@ export default function VideoRoom() {
         lessonId={lessonId}
         isRecurring={lesson?.is_recurring || lesson?.is_recurring_instance || false}
         expectedStudents={expectedStudents?.length || 0}
+        googleMeetUrl={lesson?.video_conference_provider === 'google_meet' ? lesson?.video_conference_link : undefined}
       />
     </div>
   );
