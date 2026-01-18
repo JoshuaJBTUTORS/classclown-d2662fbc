@@ -184,10 +184,14 @@ serve(async (req) => {
               recurrence_interval: null,
               recurrence_end_date: null,
               recurrence_day: null,
-              // Don't inherit room details - they will be created fresh by LessonSpace integration
+              // Don't inherit room details - they will be created fresh by Google Calendar integration
               lesson_space_room_id: null,
               lesson_space_room_url: null,
               lesson_space_space_id: null,
+              // Google Meet will be created separately
+              google_event_id: null,
+              video_conference_link: null,
+              video_conference_provider: 'google_meet',
             });
 
             instanceCount++;
@@ -230,37 +234,27 @@ serve(async (req) => {
             }
           }
 
-          // Create LessonSpace rooms and participant URLs for all new instances
-          console.log(`Creating LessonSpace rooms and participant URLs for ${insertedLessons.length} new instances`);
-          console.log(`⏱️ Adding 250ms delays between requests to respect LessonSpace rate limit (5 req/sec)`);
+          // Create Google Meet rooms for all new instances
+          console.log(`Creating Google Meet rooms for ${insertedLessons.length} new instances`);
+          console.log(`⏱️ Adding 200ms delays between requests to respect Google API rate limits`);
           
           let roomsCreatedCount = 0;
           let roomsFailedCount = 0;
           const failedLessons: string[] = [];
           
-          // Get student IDs for the original lesson
-          const { data: originalStudents } = await supabase
-            .from('lesson_students')
-            .select('student_id')
-            .eq('lesson_id', templateLesson.id);
-          
-          const studentIds = originalStudents?.map(s => s.student_id) || [];
-          
           for (const lesson of insertedLessons) {
             try {
-              console.log(`Creating LessonSpace room and participant URLs for lesson: ${lesson.id}`);
+              console.log(`Creating Google Meet for lesson: ${lesson.id}`);
               
-              const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
+              const { data: roomData, error: roomError } = await supabase.functions.invoke('google-calendar-create-event', {
                 body: {
-                  action: 'create-room',
                   lessonId: lesson.id
                 }
               });
 
               if (roomError) {
-                console.error(`   ❌ Failed to create room for lesson ${lesson.id} - invoke error`);
+                console.error(`   ❌ Failed to create Google Meet for lesson ${lesson.id} - invoke error`);
                 console.error(`   Error: ${JSON.stringify(roomError)}`);
-                console.error(`   Message: ${roomError.message}, Status: ${roomError.status}`);
                 roomsFailedCount++;
                 failedLessons.push(lesson.id);
                 
@@ -272,28 +266,23 @@ serve(async (req) => {
                   attempt_count: 1
                 });
                 
-                // Continue with next lesson
                 continue;
               }
 
               if (roomData && roomData.success) {
-                console.log(`✅ LessonSpace room and participant URLs created successfully for lesson ${lesson.id} | rid: ${roomData.rid || 'N/A'}`);
+                console.log(`✅ Google Meet created successfully for lesson ${lesson.id} | link: ${roomData.meetLink || 'N/A'}`);
                 roomsCreatedCount++;
               } else if (roomData && !roomData.success) {
-                console.error(`   ❌ Room creation failed - structured error for lesson ${lesson.id}`);
-                console.error(`   rid: ${roomData.rid}, stage: ${roomData.stage}, external_status: ${roomData.external_status}`);
-                console.error(`   external_body: ${roomData.external_body || 'N/A'}`);
+                console.error(`   ❌ Google Meet creation failed for lesson ${lesson.id}`);
                 console.error(`   error: ${roomData.error}`);
                 roomsFailedCount++;
                 failedLessons.push(lesson.id);
                 
-                const detailedError = `Stage: ${roomData.stage || 'unknown'} | Status: ${roomData.external_status || 'N/A'} | ${roomData.error || 'Unknown'} | Body: ${roomData.external_body ? roomData.external_body.substring(0, 200) : 'N/A'}`;
-                
                 // Track failed room creation in database
                 await supabase.from('failed_room_creations').insert({
                   lesson_id: lesson.id,
-                  error_message: detailedError,
-                  error_code: roomData.external_status || null,
+                  error_message: roomData.error || 'Unknown error',
+                  error_code: null,
                   attempt_count: 1
                 });
               } else {
@@ -303,7 +292,7 @@ serve(async (req) => {
                 failedLessons.push(lesson.id);
               }
             } catch (roomCreationError) {
-              console.error(`❌ Error creating LessonSpace room for lesson ${lesson.id}:`, roomCreationError);
+              console.error(`❌ Error creating Google Meet for lesson ${lesson.id}:`, roomCreationError);
               roomsFailedCount++;
               failedLessons.push(lesson.id);
               
@@ -316,12 +305,11 @@ serve(async (req) => {
               });
             }
             
-            // Add 250ms delay between requests to respect LessonSpace rate limit (5 req/sec)
-            // This ensures we stay under the limit even with network jitter
-            await sleep(250);
+            // Add 200ms delay between requests to respect Google API rate limits
+            await sleep(200);
           }
 
-          console.log(`📊 LessonSpace Room Creation Summary:`);
+          console.log(`📊 Google Meet Room Creation Summary:`);
           console.log(`   ✅ Success: ${roomsCreatedCount}/${insertedLessons.length}`);
           console.log(`   ❌ Failed: ${roomsFailedCount}/${insertedLessons.length}`);
           if (failedLessons.length > 0) {
@@ -356,7 +344,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Generated ${totalInstancesGenerated} lesson instances with LessonSpace rooms`,
+        message: `Generated ${totalInstancesGenerated} lesson instances with Google Meet rooms`,
         groupsProcessed: recurringGroups?.length || 0,
         totalInstancesGenerated
       }),

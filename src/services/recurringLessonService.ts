@@ -150,8 +150,8 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
       }
     }
 
-    // Generate participant URLs for all new lesson instances
-    await generateParticipantUrlsForInstances(insertedLessons, selectedStudents);
+    // Generate Google Meet rooms for all new lesson instances
+    await generateGoogleMeetForInstances(insertedLessons);
 
     // Create or update recurring lesson group record
     const nextGenerationDate = isInfinite 
@@ -274,42 +274,43 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
 /**
  * Generate participant URLs for recurring lesson instances
  */
-const generateParticipantUrlsForInstances = async (
-  insertedLessons: { id: string }[], 
-  selectedStudents: number[]
+const generateGoogleMeetForInstances = async (
+  insertedLessons: { id: string }[]
 ) => {
-  console.log(`Generating participant URLs for ${insertedLessons.length} recurring lesson instances`);
+  console.log(`Generating Google Meet rooms for ${insertedLessons.length} recurring lesson instances`);
   
   let successCount = 0;
   let failureCount = 0;
 
   for (const lesson of insertedLessons) {
     try {
-      // Call lesson-space-integration to create room and generate participant URLs
-      const { error: integrationError } = await supabase.functions.invoke('lesson-space-integration', {
+      // Call google-calendar-create-event to create Meet room
+      const { error: integrationError } = await supabase.functions.invoke('google-calendar-create-event', {
         body: {
-          action: 'create-room',
           lessonId: lesson.id
         }
       });
 
       if (integrationError) {
-        console.error(`Failed to generate URLs for lesson ${lesson.id}:`, integrationError);
+        console.error(`Failed to create Google Meet for lesson ${lesson.id}:`, integrationError);
         failureCount++;
       } else {
-        console.log(`✅ Generated participant URLs for lesson ${lesson.id}`);
+        console.log(`✅ Created Google Meet for lesson ${lesson.id}`);
         successCount++;
       }
     } catch (error) {
-      console.error(`Error generating URLs for lesson ${lesson.id}:`, error);
+      console.error(`Error creating Google Meet for lesson ${lesson.id}:`, error);
       failureCount++;
     }
+    
+    // Small delay to respect rate limits
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
-  console.log(`Participant URL generation complete: ${successCount} success, ${failureCount} failures`);
+  console.log(`Google Meet creation complete: ${successCount} success, ${failureCount} failures`);
   
   if (failureCount > 0) {
-    console.warn(`⚠️ ${failureCount} lesson instances failed to generate participant URLs. These will need to be regenerated manually.`);
+    console.warn(`⚠️ ${failureCount} lesson instances failed to generate Google Meet rooms.`);
   }
 };
 

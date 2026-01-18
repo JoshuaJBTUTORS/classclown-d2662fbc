@@ -189,6 +189,12 @@ verify_jwt = true
 [functions.google-calendar-batch-sync]
 verify_jwt = false
 
+[functions.google-calendar-create-event]
+verify_jwt = false
+
+[functions.migrate-lessons-to-google-meet]
+verify_jwt = false
+
 [functions.batch-mark-exam-responses]
 verify_jwt = false
 
