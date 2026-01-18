@@ -267,10 +267,11 @@ serve(async (req) => {
 
     // ============ PHASE 1: Process PARENT recurring lessons ============
     if (phase === 'all' || phase === 'parents') {
-      console.log("\n📍 PHASE 1: Processing parent recurring lessons...");
+      console.log("\n📍 PHASE 1: Processing parent recurring lessons that have future instances...");
       
-      // Find parent recurring lessons (is_recurring = true) that need Meet links
-      const { data: parentLessons, error: parentError } = await supabase
+      // Find parent lessons that have future instances without Meet links
+      // This catches parents even if their start_time is in the past
+      const { data: parentsWithOrphanedInstances, error: orphanParentsError } = await supabase
         .from("lessons")
         .select(`
           id,
@@ -279,17 +280,61 @@ serve(async (req) => {
           subject,
           start_time,
           end_time,
-          tutor_id
+          tutor_id,
+          video_conference_link
         `)
         .eq("is_recurring", true)
         .eq("status", "scheduled")
-        .gte("start_time", now)
         .is("video_conference_link", null)
         .order("start_time", { ascending: true })
         .limit(batchSize);
 
-      if (parentError) {
-        throw new Error(`Failed to fetch parent lessons: ${parentError.message}`);
+      // Also find parents by checking instances directly
+      const { data: instanceParentIds, error: instanceError } = await supabase
+        .from("lessons")
+        .select("parent_lesson_id")
+        .eq("is_recurring_instance", true)
+        .eq("status", "scheduled")
+        .gte("start_time", now)
+        .is("video_conference_link", null)
+        .not("parent_lesson_id", "is", null);
+
+      // Get unique parent IDs that need Meet links
+      const parentIdsFromInstances = [...new Set(instanceParentIds?.map(i => i.parent_lesson_id) || [])];
+      
+      // Fetch those parents that don't have Meet links
+      let parentLessons: any[] = parentsWithOrphanedInstances || [];
+      
+      if (parentIdsFromInstances.length > 0) {
+        const { data: additionalParents } = await supabase
+          .from("lessons")
+          .select(`
+            id,
+            title,
+            description,
+            subject,
+            start_time,
+            end_time,
+            tutor_id,
+            video_conference_link
+          `)
+          .in("id", parentIdsFromInstances.slice(0, batchSize))
+          .is("video_conference_link", null);
+        
+        // Merge and deduplicate
+        const existingIds = new Set(parentLessons.map(p => p.id));
+        for (const parent of additionalParents || []) {
+          if (!existingIds.has(parent.id)) {
+            parentLessons.push(parent);
+          }
+        }
+      }
+
+      // Limit to batch size
+      parentLessons = parentLessons.slice(0, batchSize);
+
+      if (orphanParentsError || instanceError) {
+        console.error("Error fetching parent lessons:", orphanParentsError || instanceError);
       }
 
       console.log(`Found ${parentLessons?.length || 0} parent recurring lessons needing Meet links`);
