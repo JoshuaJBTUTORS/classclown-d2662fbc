@@ -100,7 +100,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
 
     try {
       const { data, error } = await supabase.functions.invoke('batch-mark-exam-responses', {
-        body: { jobId, batchSize: 10 }
+        body: { jobId, batchSize: 25 }
       });
 
       if (error) {
@@ -141,7 +141,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
       // Continue processing if there's more
       if (data?.hasMore && isProcessing) {
         // Small delay between batches
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 500));
         await processNextBatch();
       }
     } catch (error) {

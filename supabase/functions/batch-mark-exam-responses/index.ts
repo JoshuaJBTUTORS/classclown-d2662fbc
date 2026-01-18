@@ -156,52 +156,63 @@ serve(async (req) => {
     let markedCount = 0;
     let errorCount = 0;
 
-    // Process each response
-    for (const response of responses) {
-      try {
-        const question = response.assessment_questions as any;
-        
-        // Call AI to mark the response
-        const markingResult = await markResponseWithAI(
-          lovableApiKey,
-          question.question_text,
-          response.student_answer || '',
-          question.correct_answer,
-          question.marks_available,
-          question.marking_scheme
-        );
+    // Process responses in parallel batches for speed
+    const PARALLEL_LIMIT = 5;
+    const chunks: typeof responses[] = [];
+    for (let i = 0; i < responses.length; i += PARALLEL_LIMIT) {
+      chunks.push(responses.slice(i, i + PARALLEL_LIMIT));
+    }
 
-        // Update the response with AI marking
-        const { error: updateError } = await supabase
-          .from('student_responses')
-          .update({
-            marks_awarded: markingResult.marksAwarded,
-            ai_feedback: markingResult.feedback,
-            marking_breakdown: {
-              strengths: markingResult.strengths,
-              improvements: markingResult.improvements,
-              aiMarked: true
-            },
-            confidence_score: markingResult.confidence,
-            marked_at: new Date().toISOString(),
-            marked_by: 'ai'
-          })
-          .eq('id', response.id);
+    for (const chunk of chunks) {
+      const results = await Promise.all(
+        chunk.map(async (response) => {
+          try {
+            const question = response.assessment_questions as any;
+            
+            // Call AI to mark the response
+            const markingResult = await markResponseWithAI(
+              lovableApiKey,
+              question.question_text,
+              response.student_answer || '',
+              question.correct_answer,
+              question.marks_available,
+              question.marking_scheme
+            );
 
-        if (updateError) {
-          console.error('Error updating response:', updateError);
-          errorCount++;
-        } else {
-          markedCount++;
-        }
+            // Update the response with AI marking
+            const { error: updateError } = await supabase
+              .from('student_responses')
+              .update({
+                marks_awarded: markingResult.marksAwarded,
+                ai_feedback: markingResult.feedback,
+                marking_breakdown: {
+                  strengths: markingResult.strengths,
+                  improvements: markingResult.improvements,
+                  aiMarked: true
+                },
+                confidence_score: markingResult.confidence,
+                marked_at: new Date().toISOString(),
+                marked_by: 'ai'
+              })
+              .eq('id', response.id);
 
-        // Small delay to avoid rate limits
-        await new Promise(resolve => setTimeout(resolve, 200));
+            if (updateError) {
+              console.error('Error updating response:', updateError);
+              return { success: false };
+            }
+            return { success: true };
+          } catch (error) {
+            console.error(`Error marking response ${response.id}:`, error);
+            return { success: false };
+          }
+        })
+      );
 
-      } catch (error) {
-        console.error(`Error marking response ${response.id}:`, error);
-        errorCount++;
-      }
+      // Count successes and failures
+      results.forEach(r => {
+        if (r.success) markedCount++;
+        else errorCount++;
+      });
     }
 
     // Update job progress
