@@ -56,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Query for demo lessons starting in 10-15 minutes that haven't been reminded yet
     const { data: demoLessons, error: lessonsError } = await supabase
       .from('lessons')
-      .select('*')
+      .select('*, video_conference_link, video_conference_provider')
       .eq('lesson_type', 'demo')
       .eq('status', 'scheduled')
       .eq('imminent_reminder_sent', false)
@@ -108,10 +108,11 @@ const handler = async (req: Request): Promise<Response> => {
         // Format times for display
         const lessonTime = formatInUKTime(lesson.start_time, 'HH:mm');
         
-        // Generate lesson URL
-        const lessonUrl = lesson.lesson_space_room_id 
-          ? `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`
-          : `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/student-join/${lesson.id}`;
+        // Generate lesson URL - prioritize Google Meet
+        const lessonUrl = lesson.video_conference_link 
+          || (lesson.lesson_space_room_id 
+              ? `https://www.thelessonspace.com/space/${lesson.lesson_space_room_id}`
+              : `https://classbeyondacademy.io/student-join/${lesson.id}`);
 
         let sentChannels: string[] = [];
 
