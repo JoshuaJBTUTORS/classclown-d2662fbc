@@ -85,6 +85,7 @@ import CleoUserDetail from './pages/admin/CleoUserDetail';
 import AssessmentCenter from './pages/AssessmentCenter';
 import AssessmentTake from './pages/AssessmentTake';
 import AssessmentAssignments from './pages/admin/AssessmentAssignments';
+import ExamWeekResults from './pages/admin/ExamWeekResults';
 import Unauthorized from './pages/Unauthorized';
 
 // Component to monitor app version
@@ -367,6 +368,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <AdminExamBoardSpecifications />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="admin/exam-results" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <ExamWeekResults />
                       </ProtectedRoute>
                     } 
                   />
