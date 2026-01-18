@@ -41,13 +41,32 @@ export interface StudentExamSession {
 }
 
 export interface StudentResponse {
+  id: string;
   questionId: string;
   questionNumber: number;
   questionText: string;
+  correctAnswer: string;
   studentAnswer: string;
   marksAwarded: number;
   marksAvailable: number;
   submittedAt: string;
+  aiFeedback?: string;
+  markingBreakdown?: any;
+  confidenceScore?: number;
+  markedBy?: string;
+  markedAt?: string;
+}
+
+export interface MarkingJob {
+  id: string;
+  status: 'pending' | 'running' | 'paused' | 'completed' | 'failed';
+  totalResponses: number;
+  markedCount: number;
+  errorCount: number;
+  startedAt?: string;
+  completedAt?: string;
+  dateRangeStart: string;
+  dateRangeEnd: string;
 }
 
 export const examResultsService = {
@@ -318,9 +337,15 @@ export const examResultsService = {
         student_answer,
         marks_awarded,
         created_at,
+        ai_feedback,
+        marking_breakdown,
+        confidence_score,
+        marked_by,
+        marked_at,
         assessment_questions!inner (
           question_number,
           question_text,
+          correct_answer,
           marks_available
         )
       `)
@@ -332,13 +357,20 @@ export const examResultsService = {
     return (responses || []).map(response => {
       const question = response.assessment_questions as any;
       return {
+        id: response.id,
         questionId: response.question_id,
         questionNumber: question?.question_number || 0,
         questionText: question?.question_text || '',
+        correctAnswer: question?.correct_answer || '',
         studentAnswer: response.student_answer || '',
         marksAwarded: response.marks_awarded || 0,
         marksAvailable: question?.marks_available || 0,
-        submittedAt: response.created_at || ''
+        submittedAt: response.created_at || '',
+        aiFeedback: response.ai_feedback || undefined,
+        markingBreakdown: response.marking_breakdown || undefined,
+        confidenceScore: response.confidence_score || undefined,
+        markedBy: response.marked_by || undefined,
+        markedAt: response.marked_at || undefined
       };
     });
   },
@@ -359,5 +391,87 @@ export const examResultsService = {
     ]);
 
     return [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+  },
+
+  async getUnmarkedCount(startDate?: string, endDate?: string): Promise<number> {
+    const start = startDate || '2025-12-15';
+    const end = endDate || '2026-01-17';
+
+    // Get sessions in date range
+    const { data: sessions } = await supabase
+      .from('assessment_sessions')
+      .select('id')
+      .eq('status', 'completed')
+      .gte('completed_at', start)
+      .lte('completed_at', end);
+
+    if (!sessions || sessions.length === 0) return 0;
+
+    const sessionIds = sessions.map(s => s.id);
+
+    // Count unmarked responses
+    const { count, error } = await supabase
+      .from('student_responses')
+      .select('id', { count: 'exact', head: true })
+      .in('session_id', sessionIds)
+      .is('marked_at', null);
+
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async getActiveMarkingJob(): Promise<MarkingJob | null> {
+    const { data, error } = await supabase
+      .from('marking_jobs')
+      .select('*')
+      .in('status', ['pending', 'running', 'paused'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      status: data.status as MarkingJob['status'],
+      totalResponses: data.total_responses,
+      markedCount: data.marked_count,
+      errorCount: data.error_count,
+      startedAt: data.started_at || undefined,
+      completedAt: data.completed_at || undefined,
+      dateRangeStart: data.date_range_start,
+      dateRangeEnd: data.date_range_end
+    };
+  },
+
+  async createMarkingJob(startDate: string, endDate: string): Promise<string> {
+    // Get total count of responses to mark
+    const totalResponses = await this.getUnmarkedCount(startDate, endDate);
+
+    const { data, error } = await supabase
+      .from('marking_jobs')
+      .insert({
+        status: 'pending',
+        total_responses: totalResponses,
+        marked_count: 0,
+        error_count: 0,
+        date_range_start: startDate,
+        date_range_end: endDate
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return data.id;
+  },
+
+  async pauseMarkingJob(jobId: string): Promise<void> {
+    const { error } = await supabase
+      .from('marking_jobs')
+      .update({ status: 'paused', paused_at: new Date().toISOString() })
+      .eq('id', jobId);
+
+    if (error) throw error;
   }
 };

@@ -3024,6 +3024,57 @@ export type Database = {
           },
         ]
       }
+      marking_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          date_range_end: string
+          date_range_start: string
+          error_count: number
+          id: string
+          last_processed_response_id: string | null
+          marked_count: number
+          paused_at: string | null
+          started_at: string | null
+          status: string
+          total_responses: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_range_end: string
+          date_range_start: string
+          error_count?: number
+          id?: string
+          last_processed_response_id?: string | null
+          marked_count?: number
+          paused_at?: string | null
+          started_at?: string | null
+          status?: string
+          total_responses?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_range_end?: string
+          date_range_start?: string
+          error_count?: number
+          id?: string
+          last_processed_response_id?: string | null
+          marked_count?: number
+          paused_at?: string | null
+          started_at?: string | null
+          status?: string
+          total_responses?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -3844,6 +3895,7 @@ export type Database = {
           created_at: string
           id: string
           marked_at: string | null
+          marked_by: string | null
           marking_breakdown: Json | null
           marks_awarded: number | null
           question_id: string
@@ -3858,6 +3910,7 @@ export type Database = {
           created_at?: string
           id?: string
           marked_at?: string | null
+          marked_by?: string | null
           marking_breakdown?: Json | null
           marks_awarded?: number | null
           question_id: string
@@ -3872,6 +3925,7 @@ export type Database = {
           created_at?: string
           id?: string
           marked_at?: string | null
+          marked_by?: string | null
           marking_breakdown?: Json | null
           marks_awarded?: number | null
           question_id?: string

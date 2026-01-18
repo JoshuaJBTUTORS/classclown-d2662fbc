@@ -5,10 +5,11 @@ import { ExamResultsSummaryCards } from '@/components/examResults/ExamResultsSum
 import { ExamResultsBySubject } from '@/components/examResults/ExamResultsBySubject';
 import { ExamResultsByStudent } from '@/components/examResults/ExamResultsByStudent';
 import { StudentResponsesDialog } from '@/components/examResults/StudentResponsesDialog';
+import { BatchMarkingProgress } from '@/components/examResults/BatchMarkingProgress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Search, CalendarDays } from 'lucide-react';
+import { Download, Search, CalendarDays, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -22,24 +23,45 @@ const ExamWeekResults: React.FC = () => {
     from: new Date('2025-12-15'),
     to: new Date('2026-01-17')
   });
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [showMarkingProgress, setShowMarkingProgress] = useState(false);
 
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : '2025-12-15';
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : '2026-01-17';
 
-  const { data: summary, isLoading: summaryLoading } = useQuery({
+  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useQuery({
     queryKey: ['examSummary', startDate, endDate],
     queryFn: () => examResultsService.getExamWeekSummary(startDate, endDate)
   });
 
-  const { data: subjectResults, isLoading: subjectLoading } = useQuery({
+  const { data: subjectResults, isLoading: subjectLoading, refetch: refetchSubjects } = useQuery({
     queryKey: ['examResultsBySubject', startDate, endDate],
     queryFn: () => examResultsService.getResultsBySubject(startDate, endDate)
   });
 
-  const { data: studentResults, isLoading: studentLoading } = useQuery({
+  const { data: studentResults, isLoading: studentLoading, refetch: refetchStudents } = useQuery({
     queryKey: ['examResultsByStudent', startDate, endDate],
     queryFn: () => examResultsService.getResultsByStudent(startDate, endDate)
   });
+
+  const { data: unmarkedCount } = useQuery({
+    queryKey: ['unmarkedCount', startDate, endDate],
+    queryFn: () => examResultsService.getUnmarkedCount(startDate, endDate)
+  });
+
+  const { data: activeJob, refetch: refetchActiveJob } = useQuery({
+    queryKey: ['activeMarkingJob'],
+    queryFn: () => examResultsService.getActiveMarkingJob(),
+    refetchInterval: 5000
+  });
+
+  // Check for existing active job on load
+  React.useEffect(() => {
+    if (activeJob && !activeJobId) {
+      setActiveJobId(activeJob.id);
+      setShowMarkingProgress(true);
+    }
+  }, [activeJob, activeJobId]);
 
   const handleExport = async () => {
     try {
@@ -57,9 +79,28 @@ const ExamWeekResults: React.FC = () => {
     }
   };
 
+  const handleStartAIMarking = async () => {
+    try {
+      const jobId = await examResultsService.createMarkingJob(startDate, endDate);
+      setActiveJobId(jobId);
+      setShowMarkingProgress(true);
+      toast.success('Marking job created');
+    } catch (error) {
+      console.error('Error creating marking job:', error);
+      toast.error('Failed to start AI marking');
+    }
+  };
+
+  const handleMarkingComplete = () => {
+    refetchSummary();
+    refetchSubjects();
+    refetchStudents();
+    refetchActiveJob();
+    toast.success('AI marking complete! Results have been updated.');
+  };
+
   const handleViewSubjectDetails = (assessmentId: string, assessmentTitle: string) => {
     toast.info(`Viewing details for: ${assessmentTitle}`);
-    // Could navigate to a detailed view or open a dialog
   };
 
   const handleViewStudent = (userId: string, studentName: string) => {
@@ -104,12 +145,29 @@ const ExamWeekResults: React.FC = () => {
             </PopoverContent>
           </Popover>
 
+          {!showMarkingProgress && unmarkedCount && unmarkedCount > 0 && (
+            <Button onClick={handleStartAIMarking} className="gap-2">
+              <Bot className="h-4 w-4" />
+              AI Mark ({unmarkedCount.toLocaleString()})
+            </Button>
+          )}
+
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
         </div>
       </div>
+
+      {showMarkingProgress && activeJobId && (
+        <BatchMarkingProgress
+          jobId={activeJobId}
+          onJobComplete={handleMarkingComplete}
+          onClose={() => setShowMarkingProgress(false)}
+          startDate={startDate}
+          endDate={endDate}
+        />
+      )}
 
       <ExamResultsSummaryCards summary={summary} isLoading={summaryLoading} />
 
