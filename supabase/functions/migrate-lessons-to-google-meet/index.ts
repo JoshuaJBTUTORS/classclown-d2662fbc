@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 const ORGANIZATION_ID = "a0000000-0000-0000-0000-000000000001"; // JB Tutors
-const BATCH_SIZE = 50; // Process 50 lessons per batch
 const DELAY_BETWEEN_REQUESTS_MS = 200; // 200ms delay to respect rate limits
 
 // Utility function to add delay
@@ -16,7 +15,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 interface MigrationRequest {
   batchSize?: number;
   dryRun?: boolean;
-  startFromId?: string;
+  phase?: 'parents' | 'standalone' | 'all';
 }
 
 // Get a valid access token, refreshing if necessary
@@ -201,6 +200,33 @@ async function createCalendarEvent(
   return { eventId: event.id, meetLink };
 }
 
+// Propagate Meet link from parent to all recurring instances
+async function propagateMeetLinkToInstances(
+  supabase: any,
+  parentLessonId: string,
+  meetLink: string,
+  eventId: string
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("lessons")
+    .update({
+      video_conference_link: meetLink,
+      video_conference_provider: "google_meet",
+      google_event_id: eventId,
+    })
+    .eq("parent_lesson_id", parentLessonId)
+    .eq("status", "scheduled")
+    .is("video_conference_link", null)
+    .select("id");
+
+  if (error) {
+    console.error(`Failed to propagate Meet link to instances of ${parentLessonId}: ${error.message}`);
+    return 0;
+  }
+
+  return data?.length || 0;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -219,187 +245,331 @@ serve(async (req) => {
     );
 
     const body: MigrationRequest = await req.json().catch(() => ({}));
-    const batchSize = Math.min(body.batchSize || BATCH_SIZE, 100);
+    const batchSize = Math.min(body.batchSize || 50, 100);
     const dryRun = body.dryRun || false;
+    const phase = body.phase || 'all';
 
-    console.log(`Starting Google Meet migration (batchSize: ${batchSize}, dryRun: ${dryRun})`);
+    console.log(`Starting OPTIMIZED Google Meet migration (batchSize: ${batchSize}, dryRun: ${dryRun}, phase: ${phase})`);
 
-    // Find lessons that need migration:
-    // - Status is 'scheduled'
-    // - Start time is in the future
-    // - No video_conference_link OR no google_event_id
     const now = new Date().toISOString();
     
-    let query = supabase
-      .from("lessons")
-      .select(`
-        id,
-        title,
-        description,
-        subject,
-        start_time,
-        end_time,
-        tutor_id,
-        google_event_id,
-        video_conference_link
-      `)
-      .eq("status", "scheduled")
-      .gte("start_time", now)
-      .or("video_conference_link.is.null,google_event_id.is.null")
-      .order("start_time", { ascending: true })
-      .limit(batchSize);
-
-    if (body.startFromId) {
-      query = query.gt("id", body.startFromId);
-    }
-
-    const { data: lessons, error: fetchError } = await query;
-
-    if (fetchError) {
-      throw new Error(`Failed to fetch lessons: ${fetchError.message}`);
-    }
-
-    if (!lessons || lessons.length === 0) {
-      console.log("No lessons found needing migration");
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "No lessons need migration",
-          processed: 0,
-          remaining: 0,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Found ${lessons.length} lessons to migrate`);
-
-    if (dryRun) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          dryRun: true,
-          lessonsToMigrate: lessons.length,
-          sampleLessons: lessons.slice(0, 5).map((l) => ({
-            id: l.id,
-            title: l.title,
-            start_time: l.start_time,
-          })),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Get access token and calendar ID
-    const accessToken = await getValidAccessToken(supabase, ORGANIZATION_ID);
-    const calendarId = await ensureCalendarId(supabase, ORGANIZATION_ID, accessToken);
-
-    // Pre-fetch all tutor and student emails for this batch
-    const tutorIds = [...new Set(lessons.map((l) => l.tutor_id).filter(Boolean))];
-    const lessonIds = lessons.map((l) => l.id);
-
-    const { data: tutors } = await supabase
-      .from("tutors")
-      .select("id, email")
-      .in("id", tutorIds);
-
-    const tutorEmailMap = new Map(tutors?.map((t: any) => [t.id, t.email]) || []);
-
-    const { data: lessonStudents } = await supabase
-      .from("lesson_students")
-      .select(`
-        lesson_id,
-        student:students(email)
-      `)
-      .in("lesson_id", lessonIds);
-
-    const studentEmailsMap = new Map<string, string[]>();
-    for (const ls of lessonStudents || []) {
-      const emails = studentEmailsMap.get(ls.lesson_id) || [];
-      if (ls.student?.email) {
-        emails.push(ls.student.email);
-      }
-      studentEmailsMap.set(ls.lesson_id, emails);
-    }
-
-    // Process lessons
     const results = {
-      success: 0,
+      parentsProcessed: 0,
+      instancesPropagated: 0,
+      standaloneProcessed: 0,
       failed: 0,
-      skipped: 0,
       errors: [] as { lessonId: string; error: string }[],
     };
 
-    for (const lesson of lessons) {
-      try {
-        // Skip if already has valid Meet link
-        if (lesson.video_conference_link && lesson.google_event_id) {
-          results.skipped++;
-          continue;
-        }
+    // Get access token and calendar ID upfront
+    const accessToken = await getValidAccessToken(supabase, ORGANIZATION_ID);
+    const calendarId = await ensureCalendarId(supabase, ORGANIZATION_ID, accessToken);
 
-        const tutorEmail = tutorEmailMap.get(lesson.tutor_id) || null;
-        const studentEmails = studentEmailsMap.get(lesson.id) || [];
+    // ============ PHASE 1: Process PARENT recurring lessons ============
+    if (phase === 'all' || phase === 'parents') {
+      console.log("\n📍 PHASE 1: Processing parent recurring lessons...");
+      
+      // Find parent recurring lessons (is_recurring = true) that need Meet links
+      const { data: parentLessons, error: parentError } = await supabase
+        .from("lessons")
+        .select(`
+          id,
+          title,
+          description,
+          subject,
+          start_time,
+          end_time,
+          tutor_id
+        `)
+        .eq("is_recurring", true)
+        .eq("status", "scheduled")
+        .gte("start_time", now)
+        .is("video_conference_link", null)
+        .order("start_time", { ascending: true })
+        .limit(batchSize);
 
-        const result = await createCalendarEvent(
-          lesson,
-          calendarId,
-          accessToken,
-          tutorEmail,
-          studentEmails
-        );
+      if (parentError) {
+        throw new Error(`Failed to fetch parent lessons: ${parentError.message}`);
+      }
 
-        if (result) {
-          // Update lesson with Meet link
-          const { error: updateError } = await supabase
-            .from("lessons")
-            .update({
-              google_event_id: result.eventId,
-              video_conference_link: result.meetLink,
-              video_conference_provider: "google_meet",
-            })
-            .eq("id", lesson.id);
+      console.log(`Found ${parentLessons?.length || 0} parent recurring lessons needing Meet links`);
 
-          if (updateError) {
-            console.error(`Failed to update lesson ${lesson.id}: ${updateError.message}`);
-            results.errors.push({ lessonId: lesson.id, error: updateError.message });
-            results.failed++;
-          } else {
-            console.log(`✅ Migrated lesson ${lesson.id}: ${result.meetLink}`);
-            results.success++;
+      if (parentLessons && parentLessons.length > 0 && !dryRun) {
+        // Pre-fetch tutor emails
+        const tutorIds = [...new Set(parentLessons.map((l) => l.tutor_id).filter(Boolean))];
+        const { data: tutors } = await supabase
+          .from("tutors")
+          .select("id, email")
+          .in("id", tutorIds);
+        const tutorEmailMap = new Map(tutors?.map((t: any) => [t.id, t.email]) || []);
+
+        // Pre-fetch student emails for parent lessons
+        const parentIds = parentLessons.map((l) => l.id);
+        const { data: lessonStudents } = await supabase
+          .from("lesson_students")
+          .select(`lesson_id, student:students(email)`)
+          .in("lesson_id", parentIds);
+
+        const studentEmailsMap = new Map<string, string[]>();
+        for (const ls of lessonStudents || []) {
+          const emails = studentEmailsMap.get(ls.lesson_id) || [];
+          if (ls.student?.email) {
+            emails.push(ls.student.email);
           }
-        } else {
-          results.failed++;
-          results.errors.push({ lessonId: lesson.id, error: "Failed to create calendar event" });
+          studentEmailsMap.set(ls.lesson_id, emails);
         }
 
-        // Rate limiting
-        await sleep(DELAY_BETWEEN_REQUESTS_MS);
-      } catch (error) {
-        console.error(`Error processing lesson ${lesson.id}:`, error);
-        results.failed++;
-        results.errors.push({ lessonId: lesson.id, error: error.message });
+        for (const lesson of parentLessons) {
+          try {
+            const tutorEmail = tutorEmailMap.get(lesson.tutor_id) || null;
+            const studentEmails = studentEmailsMap.get(lesson.id) || [];
+
+            const result = await createCalendarEvent(
+              lesson,
+              calendarId,
+              accessToken,
+              tutorEmail,
+              studentEmails
+            );
+
+            if (result) {
+              // Update parent with Meet link
+              const { error: updateError } = await supabase
+                .from("lessons")
+                .update({
+                  google_event_id: result.eventId,
+                  video_conference_link: result.meetLink,
+                  video_conference_provider: "google_meet",
+                })
+                .eq("id", lesson.id);
+
+              if (updateError) {
+                results.errors.push({ lessonId: lesson.id, error: updateError.message });
+                results.failed++;
+              } else {
+                console.log(`✅ Parent ${lesson.id}: Meet link created`);
+                results.parentsProcessed++;
+
+                // Propagate to all child instances
+                const propagatedCount = await propagateMeetLinkToInstances(
+                  supabase,
+                  lesson.id,
+                  result.meetLink,
+                  result.eventId
+                );
+                console.log(`   ↳ Propagated to ${propagatedCount} instances`);
+                results.instancesPropagated += propagatedCount;
+              }
+            } else {
+              results.failed++;
+              results.errors.push({ lessonId: lesson.id, error: "Failed to create calendar event" });
+            }
+
+            await sleep(DELAY_BETWEEN_REQUESTS_MS);
+          } catch (error) {
+            console.error(`Error processing parent ${lesson.id}:`, error);
+            results.failed++;
+            results.errors.push({ lessonId: lesson.id, error: error.message });
+          }
+        }
       }
     }
 
-    // Check remaining lessons
-    const { count: remainingCount } = await supabase
+    // ============ PHASE 2: Process orphaned instances (parent already has link) ============
+    console.log("\n📍 PHASE 2: Propagating links to orphaned instances...");
+    
+    // Find instances where parent has a link but instance doesn't
+    const { data: orphanedInstances, error: orphanedError } = await supabase
       .from("lessons")
-      .select("id", { count: "exact", head: true })
+      .select(`
+        id,
+        parent_lesson_id,
+        parent:lessons!parent_lesson_id(
+          video_conference_link,
+          google_event_id,
+          video_conference_provider
+        )
+      `)
+      .eq("is_recurring_instance", true)
       .eq("status", "scheduled")
       .gte("start_time", now)
-      .or("video_conference_link.is.null,google_event_id.is.null");
+      .is("video_conference_link", null)
+      .not("parent_lesson_id", "is", null)
+      .limit(500);
 
-    console.log(`Migration batch complete: ${results.success} success, ${results.failed} failed, ${results.skipped} skipped`);
-    console.log(`Remaining lessons to migrate: ${remainingCount}`);
+    if (!orphanedError && orphanedInstances && orphanedInstances.length > 0 && !dryRun) {
+      console.log(`Found ${orphanedInstances.length} orphaned instances to update`);
+      
+      for (const instance of orphanedInstances) {
+        const parent = instance.parent as any;
+        if (parent?.video_conference_link) {
+          const { error: updateError } = await supabase
+            .from("lessons")
+            .update({
+              video_conference_link: parent.video_conference_link,
+              google_event_id: parent.google_event_id,
+              video_conference_provider: parent.video_conference_provider || "google_meet",
+            })
+            .eq("id", instance.id);
+
+          if (!updateError) {
+            results.instancesPropagated++;
+          }
+        }
+      }
+      console.log(`Propagated ${results.instancesPropagated} orphaned instances`);
+    }
+
+    // ============ PHASE 3: Process STANDALONE lessons ============
+    if (phase === 'all' || phase === 'standalone') {
+      console.log("\n📍 PHASE 3: Processing standalone lessons...");
+      
+      // Find standalone lessons (not recurring parent, not instance) needing Meet links
+      const { data: standaloneLessons, error: standaloneError } = await supabase
+        .from("lessons")
+        .select(`
+          id,
+          title,
+          description,
+          subject,
+          start_time,
+          end_time,
+          tutor_id
+        `)
+        .eq("is_recurring", false)
+        .is("parent_lesson_id", null)
+        .eq("is_recurring_instance", false)
+        .eq("status", "scheduled")
+        .gte("start_time", now)
+        .is("video_conference_link", null)
+        .order("start_time", { ascending: true })
+        .limit(batchSize);
+
+      if (standaloneError) {
+        throw new Error(`Failed to fetch standalone lessons: ${standaloneError.message}`);
+      }
+
+      console.log(`Found ${standaloneLessons?.length || 0} standalone lessons needing Meet links`);
+
+      if (standaloneLessons && standaloneLessons.length > 0 && !dryRun) {
+        // Pre-fetch tutor emails
+        const tutorIds = [...new Set(standaloneLessons.map((l) => l.tutor_id).filter(Boolean))];
+        const { data: tutors } = await supabase
+          .from("tutors")
+          .select("id, email")
+          .in("id", tutorIds);
+        const tutorEmailMap = new Map(tutors?.map((t: any) => [t.id, t.email]) || []);
+
+        // Pre-fetch student emails
+        const lessonIds = standaloneLessons.map((l) => l.id);
+        const { data: lessonStudents } = await supabase
+          .from("lesson_students")
+          .select(`lesson_id, student:students(email)`)
+          .in("lesson_id", lessonIds);
+
+        const studentEmailsMap = new Map<string, string[]>();
+        for (const ls of lessonStudents || []) {
+          const emails = studentEmailsMap.get(ls.lesson_id) || [];
+          if (ls.student?.email) {
+            emails.push(ls.student.email);
+          }
+          studentEmailsMap.set(ls.lesson_id, emails);
+        }
+
+        for (const lesson of standaloneLessons) {
+          try {
+            const tutorEmail = tutorEmailMap.get(lesson.tutor_id) || null;
+            const studentEmails = studentEmailsMap.get(lesson.id) || [];
+
+            const result = await createCalendarEvent(
+              lesson,
+              calendarId,
+              accessToken,
+              tutorEmail,
+              studentEmails
+            );
+
+            if (result) {
+              const { error: updateError } = await supabase
+                .from("lessons")
+                .update({
+                  google_event_id: result.eventId,
+                  video_conference_link: result.meetLink,
+                  video_conference_provider: "google_meet",
+                })
+                .eq("id", lesson.id);
+
+              if (updateError) {
+                results.errors.push({ lessonId: lesson.id, error: updateError.message });
+                results.failed++;
+              } else {
+                console.log(`✅ Standalone ${lesson.id}: Meet link created`);
+                results.standaloneProcessed++;
+              }
+            } else {
+              results.failed++;
+              results.errors.push({ lessonId: lesson.id, error: "Failed to create calendar event" });
+            }
+
+            await sleep(DELAY_BETWEEN_REQUESTS_MS);
+          } catch (error) {
+            console.error(`Error processing standalone ${lesson.id}:`, error);
+            results.failed++;
+            results.errors.push({ lessonId: lesson.id, error: error.message });
+          }
+        }
+      }
+    }
+
+    // ============ Summary ============
+    // Count remaining lessons needing migration
+    const { count: remainingParents } = await supabase
+      .from("lessons")
+      .select("id", { count: "exact", head: true })
+      .eq("is_recurring", true)
+      .eq("status", "scheduled")
+      .gte("start_time", now)
+      .is("video_conference_link", null);
+
+    const { count: remainingInstances } = await supabase
+      .from("lessons")
+      .select("id", { count: "exact", head: true })
+      .eq("is_recurring_instance", true)
+      .eq("status", "scheduled")
+      .gte("start_time", now)
+      .is("video_conference_link", null);
+
+    const { count: remainingStandalone } = await supabase
+      .from("lessons")
+      .select("id", { count: "exact", head: true })
+      .eq("is_recurring", false)
+      .is("parent_lesson_id", null)
+      .eq("is_recurring_instance", false)
+      .eq("status", "scheduled")
+      .gte("start_time", now)
+      .is("video_conference_link", null);
+
+    console.log("\n📊 Migration Summary:");
+    console.log(`   Parents processed: ${results.parentsProcessed}`);
+    console.log(`   Instances propagated: ${results.instancesPropagated}`);
+    console.log(`   Standalone processed: ${results.standaloneProcessed}`);
+    console.log(`   Failed: ${results.failed}`);
+    console.log(`   Remaining parents: ${remainingParents || 0}`);
+    console.log(`   Remaining instances: ${remainingInstances || 0}`);
+    console.log(`   Remaining standalone: ${remainingStandalone || 0}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        processed: lessons.length,
+        dryRun,
         results,
-        remaining: remainingCount || 0,
-        lastProcessedId: lessons[lessons.length - 1]?.id,
+        remaining: {
+          parents: remainingParents || 0,
+          instances: remainingInstances || 0,
+          standalone: remainingStandalone || 0,
+          total: (remainingParents || 0) + (remainingInstances || 0) + (remainingStandalone || 0),
+        },
+        googleApiCalls: results.parentsProcessed + results.standaloneProcessed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
