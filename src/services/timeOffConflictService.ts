@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO, isWithinInterval } from 'date-fns';
 import { checkCalendarConflicts, findAlternativeTutors } from './availabilityCheckService';
+import { createGoogleMeetForLesson } from '@/services/googleCalendarService';
 
 export interface TimeOffConflict {
   id: string;
@@ -137,32 +138,38 @@ export const getAlternativeTutorsForLesson = async (
   }
 };
 
-const recreateLessonSpaceRoom = async (lessonId: string) => {
+/**
+ * Regenerate Google Meet link for a lesson when tutor changes
+ */
+const regenerateGoogleMeetLink = async (lessonId: string) => {
   try {
-    console.log('Recreating LessonSpace room for lesson:', lessonId);
+    console.log('Regenerating Google Meet link for reassigned lesson:', lessonId);
     
-    const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
-      body: {
-        action: 'create-room',
-        lessonId: lessonId,
-        title: 'Reassigned Lesson Room',
-        startTime: new Date().toISOString(),
-      }
-    });
-
-    if (error) {
-      console.error('Error calling lesson-space-integration:', error);
+    // Clear existing Meet link so a new one is created with new tutor as attendee
+    const { error: clearError } = await supabase
+      .from('lessons')
+      .update({
+        google_event_id: null,
+        video_conference_link: null
+      })
+      .eq('id', lessonId);
+    
+    if (clearError) {
+      console.error('Error clearing old Meet link:', clearError);
+    }
+    
+    // Create new Google Calendar event with Meet link (new tutor will be attendee)
+    const result = await createGoogleMeetForLesson(lessonId);
+    
+    if (!result.success) {
+      console.error('Failed to regenerate Google Meet:', result.error);
       return null;
     }
-
-    if (data && data.success) {
-      console.log('LessonSpace room recreated successfully:', data);
-      return data;
-    }
     
-    return null;
+    console.log('✅ Google Meet link regenerated for reassigned lesson:', result.meetLink);
+    return result;
   } catch (error) {
-    console.error('Error in recreateLessonSpaceRoom:', error);
+    console.error('Error in regenerateGoogleMeetLink:', error);
     return null;
   }
 };
@@ -200,12 +207,12 @@ export const reassignLesson = async (
       throw updateError;
     }
 
-    // Recreate LessonSpace room if tutor changed to regenerate participant URLs
+    // Regenerate Google Meet link if tutor changed (new tutor needs to be attendee)
     if (tutorChanged) {
-      console.log('Tutor changed, recreating LessonSpace room for new authorization');
-      const roomData = await recreateLessonSpaceRoom(lessonId);
-      if (!roomData) {
-        console.warn('Failed to recreate room for lesson after tutor change - video room may not work properly');
+      console.log('Tutor changed, regenerating Google Meet link for new tutor');
+      const meetResult = await regenerateGoogleMeetLink(lessonId);
+      if (!meetResult) {
+        console.warn('Failed to regenerate Meet link for lesson after tutor change - video may not work properly');
         // Don't throw error here as the lesson reassignment itself was successful
       }
     }
