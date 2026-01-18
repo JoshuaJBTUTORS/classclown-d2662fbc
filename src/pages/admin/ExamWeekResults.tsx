@@ -125,7 +125,7 @@ const ExamWeekResults: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="subjects" className="space-y-4">
+      <Tabs defaultValue="students" className="space-y-4">
         <TabsList>
           <TabsTrigger value="subjects">By Subject</TabsTrigger>
           <TabsTrigger value="students">By Student</TabsTrigger>
