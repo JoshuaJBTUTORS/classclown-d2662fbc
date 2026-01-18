@@ -370,8 +370,8 @@ Evaluate the student's answer and provide marks, feedback, strengths, and areas 
 
   const result = JSON.parse(toolCall.function.arguments);
   
-  // Ensure marks are within valid range
-  const validMarks = Math.max(0, Math.min(result.marksAwarded, maxMarks));
+  // Ensure marks are within valid range and rounded to integer (database column is INTEGER)
+  const validMarks = Math.round(Math.max(0, Math.min(result.marksAwarded, maxMarks)));
   
   return {
     marksAwarded: validMarks,
