@@ -200,74 +200,86 @@ serve(async (req) => {
 
     console.log(`[batch-mark] Grouped into ${responsesByQuestion.size} question batches`);
 
-    // Process each question group (mark multiple answers per AI call)
-    const PARALLEL_QUESTION_LIMIT = 3; // Process 3 questions in parallel
+    // Process each question group sequentially to avoid rate limits
     const questionGroups = Array.from(responsesByQuestion.entries());
     
-    for (let i = 0; i < questionGroups.length; i += PARALLEL_QUESTION_LIMIT) {
-      const chunk = questionGroups.slice(i, i + PARALLEL_QUESTION_LIMIT);
-      
-      const chunkResults = await Promise.all(
-        chunk.map(async ([questionId, { responses: questionResponses, question }]) => {
-          try {
-            // Skip blank answers entirely - no AI call needed
-            const blankResponses = questionResponses.filter(r => 
-              !r.student_answer || r.student_answer.trim().length === 0
-            );
-            const nonBlankResponses = questionResponses.filter(r => 
-              r.student_answer && r.student_answer.trim().length > 0
-            );
+    for (const [questionId, { responses: questionResponses, question }] of questionGroups) {
+      try {
+        // Skip blank answers entirely - no AI call needed
+        const blankResponses = questionResponses.filter(r => 
+          !r.student_answer || r.student_answer.trim().length === 0
+        );
+        const nonBlankResponses = questionResponses.filter(r => 
+          r.student_answer && r.student_answer.trim().length > 0
+        );
 
-            // Handle blank answers immediately
-            for (const response of blankResponses) {
-              updates.push({
-                id: response.id,
-                marks_awarded: 0,
-                ai_feedback: 'No answer provided.',
-                marking_breakdown: { strengths: [], improvements: ['Provide an answer to earn marks.'], aiMarked: true },
-                confidence_score: 1.0,
-                marked_at: new Date().toISOString(),
-                marked_by: 'ai'
-              });
-            }
+        // Handle blank answers immediately
+        for (const response of blankResponses) {
+          updates.push({
+            id: response.id,
+            marks_awarded: 0,
+            ai_feedback: 'No answer provided.',
+            marking_breakdown: { strengths: [], improvements: ['Provide an answer to earn marks.'], aiMarked: true },
+            confidence_score: 1.0,
+            marked_at: new Date().toISOString(),
+            marked_by: 'ai'
+          });
+        }
 
-            if (nonBlankResponses.length === 0) {
-              return { success: true, marked: blankResponses.length, errors: 0 };
-            }
+        if (nonBlankResponses.length === 0) {
+          continue; // Move to next question
+        }
 
-            // Batch mark non-blank responses for this question (up to 15 at once)
-            const BATCH_SIZE = 15;
-            let totalMarked = blankResponses.length;
-            let totalErrors = 0;
+        // Batch mark non-blank responses for this question (up to 10 at once)
+        const BATCH_SIZE = 10;
 
-            for (let j = 0; j < nonBlankResponses.length; j += BATCH_SIZE) {
-              const batch = nonBlankResponses.slice(j, j + BATCH_SIZE);
+        for (let j = 0; j < nonBlankResponses.length; j += BATCH_SIZE) {
+          const batch = nonBlankResponses.slice(j, j + BATCH_SIZE);
+          
+          // Retry logic with exponential backoff for rate limits
+          let retries = 0;
+          const MAX_RETRIES = 3;
+          let success = false;
+          
+          while (!success && retries < MAX_RETRIES) {
+            try {
+              const results = await markMultipleResponsesWithAI(
+                lovableApiKey,
+                question,
+                batch.map(r => ({ responseId: r.id, studentAnswer: r.student_answer }))
+              );
+
+              for (const result of results) {
+                updates.push({
+                  id: result.responseId,
+                  marks_awarded: result.marksAwarded,
+                  ai_feedback: result.feedback,
+                  marking_breakdown: { 
+                    strengths: result.strengths, 
+                    improvements: result.improvements, 
+                    aiMarked: true 
+                  },
+                  confidence_score: result.confidence,
+                  marked_at: new Date().toISOString(),
+                  marked_by: 'ai'
+                });
+              }
+              success = true;
               
-              try {
-                const results = await markMultipleResponsesWithAI(
-                  lovableApiKey,
-                  question,
-                  batch.map(r => ({ responseId: r.id, studentAnswer: r.student_answer }))
-                );
-
-                for (const result of results) {
-                  updates.push({
-                    id: result.responseId,
-                    marks_awarded: result.marksAwarded,
-                    ai_feedback: result.feedback,
-                    marking_breakdown: { 
-                      strengths: result.strengths, 
-                      improvements: result.improvements, 
-                      aiMarked: true 
-                    },
-                    confidence_score: result.confidence,
-                    marked_at: new Date().toISOString(),
-                    marked_by: 'ai'
-                  });
-                  totalMarked++;
-                }
-              } catch (batchError) {
-                console.error(`[batch-mark] Error marking batch for question ${questionId}:`, batchError);
+              // Small delay between batches to avoid rate limits
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+            } catch (batchError: any) {
+              retries++;
+              const isRateLimit = batchError?.message?.includes('429');
+              
+              if (isRateLimit && retries < MAX_RETRIES) {
+                // Exponential backoff: 2s, 4s, 8s
+                const backoffMs = Math.pow(2, retries) * 1000;
+                console.log(`[batch-mark] Rate limited, waiting ${backoffMs}ms before retry ${retries}/${MAX_RETRIES}`);
+                await new Promise(resolve => setTimeout(resolve, backoffMs));
+              } else if (retries >= MAX_RETRIES) {
+                console.error(`[batch-mark] Failed after ${MAX_RETRIES} retries for question ${questionId}:`, batchError);
                 // Mark failed responses with error
                 for (const response of batch) {
                   updates.push({
@@ -279,26 +291,15 @@ serve(async (req) => {
                     marked_at: new Date().toISOString(),
                     marked_by: 'ai'
                   });
-                  totalErrors++;
+                  errorCount++;
                 }
               }
             }
-
-            return { success: true, marked: totalMarked, errors: totalErrors };
-          } catch (error) {
-            console.error(`[batch-mark] Error processing question ${questionId}:`, error);
-            return { success: false, marked: 0, errors: questionResponses.length };
           }
-        })
-      );
-
-      // Count results
-      for (const result of chunkResults) {
-        if (!result.success) {
-          errorCount += result.errors;
-        } else {
-          errorCount += result.errors;
         }
+      } catch (error) {
+        console.error(`[batch-mark] Error processing question ${questionId}:`, error);
+        errorCount += questionResponses.length;
       }
     }
 
