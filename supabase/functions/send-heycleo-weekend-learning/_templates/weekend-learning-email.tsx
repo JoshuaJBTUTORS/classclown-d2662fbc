@@ -47,23 +47,23 @@ export const WeekendLearningEmail: React.FC<WeekendLearningEmailProps> = ({
             </Text>
             
             <Text style={paragraph}>
-              We are pleased to introduce a new opportunity for {isParent ? 'your child' : 'you'} at Class Beyond Academy to earn additional free tuition by completing structured weekend learning using our AI platform, <strong>HeyCleo</strong>.
-            </Text>
-            
-            <Text style={paragraph}>
-              All weekend learning will be overseen by <strong>Joshua</strong>, one of our Head Teachers, to ensure content remains fully aligned with GCSE exam boards.
+              We are pleased to introduce a new opportunity for {isParent ? 'your child' : 'you'} at Class Beyond Academy to earn additional free tuition by completing structured learning using our AI platform, <strong>HeyCleo</strong>.
             </Text>
 
             {/* How it works box */}
             <Section style={howItWorksBox}>
               <Heading as="h2" style={howItWorksTitle}>How it works:</Heading>
               <Text style={bulletPoint}>• Subscribe to HeyCleo</Text>
-              <Text style={bulletPoint}>• Complete at least 2 lessons per day</Text>
-              <Text style={bulletPoint}>• Do this for 7 consecutive days</Text>
+              <Text style={bulletPoint}>• Complete at least 2 lessons per day during the week</Text>
+              <Text style={bulletPoint}>• Maintain a 7-day streak</Text>
             </Section>
             
             <Text style={paragraph}>
-              Once completed, {isParent ? `${studentName || 'your child'} will` : 'you will'} unlock access to additional free tuition alongside {isParent ? 'their' : 'your'} current programme.
+              Once completed, {isParent ? `${studentName || 'your child'} will` : 'you will'} unlock access to <strong>additional weekend learning sessions delivered by Joshua</strong>, one of our Head Teachers, to ensure content remains fully aligned with GCSE exam boards.
+            </Text>
+            
+            <Text style={paragraph}>
+              <strong>Important:</strong> {isParent ? 'Your child' : 'You'} must maintain {isParent ? 'their' : 'your'} streak to keep access to the live tuition sessions.
             </Text>
 
             {/* CTA Button */}
