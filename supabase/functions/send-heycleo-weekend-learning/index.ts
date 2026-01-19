@@ -241,16 +241,16 @@ const handler = async (req: Request): Promise<Response> => {
 
 I hope you are well.
 
-We are pleased to introduce a new opportunity for students at Class Beyond Academy to earn additional free tuition by completing structured weekend learning using our AI platform, HeyCleo.
-
-All weekend learning will be overseen by Joshua, one of our Head Teachers, to ensure content remains fully aligned with GCSE exam boards.
+We are pleased to introduce a new opportunity for students at Class Beyond Academy to earn additional free tuition by completing structured learning using our AI platform, HeyCleo.
 
 How it works:
 • Subscribe to HeyCleo
-• Complete at least 2 lessons per day
-• Do this for 7 consecutive days
+• Complete at least 2 lessons per day during the week
+• Maintain a 7-day streak
 
-Once completed, students will unlock access to additional free tuition alongside their current programme.
+Once completed, students will unlock access to additional weekend learning sessions delivered by Joshua, one of our Head Teachers, to ensure content remains fully aligned with GCSE exam boards.
+
+Important: Students must maintain their streak to keep access to the live tuition sessions.
 
 Get Started today: https://classclowncrm.com`;
 
@@ -327,16 +327,16 @@ Get Started today: https://classclowncrm.com`;
 
 I hope you are well.
 
-We are pleased to introduce a new opportunity for ${contact.isParent ? 'your child' : 'you'} at Class Beyond Academy to earn additional free tuition by completing structured weekend learning using our AI platform, HeyCleo.
-
-All weekend learning will be overseen by Joshua, one of our Head Teachers, to ensure content remains fully aligned with GCSE exam boards.
+We are pleased to introduce a new opportunity for ${contact.isParent ? 'your child' : 'you'} at Class Beyond Academy to earn additional free tuition by completing structured learning using our AI platform, HeyCleo.
 
 How it works:
 • Subscribe to HeyCleo
-• Complete at least 2 lessons per day
-• Do this for 7 consecutive days
+• Complete at least 2 lessons per day during the week
+• Maintain a 7-day streak
 
-Once completed, ${childReference} will unlock access to additional free tuition alongside ${theirReference} current programme.
+Once completed, ${childReference} will unlock access to additional weekend learning sessions delivered by Joshua, one of our Head Teachers, to ensure content remains fully aligned with GCSE exam boards.
+
+Important: ${contact.isParent ? 'Your child' : 'You'} must maintain ${theirReference} streak to keep access to the live tuition sessions.
 
 Get Started today: https://classclowncrm.com`;
 
