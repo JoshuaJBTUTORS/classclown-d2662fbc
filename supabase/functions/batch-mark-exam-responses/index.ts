@@ -185,7 +185,7 @@ serve(async (req) => {
     }
 
     console.log(`[batch-mark] Job ${jobId}: Processing ${responses.length} responses`);
-    console.log(`[batch-mark] Model: google/gemini-2.5-flash-lite`);
+    console.log(`[batch-mark] Model: google/gemini-2.5-flash`);
 
     let errorCount = 0;
     const updates: any[] = [];
@@ -247,8 +247,8 @@ serve(async (req) => {
           continue; // Move to next question
         }
 
-        // Batch mark non-blank responses for this question (up to 10 at once)
-        const BATCH_SIZE = 10;
+        // Batch mark non-blank responses for this question (up to 5 at once for reliability)
+        const BATCH_SIZE = 5;
 
         for (let j = 0; j < nonBlankResponses.length; j += BATCH_SIZE) {
           const batch = nonBlankResponses.slice(j, j + BATCH_SIZE);
@@ -298,22 +298,14 @@ serve(async (req) => {
               retries++;
               if (retries >= MAX_RETRIES) {
                 console.error(`[batch-mark] Failed after ${MAX_RETRIES} attempts for question ${questionId}:`, batchError);
-                // Mark failed responses with error (non-rate-limit failures only)
-                for (const response of batch) {
-                  updates.push({
-                    id: response.id,
-                    marks_awarded: 0,
-                    ai_feedback: 'Error during AI marking. Manual review required.',
-                    marking_breakdown: { strengths: [], improvements: ['Manual review recommended'], aiMarked: false },
-                    confidence_score: 0,
-                    marked_at: new Date().toISOString(),
-                    marked_by: 'ai'
-                  });
-                  errorCount++;
-                }
+                // Leave responses unmarked so they can be retried in a future batch
+                console.log(`[batch-mark] Skipping ${batch.length} responses - will retry in future batch`);
+                // Don't add to updates - leave marked_at as null for future retry
               } else {
-                // Small backoff for transient errors
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                // Exponential backoff for transient errors (2s, 4s, 8s)
+                const backoffMs = 2000 * Math.pow(2, retries);
+                console.log(`[batch-mark] Retry ${retries}/${MAX_RETRIES} after ${backoffMs}ms`);
+                await new Promise(resolve => setTimeout(resolve, backoffMs));
               }
             }
           }
@@ -477,7 +469,7 @@ Mark each answer and provide marks (0-${question.marks_available}), brief feedba
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash-lite',
+      model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
