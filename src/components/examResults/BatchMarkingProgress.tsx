@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Play, Pause, AlertCircle, CheckCircle2, RefreshCw, X } from 'lucide-react';
+import { Bot, Play, Pause, AlertCircle, CheckCircle2, RefreshCw, X, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -31,6 +31,7 @@ interface JobProgress {
   total: number;
   errors: number;
   startedAt?: string;
+  updatedAt?: string;
 }
 
 export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
@@ -49,6 +50,11 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmStart, setShowConfirmStart] = useState(false);
   const [estimatedTime, setEstimatedTime] = useState<string>('');
+  const [speed, setSpeed] = useState<number>(0); // responses per minute
+  const [isStalled, setIsStalled] = useState(false);
+  
+  // Track previous values for speed calculation
+  const prevProgressRef = useRef<{ marked: number; timestamp: number } | null>(null);
 
   // Fetch job status
   const fetchJobStatus = useCallback(async () => {
@@ -65,34 +71,64 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
       return;
     }
 
+    const now = Date.now();
+    const currentMarked = data.marked_count;
+    
+    // Calculate rolling speed
+    if (prevProgressRef.current) {
+      const timeDelta = (now - prevProgressRef.current.timestamp) / 60000; // minutes
+      const markedDelta = currentMarked - prevProgressRef.current.marked;
+      
+      if (timeDelta > 0 && markedDelta > 0) {
+        const currentSpeed = markedDelta / timeDelta;
+        // Smooth the speed with previous value
+        setSpeed(prev => prev > 0 ? (prev * 0.3 + currentSpeed * 0.7) : currentSpeed);
+      }
+    }
+    
+    prevProgressRef.current = { marked: currentMarked, timestamp: now };
+    
+    // Check if job is stalled (running but no update in 2 minutes)
+    const updatedAt = new Date(data.updated_at).getTime();
+    const stalledThreshold = 2 * 60 * 1000; // 2 minutes
+    const jobIsStalled = data.status === 'running' && (now - updatedAt) > stalledThreshold;
+    setIsStalled(jobIsStalled);
+
     setProgress({
       status: data.status as JobProgress['status'],
-      marked: data.marked_count,
+      marked: currentMarked,
       total: data.total_responses,
       errors: data.error_count,
-      startedAt: data.started_at
+      startedAt: data.started_at,
+      updatedAt: data.updated_at
     });
 
-    // Calculate estimated time
-    if (data.marked_count > 0 && data.started_at) {
-      const elapsed = Date.now() - new Date(data.started_at).getTime();
-      const msPerResponse = elapsed / data.marked_count;
-      const remaining = data.total_responses - data.marked_count;
-      const remainingMs = remaining * msPerResponse;
+    // Calculate estimated time based on rolling speed
+    if (speed > 0) {
+      const remaining = data.total_responses - currentMarked;
+      const remainingMinutes = remaining / speed;
       
-      if (remainingMs > 3600000) {
-        setEstimatedTime(`~${Math.ceil(remainingMs / 3600000)} hours`);
-      } else if (remainingMs > 60000) {
-        setEstimatedTime(`~${Math.ceil(remainingMs / 60000)} minutes`);
+      if (remainingMinutes > 60) {
+        setEstimatedTime(`~${Math.ceil(remainingMinutes / 60)} hours`);
+      } else if (remainingMinutes > 1) {
+        setEstimatedTime(`~${Math.ceil(remainingMinutes)} minutes`);
       } else {
         setEstimatedTime('Less than a minute');
       }
+    } else if (data.status === 'running' && !isProcessing) {
+      setEstimatedTime('Waiting for marking to run...');
+    }
+
+    // Auto-resume if job is running but component just mounted
+    if (data.status === 'running' && !isProcessing && !jobIsStalled) {
+      console.log('Auto-resuming running job');
+      setIsProcessing(true);
     }
 
     if (data.status === 'completed') {
       onJobComplete();
     }
-  }, [jobId, onJobComplete]);
+  }, [jobId, onJobComplete, speed, isProcessing]);
 
   // Process next batch
   const processNextBatch = useCallback(async () => {
@@ -100,7 +136,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
 
     try {
       const { data, error } = await supabase.functions.invoke('batch-mark-exam-responses', {
-        body: { jobId, batchSize: 25 }
+        body: { jobId, batchSize: 50 }
       });
 
       if (error) {
@@ -129,7 +165,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
         return;
       }
 
-      // Update progress
+      // Update progress from response
       if (data?.progress) {
         setProgress(prev => ({
           ...prev,
@@ -140,14 +176,14 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
 
       // Continue processing if there's more
       if (data?.hasMore && isProcessing) {
-        // Small delay between batches
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Minimal delay between batches (speed matters!)
+        await new Promise(resolve => setTimeout(resolve, 100));
         await processNextBatch();
       }
     } catch (error) {
       console.error('Error processing batch:', error);
-      toast.error('Error processing batch. Retrying in 10 seconds...');
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      toast.error('Error processing batch. Retrying in 5 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
       if (isProcessing) {
         await processNextBatch();
       }
@@ -159,7 +195,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
     if (!jobId) return;
 
     fetchJobStatus();
-    const interval = setInterval(fetchJobStatus, 5000);
+    const interval = setInterval(fetchJobStatus, 3000); // Poll every 3 seconds for better responsiveness
     return () => clearInterval(interval);
   }, [jobId, fetchJobStatus]);
 
@@ -173,6 +209,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
   const handleStart = async () => {
     setShowConfirmStart(false);
     setIsProcessing(true);
+    setIsStalled(false);
     
     // Update job status to running
     if (jobId) {
@@ -196,17 +233,38 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
     toast.info('Marking paused');
   };
 
+  const handleResume = async () => {
+    setIsStalled(false);
+    setIsProcessing(true);
+    
+    if (jobId) {
+      await supabase
+        .from('marking_jobs')
+        .update({ status: 'running' })
+        .eq('id', jobId);
+    }
+  };
+
   const percentage = progress.total > 0 ? (progress.marked / progress.total) * 100 : 0;
 
   const statusConfig = {
     pending: { label: 'Ready', color: 'bg-gray-500', icon: Bot },
-    running: { label: 'Marking', color: 'bg-blue-500', icon: RefreshCw },
+    running: { label: isStalled ? 'Stalled' : 'Marking', color: isStalled ? 'bg-yellow-500' : 'bg-blue-500', icon: isStalled ? AlertCircle : RefreshCw },
     paused: { label: 'Paused', color: 'bg-yellow-500', icon: Pause },
     completed: { label: 'Complete', color: 'bg-green-500', icon: CheckCircle2 },
     failed: { label: 'Failed', color: 'bg-red-500', icon: AlertCircle }
   };
 
   const StatusIcon = statusConfig[progress.status].icon;
+
+  // Format time since last update
+  const getTimeSinceUpdate = () => {
+    if (!progress.updatedAt) return '';
+    const minutes = Math.floor((Date.now() - new Date(progress.updatedAt).getTime()) / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes === 1) return '1 minute ago';
+    return `${minutes} minutes ago`;
+  };
 
   if (!jobId) return null;
 
@@ -221,7 +279,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge className={statusConfig[progress.status].color}>
-                <StatusIcon className={`h-3 w-3 mr-1 ${progress.status === 'running' ? 'animate-spin' : ''}`} />
+                <StatusIcon className={`h-3 w-3 mr-1 ${progress.status === 'running' && !isStalled ? 'animate-spin' : ''}`} />
                 {statusConfig[progress.status].label}
               </Badge>
               <Button variant="ghost" size="icon" onClick={onClose}>
@@ -254,10 +312,31 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
             </div>
           </div>
 
-          {estimatedTime && progress.status === 'running' && (
+          {/* Speed indicator */}
+          {speed > 0 && progress.status === 'running' && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Zap className="h-4 w-4 text-yellow-500" />
+              <span>{Math.round(speed)} responses/min</span>
+            </div>
+          )}
+
+          {estimatedTime && progress.status === 'running' && !isStalled && (
             <p className="text-sm text-center text-muted-foreground">
               Estimated time remaining: {estimatedTime}
             </p>
+          )}
+
+          {/* Stalled warning */}
+          {isStalled && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+              <p className="text-sm text-yellow-800">
+                Marking appears stalled (last update: {getTimeSinceUpdate()})
+              </p>
+              <Button size="sm" onClick={handleResume} className="mt-2 gap-2">
+                <Play className="h-3 w-3" />
+                Resume Processing
+              </Button>
+            </div>
           )}
 
           <div className="flex gap-2 justify-center">
@@ -268,7 +347,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
               </Button>
             )}
             
-            {progress.status === 'running' && (
+            {progress.status === 'running' && !isStalled && (
               <Button onClick={handlePause} variant="outline" className="gap-2">
                 <Pause className="h-4 w-4" />
                 Pause
@@ -289,6 +368,13 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
               </Button>
             )}
           </div>
+
+          {/* Last update time */}
+          {progress.updatedAt && progress.status !== 'completed' && (
+            <p className="text-xs text-center text-muted-foreground">
+              Last update: {getTimeSinceUpdate()}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -300,7 +386,7 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
               This will use AI to mark {progress.total.toLocaleString()} exam responses 
               from {startDate} to {endDate}.
               <br /><br />
-              Estimated time: 2-4 hours (you can pause and resume at any time).
+              Estimated time: 15-30 minutes with batch processing.
               <br /><br />
               <strong>Note:</strong> This will use Lovable AI credits.
             </AlertDialogDescription>

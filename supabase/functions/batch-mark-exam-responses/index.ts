@@ -16,15 +16,18 @@ interface ResponseToMark {
   student_answer: string;
   question_id: string;
   session_id: string;
+}
+
+interface QuestionDetails {
   question_text: string;
   correct_answer: string;
   marks_available: number;
   marking_scheme: any;
 }
 
-interface MarkingResult {
+interface BatchMarkingResult {
+  responseId: string;
   marksAwarded: number;
-  maxMarks: number;
   feedback: string;
   strengths: string[];
   improvements: string[];
@@ -35,6 +38,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -47,7 +52,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { jobId, batchSize = 10 }: MarkingRequest = await req.json();
+    const { jobId, batchSize = 50 }: MarkingRequest = await req.json();
 
     if (!jobId) {
       return new Response(
@@ -82,13 +87,17 @@ serve(async (req) => {
       );
     }
 
-    // Update job to running
+    // Update job to running with heartbeat
     await supabase
       .from('marking_jobs')
-      .update({ status: 'running', started_at: job.started_at || new Date().toISOString() })
+      .update({ 
+        status: 'running', 
+        started_at: job.started_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
       .eq('id', jobId);
 
-    // Get unmarked responses in the date range
+    // Get sessions in the date range
     const { data: sessions } = await supabase
       .from('assessment_sessions')
       .select('id')
@@ -119,6 +128,7 @@ serve(async (req) => {
         question_id,
         session_id,
         assessment_questions!inner (
+          id,
           question_text,
           correct_answer,
           marks_available,
@@ -135,91 +145,206 @@ serve(async (req) => {
     }
 
     if (!responses || responses.length === 0) {
-      // All responses marked
+      // All responses marked - get accurate count from DB
+      const { count: actualMarkedCount } = await supabase
+        .from('student_responses')
+        .select('id', { count: 'exact', head: true })
+        .in('session_id', sessionIds)
+        .not('marked_at', 'is', null);
+
       await supabase
         .from('marking_jobs')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .update({ 
+          status: 'completed', 
+          completed_at: new Date().toISOString(),
+          marked_count: actualMarkedCount || job.total_responses
+        })
         .eq('id', jobId);
 
       return new Response(
         JSON.stringify({ 
           status: 'completed',
           message: 'All responses have been marked',
-          progress: { marked: job.marked_count, total: job.total_responses, errors: job.error_count }
+          progress: { marked: actualMarkedCount || job.total_responses, total: job.total_responses, errors: job.error_count }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing ${responses.length} responses for job ${jobId}`);
+    console.log(`[batch-mark] Job ${jobId}: Processing ${responses.length} responses`);
+    console.log(`[batch-mark] Model: google/gemini-2.5-flash-lite`);
 
-    let markedCount = 0;
     let errorCount = 0;
+    const updates: any[] = [];
 
-    // Process responses in parallel batches for speed
-    const PARALLEL_LIMIT = 5;
-    const chunks: typeof responses[] = [];
-    for (let i = 0; i < responses.length; i += PARALLEL_LIMIT) {
-      chunks.push(responses.slice(i, i + PARALLEL_LIMIT));
+    // Group responses by question_id for batch marking
+    const responsesByQuestion = new Map<string, { responses: any[]; question: QuestionDetails }>();
+    
+    for (const response of responses) {
+      const question = response.assessment_questions as any;
+      const questionId = question.id;
+      
+      if (!responsesByQuestion.has(questionId)) {
+        responsesByQuestion.set(questionId, {
+          responses: [],
+          question: {
+            question_text: question.question_text,
+            correct_answer: question.correct_answer,
+            marks_available: question.marks_available,
+            marking_scheme: question.marking_scheme
+          }
+        });
+      }
+      responsesByQuestion.get(questionId)!.responses.push(response);
     }
 
-    for (const chunk of chunks) {
-      const results = await Promise.all(
-        chunk.map(async (response) => {
+    console.log(`[batch-mark] Grouped into ${responsesByQuestion.size} question batches`);
+
+    // Process each question group (mark multiple answers per AI call)
+    const PARALLEL_QUESTION_LIMIT = 3; // Process 3 questions in parallel
+    const questionGroups = Array.from(responsesByQuestion.entries());
+    
+    for (let i = 0; i < questionGroups.length; i += PARALLEL_QUESTION_LIMIT) {
+      const chunk = questionGroups.slice(i, i + PARALLEL_QUESTION_LIMIT);
+      
+      const chunkResults = await Promise.all(
+        chunk.map(async ([questionId, { responses: questionResponses, question }]) => {
           try {
-            const question = response.assessment_questions as any;
-            
-            // Call AI to mark the response
-            const markingResult = await markResponseWithAI(
-              lovableApiKey,
-              question.question_text,
-              response.student_answer || '',
-              question.correct_answer,
-              question.marks_available,
-              question.marking_scheme
+            // Skip blank answers entirely - no AI call needed
+            const blankResponses = questionResponses.filter(r => 
+              !r.student_answer || r.student_answer.trim().length === 0
+            );
+            const nonBlankResponses = questionResponses.filter(r => 
+              r.student_answer && r.student_answer.trim().length > 0
             );
 
-            // Update the response with AI marking
-            const { error: updateError } = await supabase
-              .from('student_responses')
-              .update({
-                marks_awarded: markingResult.marksAwarded,
-                ai_feedback: markingResult.feedback,
-                marking_breakdown: {
-                  strengths: markingResult.strengths,
-                  improvements: markingResult.improvements,
-                  aiMarked: true
-                },
-                confidence_score: markingResult.confidence,
+            // Handle blank answers immediately
+            for (const response of blankResponses) {
+              updates.push({
+                id: response.id,
+                marks_awarded: 0,
+                ai_feedback: 'No answer provided.',
+                marking_breakdown: { strengths: [], improvements: ['Provide an answer to earn marks.'], aiMarked: true },
+                confidence_score: 1.0,
                 marked_at: new Date().toISOString(),
                 marked_by: 'ai'
-              })
-              .eq('id', response.id);
-
-            if (updateError) {
-              console.error('Error updating response:', updateError);
-              return { success: false };
+              });
             }
-            return { success: true };
+
+            if (nonBlankResponses.length === 0) {
+              return { success: true, marked: blankResponses.length, errors: 0 };
+            }
+
+            // Batch mark non-blank responses for this question (up to 15 at once)
+            const BATCH_SIZE = 15;
+            let totalMarked = blankResponses.length;
+            let totalErrors = 0;
+
+            for (let j = 0; j < nonBlankResponses.length; j += BATCH_SIZE) {
+              const batch = nonBlankResponses.slice(j, j + BATCH_SIZE);
+              
+              try {
+                const results = await markMultipleResponsesWithAI(
+                  lovableApiKey,
+                  question,
+                  batch.map(r => ({ responseId: r.id, studentAnswer: r.student_answer }))
+                );
+
+                for (const result of results) {
+                  updates.push({
+                    id: result.responseId,
+                    marks_awarded: result.marksAwarded,
+                    ai_feedback: result.feedback,
+                    marking_breakdown: { 
+                      strengths: result.strengths, 
+                      improvements: result.improvements, 
+                      aiMarked: true 
+                    },
+                    confidence_score: result.confidence,
+                    marked_at: new Date().toISOString(),
+                    marked_by: 'ai'
+                  });
+                  totalMarked++;
+                }
+              } catch (batchError) {
+                console.error(`[batch-mark] Error marking batch for question ${questionId}:`, batchError);
+                // Mark failed responses with error
+                for (const response of batch) {
+                  updates.push({
+                    id: response.id,
+                    marks_awarded: 0,
+                    ai_feedback: 'Error during AI marking. Manual review required.',
+                    marking_breakdown: { strengths: [], improvements: ['Manual review recommended'], aiMarked: false },
+                    confidence_score: 0,
+                    marked_at: new Date().toISOString(),
+                    marked_by: 'ai'
+                  });
+                  totalErrors++;
+                }
+              }
+            }
+
+            return { success: true, marked: totalMarked, errors: totalErrors };
           } catch (error) {
-            console.error(`Error marking response ${response.id}:`, error);
-            return { success: false };
+            console.error(`[batch-mark] Error processing question ${questionId}:`, error);
+            return { success: false, marked: 0, errors: questionResponses.length };
           }
         })
       );
 
-      // Count successes and failures
-      results.forEach(r => {
-        if (r.success) markedCount++;
-        else errorCount++;
-      });
+      // Count results
+      for (const result of chunkResults) {
+        if (!result.success) {
+          errorCount += result.errors;
+        } else {
+          errorCount += result.errors;
+        }
+      }
     }
 
-    // Update job progress
-    const newMarkedCount = job.marked_count + markedCount;
+    // Bulk update all responses at once
+    if (updates.length > 0) {
+      console.log(`[batch-mark] Bulk updating ${updates.length} responses`);
+      
+      // Supabase doesn't have native bulk upsert, so we'll do individual updates but in parallel
+      const UPDATE_PARALLEL_LIMIT = 20;
+      for (let i = 0; i < updates.length; i += UPDATE_PARALLEL_LIMIT) {
+        const updateChunk = updates.slice(i, i + UPDATE_PARALLEL_LIMIT);
+        await Promise.all(
+          updateChunk.map(update => 
+            supabase
+              .from('student_responses')
+              .update({
+                marks_awarded: update.marks_awarded,
+                ai_feedback: update.ai_feedback,
+                marking_breakdown: update.marking_breakdown,
+                confidence_score: update.confidence_score,
+                marked_at: update.marked_at,
+                marked_by: update.marked_by
+              })
+              .eq('id', update.id)
+          )
+        );
+      }
+    }
+
+    // Get accurate marked count from DB (not incremental)
+    const { count: actualMarkedCount } = await supabase
+      .from('student_responses')
+      .select('id', { count: 'exact', head: true })
+      .in('session_id', sessionIds)
+      .not('marked_at', 'is', null);
+
+    const newMarkedCount = actualMarkedCount || 0;
     const newErrorCount = job.error_count + errorCount;
     const isComplete = newMarkedCount >= job.total_responses;
 
+    const elapsed = Date.now() - startTime;
+    const responsesPerMinute = updates.length > 0 ? Math.round((updates.length / elapsed) * 60000) : 0;
+    console.log(`[batch-mark] Completed batch in ${elapsed}ms (${updates.length} responses, ~${responsesPerMinute}/min)`);
+    console.log(`[batch-mark] Total progress: ${newMarkedCount}/${job.total_responses}`);
+
+    // Update job with accurate count
     await supabase
       .from('marking_jobs')
       .update({
@@ -227,7 +352,8 @@ serve(async (req) => {
         error_count: newErrorCount,
         last_processed_response_id: responses[responses.length - 1]?.id,
         status: isComplete ? 'completed' : 'running',
-        completed_at: isComplete ? new Date().toISOString() : null
+        completed_at: isComplete ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
       })
       .eq('id', jobId);
 
@@ -238,7 +364,8 @@ serve(async (req) => {
           marked: newMarkedCount,
           total: job.total_responses,
           errors: newErrorCount,
-          batchProcessed: markedCount
+          batchProcessed: updates.length,
+          responsesPerMinute
         },
         hasMore: !isComplete
       }),
@@ -246,7 +373,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Batch marking error:', error);
+    console.error('[batch-mark] Error:', error);
     
     // Check for rate limit errors
     if (error instanceof Error && error.message.includes('429')) {
@@ -270,39 +397,42 @@ serve(async (req) => {
   }
 });
 
-async function markResponseWithAI(
+async function markMultipleResponsesWithAI(
   apiKey: string,
-  questionText: string,
-  studentAnswer: string,
-  correctAnswer: string,
-  maxMarks: number,
-  markingScheme: any
-): Promise<MarkingResult> {
+  question: QuestionDetails,
+  answers: { responseId: string; studentAnswer: string }[]
+): Promise<BatchMarkingResult[]> {
   
-  const systemPrompt = `You are an expert exam marker for GCSE and A-Level assessments. Your task is to evaluate student answers fairly and accurately.
+  const systemPrompt = `You are an expert exam marker for GCSE and A-Level assessments. Your task is to evaluate multiple student answers to the SAME question fairly and accurately.
 
-You must use the mark_answer function to return your assessment.
+You must use the mark_answers function to return your assessment for ALL answers provided.
 
 Guidelines:
 - Award marks based on the marking scheme and correct answer provided
 - Be fair but rigorous in your assessment
 - Look for key concepts, terminology, and understanding
 - Partial credit should be given for partial understanding
-- Provide constructive feedback that helps the student improve`;
+- Provide brief, constructive feedback for each answer`;
 
-  const userPrompt = `Please mark this exam response:
+  // Build the answers list
+  const answersText = answers.map((a, i) => 
+    `[Answer ${i + 1}] (ID: ${a.responseId})\n${a.studentAnswer}`
+  ).join('\n\n');
 
-Question: ${questionText}
+  const userPrompt = `Please mark these ${answers.length} student answers to the same question:
 
-Model Answer: ${correctAnswer}
+QUESTION: ${question.question_text}
 
-${markingScheme ? `Marking Scheme: ${JSON.stringify(markingScheme)}` : ''}
+MODEL ANSWER: ${question.correct_answer}
 
-Maximum Marks: ${maxMarks}
+${question.marking_scheme ? `MARKING SCHEME: ${JSON.stringify(question.marking_scheme)}` : ''}
 
-Student's Answer: ${studentAnswer || '(No answer provided)'}
+MAXIMUM MARKS: ${question.marks_available}
 
-Evaluate the student's answer and provide marks, feedback, strengths, and areas for improvement.`;
+STUDENT ANSWERS:
+${answersText}
+
+Mark each answer and provide marks (0-${question.marks_available}), brief feedback, strengths, and improvements for each.`;
 
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
@@ -320,76 +450,93 @@ Evaluate the student's answer and provide marks, feedback, strengths, and areas 
         {
           type: 'function',
           function: {
-            name: 'mark_answer',
-            description: 'Submit the marking result for a student answer',
+            name: 'mark_answers',
+            description: 'Submit marking results for multiple student answers',
             parameters: {
               type: 'object',
               properties: {
-                marksAwarded: {
-                  type: 'number',
-                  description: 'The number of marks to award (0 to maxMarks)'
-                },
-                feedback: {
-                  type: 'string',
-                  description: 'Brief overall feedback on the answer (1-2 sentences)'
-                },
-                strengths: {
+                results: {
                   type: 'array',
-                  items: { type: 'string' },
-                  description: 'List of strengths in the answer (1-3 items)'
-                },
-                improvements: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'List of areas for improvement (1-3 items)'
-                },
-                confidence: {
-                  type: 'number',
-                  description: 'Confidence in the marking (0.0 to 1.0)'
+                  items: {
+                    type: 'object',
+                    properties: {
+                      responseId: { type: 'string', description: 'The ID of the response being marked' },
+                      marksAwarded: { type: 'number', description: 'Marks awarded (0 to maxMarks)' },
+                      feedback: { type: 'string', description: 'Brief feedback (1 sentence)' },
+                      strengths: { type: 'array', items: { type: 'string' }, description: '1-2 strengths' },
+                      improvements: { type: 'array', items: { type: 'string' }, description: '1-2 improvements' },
+                      confidence: { type: 'number', description: 'Confidence 0.0-1.0' }
+                    },
+                    required: ['responseId', 'marksAwarded', 'feedback', 'strengths', 'improvements', 'confidence']
+                  },
+                  description: 'Array of marking results, one per student answer'
                 }
               },
-              required: ['marksAwarded', 'feedback', 'strengths', 'improvements', 'confidence'],
+              required: ['results'],
               additionalProperties: false
             }
           }
         }
       ],
-      tool_choice: { type: 'function', function: { name: 'mark_answer' } }
+      tool_choice: { type: 'function', function: { name: 'mark_answers' } }
     })
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('AI API error:', response.status, errorText);
+    console.error('[batch-mark] AI API error:', response.status, errorText);
     throw new Error(`AI API error: ${response.status}`);
   }
 
   const data = await response.json();
   
   const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-  if (!toolCall || toolCall.function.name !== 'mark_answer') {
-    // Fallback if tool call fails
-    return {
+  if (!toolCall || toolCall.function.name !== 'mark_answers') {
+    console.error('[batch-mark] No valid tool call in response');
+    // Return fallback results
+    return answers.map(a => ({
+      responseId: a.responseId,
       marksAwarded: 0,
-      maxMarks,
-      feedback: 'Unable to assess this answer automatically.',
+      feedback: 'Unable to assess automatically. Manual review required.',
       strengths: [],
       improvements: ['Manual review recommended'],
       confidence: 0
-    };
+    }));
   }
 
-  const result = JSON.parse(toolCall.function.arguments);
-  
-  // Ensure marks are within valid range and rounded to integer (database column is INTEGER)
-  const validMarks = Math.round(Math.max(0, Math.min(result.marksAwarded, maxMarks)));
-  
-  return {
-    marksAwarded: validMarks,
-    maxMarks,
-    feedback: result.feedback || '',
-    strengths: result.strengths || [],
-    improvements: result.improvements || [],
-    confidence: Math.max(0, Math.min(1, result.confidence || 0.5))
-  };
+  const parsed = JSON.parse(toolCall.function.arguments);
+  const results: BatchMarkingResult[] = [];
+
+  // Map results back to response IDs
+  const resultMap = new Map<string, any>();
+  for (const result of (parsed.results || [])) {
+    resultMap.set(result.responseId, result);
+  }
+
+  // Ensure we have a result for every answer
+  for (const answer of answers) {
+    const result = resultMap.get(answer.responseId);
+    if (result) {
+      results.push({
+        responseId: answer.responseId,
+        marksAwarded: Math.round(Math.max(0, Math.min(result.marksAwarded, question.marks_available))),
+        feedback: result.feedback || '',
+        strengths: result.strengths || [],
+        improvements: result.improvements || [],
+        confidence: Math.max(0, Math.min(1, result.confidence || 0.5))
+      });
+    } else {
+      // Fallback for missing results
+      results.push({
+        responseId: answer.responseId,
+        marksAwarded: 0,
+        feedback: 'Unable to assess. Manual review required.',
+        strengths: [],
+        improvements: ['Manual review recommended'],
+        confidence: 0
+      });
+    }
+  }
+
+  return results;
 }
