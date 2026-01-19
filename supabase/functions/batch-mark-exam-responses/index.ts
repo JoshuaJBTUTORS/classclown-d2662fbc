@@ -345,6 +345,45 @@ serve(async (req) => {
           )
         );
       }
+
+      // Sync session scores for all affected sessions
+      const affectedSessionIds = [...new Set(updates.map(u => {
+        const response = responses.find(r => r.id === u.id);
+        return response?.session_id;
+      }).filter(Boolean))];
+
+      console.log(`[batch-mark] Syncing scores for ${affectedSessionIds.length} sessions`);
+
+      for (const sessionId of affectedSessionIds) {
+        try {
+          // Calculate totals from all marked responses for this session
+          const { data: responseData } = await supabase
+            .from('student_responses')
+            .select(`
+              marks_awarded,
+              question_id,
+              assessment_questions!inner(marks_available)
+            `)
+            .eq('session_id', sessionId)
+            .not('marks_awarded', 'is', null);
+
+          if (responseData && responseData.length > 0) {
+            const totalAchieved = responseData.reduce((sum, r) => sum + (r.marks_awarded || 0), 0);
+            const totalAvailable = responseData.reduce((sum, r) => sum + ((r.assessment_questions as any)?.marks_available || 0), 0);
+
+            await supabase
+              .from('assessment_sessions')
+              .update({
+                total_marks_achieved: Math.round(totalAchieved),
+                total_marks_available: Math.round(totalAvailable),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', sessionId);
+          }
+        } catch (syncError) {
+          console.error(`[batch-mark] Failed to sync session ${sessionId}:`, syncError);
+        }
+      }
     }
 
     // Get accurate marked count from DB (not incremental)
