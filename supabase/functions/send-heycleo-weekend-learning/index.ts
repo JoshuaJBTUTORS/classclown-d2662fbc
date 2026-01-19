@@ -98,9 +98,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { testMode = false, testEmail, testPhone, skipWhatsApp = false } = await req.json().catch(() => ({}));
+    const { 
+      testMode = false, 
+      testEmail, 
+      testPhone, 
+      skipWhatsApp = false,
+      skipEmail = false,
+      batchSize = 40,
+      offset = 0,
+    } = await req.json().catch(() => ({}));
     
-    console.log(`Starting HeyCleo Weekend Learning campaign. Test mode: ${testMode}, Skip WhatsApp: ${skipWhatsApp}`);
+    console.log(`Starting HeyCleo Weekend Learning campaign. Test mode: ${testMode}, Skip WhatsApp: ${skipWhatsApp}, Skip Email: ${skipEmail}, Batch: ${batchSize}, Offset: ${offset}`);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -194,7 +202,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`Unique parents: ${parentContacts.size}, Unique students: ${studentContacts.size}`);
+    const allContacts = [...parentContacts.values(), ...studentContacts.values()];
+    const totalContacts = allContacts.length;
+    
+    console.log(`Total contacts: ${totalContacts}, Processing batch: offset=${offset}, size=${batchSize}`);
 
     const results = {
       parentEmailsSent: 0,
@@ -206,8 +217,6 @@ const handler = async (req: Request): Promise<Response> => {
       studentWhatsAppSent: 0,
       studentWhatsAppFailed: 0,
     };
-
-    const allContacts = [...parentContacts.values(), ...studentContacts.values()];
 
     // If test mode, only send to test email/phone
     if (testMode) {
@@ -267,52 +276,59 @@ Get Started today: https://classclowncrm.com`;
           contactsFound: {
             parents: parentContacts.size,
             students: studentContacts.size,
+            total: totalContacts,
           }
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Send emails to all contacts
-    for (const contact of allContacts) {
-      if (contact.email) {
-        try {
-          const html = await renderAsync(
-            React.createElement(WeekendLearningEmail, {
-              recipientName: contact.firstName,
-              isParent: contact.isParent,
-              studentName: contact.studentName,
-            })
-          );
+    // Get batch of contacts
+    const batchContacts = allContacts.slice(offset, offset + batchSize);
+    console.log(`Processing ${batchContacts.length} contacts in this batch`);
 
-          await sendEmailWithRetry({
-            from: "Class Beyond Academy <enquiries@classbeyondacademy.io>",
-            to: [contact.email],
-            subject: "Earn Additional Free Tuition with HeyCleo Weekend Learning",
-            html,
-          });
+    // Send emails to batch contacts
+    if (!skipEmail) {
+      for (const contact of batchContacts) {
+        if (contact.email) {
+          try {
+            const html = await renderAsync(
+              React.createElement(WeekendLearningEmail, {
+                recipientName: contact.firstName,
+                isParent: contact.isParent,
+                studentName: contact.studentName,
+              })
+            );
 
-          if (contact.isParent) {
-            results.parentEmailsSent++;
-          } else {
-            results.studentEmailsSent++;
-          }
-          console.log(`Email sent to ${contact.email}`);
-          await sleep(600); // Rate limiting
-        } catch (error) {
-          console.error(`Email failed for ${contact.email}:`, error);
-          if (contact.isParent) {
-            results.parentEmailsFailed++;
-          } else {
-            results.studentEmailsFailed++;
+            await sendEmailWithRetry({
+              from: "Class Beyond Academy <enquiries@classbeyondacademy.io>",
+              to: [contact.email],
+              subject: "Earn Additional Free Tuition with HeyCleo Weekend Learning",
+              html,
+            });
+
+            if (contact.isParent) {
+              results.parentEmailsSent++;
+            } else {
+              results.studentEmailsSent++;
+            }
+            console.log(`Email sent to ${contact.email}`);
+            await sleep(400); // Rate limiting
+          } catch (error) {
+            console.error(`Email failed for ${contact.email}:`, error);
+            if (contact.isParent) {
+              results.parentEmailsFailed++;
+            } else {
+              results.studentEmailsFailed++;
+            }
           }
         }
       }
     }
 
-    // Send WhatsApp messages (unless skipped)
+    // Send WhatsApp messages to batch contacts (unless skipped)
     if (!skipWhatsApp) {
-      for (const contact of allContacts) {
+      for (const contact of batchContacts) {
         if (contact.phone) {
           const formattedPhone = formatPhoneNumber(contact.phone);
           
@@ -357,17 +373,28 @@ Get Started today: https://classclowncrm.com`;
               results.studentWhatsAppFailed++;
             }
           }
-          await sleep(500); // Rate limiting for WhatsApp
+          await sleep(400); // Rate limiting for WhatsApp
         }
       }
     }
 
-    console.log("Campaign complete:", results);
+    const nextOffset = offset + batchSize;
+    const hasMore = nextOffset < totalContacts;
+
+    console.log(`Batch complete. Processed: ${batchContacts.length}, Next offset: ${nextOffset}, Has more: ${hasMore}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         results,
+        batch: {
+          offset,
+          batchSize,
+          processed: batchContacts.length,
+          nextOffset: hasMore ? nextOffset : null,
+          hasMore,
+          totalContacts,
+        },
         summary: {
           totalEmailsSent: results.parentEmailsSent + results.studentEmailsSent,
           totalWhatsAppSent: results.parentWhatsAppSent + results.studentWhatsAppSent,
