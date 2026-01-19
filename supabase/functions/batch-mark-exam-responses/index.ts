@@ -386,21 +386,45 @@ serve(async (req) => {
       }
     }
 
-    // Get accurate marked count from DB (not incremental)
+    // Get accurate counts from DB (not incremental) - fixes premature completion bug
     const { count: actualMarkedCount } = await supabase
       .from('student_responses')
       .select('id', { count: 'exact', head: true })
       .in('session_id', sessionIds)
       .not('marked_at', 'is', null);
 
+    const { count: actualUnmarkedCount } = await supabase
+      .from('student_responses')
+      .select('id', { count: 'exact', head: true })
+      .in('session_id', sessionIds)
+      .is('marked_at', null);
+
+    const { count: actualTotalCount } = await supabase
+      .from('student_responses')
+      .select('id', { count: 'exact', head: true })
+      .in('session_id', sessionIds);
+
     const newMarkedCount = actualMarkedCount || 0;
+    const actualTotal = actualTotalCount || job.total_responses;
     const newErrorCount = job.error_count + errorCount;
-    const isComplete = newMarkedCount >= job.total_responses;
+    
+    // Use actual unmarked count for completion check, not the static total_responses
+    const isComplete = (actualUnmarkedCount === 0 || actualUnmarkedCount === null) && newMarkedCount > 0;
+
+    // Log if total_responses drifted from reality
+    if (actualTotal !== job.total_responses) {
+      console.log(`[batch-mark] total_responses drift detected: job has ${job.total_responses}, actual is ${actualTotal}`);
+      // Update the job's total to reflect reality
+      await supabase
+        .from('marking_jobs')
+        .update({ total_responses: actualTotal })
+        .eq('id', jobId);
+    }
 
     const elapsed = Date.now() - startTime;
     const responsesPerMinute = updates.length > 0 ? Math.round((updates.length / elapsed) * 60000) : 0;
     console.log(`[batch-mark] Completed batch in ${elapsed}ms (${updates.length} responses, ~${responsesPerMinute}/min)`);
-    console.log(`[batch-mark] Total progress: ${newMarkedCount}/${job.total_responses}`);
+    console.log(`[batch-mark] Total progress: ${newMarkedCount}/${actualTotal} (${actualUnmarkedCount || 0} remaining)`);
 
     const shouldPause = rateLimited && !isComplete;
     const newStatus: 'running' | 'paused' | 'completed' = isComplete
