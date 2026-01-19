@@ -34,6 +34,19 @@ interface BatchMarkingResult {
   confidence: number;
 }
 
+class RateLimitError extends Error {
+  retryAfterSeconds: number;
+  constructor(retryAfterSeconds = 60) {
+    super('RATE_LIMIT');
+    this.name = 'RateLimitError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+function isRateLimitError(err: any): err is RateLimitError {
+  return err?.name === 'RateLimitError' || err?.message === 'RATE_LIMIT';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -177,6 +190,10 @@ serve(async (req) => {
     let errorCount = 0;
     const updates: any[] = [];
 
+    let rateLimited = false;
+    let retryAfterSeconds = 60;
+
+
     // Group responses by question_id for batch marking
     const responsesByQuestion = new Map<string, { responses: any[]; question: QuestionDetails }>();
     
@@ -235,13 +252,13 @@ serve(async (req) => {
 
         for (let j = 0; j < nonBlankResponses.length; j += BATCH_SIZE) {
           const batch = nonBlankResponses.slice(j, j + BATCH_SIZE);
-          
-          // Retry logic with exponential backoff for rate limits
+
+          // Retry logic for non-rate-limit failures; on rate limit we pause the whole job.
           let retries = 0;
-          const MAX_RETRIES = 3;
+          const MAX_RETRIES = 2;
           let success = false;
-          
-          while (!success && retries < MAX_RETRIES) {
+
+          while (!success && retries < MAX_RETRIES && !rateLimited) {
             try {
               const results = await markMultipleResponsesWithAI(
                 lovableApiKey,
@@ -254,33 +271,34 @@ serve(async (req) => {
                   id: result.responseId,
                   marks_awarded: result.marksAwarded,
                   ai_feedback: result.feedback,
-                  marking_breakdown: { 
-                    strengths: result.strengths, 
-                    improvements: result.improvements, 
-                    aiMarked: true 
+                  marking_breakdown: {
+                    strengths: result.strengths,
+                    improvements: result.improvements,
+                    aiMarked: true
                   },
                   confidence_score: result.confidence,
                   marked_at: new Date().toISOString(),
                   marked_by: 'ai'
                 });
               }
+
               success = true;
-              
-              // Small delay between batches to avoid rate limits
-              await new Promise(resolve => setTimeout(resolve, 500));
-              
+
+              // Conservative pacing between AI calls
+              await new Promise(resolve => setTimeout(resolve, 1500));
             } catch (batchError: any) {
+              // If we hit a rate limit, pause the job and let the UI resume later.
+              if (isRateLimitError(batchError)) {
+                rateLimited = true;
+                retryAfterSeconds = batchError.retryAfterSeconds || 60;
+                console.log(`[batch-mark] Rate limited. Pausing job for ~${retryAfterSeconds}s`);
+                break;
+              }
+
               retries++;
-              const isRateLimit = batchError?.message?.includes('429');
-              
-              if (isRateLimit && retries < MAX_RETRIES) {
-                // Exponential backoff: 2s, 4s, 8s
-                const backoffMs = Math.pow(2, retries) * 1000;
-                console.log(`[batch-mark] Rate limited, waiting ${backoffMs}ms before retry ${retries}/${MAX_RETRIES}`);
-                await new Promise(resolve => setTimeout(resolve, backoffMs));
-              } else if (retries >= MAX_RETRIES) {
-                console.error(`[batch-mark] Failed after ${MAX_RETRIES} retries for question ${questionId}:`, batchError);
-                // Mark failed responses with error
+              if (retries >= MAX_RETRIES) {
+                console.error(`[batch-mark] Failed after ${MAX_RETRIES} attempts for question ${questionId}:`, batchError);
+                // Mark failed responses with error (non-rate-limit failures only)
                 for (const response of batch) {
                   updates.push({
                     id: response.id,
@@ -293,15 +311,23 @@ serve(async (req) => {
                   });
                   errorCount++;
                 }
+              } else {
+                // Small backoff for transient errors
+                await new Promise(resolve => setTimeout(resolve, 3000));
               }
             }
           }
+
+          if (rateLimited) break;
         }
       } catch (error) {
         console.error(`[batch-mark] Error processing question ${questionId}:`, error);
         errorCount += questionResponses.length;
       }
+
+      if (rateLimited) break;
     }
+
 
     // Bulk update all responses at once
     if (updates.length > 0) {
@@ -345,6 +371,13 @@ serve(async (req) => {
     console.log(`[batch-mark] Completed batch in ${elapsed}ms (${updates.length} responses, ~${responsesPerMinute}/min)`);
     console.log(`[batch-mark] Total progress: ${newMarkedCount}/${job.total_responses}`);
 
+    const shouldPause = rateLimited && !isComplete;
+    const newStatus: 'running' | 'paused' | 'completed' = isComplete
+      ? 'completed'
+      : shouldPause
+        ? 'paused'
+        : 'running';
+
     // Update job with accurate count
     await supabase
       .from('marking_jobs')
@@ -352,7 +385,8 @@ serve(async (req) => {
         marked_count: newMarkedCount,
         error_count: newErrorCount,
         last_processed_response_id: responses[responses.length - 1]?.id,
-        status: isComplete ? 'completed' : 'running',
+        status: newStatus,
+        paused_at: shouldPause ? new Date().toISOString() : null,
         completed_at: isComplete ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
       })
@@ -360,7 +394,8 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        status: isComplete ? 'completed' : 'running',
+        status: newStatus,
+        ...(shouldPause ? { reason: 'rate_limited', retryAfterSeconds } : {}),
         progress: {
           marked: newMarkedCount,
           total: job.total_responses,
@@ -486,6 +521,13 @@ Mark each answer and provide marks (0-${question.marks_available}), brief feedba
   if (!response.ok) {
     const errorText = await response.text();
     console.error('[batch-mark] AI API error:', response.status, errorText);
+
+    if (response.status === 429) {
+      const retryAfterHeader = response.headers.get('retry-after');
+      const retryAfter = Number(retryAfterHeader || '60');
+      throw new RateLimitError(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60);
+    }
+
     throw new Error(`AI API error: ${response.status}`);
   }
 

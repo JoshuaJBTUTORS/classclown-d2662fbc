@@ -52,9 +52,26 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
   const [estimatedTime, setEstimatedTime] = useState<string>('');
   const [speed, setSpeed] = useState<number>(0); // responses per minute
   const [isStalled, setIsStalled] = useState(false);
-  
+
   // Track previous values for speed calculation
   const prevProgressRef = useRef<{ marked: number; timestamp: number } | null>(null);
+
+  // Prevent multiple concurrent processing loops
+  const inFlightRef = useRef(false);
+  const processingRef = useRef(false);
+  const cancelledRef = useRef(false);
+
+  useEffect(() => {
+    processingRef.current = isProcessing;
+  }, [isProcessing]);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, []);
+
 
   // Fetch job status
   const fetchJobStatus = useCallback(async () => {
@@ -130,65 +147,81 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
     }
   }, [jobId, onJobComplete, speed, isProcessing]);
 
-  // Process next batch
-  const processNextBatch = useCallback(async () => {
-    if (!jobId || !isProcessing) return;
+  // Process batches in a single controlled loop (prevents recursive storms)
+  const processLoop = useCallback(async () => {
+    if (!jobId || inFlightRef.current) return;
 
+    inFlightRef.current = true;
     try {
-      const { data, error } = await supabase.functions.invoke('batch-mark-exam-responses', {
-        body: { jobId, batchSize: 50 }
-      });
+      while (!cancelledRef.current && processingRef.current && progress.status !== 'completed') {
+        const { data, error } = await supabase.functions.invoke('batch-mark-exam-responses', {
+          body: { jobId, batchSize: 25 }
+        });
 
-      if (error) {
-        console.error('Batch processing error:', error);
-        if (error.message?.includes('429')) {
-          toast.error('Rate limit hit. Pausing for 30 seconds...');
-          await new Promise(resolve => setTimeout(resolve, 30000));
-        } else if (error.message?.includes('402')) {
-          toast.error('Payment required. Please add credits to continue.');
-          setIsProcessing(false);
-          return;
-        } else {
-          throw error;
+        if (error) {
+          console.error('Batch processing error:', error);
+
+          const msg = error.message || '';
+
+          if (msg.includes('402')) {
+            toast.error('Payment required. Please add credits to continue.');
+            setIsProcessing(false);
+            break;
+          }
+
+          // Rate limit or transient network errors: back off hard
+          if (msg.includes('429') || msg.toLowerCase().includes('failed to fetch')) {
+            toast.error('Rate limited or network issue. Pausing for 60 seconds...');
+            await new Promise(resolve => setTimeout(resolve, 60000));
+            continue;
+          }
+
+          toast.error('Error processing batch. Retrying in 15 seconds...');
+          await new Promise(resolve => setTimeout(resolve, 15000));
+          continue;
         }
-      }
 
-      if (data?.status === 'completed') {
-        setIsProcessing(false);
-        toast.success('All responses have been marked!');
-        onJobComplete();
-        return;
-      }
+        if (data?.status === 'completed') {
+          setIsProcessing(false);
+          toast.success('All responses have been marked!');
+          onJobComplete();
+          break;
+        }
 
-      if (data?.status === 'paused') {
-        setIsProcessing(false);
-        return;
-      }
+        if (data?.status === 'paused') {
+          setIsProcessing(false);
+          if ((data as any)?.reason === 'rate_limited') {
+            toast.error('Rate limited. Marking paused — click Resume in a minute.');
+          }
+          break;
+        }
 
-      // Update progress from response
-      if (data?.progress) {
-        setProgress(prev => ({
-          ...prev,
-          marked: data.progress.marked,
-          errors: data.progress.errors
-        }));
-      }
+        // Update progress from response
+        if (data?.progress) {
+          setProgress(prev => ({
+            ...prev,
+            marked: data.progress.marked,
+            errors: data.progress.errors
+          }));
+        }
 
-      // Continue processing if there's more
-      if (data?.hasMore && isProcessing) {
-        // Minimal delay between batches (speed matters!)
-        await new Promise(resolve => setTimeout(resolve, 100));
-        await processNextBatch();
+        if (!data?.hasMore) {
+          // Safety: stop if backend says no more work
+          setIsProcessing(false);
+          break;
+        }
+
+        // Gentle pacing so we don't DDOS the edge function / AI gateway
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
     } catch (error) {
-      console.error('Error processing batch:', error);
-      toast.error('Error processing batch. Retrying in 5 seconds...');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      if (isProcessing) {
-        await processNextBatch();
-      }
+      console.error('Error processing loop:', error);
+      toast.error('Unexpected error. Retrying in 30 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 30000));
+    } finally {
+      inFlightRef.current = false;
     }
-  }, [jobId, isProcessing, onJobComplete]);
+  }, [jobId, onJobComplete, progress.status]);
 
   // Poll for status updates
   useEffect(() => {
@@ -202,9 +235,10 @@ export const BatchMarkingProgress: React.FC<BatchMarkingProgressProps> = ({
   // Start/continue processing
   useEffect(() => {
     if (isProcessing && progress.status !== 'completed') {
-      processNextBatch();
+      processLoop();
     }
-  }, [isProcessing, processNextBatch, progress.status]);
+  }, [isProcessing, processLoop, progress.status]);
+
 
   const handleStart = async () => {
     setShowConfirmStart(false);
