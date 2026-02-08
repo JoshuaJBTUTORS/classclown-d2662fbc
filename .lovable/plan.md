@@ -1,45 +1,64 @@
 
-# Expand HeyCleo Homework Sync to KS3
 
-## What This Changes
+# Improve Homework Assignment Dialog
 
-Currently, when homework is assigned, the system only syncs it to the HeyCleo platform for GCSE and Year 11 lessons. This change expands that to also include all KS3 subjects (KS3 Maths, KS3 English, KS3 Science, KS3 Geography).
+## Overview
 
-There are 261 scheduled KS3 lessons in the system right now (104 Maths, 96 Science, 61 English), so this will apply to a significant number of lessons going forward.
+Make all form fields compulsory and add a new "Additional Extract Required" field that lets tutors specify any additional documents or PDFs students need to complete alongside the homework.
 
-## What Gets Updated
+## Changes Summary
 
-### 1. Homework sync to HeyCleo (backend)
-The edge function that sends homework data to HeyCleo will be updated to also trigger for KS3 lessons. When a tutor assigns homework to a KS3 lesson, it will now be synced to HeyCleo just like GCSE homework is today.
+### 1. Make All Fields Compulsory
 
-### 2. Homework button behaviour (frontend)
-The homework button on the lesson card currently redirects to HeyCleo for GCSE/Year 11 lessons, and to the internal homework page for everything else. This will be updated so KS3 lessons also redirect to HeyCleo.
+Currently, only **Title** and **Lesson** are required. The following fields will become mandatory:
+- **Title** (already required)
+- **Instructions** (currently optional) - will show validation error if empty
+- **Due Date** (currently optional) - will show validation error if not selected
+- **Attachment** (currently optional) - will require a file upload for new homework (when editing, existing attachment satisfies the requirement)
+
+### 2. Add "Additional Extract Required" Field
+
+A new text area field that captures any additional documents, PDFs, or resources students need. For example: "Download the past paper from the exam board website" or "Use the textbook chapter 5 exercises".
+
+This requires:
+- A new `additional_resources` column in the `homework` database table
+- A new text area field in the form UI
 
 ## Technical Details
 
-### File 1: `supabase/functions/send-homework-notification/index.ts`
-- Rename the detection variable from `isGcseOrYear11` to `isSyncEligible` (or similar)
-- Add `ks3` to the detection check alongside `gcse` and `year 11`
-- Update log messages to reflect the expanded scope
+### Database Migration
+Add a new nullable column to the `homework` table:
+- Column: `additional_resources` (text, nullable for backward compatibility with existing records)
 
-The detection logic changes from:
-```
-lessonTitle.includes('gcse') || lessonTitle.includes('year 11') ||
-lessonSubject.includes('gcse') || lessonSubject.includes('year 11')
-```
-to:
-```
-lessonTitle.includes('gcse') || lessonTitle.includes('year 11') ||
-lessonTitle.includes('ks3') ||
-lessonSubject.includes('gcse') || lessonSubject.includes('year 11') ||
-lessonSubject.includes('ks3')
+### Form Schema Update (`AssignHomeworkDialog.tsx`)
+Update the Zod validation schema:
+
+```text
+title: required (no change)
+description: required (change from optional to required, min 2 chars)
+lesson_id: required (no change)
+due_date: required (change from optional to required)
+attachment: required for new homework, optional when editing (with existing file)
+additional_resources: required (new field, min 2 chars)
 ```
 
-### File 2: `src/components/lessons/VideoConferenceLink.tsx`
-- Same pattern change: add `ks3` to the `isGcseOrYear11Lesson` check (and rename the function to something like `isHeyCleoLesson`)
+### Form UI Updates (`AssignHomeworkDialog.tsx`)
+- Remove "(Optional)" labels from Due Date and Attachment fields
+- Add red asterisk or "Required" indicator to all fields
+- Add new "Additional Extract Required" text area field after the attachment field
+- Update placeholder text to guide tutors on what to enter
+- For the attachment field when editing: show that existing attachment satisfies the requirement
 
-### Deployment
-- The edge function `send-homework-notification` will be redeployed after the change
+### Data Flow Update
+- Include `additional_resources` in the homework data object sent to the database on save
+- Pass `additional_resources` through to the `editingHomework` prop so it pre-fills when editing
 
-## No Database Changes Required
-The KS3 subjects already exist in the lessons table with the right naming format (`KS3 Maths`, `KS3 English`, `KS3 Science`), so no data migration is needed.
+### Interface Update
+- Update the `editingHomework` interface to include `additional_resources`
+
+### Files Modified
+1. **`src/components/homework/AssignHomeworkDialog.tsx`** - Schema, form fields, submit handler, interface
+2. **Database** - New `additional_resources` column on `homework` table
+
+No changes needed to the edge function or notification logic -- the new field is for tutor reference within the platform.
+
