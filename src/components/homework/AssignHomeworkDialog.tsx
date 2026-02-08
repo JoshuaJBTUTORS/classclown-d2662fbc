@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { CalendarIcon, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import {
   Dialog,
@@ -55,7 +56,9 @@ interface AssignHomeworkDialogProps {
     due_date?: Date;
     attachment_url?: string;
     attachment_type?: string;
-    additional_resources?: string;
+    additional_resources_required?: boolean;
+    additional_resources_url?: string;
+    additional_resources_type?: string;
   };
   preSelectedLessonId?: string;
   preloadedLessonData?: any;
@@ -74,7 +77,8 @@ const formSchema = z.object({
   lesson_id: z.string({ required_error: "Please select a lesson." }),
   due_date: z.date({ required_error: "Please select a due date." }),
   attachment: z.instanceof(File).optional(),
-  additional_resources: z.string().min(2, { message: "Additional extract details must be at least 2 characters." }),
+  additional_resources_required: z.boolean().default(false),
+  additional_resources_file: z.instanceof(File).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -90,8 +94,11 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedAdditionalFile, setSelectedAdditionalFile] = useState<File | null>(null);
   const [existingAttachmentUrl, setExistingAttachmentUrl] = useState<string | null>(null);
   const [existingAttachmentType, setExistingAttachmentType] = useState<string | null>(null);
+  const [existingAdditionalUrl, setExistingAdditionalUrl] = useState<string | null>(null);
+  const [existingAdditionalType, setExistingAdditionalType] = useState<string | null>(null);
   const [preSelectedLesson, setPreSelectedLesson] = useState<Lesson | null>(null);
   
   const isEditing = Boolean(editingHomework);
@@ -105,7 +112,8 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       lesson_id: preSelectedLessonId || editingHomework?.lesson_id || "",
       due_date: editingHomework?.due_date ? new Date(editingHomework.due_date) : undefined,
       attachment: undefined,
-      additional_resources: editingHomework?.additional_resources || "",
+      additional_resources_required: editingHomework?.additional_resources_required || false,
+      additional_resources_file: undefined,
     },
   });
 
@@ -196,6 +204,10 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
         setExistingAttachmentUrl(editingHomework.attachment_url);
         setExistingAttachmentType(editingHomework.attachment_type || null);
       }
+      if (editingHomework?.additional_resources_url) {
+        setExistingAdditionalUrl(editingHomework.additional_resources_url);
+        setExistingAdditionalType(editingHomework.additional_resources_type || null);
+      }
     }
   }, [isOpen, editingHomework, preSelectedLessonId, preloadedLessonData]);
 
@@ -232,6 +244,14 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
     if (file) {
       setSelectedFile(file);
       form.setValue('attachment', file);
+    }
+  };
+
+  const handleAdditionalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedAdditionalFile(file);
+      form.setValue('additional_resources_file', file);
     }
   };
 
@@ -291,6 +311,48 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       
       console.log('Session valid, user ID:', sessionData.session.user.id);
 
+      // Upload additional resources file if provided
+      let additionalResourcesUrl = existingAdditionalUrl;
+      let additionalResourcesType = existingAdditionalType;
+
+      if (data.additional_resources_required && data.additional_resources_file) {
+        const fileExt = data.additional_resources_file.name.split('.').pop();
+        const fileName = `additional_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        
+        try {
+          const { error: uploadError } = await supabase.storage
+            .from('homework')
+            .upload(fileName, data.additional_resources_file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (uploadError) {
+            console.error("Additional file upload error:", uploadError);
+            throw uploadError;
+          }
+          
+          const { data: urlData } = supabase.storage
+            .from('homework')
+            .getPublicUrl(fileName);
+          
+          additionalResourcesUrl = urlData.publicUrl;
+          additionalResourcesType = fileExt || null;
+          console.log("Additional file uploaded successfully:", additionalResourcesUrl);
+        } catch (uploadError) {
+          console.error("Error during additional file upload:", uploadError);
+          toast.error("Failed to upload additional file. Please try again.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // If checkbox unchecked, clear additional resources
+      if (!data.additional_resources_required) {
+        additionalResourcesUrl = null;
+        additionalResourcesType = null;
+      }
+
       // Prepare the homework data
       const homeworkData = {
         title: data.title,
@@ -299,7 +361,9 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
         due_date: data.due_date.toISOString(),
         attachment_url: attachmentUrl,
         attachment_type: attachmentType,
-        additional_resources: data.additional_resources,
+        additional_resources_required: data.additional_resources_required,
+        additional_resources_url: additionalResourcesUrl,
+        additional_resources_type: additionalResourcesType,
       };
 
       console.log("Saving homework with data:", homeworkData);
@@ -500,25 +564,63 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
 
               <FormField
                 control={form.control}
-                name="additional_resources"
+                name="additional_resources_required"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Additional Extract Required <span className="text-destructive">*</span></FormLabel>
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl>
-                      <Textarea 
-                        placeholder="e.g. Download the past paper from the exam board website, Use textbook chapter 5 exercises..."
-                        className={`${isMobile ? 'min-h-[80px]' : 'min-h-[100px]'}`}
-                        {...field}
-                        value={field.value || ''}
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Specify any additional documents, PDFs, or resources students need
-                    </FormDescription>
-                    <FormMessage />
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Additional Extract Required</FormLabel>
+                      <FormDescription>
+                        Tick this if students need an additional document or PDF
+                      </FormDescription>
+                    </div>
                   </FormItem>
                 )}
               />
+
+              {form.watch('additional_resources_required') && (
+                <FormField
+                  control={form.control}
+                  name="additional_resources_file"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Additional Extract Upload <span className="text-destructive">*</span></FormLabel>
+                      <FormControl>
+                        <div className="grid w-full max-w-sm items-center gap-1.5">
+                          <Input
+                            id="additional-attachment"
+                            type="file"
+                            onChange={handleAdditionalFileChange}
+                            className="cursor-pointer"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Upload the additional document, PDF, or worksheet
+                      </FormDescription>
+                      {existingAdditionalUrl && !selectedAdditionalFile && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            type="button"
+                            onClick={() => window.open(existingAdditionalUrl!, '_blank')}
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            View current additional file
+                          </Button>
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Add some bottom padding for mobile to ensure last field is scrollable */}
               <div className={`${isMobile ? 'h-6' : ''}`} />

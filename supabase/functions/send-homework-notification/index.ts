@@ -39,6 +39,7 @@ async function sendHomeworkToHeyCleo(
     title: string;
     description?: string;
     attachmentUrl?: string;
+    additionalResourcesUrl?: string;
     dueDate?: string;
     subject?: string;
   }
@@ -63,6 +64,7 @@ async function sendHomeworkToHeyCleo(
       tutorEmail,
       studentEmails,
       pdfUrl: homework.attachmentUrl || null,
+      additionalPdfUrl: homework.additionalResourcesUrl || null,
       title: homework.title,
       description: homework.description || null,
       subject: homework.subject || null,
@@ -378,6 +380,7 @@ serve(async (req) => {
           title: homeworkData.title,
           description: homeworkData.description,
           attachmentUrl: homeworkData.attachment_url,
+          additionalResourcesUrl: homeworkData.additional_resources_url,
           dueDate: homeworkData.due_date,
           subject: homeworkData.lessons.subject,
         }
