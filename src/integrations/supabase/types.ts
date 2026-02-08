@@ -2092,6 +2092,7 @@ export type Database = {
       }
       homework: {
         Row: {
+          additional_resources: string | null
           attachment_type: string | null
           attachment_url: string | null
           created_at: string | null
@@ -2103,6 +2104,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          additional_resources?: string | null
           attachment_type?: string | null
           attachment_url?: string | null
           created_at?: string | null
@@ -2114,6 +2116,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          additional_resources?: string | null
           attachment_type?: string | null
           attachment_url?: string | null
           created_at?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.homework ADD COLUMN additional_resources text;

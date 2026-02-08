@@ -450,7 +450,8 @@ const ViewHomeworkDialog: React.FC<ViewHomeworkDialogProps> = ({
           lesson_id: homework.lesson_id,
           due_date: homework.due_date ? parseISO(homework.due_date) : undefined,
           attachment_url: homework.attachment_url || undefined,
-          attachment_type: homework.attachment_type || undefined
+          attachment_type: homework.attachment_type || undefined,
+          additional_resources: (homework as any).additional_resources || undefined
         }}
       />
     );
