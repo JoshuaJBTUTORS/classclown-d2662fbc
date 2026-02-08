@@ -28,7 +28,6 @@ import {
   BookMarked,
   Activity,
   Hand,
-  FileCheck,
   ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -227,12 +226,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: ClipboardList,
           label: 'Assessment Assignments',
           href: '/assessment-assignments',
-          roles: ['admin', 'owner'],
-        },
-        {
-          icon: FileCheck,
-          label: 'Exam Results',
-          href: '/admin/exam-results',
           roles: ['admin', 'owner'],
         },
         {

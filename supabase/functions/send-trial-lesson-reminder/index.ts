@@ -142,11 +142,10 @@ const handler = async (req: Request): Promise<Response> => {
         // Use child name from trial booking
         const childName = trialBooking.child_name || 'your child';
 
-        // Generate lesson URL - prioritize Google Meet link, fallback to legacy options
-        const lessonUrl = demoLesson.video_conference_link 
-                          || (demoLesson.lesson_space_room_id 
-                              ? `https://www.thelessonspace.com/space/${demoLesson.lesson_space_room_id}`
-                              : `https://classbeyondacademy.io/student-join/${demoLesson.id}`);
+        // Generate lesson URL - use demo lesson room ID for consistency with invite URLs
+        const lessonUrl = demoLesson.lesson_space_room_id 
+                          ? `https://www.thelessonspace.com/space/${demoLesson.lesson_space_room_id}`
+                          : `${supabaseUrl.replace('.supabase.co', '')}.lovableproject.com/student-join/${demoLesson.id}`;
 
         // Generate email HTML
         const emailHtml = await renderAsync(

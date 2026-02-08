@@ -1939,85 +1939,6 @@ export type Database = {
           },
         ]
       }
-      google_calendar_credentials: {
-        Row: {
-          access_token: string
-          calendar_id: string | null
-          created_at: string
-          expiry_date: number | null
-          id: string
-          organization_id: string
-          refresh_token: string | null
-          scope: string | null
-          token_type: string | null
-          updated_at: string
-        }
-        Insert: {
-          access_token: string
-          calendar_id?: string | null
-          created_at?: string
-          expiry_date?: number | null
-          id?: string
-          organization_id: string
-          refresh_token?: string | null
-          scope?: string | null
-          token_type?: string | null
-          updated_at?: string
-        }
-        Update: {
-          access_token?: string
-          calendar_id?: string | null
-          created_at?: string
-          expiry_date?: number | null
-          id?: string
-          organization_id?: string
-          refresh_token?: string | null
-          scope?: string | null
-          token_type?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "google_calendar_credentials_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      google_oauth_states: {
-        Row: {
-          created_at: string
-          expires_at: string
-          id: string
-          organization_id: string
-          state: string
-        }
-        Insert: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          organization_id: string
-          state: string
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          organization_id?: string
-          state?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "google_oauth_states_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       heycleo_homework_completions: {
         Row: {
           accuracy_percentage: number | null
@@ -2906,7 +2827,6 @@ export type Database = {
           end_time: string
           flexible_classroom_room_id: string | null
           flexible_classroom_session_data: Json | null
-          google_event_id: string | null
           id: string
           imminent_reminder_sent: boolean | null
           instance_date: string | null
@@ -2930,8 +2850,6 @@ export type Database = {
           trial_booking_id: string | null
           tutor_id: string
           updated_at: string | null
-          video_conference_link: string | null
-          video_conference_provider: string | null
         }
         Insert: {
           attendance_completed?: boolean | null
@@ -2943,7 +2861,6 @@ export type Database = {
           end_time: string
           flexible_classroom_room_id?: string | null
           flexible_classroom_session_data?: Json | null
-          google_event_id?: string | null
           id?: string
           imminent_reminder_sent?: boolean | null
           instance_date?: string | null
@@ -2967,8 +2884,6 @@ export type Database = {
           trial_booking_id?: string | null
           tutor_id: string
           updated_at?: string | null
-          video_conference_link?: string | null
-          video_conference_provider?: string | null
         }
         Update: {
           attendance_completed?: boolean | null
@@ -2980,7 +2895,6 @@ export type Database = {
           end_time?: string
           flexible_classroom_room_id?: string | null
           flexible_classroom_session_data?: Json | null
-          google_event_id?: string | null
           id?: string
           imminent_reminder_sent?: boolean | null
           instance_date?: string | null
@@ -3004,8 +2918,6 @@ export type Database = {
           trial_booking_id?: string | null
           tutor_id?: string
           updated_at?: string | null
-          video_conference_link?: string | null
-          video_conference_provider?: string | null
         }
         Relationships: [
           {
@@ -3023,57 +2935,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      marking_jobs: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          created_by: string | null
-          date_range_end: string
-          date_range_start: string
-          error_count: number
-          id: string
-          last_processed_response_id: string | null
-          marked_count: number
-          paused_at: string | null
-          started_at: string | null
-          status: string
-          total_responses: number
-          updated_at: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          date_range_end: string
-          date_range_start: string
-          error_count?: number
-          id?: string
-          last_processed_response_id?: string | null
-          marked_count?: number
-          paused_at?: string | null
-          started_at?: string | null
-          status?: string
-          total_responses?: number
-          updated_at?: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          date_range_end?: string
-          date_range_start?: string
-          error_count?: number
-          id?: string
-          last_processed_response_id?: string | null
-          marked_count?: number
-          paused_at?: string | null
-          started_at?: string | null
-          status?: string
-          total_responses?: number
-          updated_at?: string
-        }
-        Relationships: []
       }
       notifications: {
         Row: {
@@ -3111,45 +2972,6 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      organizations: {
-        Row: {
-          created_at: string
-          google_calendar_enabled: boolean | null
-          google_calendar_id: string | null
-          id: string
-          logo_url: string | null
-          name: string
-          primary_color: string | null
-          status: string | null
-          subdomain: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          google_calendar_enabled?: boolean | null
-          google_calendar_id?: string | null
-          id?: string
-          logo_url?: string | null
-          name: string
-          primary_color?: string | null
-          status?: string | null
-          subdomain?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          google_calendar_enabled?: boolean | null
-          google_calendar_id?: string | null
-          id?: string
-          logo_url?: string | null
-          name?: string
-          primary_color?: string | null
-          status?: string | null
-          subdomain?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -3895,7 +3717,6 @@ export type Database = {
           created_at: string
           id: string
           marked_at: string | null
-          marked_by: string | null
           marking_breakdown: Json | null
           marks_awarded: number | null
           question_id: string
@@ -3910,7 +3731,6 @@ export type Database = {
           created_at?: string
           id?: string
           marked_at?: string | null
-          marked_by?: string | null
           marking_breakdown?: Json | null
           marks_awarded?: number | null
           question_id: string
@@ -3925,7 +3745,6 @@ export type Database = {
           created_at?: string
           id?: string
           marked_at?: string | null
-          marked_by?: string | null
           marking_breakdown?: Json | null
           marks_awarded?: number | null
           question_id?: string
@@ -5196,7 +5015,6 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: boolean
       }
-      clean_expired_oauth_states: { Args: never; Returns: undefined }
       cleanup_expired_reset_tokens: { Args: never; Returns: undefined }
       cleanup_old_time_off_requests: { Args: never; Returns: number }
       extend_recurring_lessons: { Args: never; Returns: undefined }

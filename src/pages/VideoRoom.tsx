@@ -1,19 +1,19 @@
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParticipantUrl } from '@/hooks/useParticipantUrl';
 import { useVideoRoom } from '@/hooks/useVideoRoom';
 import EmbeddedVideoRoom from '@/components/video/EmbeddedVideoRoom';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle, Video, ExternalLink } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Video } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function VideoRoom() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const { user, userRole } = useAuth();
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const {
     lesson,
@@ -26,62 +26,19 @@ export default function VideoRoom() {
     getDisplayName,
   } = useVideoRoom(lessonId || '');
 
-  // Check if this lesson uses Google Meet and redirect if so
-  useEffect(() => {
-    if (lesson && !lessonLoading) {
-      const isGoogleMeet = lesson.video_conference_provider === 'google_meet';
-      const hasGoogleMeetLink = !!lesson.video_conference_link;
-      
-      if (isGoogleMeet && hasGoogleMeetLink) {
-        console.log('🔄 Redirecting to Google Meet:', lesson.video_conference_link);
-        setIsRedirecting(true);
-        // Small delay to show the redirecting message
-        setTimeout(() => {
-          window.location.href = lesson.video_conference_link;
-        }, 500);
-      }
-    }
-  }, [lesson, lessonLoading]);
-
-  // Get pre-generated participant URL (only needed for LessonSpace)
+  // Get pre-generated participant URL
   const {
     participantUrl,
     isLoading: urlLoading,
     error: urlError
   } = useParticipantUrl(lessonId || '');
 
-  // Skip URL loading if we're redirecting to Google Meet
-  const isGoogleMeetLesson = lesson?.video_conference_provider === 'google_meet' && !!lesson?.video_conference_link;
-  
   // Memoize the final states to prevent unnecessary re-renders
-  const isLoading = useMemo(() => {
-    if (isGoogleMeetLesson) return lessonLoading; // Don't wait for URL if Google Meet
-    return lessonLoading || urlLoading;
-  }, [lessonLoading, urlLoading, isGoogleMeetLesson]);
-  
+  const isLoading = useMemo(() => lessonLoading || urlLoading, [lessonLoading, urlLoading]);
   const error = useMemo(() => lessonError || urlError, [lessonError, urlError]);
   
   // Memoize the participant URL to prevent iframe refresh on re-renders
   const stableParticipantUrl = useMemo(() => participantUrl, [participantUrl]);
-
-  // Show redirecting state for Google Meet lessons
-  if (isRedirecting) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <ExternalLink className="h-12 w-12 text-blue-600 mx-auto animate-pulse" />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Redirecting to Google Meet
-            </h2>
-            <p className="text-sm text-gray-600">
-              You'll be taken to your video call in a moment...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
 
   if (isLoading) {
@@ -159,7 +116,6 @@ export default function VideoRoom() {
         lessonId={lessonId}
         isRecurring={lesson?.is_recurring || lesson?.is_recurring_instance || false}
         expectedStudents={expectedStudents?.length || 0}
-        googleMeetUrl={lesson?.video_conference_provider === 'google_meet' ? lesson?.video_conference_link : undefined}
       />
     </div>
   );

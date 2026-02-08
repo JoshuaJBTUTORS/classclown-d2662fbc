@@ -30,8 +30,6 @@ interface VideoConferenceLinkProps {
   studentCount?: number;
   hasHomework?: boolean;
   homeworkId?: string | null;
-  videoConferenceLink?: string | null;
-  videoConferenceProvider?: string | null;
 }
 
 const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
@@ -45,9 +43,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   isGroupLesson = false,
   studentCount = 0,
   hasHomework = false,
-  homeworkId = null,
-  videoConferenceLink = null,
-  videoConferenceProvider = null
+  homeworkId = null
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConsentDialog, setShowConsentDialog] = useState(false);
@@ -80,17 +76,13 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   };
 
 
-  // Check if we have Google Meet
-  const hasGoogleMeet = videoConferenceLink && videoConferenceProvider === 'google_meet';
-
   // Get the appropriate URL based on user role
   const getVideoRoomUrl = () => {
-    if (hasGoogleMeet) {
-      return videoConferenceLink;
-    }
     if (isTeacherRole) {
+      // Teachers get the authenticated room URL with full controls
       return lessonSpaceRoomUrl;
     } else {
+      // Students and parents get the simple invitation URL using room ID
       return lessonSpaceRoomId ? `https://www.thelessonspace.com/space/${lessonSpaceRoomId}` : null;
     }
   };
@@ -165,13 +157,6 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
       return;
     }
 
-    // Google Meet: open directly for everyone
-    if (hasGoogleMeet) {
-      window.open(videoConferenceLink, '_blank', 'noopener,noreferrer');
-      toast.success('Opening Google Meet...');
-      return;
-    }
-
     // Teachers can join directly without consent dialog
     if (isTeacherRole) {
       try {
@@ -227,7 +212,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
     }
   };
 
-  if (!lessonSpaceRoomId && !lessonSpaceRoomUrl && !hasGoogleMeet) {
+  if (!lessonSpaceRoomId && !lessonSpaceRoomUrl) {
     return null;
   }
 
@@ -237,9 +222,9 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
         {/* Video Conference Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border rounded-lg p-4 bg-muted/30 gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm">{hasGoogleMeet ? 'Google Meet' : 'LessonSpace Video Room'}</h3>
+            <h3 className="font-medium text-sm">LessonSpace Video Room</h3>
             <p className="text-sm text-muted-foreground">
-              {hasGoogleMeet ? 'Join your video lesson via Google Meet' : isTeacherRole ? 'Manage your interactive video classroom' : 'Join your interactive video classroom'}
+              {isTeacherRole ? 'Manage your interactive video classroom' : 'Join your interactive video classroom'}
             </p>
             {isGroupLesson && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -280,11 +265,9 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               onClick={handleJoinRoom}
               disabled={isLoading || isJoining}
               className={`flex items-center gap-2 ${
-                hasGoogleMeet
-                  ? 'bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700'
-                  : isTeacherRole 
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
-                    : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
+                isTeacherRole 
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
+                  : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700'
               } text-white`}
             >
               {(isLoading || isJoining) ? (
@@ -295,7 +278,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
                   <Play className="h-3 w-3" />
                 </>
               )}
-              {hasGoogleMeet ? 'Join Meet' : isTeacherRole ? 'Host Room' : 'Join Lesson'}
+              {isTeacherRole ? 'Host Room' : 'Join Lesson'}
             </Button>
           </div>
         </div>

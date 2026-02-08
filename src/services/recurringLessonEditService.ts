@@ -1,7 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, addWeeks, differenceInMinutes, getDay, setDay, parseISO } from 'date-fns';
 import { createUKDateTime, convertUKToUTC, convertUTCToUK } from '@/utils/timezone';
-import { createGoogleMeetForLesson } from '@/services/googleCalendarService';
 
 export interface LessonUpdate {
   title?: string;
@@ -29,38 +28,43 @@ export interface EditRecurringOptions {
   instanceDate?: string;
 }
 
-/**
- * Regenerate Google Meet link for a lesson when tutor or participants change
- */
-const regenerateGoogleMeetLink = async (lessonId: string) => {
+const regenerateAllParticipantUrls = async (lessonId: string) => {
   try {
-    console.log('Regenerating Google Meet link for lesson:', lessonId);
+    console.log('Regenerating all participant URLs for lesson:', lessonId);
     
-    // Clear existing Meet link so a new one is created
-    const { error: clearError } = await supabase
-      .from('lessons')
-      .update({
-        google_event_id: null,
-        video_conference_link: null
-      })
-      .eq('id', lessonId);
+    // Delete all existing participant URLs for this lesson
+    const { error: deleteError } = await supabase
+      .from('lesson_participant_urls')
+      .delete()
+      .eq('lesson_id', lessonId);
     
-    if (clearError) {
-      console.error('Error clearing old Meet link:', clearError);
+    if (deleteError) {
+      console.error('Error deleting old participant URLs:', deleteError);
+    } else {
+      console.log('✅ Deleted old participant URLs');
     }
     
-    // Create new Google Calendar event with Meet link
-    const result = await createGoogleMeetForLesson(lessonId);
-    
-    if (!result.success) {
-      console.error('Failed to regenerate Google Meet:', result.error);
+    // Create new room with new tutor and regenerate all URLs
+    const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
+      body: {
+        action: 'create-room',
+        lessonId: lessonId
+      }
+    });
+
+    if (error) {
+      console.error('Error regenerating participant URLs:', error);
       return null;
     }
+
+    if (data && data.success) {
+      console.log('✅ All participant URLs regenerated successfully:', data);
+      return data;
+    }
     
-    console.log('✅ Google Meet link regenerated successfully:', result.meetLink);
-    return result;
+    return null;
   } catch (error) {
-    console.error('Error in regenerateGoogleMeetLink:', error);
+    console.error('Error in regenerateAllParticipantUrls:', error);
     return null;
   }
 };
@@ -113,12 +117,12 @@ export const updateSingleRecurringInstance = async (
     }
   }
   
-  // Regenerate Google Meet link if tutor changed (new tutor needs to be attendee)
-  if (tutorChanged) {
-    console.log('Tutor changed, regenerating Google Meet link');
-    const meetResult = await regenerateGoogleMeetLink(lessonId);
-    if (!meetResult) {
-      console.warn('Failed to regenerate Google Meet link for lesson after tutor change');
+  // Regenerate participant URLs if tutor or students changed
+  if (tutorChanged || studentsChanged) {
+    console.log('Tutor or students changed, regenerating participant URLs');
+    const roomData = await regenerateAllParticipantUrls(lessonId);
+    if (!roomData) {
+      console.warn('Failed to regenerate URLs for lesson after tutor/student change');
     }
   }
   
@@ -352,18 +356,16 @@ export const updateAllFutureLessons = async (
       }
     }
 
-    // Regenerate Google Meet links if tutor changed (new tutor needs to be attendee on each event)
+    // Regenerate ALL participant URLs if tutor changed
     if (tutorChanged) {
-      console.log('Tutor changed, regenerating Google Meet links for future lessons');
+      console.log('Tutor changed, regenerating all participant URLs for future lessons');
       
       for (const lesson of futureLessons) {
         try {
-          await regenerateGoogleMeetLink(lesson.id);
-          console.log(`✅ Regenerated Google Meet link for lesson ${lesson.id}`);
-          // Small delay to avoid rate limiting Google API
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (meetError) {
-          console.error(`Failed to regenerate Meet link for lesson ${lesson.id}:`, meetError);
+          await regenerateAllParticipantUrls(lesson.id);
+          console.log(`✅ Regenerated all URLs for lesson ${lesson.id}`);
+        } catch (roomError) {
+          console.error(`Failed to regenerate URLs for lesson ${lesson.id}:`, roomError);
         }
       }
     }

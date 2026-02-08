@@ -48,7 +48,6 @@ import AvailabilityStatus from './AvailabilityStatus';
 import MultiSelectStudents from './MultiSelectStudents';
 import { cn } from '@/lib/utils';
 import { generateRecurringLessonInstances } from '@/services/recurringLessonService';
-import { createGoogleMeetForLesson } from '@/services/googleCalendarService';
 
 interface AddLessonFormProps {
   isOpen: boolean;
@@ -168,21 +167,33 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     }
   };
 
-  const createVideoRoom = async (lessonId: string) => {
+  const createLessonSpaceRoom = async (lessonId: string, tutorId: string, isGroup: boolean) => {
     try {
-      console.log('Creating Google Meet for lesson:', lessonId);
+      console.log('Creating LessonSpace room for lesson:', lessonId);
       
-      const result = await createGoogleMeetForLesson(lessonId);
+      const { data, error } = await supabase.functions.invoke('lesson-space-integration', {
+        body: {
+          action: 'create-room',
+          lessonId: lessonId,
+          title: 'Lesson Room',
+          startTime: new Date().toISOString(),
+          duration: 60
+        }
+      });
 
-      if (!result.success) {
-        console.error('Error creating Google Meet:', result.error);
-        throw new Error(result.error || 'Failed to create Google Meet');
+      if (error) {
+        console.error('Error creating LessonSpace room:', error);
+        throw error;
       }
 
-      console.log('Google Meet created successfully:', result.meetLink);
-      return result;
+      if (data && data.success) {
+        console.log('LessonSpace room created successfully:', data);
+        return data;
+      } else {
+        throw new Error(data?.error || 'Failed to create LessonSpace room');
+      }
     } catch (error) {
-      console.error('Error in createVideoRoom:', error);
+      console.error('Error in createLessonSpaceRoom:', error);
       throw error;
     }
   };
@@ -246,16 +257,16 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
         if (studentsError) throw studentsError;
       }
 
-      // Automatically create Google Meet for the lesson
+      // Automatically create LessonSpace room for the lesson
       if (newLessonId) {
         try {
           setLoadingStep('Creating video room...');
-          const roomData = await createVideoRoom(newLessonId);
-          console.log('Google Meet created successfully:', roomData);
+          const roomData = await createLessonSpaceRoom(newLessonId, values.tutorId, values.isGroup);
+          console.log('Room created successfully:', roomData);
         } catch (roomError) {
-          console.error('Video room creation failed:', roomError);
+          console.error('Room creation failed:', roomError);
           // Don't fail the entire lesson creation if room creation fails
-          toast.error('Lesson created but Google Meet creation failed. You can create it manually later.');
+          toast.error('Lesson created but video room creation failed. You can create it manually later.');
         }
       }
 

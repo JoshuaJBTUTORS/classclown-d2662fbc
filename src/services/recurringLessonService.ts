@@ -33,20 +33,16 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
     selectedStudents
   } = data;
 
-  // Fetch the original lesson to get room details AND Meet link
+  // Fetch the original lesson to get room details
   const { data: originalLesson, error: originalLessonError } = await supabase
     .from('lessons')
-    .select('lesson_space_room_id, lesson_space_room_url, lesson_space_space_id, video_conference_link, video_conference_provider, google_event_id')
+    .select('lesson_space_room_id, lesson_space_room_url, lesson_space_space_id')
     .eq('id', originalLessonId)
     .single();
 
   if (originalLessonError) {
     console.error('Error fetching original lesson room details:', originalLessonError);
   }
-
-  // Check if parent has a Meet link to inherit
-  const parentHasMeetLink = !!originalLesson?.video_conference_link;
-  console.log(`Parent lesson ${originalLessonId} ${parentHasMeetLink ? 'HAS' : 'does NOT have'} Meet link`);
 
   const instances = [];
   const lessonDuration = endTime.getTime() - startTime.getTime();
@@ -114,10 +110,6 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
         lesson_space_room_id: originalLesson?.lesson_space_room_id || null,
         lesson_space_room_url: originalLesson?.lesson_space_room_url || null,
         lesson_space_space_id: originalLesson?.lesson_space_space_id || null,
-        // INHERIT Google Meet link from parent (shared across all instances)
-        video_conference_link: originalLesson?.video_conference_link || null,
-        video_conference_provider: originalLesson?.video_conference_provider || 'google_meet',
-        google_event_id: originalLesson?.google_event_id || null,
       });
 
       instanceCount++;
@@ -158,13 +150,8 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
       }
     }
 
-    // Only create Google Meet if parent doesn't have one - then propagate to all instances
-    if (!parentHasMeetLink) {
-      console.log('Parent has no Meet link - creating one and propagating to instances...');
-      await generateGoogleMeetForParentAndPropagate(originalLessonId, insertedLessons);
-    } else {
-      console.log(`All ${insertedLessons.length} instances inherited Meet link from parent`);
-    }
+    // Generate participant URLs for all new lesson instances
+    await generateParticipantUrlsForInstances(insertedLessons, selectedStudents);
 
     // Create or update recurring lesson group record
     const nextGenerationDate = isInfinite 
@@ -285,52 +272,44 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
 };
 
 /**
- * Create ONE Google Meet link for the parent lesson and propagate to all instances
- * This is the optimized approach - one Meet link per recurring series
+ * Generate participant URLs for recurring lesson instances
  */
-const generateGoogleMeetForParentAndPropagate = async (
-  parentLessonId: string,
-  insertedLessons: { id: string }[]
+const generateParticipantUrlsForInstances = async (
+  insertedLessons: { id: string }[], 
+  selectedStudents: number[]
 ) => {
-  console.log(`Creating ONE Google Meet for parent ${parentLessonId} and propagating to ${insertedLessons.length} instances`);
+  console.log(`Generating participant URLs for ${insertedLessons.length} recurring lesson instances`);
   
-  try {
-    // Create Meet link for parent lesson
-    const { data: roomData, error: integrationError } = await supabase.functions.invoke('google-calendar-create-event', {
-      body: {
-        lessonId: parentLessonId
+  let successCount = 0;
+  let failureCount = 0;
+
+  for (const lesson of insertedLessons) {
+    try {
+      // Call lesson-space-integration to create room and generate participant URLs
+      const { error: integrationError } = await supabase.functions.invoke('lesson-space-integration', {
+        body: {
+          action: 'create-room',
+          lessonId: lesson.id
+        }
+      });
+
+      if (integrationError) {
+        console.error(`Failed to generate URLs for lesson ${lesson.id}:`, integrationError);
+        failureCount++;
+      } else {
+        console.log(`✅ Generated participant URLs for lesson ${lesson.id}`);
+        successCount++;
       }
-    });
-
-    if (integrationError) {
-      console.error(`Failed to create Google Meet for parent ${parentLessonId}:`, integrationError);
-      return;
+    } catch (error) {
+      console.error(`Error generating URLs for lesson ${lesson.id}:`, error);
+      failureCount++;
     }
+  }
 
-    if (!roomData?.success || !roomData?.meetLink) {
-      console.error(`Google Meet creation failed for parent ${parentLessonId}:`, roomData?.error);
-      return;
-    }
-
-    console.log(`✅ Created Google Meet for parent: ${roomData.meetLink}`);
-
-    // Propagate the Meet link to all instances
-    const { error: propagateError } = await supabase
-      .from('lessons')
-      .update({
-        video_conference_link: roomData.meetLink,
-        video_conference_provider: 'google_meet',
-        google_event_id: roomData.eventId
-      })
-      .in('id', insertedLessons.map(l => l.id));
-
-    if (propagateError) {
-      console.error(`Failed to propagate Meet link to instances:`, propagateError);
-    } else {
-      console.log(`✅ Propagated Meet link to ${insertedLessons.length} instances`);
-    }
-  } catch (error) {
-    console.error(`Error creating/propagating Google Meet:`, error);
+  console.log(`Participant URL generation complete: ${successCount} success, ${failureCount} failures`);
+  
+  if (failureCount > 0) {
+    console.warn(`⚠️ ${failureCount} lesson instances failed to generate participant URLs. These will need to be regenerated manually.`);
   }
 };
 

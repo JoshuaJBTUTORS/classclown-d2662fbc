@@ -16,7 +16,6 @@ import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
-import { createGoogleMeetForLesson } from '@/services/googleCalendarService';
 interface LessonDetailsDialogProps {
   lessonId: string | null;
   
@@ -175,25 +174,42 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       });
     }
   };
-  const handleCreateGoogleMeetLink = async () => {
+  const handleCreateLessonSpaceRoom = async () => {
     if (!lesson?.id) return;
     setIsCreatingRoom(true);
     try {
-      console.log('Creating Google Meet link for lesson:', lesson.id);
-      const result = await createGoogleMeetForLesson(lesson.id);
-      
-      if (result.success) {
-        console.log('Google Meet link created successfully:', result.meetLink);
-        toast.success('Google Meet link created successfully!');
+      console.log('Creating LessonSpace room for lesson:', lesson.id);
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('lesson-space-integration', {
+        body: {
+          action: 'create-room',
+          lessonId: lesson.id,
+          lessonTitle: lesson.title,
+          tutorName: `${lesson.tutor?.first_name} ${lesson.tutor?.last_name}`,
+          startTime: lesson.start_time,
+          endTime: lesson.end_time,
+          isGroupLesson: lesson.is_group || false
+        }
+      });
+      if (error) {
+        console.error('Error creating LessonSpace room:', error);
+        toast.error(`Failed to create video room: ${error.message}`);
+        return;
+      }
+      if (data?.success) {
+        console.log('LessonSpace room created successfully:', data);
+        toast.success('Video room created successfully!');
         await fetchLesson(); // Refresh lesson data
         onLessonUpdated?.();
       } else {
-        console.error('Failed to create Google Meet link:', result.error);
-        toast.error(result.error || 'Failed to create Google Meet link');
+        console.error('Failed to create LessonSpace room:', data);
+        toast.error(data?.error || 'Failed to create video room');
       }
     } catch (error: any) {
-      console.error('Error in handleCreateGoogleMeetLink:', error);
-      toast.error('Failed to create Google Meet link');
+      console.error('Error in handleCreateLessonSpaceRoom:', error);
+      toast.error('Failed to create video room');
     } finally {
       setIsCreatingRoom(false);
     }
@@ -361,24 +377,24 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       </div>}
                   </div>
 
-                  {lesson.lesson_space_room_url || lesson.lesson_space_room_id || lesson.video_conference_link ? <VideoConferenceLink lessonId={lesson.id} lessonSpaceRoomUrl={lesson.lesson_space_room_url} lessonSpaceRoomId={lesson.lesson_space_room_id} lessonSpaceSpaceId={lesson.lesson_space_space_id} lessonTitle={lesson.title} lessonSubject={lesson.subject} isGroupLesson={lesson.is_group} studentCount={validStudents.length} hasHomework={homeworkStatus.exists} homeworkId={homeworkStatus.homework?.id} videoConferenceLink={lesson.video_conference_link} videoConferenceProvider={lesson.video_conference_provider} /> : <div className="space-y-3">
+                  {lesson.lesson_space_room_url || lesson.lesson_space_room_id ? <VideoConferenceLink lessonId={lesson.id} lessonSpaceRoomUrl={lesson.lesson_space_room_url} lessonSpaceRoomId={lesson.lesson_space_room_id} lessonSpaceSpaceId={lesson.lesson_space_space_id} lessonTitle={lesson.title} lessonSubject={lesson.subject} isGroupLesson={lesson.is_group} studentCount={validStudents.length} hasHomework={homeworkStatus.exists} homeworkId={homeworkStatus.homework?.id} /> : <div className="space-y-3">
                       <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
                         <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-amber-700">
                           <p className="font-medium">No video room created yet</p>
                           <p>
-                            {isTeacherRole ? 'Create a Google Meet link to enable video conferencing for this lesson.' : 'Ask your teacher to create a video room for this lesson.'}
+                            {isTeacherRole ? 'Create a LessonSpace room to enable video conferencing for this lesson.' : 'Ask your teacher to create a video room for this lesson.'}
                           </p>
                         </div>
                       </div>
                       
-                      {isTeacherRole && <Button onClick={handleCreateGoogleMeetLink} disabled={isCreatingRoom} className="w-full">
+                      {isTeacherRole && <Button onClick={handleCreateLessonSpaceRoom} disabled={isCreatingRoom} className="w-full">
                           {isCreatingRoom ? <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Creating Link...
+                              Creating Room...
                             </> : <>
                               <Video className="h-4 w-4 mr-2" />
-                              Create Google Meet Link
+                              Create LessonSpace Room
                             </>}
                         </Button>}
                     </div>}

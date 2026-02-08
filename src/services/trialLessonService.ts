@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { addMinutes, subMinutes } from 'date-fns';
 import { studentDataService } from './studentDataService';
-import { createGoogleMeetForLesson } from './googleCalendarService';
 
 
 interface CreateTrialLessonData {
@@ -162,24 +161,38 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
 
     console.log('Student linked to trial lesson successfully');
 
-    // Create Google Meet link for the trial lesson
-    let googleMeetLink: string | null = null;
+    // Create LessonSpace room for the full 45-minute session
+    let lessonSpaceRoomId = null;
+    let lessonSpaceSpaceId = null;
+    let lessonSpaceRoomUrl = null;
     try {
-      console.log('Creating Google Meet link for trial lesson');
-      const meetResult = await createGoogleMeetForLesson(lessonData.id);
-      
-      if (meetResult.success && meetResult.meetLink) {
-        googleMeetLink = meetResult.meetLink;
-        console.log('Google Meet link created successfully:', googleMeetLink);
+      console.log('Creating LessonSpace room for trial session');
+      const { data: roomData, error: roomError } = await supabase.functions.invoke('lesson-space-integration', {
+        body: {
+          action: 'create-room',
+          lessonId: lessonData.id,
+          title: `Trial Session - ${title}`,
+          startTime: demoStartDateTime.toISOString(),
+          duration: 45
+        }
+      });
+
+      if (roomError) {
+        console.error('Room creation failed:', roomError);
+        // Don't fail lesson creation if room creation fails
       } else {
-        console.error('Google Meet creation failed:', meetResult.error);
+        console.log('LessonSpace room created successfully:', roomData);
+        lessonSpaceRoomId = roomData?.roomId;
+        lessonSpaceSpaceId = roomData?.spaceId;
+        lessonSpaceRoomUrl = roomData?.roomUrl;
+        console.log('LessonSpace details:', { roomId: lessonSpaceRoomId, spaceId: lessonSpaceSpaceId, roomUrl: lessonSpaceRoomUrl });
       }
-    } catch (meetError) {
-      console.error('Google Meet creation error:', meetError);
-      // Don't fail lesson creation if Meet creation fails
+    } catch (roomError) {
+      console.error('Room creation error:', roomError);
+      // Don't fail lesson creation if room creation fails
     }
 
-    // Create the demo session (6:15-6:30) using the same Google Meet link
+    // Create the demo session (6:15-6:30) using the same LessonSpace link
     const demoTitle = `Demo Session for ${studentName}`;
     
     // Get admin's tutor ID if admin is provided
@@ -217,8 +230,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         lesson_type: 'demo',
         trial_booking_id: data.bookingId,
         subject: subjectName,
-        video_conference_link: googleMeetLink, // Use same Google Meet link
-        video_conference_provider: googleMeetLink ? 'google_meet' : null
+        lesson_space_room_id: lessonSpaceRoomId, // Copy room ID for working links
+        lesson_space_room_url: lessonSpaceRoomUrl, // Copy room URL for direct access
+        lesson_space_space_id: lessonSpaceSpaceId // Copy space ID for consistency
       })
       .select()
       .single();
@@ -264,12 +278,13 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
     }
 
     // Send trial lesson approval email to parent (don't fail if email fails)
-    if (trialBooking && googleMeetLink) {
+    if (trialBooking && lessonSpaceRoomId) {
       try {
+        const studentLessonLink = `https://www.thelessonspace.com/space/${lessonSpaceRoomId}`;
         const formattedDate = format(demoStartDateTime, 'EEEE, MMMM do, yyyy');
         const formattedTime = format(demoStartDateTime, 'h:mm a');
 
-        console.log('Sending trial lesson approval email with Google Meet link:', googleMeetLink);
+        console.log('Sending trial lesson approval email with link:', studentLessonLink);
 
         await supabase.functions.invoke('send-trial-lesson-approval', {
           body: {
@@ -280,7 +295,7 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
             subject: subjectName,
             lessonDate: formattedDate,
             lessonTime: formattedTime,
-            studentLessonLink: googleMeetLink,
+            studentLessonLink: studentLessonLink,
           }
         });
         console.log('Trial lesson approval email sent successfully');
@@ -289,9 +304,9 @@ export const createTrialLesson = async (data: CreateTrialLessonData): Promise<Tr
         // Don't fail the lesson creation if email fails
       }
     } else {
-      console.warn('Trial lesson approval email not sent - missing booking data or Google Meet link:', {
+      console.warn('Trial lesson approval email not sent - missing booking data or lesson space room ID:', {
         hasBookingData: !!trialBooking,
-        googleMeetLink: googleMeetLink
+        lessonSpaceRoomId: lessonSpaceRoomId
       });
     }
 
