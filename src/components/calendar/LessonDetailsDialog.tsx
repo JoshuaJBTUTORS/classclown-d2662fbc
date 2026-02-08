@@ -522,7 +522,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       lesson_id: homeworkStatus.homework.lesson_id,
       due_date: homeworkStatus.homework.due_date ? new Date(homeworkStatus.homework.due_date) : undefined,
       attachment_url: homeworkStatus.homework.attachment_url,
-      attachment_type: homeworkStatus.homework.attachment_type
+      attachment_type: homeworkStatus.homework.attachment_type,
+      additional_resources: (homeworkStatus.homework as any).additional_resources
     } : undefined} />}
     </>;
 };

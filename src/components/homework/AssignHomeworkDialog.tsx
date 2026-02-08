@@ -55,6 +55,7 @@ interface AssignHomeworkDialogProps {
     due_date?: Date;
     attachment_url?: string;
     attachment_type?: string;
+    additional_resources?: string;
   };
   preSelectedLessonId?: string;
   preloadedLessonData?: any;
@@ -69,10 +70,11 @@ interface Lesson {
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  description: z.string().optional(),
+  description: z.string().min(2, { message: "Instructions must be at least 2 characters." }),
   lesson_id: z.string({ required_error: "Please select a lesson." }),
-  due_date: z.date().optional(),
+  due_date: z.date({ required_error: "Please select a due date." }),
   attachment: z.instanceof(File).optional(),
+  additional_resources: z.string().min(2, { message: "Additional extract details must be at least 2 characters." }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -103,6 +105,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       lesson_id: preSelectedLessonId || editingHomework?.lesson_id || "",
       due_date: editingHomework?.due_date ? new Date(editingHomework.due_date) : undefined,
       attachment: undefined,
+      additional_resources: editingHomework?.additional_resources || "",
     },
   });
 
@@ -293,9 +296,10 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
         title: data.title,
         description: data.description || null,
         lesson_id: data.lesson_id,
-        due_date: data.due_date ? data.due_date.toISOString() : null,
+        due_date: data.due_date.toISOString(),
         attachment_url: attachmentUrl,
         attachment_type: attachmentType,
+        additional_resources: data.additional_resources,
       };
 
       console.log("Saving homework with data:", homeworkData);
@@ -353,7 +357,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>Title <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="Algebra Equations Homework" {...field} />
                     </FormControl>
@@ -367,7 +371,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                 name="lesson_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Related Lesson</FormLabel>
+                    <FormLabel>Related Lesson <span className="text-destructive">*</span></FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
@@ -403,7 +407,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Instructions</FormLabel>
+                    <FormLabel>Instructions <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Enter detailed instructions for the homework..."
@@ -422,7 +426,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                 name="due_date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Due Date (Optional)</FormLabel>
+                    <FormLabel>Due Date <span className="text-destructive">*</span></FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -462,7 +466,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                 name="attachment"
                 render={() => (
                   <FormItem>
-                    <FormLabel>Attachment (Optional)</FormLabel>
+                    <FormLabel>Attachment <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <div className="grid w-full max-w-sm items-center gap-1.5">
                         <Input
@@ -489,6 +493,28 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
                         </Button>
                       </div>
                     )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="additional_resources"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Extract Required <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="e.g. Download the past paper from the exam board website, Use textbook chapter 5 exercises..."
+                        className={`${isMobile ? 'min-h-[80px]' : 'min-h-[100px]'}`}
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Specify any additional documents, PDFs, or resources students need
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
