@@ -56,17 +56,17 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   // Determine if user has teacher/host privileges
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
-  // Check if lesson is GCSE or Year 11 (matches edge function pattern)
-  const isGcseOrYear11Lesson = () => {
+  // Check if lesson is eligible for HeyCleo (GCSE, Year 11, or KS3)
+  const isHeyCleoLesson = () => {
     const title = (lessonTitle || '').toLowerCase();
     const subject = (lessonSubject || '').toLowerCase();
-    return title.includes('gcse') || title.includes('year 11') ||
-           subject.includes('gcse') || subject.includes('year 11');
+    return title.includes('gcse') || title.includes('year 11') || title.includes('ks3') ||
+           subject.includes('gcse') || subject.includes('year 11') || subject.includes('ks3');
   };
 
   // Handle homework button click
   const handleHomeworkClick = async () => {
-    if (isGcseOrYear11Lesson()) {
+    if (isHeyCleoLesson()) {
       // Open HeyCleo homework page in new tab with SSO
       await heyCleoRedirectService.redirectToHeyCleoHomework();
     } else {
