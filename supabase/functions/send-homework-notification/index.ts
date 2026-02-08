@@ -352,23 +352,25 @@ serve(async (req) => {
 
     console.log(`Email sending complete: ${successCount} successful, ${failureCount} failed`);
 
-    // Send homework to HeyCleo (non-blocking - only for GCSE/Year 11 lessons)
+    // Send homework to HeyCleo (non-blocking - for GCSE, Year 11, and KS3 lessons)
     let heyCleoResult = { success: false, error: 'Not attempted' };
     const tutorEmail = homeworkData.lessons.tutors?.email;
     
-    // Check if this is a GCSE or Year 11 lesson
+    // Check if this lesson is eligible for HeyCleo sync (GCSE, Year 11, or KS3)
     const lessonTitle = (homeworkData.lessons.title || '').toLowerCase();
     const lessonSubject = (homeworkData.lessons.subject || '').toLowerCase();
-    const isGcseOrYear11 = 
+    const isHeyCleoEligible = 
       lessonTitle.includes('gcse') || 
       lessonTitle.includes('year 11') ||
+      lessonTitle.includes('ks3') ||
       lessonSubject.includes('gcse') || 
-      lessonSubject.includes('year 11');
+      lessonSubject.includes('year 11') ||
+      lessonSubject.includes('ks3');
 
-    if (!isGcseOrYear11) {
-      console.log(`HeyCleo sync skipped: Not a GCSE/Year 11 lesson (title: "${homeworkData.lessons.title}", subject: "${homeworkData.lessons.subject}")`);
+    if (!isHeyCleoEligible) {
+      console.log(`HeyCleo sync skipped: Not an eligible lesson (title: "${homeworkData.lessons.title}", subject: "${homeworkData.lessons.subject}")`);
     } else if (tutorEmail && heyCleoEmails.length > 0) {
-      console.log(`HeyCleo sync: GCSE/Year 11 lesson detected, sending to ${heyCleoEmails.length} emails: ${heyCleoEmails.join(', ')}`);
+      console.log(`HeyCleo sync: Eligible lesson detected, sending to ${heyCleoEmails.length} emails: ${heyCleoEmails.join(', ')}`);
       heyCleoResult = await sendHomeworkToHeyCleo(
         tutorEmail,
         heyCleoEmails,
