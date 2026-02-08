@@ -317,12 +317,11 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       
       console.log(isEditing ? "Homework updated successfully:" : "Homework created successfully:", insertData);
       
-      // Send notification emails only for new homework (not when editing)
+      // Fire-and-forget: send notification in background, don't block the UI
       if (!isEditing && insertData && insertData[0]) {
-        await sendHomeworkNotification(insertData[0].id);
-      } else {
-        toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
+        sendHomeworkNotification(insertData[0].id);
       }
+      toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
       
       onSuccess?.();
       onClose();
