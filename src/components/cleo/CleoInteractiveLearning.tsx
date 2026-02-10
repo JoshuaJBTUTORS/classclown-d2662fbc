@@ -34,6 +34,8 @@ interface CleoInteractiveLearningProps {
   conversationId?: string;
   moduleId?: string;
   courseId?: string;
+  isDemo?: boolean;
+  onDemoComplete?: () => void;
   lessonPlan?: {
     id?: string;
     topic: string;
@@ -51,6 +53,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
   conversationId,
   moduleId,
   courseId,
+  isDemo = false,
+  onDemoComplete,
   lessonPlan
 }) => {
   const navigate = useNavigate();
@@ -75,8 +79,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     setVisibleContent,
     setCompletedSteps
   } = useContentSync(lessonData, state => {
-    // Auto-save state changes with enhanced tracking
-    if (conversationId && connectionState === 'connected') {
+    // Auto-save state changes with enhanced tracking (skip in demo mode)
+    if (!isDemo && conversationId && connectionState === 'connected') {
       const totalSteps = lessonData.steps.length;
       const completionPercentage = totalSteps > 0 ? Math.round(state.completedSteps.length / totalSteps * 100) : 0;
       
@@ -604,8 +608,6 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
     handleBackToModule();
   };
   const handleCompleteLesson = async () => {
-    if (!conversationId) return;
-
     // PHASE 4: Wait 5 seconds for Cleo's closing audio to finish
     console.log('🎓 Waiting 5 seconds for closing audio before disconnecting...');
     await new Promise(resolve => setTimeout(resolve, 5000));
@@ -619,6 +621,14 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         description: "Connection closed to save costs."
       });
     }
+
+    // In demo mode, skip DB persistence and call onDemoComplete
+    if (isDemo) {
+      if (onDemoComplete) onDemoComplete();
+      return;
+    }
+
+    if (!conversationId) return;
     
     // PRIORITY 1: Mark conversation as completed
     await supabase
@@ -650,6 +660,13 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
       hasDisconnectedOnComplete.current = true;
       console.log('🎓 All steps completed - auto-disconnecting voice session');
       handleVoiceDisconnect();
+      
+      if (isDemo) {
+        // In demo mode, call onDemoComplete directly
+        if (onDemoComplete) onDemoComplete();
+        return;
+      }
+      
       toast({
         title: "Lesson Complete! 🎉",
         description: "Voice session ended automatically. Choose to continue or finish up."
@@ -952,8 +969,8 @@ export const CleoInteractiveLearning: React.FC<CleoInteractiveLearningProps> = (
         </div>
       </div>
 
-      {/* Lesson Plan Sidebar */}
-      {lessonPlan && connectionState === 'connected' && <LessonPlanSidebar lessonPlan={lessonPlan} currentStepId={activeStep?.toString()} completedSteps={completedSteps} isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />}
+      {/* Lesson Plan Sidebar - hidden in demo mode */}
+      {!isDemo && lessonPlan && connectionState === 'connected' && <LessonPlanSidebar lessonPlan={lessonPlan} currentStepId={activeStep?.toString()} completedSteps={completedSteps} isCollapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />}
 
       {/* Hidden Voice Chat Component */}
       <div className="hidden">
