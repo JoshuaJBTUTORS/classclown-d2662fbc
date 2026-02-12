@@ -43,8 +43,13 @@ serve(async (req) => {
       );
     }
 
-    // Fetch user roles
-    const { data: userRoles, error: rolesError } = await supabaseClient
+    // Use service role client to reliably fetch roles (bypasses RLS)
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: userRoles, error: rolesError } = await serviceClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
