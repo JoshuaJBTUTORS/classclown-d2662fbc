@@ -22,23 +22,10 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { setupIntentId, customerId, token } = await req.json();
+    const { setupIntentId, customerId } = await req.json();
 
-    if (!setupIntentId || !customerId || !token) {
+    if (!setupIntentId || !customerId) {
       throw new Error('Missing required fields');
-    }
-
-    // Validate token again
-    const { data: linkData, error: linkError } = await supabaseClient
-      .from('card_update_links')
-      .select('*')
-      .eq('token', token)
-      .eq('customer_id', customerId)
-      .eq('used', false)
-      .single();
-
-    if (linkError || !linkData) {
-      throw new Error('Invalid update link');
     }
 
     // Retrieve the setup intent
@@ -60,30 +47,23 @@ const handler = async (req: Request): Promise<Response> => {
     // Get payment method details
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
 
-    // Update lesson_proposal_payment_methods if exists
-    const { data: existingPm } = await supabaseClient
-      .from('lesson_proposal_payment_methods')
-      .select('id')
-      .eq('stripe_customer_id', customerId)
-      .limit(1);
+    // Get customer details for billing info
+    const customer = await stripe.customers.retrieve(customerId);
 
-    if (existingPm && existingPm.length > 0) {
-      await supabaseClient
-        .from('lesson_proposal_payment_methods')
-        .update({
-          stripe_payment_method_id: paymentMethodId,
-          card_last_four: paymentMethod.card?.last4 || '',
-          card_brand: paymentMethod.card?.brand || '',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('stripe_customer_id', customerId);
-    }
-
-    // Mark the link as used
+    // Save to card_update_submissions
     await supabaseClient
-      .from('card_update_links')
-      .update({ used: true })
-      .eq('id', linkData.id);
+      .from('card_update_submissions')
+      .insert({
+        stripe_customer_id: customerId,
+        stripe_payment_method_id: paymentMethodId,
+        stripe_setup_intent_id: setupIntentId,
+        card_last4: paymentMethod.card?.last4 || '',
+        card_brand: paymentMethod.card?.brand || '',
+        card_exp_month: paymentMethod.card?.exp_month || null,
+        card_exp_year: paymentMethod.card?.exp_year || null,
+        billing_name: (customer as any).name || '',
+        billing_email: (customer as any).email || '',
+      });
 
     console.log('Card update completed for customer:', customerId);
 

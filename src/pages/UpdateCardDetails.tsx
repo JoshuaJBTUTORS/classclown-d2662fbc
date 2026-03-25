@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,20 +11,17 @@ import { Loader2, CreditCard, CheckCircle2 } from 'lucide-react';
 
 const stripePromise = loadStripe('pk_live_51SEUOvJYNQBAYpmilzLd1wW33J3IqSlLE9oEtDWOQuUwP1zjmTSMFW9nWkhattdVpfIbibEyOAwr8IBDaOXgRwve00JjSVVi6U');
 
-interface UpdateCardFormProps {
+interface CardFormProps {
   customerId: string;
-  token: string;
-  initialName: string;
-  initialEmail: string;
+  name: string;
+  email: string;
   onComplete: () => void;
 }
 
-function UpdateCardForm({ customerId, token, initialName, initialEmail, onComplete }: UpdateCardFormProps) {
+function CardForm({ customerId, name, email, onComplete }: CardFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [name, setName] = useState(initialName);
-  const [email, setEmail] = useState(initialEmail);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,11 +44,7 @@ function UpdateCardForm({ customerId, token, initialName, initialEmail, onComple
 
       if (setupIntent?.status === 'succeeded') {
         const { error: completeError } = await supabase.functions.invoke('complete-card-update', {
-          body: {
-            setupIntentId: setupIntent.id,
-            customerId,
-            token,
-          },
+          body: { setupIntentId: setupIntent.id, customerId },
         });
 
         if (completeError) throw completeError;
@@ -77,20 +69,10 @@ function UpdateCardForm({ customerId, token, initialName, initialEmail, onComple
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="name">Cardholder Name</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-        </div>
-        <div>
-          <Label htmlFor="email">Email for Receipts</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-        <div>
-          <Label>Card Details</Label>
-          <div className="mt-2">
-            <PaymentElement />
-          </div>
+      <div>
+        <Label>Card Details</Label>
+        <div className="mt-2">
+          <PaymentElement />
         </div>
       </div>
 
@@ -103,57 +85,37 @@ function UpdateCardForm({ customerId, token, initialName, initialEmail, onComple
 }
 
 export default function UpdateCardDetails() {
-  const { customerId, token } = useParams<{ customerId: string; token: string }>();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [linkError, setLinkError] = useState<string | null>(null);
-  const [initialName, setInitialName] = useState('');
-  const [initialEmail, setInitialEmail] = useState('');
 
-  useEffect(() => {
-    if (customerId && token) {
-      createSetupIntent();
-    }
-  }, [customerId, token]);
-
-  const createSetupIntent = async () => {
+  const handleContinue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-card-update-setup-intent', {
-        body: { customerId, token },
+        body: { email, name },
       });
 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
       setClientSecret(data.clientSecret);
-      setInitialName(data.name || '');
-      setInitialEmail(data.email || '');
+      setCustomerId(data.customerId);
     } catch (error: any) {
       console.error('Error creating setup intent:', error);
-      setLinkError(error.message || 'This update link is invalid or has expired.');
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to initialize payment setup',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (linkError) {
-    return (
-      <div className="container max-w-2xl py-16 text-center space-y-4">
-        <CreditCard className="h-12 w-12 text-muted-foreground mx-auto" />
-        <h1 className="text-2xl font-bold text-foreground">Link Expired or Invalid</h1>
-        <p className="text-muted-foreground">{linkError}</p>
-      </div>
-    );
-  }
 
   if (completed) {
     return (
@@ -169,14 +131,6 @@ export default function UpdateCardDetails() {
     );
   }
 
-  if (!clientSecret) {
-    return (
-      <div className="container max-w-2xl py-16 text-center">
-        <p className="text-destructive">Failed to initialize payment setup</p>
-      </div>
-    );
-  }
-
   return (
     <div className="container max-w-2xl py-12">
       <Card className="p-8 md:p-12 space-y-6">
@@ -188,24 +142,40 @@ export default function UpdateCardDetails() {
           </p>
         </div>
 
-        <Elements
-          stripe={stripePromise}
-          options={{
-            clientSecret,
-            appearance: {
-              theme: 'flat',
-              variables: { colorPrimary: '#1fb86b' },
-            },
-          }}
-        >
-          <UpdateCardForm
-            customerId={customerId!}
-            token={token!}
-            initialName={initialName}
-            initialEmail={initialEmail}
-            onComplete={() => setCompleted(true)}
-          />
-        </Elements>
+        {!clientSecret ? (
+          <form onSubmit={handleContinue} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Cardholder Name</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="email">Email for Receipts</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            <Button type="submit" disabled={loading} className="w-full" size="lg">
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Continue
+            </Button>
+          </form>
+        ) : (
+          <Elements
+            stripe={stripePromise}
+            options={{
+              clientSecret,
+              appearance: {
+                theme: 'flat',
+                variables: { colorPrimary: '#1fb86b' },
+              },
+            }}
+          >
+            <CardForm
+              customerId={customerId!}
+              name={name}
+              email={email}
+              onComplete={() => setCompleted(true)}
+            />
+          </Elements>
+        )}
 
         <div className="text-center text-xs text-muted-foreground">
           <p>Secured by Stripe. Your card information is never stored on our servers.</p>

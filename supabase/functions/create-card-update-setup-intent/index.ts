@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 
 const corsHeaders = {
@@ -17,43 +16,40 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    );
+    const { email, name } = await req.json();
 
-    const { customerId, token } = await req.json();
-
-    if (!customerId || !token) {
-      throw new Error('Missing customerId or token');
+    if (!email || !name) {
+      throw new Error('Missing email or name');
     }
 
-    // Validate token
-    const { data: linkData, error: linkError } = await supabaseClient
-      .from('card_update_links')
-      .select('*')
-      .eq('token', token)
-      .eq('customer_id', customerId)
-      .eq('used', false)
-      .gt('expires_at', new Date().toISOString())
-      .single();
+    console.log('Creating setup intent for card update:', { email, name });
 
-    if (linkError || !linkData) {
-      console.error('Token validation failed:', linkError);
-      throw new Error('Invalid or expired update link');
+    // Get or create Stripe customer (same as proposal flow)
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
+    let customerId: string;
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+      console.log('Found existing customer:', customerId);
+    } else {
+      const customer = await stripe.customers.create({
+        email,
+        name,
+        metadata: { source: 'card_update' },
+      });
+      customerId = customer.id;
+      console.log('Created new customer:', customerId);
     }
 
-    console.log('Creating setup intent for customer:', customerId);
-
-    // Create Setup Intent for the existing customer
+    // Create Setup Intent
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
       payment_method_types: ['card'],
       usage: 'off_session',
-      metadata: {
-        card_update_link_id: linkData.id,
-        update_type: 'annual_card_check',
-      },
+      metadata: { source: 'card_update' },
     });
 
     console.log('Setup Intent created:', setupIntent.id);
@@ -61,8 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({
         clientSecret: setupIntent.client_secret,
-        name: linkData.name,
-        email: linkData.email,
+        customerId,
       }),
       {
         status: 200,
