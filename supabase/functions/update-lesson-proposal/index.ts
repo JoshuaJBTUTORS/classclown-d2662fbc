@@ -6,6 +6,7 @@ interface UpdateProposalRequest {
   recipientName: string;
   recipientEmail: string;
   recipientPhone?: string;
+  dailyHomeworkOptIn?: boolean;
   lessonType: string;
   subject: string;
   pricePerLesson: number;
@@ -92,6 +93,7 @@ const handler = async (req: Request): Promise<Response> => {
       pricePerLesson,
       paymentCycle,
       lessonTimes,
+      dailyHomeworkOptIn,
     } = requestData;
 
     // Validate required fields
@@ -135,6 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
         price_per_lesson: pricePerLesson,
         payment_cycle: paymentCycle,
         lesson_times: lessonTimes,
+        daily_homework_opt_in: dailyHomeworkOptIn ?? false,
         updated_at: new Date().toISOString(),
       })
       .eq('id', proposalId)

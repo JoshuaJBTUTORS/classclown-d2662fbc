@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Plus, Trash2, BookOpen } from 'lucide-react';
 
 const lessonTimeSchema = z.object({
   day: z.string().min(1, 'Day is required'),
@@ -32,6 +33,7 @@ const proposalSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   pricePerLesson: z.number().min(0, 'Price must be positive'),
   paymentCycle: z.string().min(1, 'Payment cycle is required'),
+  dailyHomeworkOptIn: z.boolean().default(false),
   lessonTimes: z.array(lessonTimeSchema).min(1, 'At least one lesson time is required'),
 });
 
@@ -54,6 +56,7 @@ export default function ProposalBuilder() {
       subject: '',
       pricePerLesson: 45,
       paymentCycle: '',
+      dailyHomeworkOptIn: false,
       lessonTimes: [],
     },
   });
@@ -84,6 +87,7 @@ export default function ProposalBuilder() {
           body: {
             ...data,
             recipientPhone: data.recipientPhone || null,
+            dailyHomeworkOptIn: data.dailyHomeworkOptIn,
             lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
           },
       });
@@ -337,6 +341,38 @@ export default function ProposalBuilder() {
                   render={() => (
                     <FormItem>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Daily Homework Practice Option */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4">
+                <FormField
+                  control={form.control}
+                  name="dailyHomeworkOptIn"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="flex-1 flex items-center justify-between">
+                        <div className="space-y-1">
+                          <FormLabel className="text-base font-medium flex items-center gap-2 cursor-pointer">
+                            <BookOpen className="h-4 w-4 text-primary" />
+                            Include Daily Homework Practice
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Daily homework assignments across all subjects
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                          £12.99/mo
+                        </span>
+                      </div>
                     </FormItem>
                   )}
                 />

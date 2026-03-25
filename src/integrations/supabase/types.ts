@@ -2644,6 +2644,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          daily_homework_opt_in: boolean | null
           discount_extended_until: string | null
           id: string
           lesson_times: Json
@@ -2667,6 +2668,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          daily_homework_opt_in?: boolean | null
           discount_extended_until?: string | null
           id?: string
           lesson_times?: Json
@@ -2690,6 +2692,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          daily_homework_opt_in?: boolean | null
           discount_extended_until?: string | null
           id?: string
           lesson_times?: Json
