@@ -16,7 +16,7 @@ import { Loader2, CreditCard, AlertCircle, Shield, Lock } from 'lucide-react';
 import { paymentService } from '@/services/paymentService';
 
 // Load Stripe with your live publishable key
-const stripePromise = loadStripe('pk_live_51QN38HJvbqr5stJM97b75qtlGHikLcEdXzhPypRqJPKRcZgeYyCztQ6h65rz79HGs1iCgI97GUqUlAUE7vJkGtPk001FSXb648');
+const stripePromise = loadStripe('pk_live_51SEUOvJYNQBAYpmilzLd1wW33J3IqSlLE9oEtDWOQuUwP1zjmTSMFW9nWkhattdVpfIbibEyOAwr8IBDaOXgRwve00JjSVVi6U');
 
 interface PaymentFormProps {
   clientSecret: string;
