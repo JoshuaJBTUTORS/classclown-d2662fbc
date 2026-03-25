@@ -42,9 +42,6 @@ const LandingPage = () => {
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-5 tracking-tight">
             Welcome to ClassClown
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Your complete learning platform — from self-paced courses to 1-on-1 live tutoring starting at £9.99/month
-          </p>
         </motion.div>
 
         {/* Main Action Card */}
