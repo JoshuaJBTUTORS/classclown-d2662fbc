@@ -71,6 +71,7 @@ import TrialBookingMusa from './pages/TrialBookingMusa';
 import ContentEngine from './pages/admin/ContentEngine';
 import TutorContentPage from './pages/tutor/TutorContentPage';
 import ProposalView from './pages/ProposalView';
+import UpdateCardDetails from './pages/UpdateCardDetails';
 import ProposalBuilder from './pages/ProposalBuilder';
 import ProposalDashboard from './pages/admin/ProposalDashboard';
 import EditProposal from './pages/admin/EditProposal';
