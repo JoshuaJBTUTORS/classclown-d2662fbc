@@ -7,7 +7,7 @@ const MainLayout: React.FC = () => {
   return (
     <SidebarProvider>
       <DomainSEO />
-      <div className="min-h-screen bg-gray-50 flex w-full relative">
+      <div className="min-h-screen bg-background flex w-full relative">
         <Outlet />
       </div>
     </SidebarProvider>

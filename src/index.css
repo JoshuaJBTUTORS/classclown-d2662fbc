@@ -1,131 +1,138 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --background-alt: 220 25% 98%;
-    --background-cream: 40 15% 98.5%;
+    /* ===== Premium Teal Theme ===== */
+    --background: 210 20% 99%;
+    --foreground: 220 25% 10%;
+    --background-alt: 210 20% 98%;
+    --background-cream: 40 30% 96%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 25% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    
-    /* Blue to Green Gradient Primary Colors */
-    --deep-purple-blue: 235 65% 45%; /* #3541A5 */
-    --medium-blue: 210 60% 50%; /* #3784CB */
-    --cyan-blue: 195 65% 52%; /* #3CA7CB */
-    --light-green: 85 45% 70%; /* #ACD696 */
-    --medium-green: 140 45% 45%; /* #4AAD64 */
-    --bright-green: 140 70% 35%; /* #299631 */
-    
-    /* Primary system using deep purple-blue */
-    --primary: var(--deep-purple-blue);
+    --popover-foreground: 220 25% 10%;
+
+    /* Primary — Deep Teal */
+    --primary: 168 65% 32%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 235 45% 65%;
-    --primary-dark: 235 75% 35%;
-    
-    --secondary: 220 15% 95%;
+    --primary-light: 168 45% 55%;
+    --primary-dark: 168 75% 22%;
+
+    /* Secondary — Warm Sand */
+    --secondary: 40 30% 96%;
     --secondary-foreground: 220 25% 25%;
-    --muted: 220 15% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    
-    /* Accent using cyan-blue */
-    --accent: var(--cyan-blue);
-    --accent-foreground: 0 0% 100%;
-    
+
+    /* Muted */
+    --muted: 40 30% 96%;
+    --muted-foreground: 220 10% 45%;
+
+    /* Accent — Soft Sage */
+    --accent: 150 25% 94%;
+    --accent-foreground: 220 25% 10%;
+
     --destructive: 0 60% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 0 0% 100%;
+    --border: 220 15% 92%;
+    --input: 220 15% 92%;
+    --ring: 168 65% 32%;
     --radius: 0.75rem;
-    
-    /* Chart Colors using gradient palette */
-    --chart-1: var(--deep-purple-blue);
-    --chart-2: var(--medium-blue);
-    --chart-3: var(--cyan-blue);
-    --chart-4: var(--light-green);
-    --chart-5: var(--medium-green);
-    
+
+    /* Legacy aliases — map to teal */
+    --deep-purple-blue: 168 65% 32%;
+    --medium-blue: 168 50% 40%;
+    --cyan-blue: 168 45% 48%;
+    --light-green: 150 25% 85%;
+    --medium-green: 168 55% 38%;
+    --bright-green: 168 65% 32%;
+
+    /* Chart Colors */
+    --chart-1: 168 65% 32%;
+    --chart-2: 168 50% 40%;
+    --chart-3: 168 45% 48%;
+    --chart-4: 150 30% 70%;
+    --chart-5: 168 55% 38%;
+
     /* Performance Colors */
     --performance-low: 0 60% 60%;
     --performance-medium: 45 70% 60%;
-    --performance-high: var(--bright-green);
-    
-    /* Subject Color Mapping using gradient spectrum */
-    --math-color: var(--deep-purple-blue);
-    --english-color: var(--medium-blue);
-    --science-color: var(--cyan-blue);
-    --history-color: var(--light-green);
-    --art-color: var(--medium-green);
-    --success-color: var(--bright-green);
-    
-    /* Vibrant Subject-based color coding */
-    --ks2-color: 16 100% 66%; /* Bright Orange - #FF7043 */
-    --eleven-plus-color: 291 65% 40%; /* Royal Purple - #7B1FA2 */
-    --ks3-color: 207 77% 47%; /* Electric Blue - #1976D2 */
-    --gcse-color: 122 44% 41%; /* Emerald Green - #388E3C */
-    --sats-color: 4 77% 56%; /* Coral Red - #E53935 */
-    --year-11-color: 174 100% 29%; /* Teal - #00796B */
-    --a-level-color: 32 89% 48%; /* Deep Orange - #F57C00 */
-    --trial-color: 340 69% 42%; /* Pink - #C2185B */
-    
-    /* Gradients using adjacent colors */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-blue)) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--cyan-blue)) 0%, hsl(var(--light-green)) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(var(--medium-green)) 0%, hsl(var(--bright-green)) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(var(--deep-purple-blue) / 0.1) 0%, hsl(var(--cyan-blue) / 0.1) 100%);
-    
-    /* Enhanced Shadows with blue-green tints */
-    --shadow-subtle: 0 2px 8px -2px hsl(var(--deep-purple-blue) / 0.08);
-    --shadow-card: 0 4px 12px -2px hsl(var(--medium-blue) / 0.12);
-    --shadow-elevated: 0 8px 24px -4px hsl(var(--cyan-blue) / 0.15);
-    --shadow-focus: 0 0 0 3px hsl(var(--cyan-blue) / 0.15);
-    
-    /* Cleo Design System Variables - HSL Colors */
-    --cleo-green: 142 65% 29%;  /* #15803d converted to HSL */
-    --cleo-green-dark: 143 63% 15%;  /* #14532d converted to HSL */
-    --cleo-mint-bg: 140 100% 97%;  /* #f3fff7 converted to HSL */
-    --cleo-mint-card: 140 39% 93%;  /* #e7f8ee converted to HSL */
-    --cleo-card-bg: 0 0% 100%;  /* #ffffff - white */
-    --cleo-border-soft: 140 8% 91%;  /* #e5ebe7 converted to HSL */
-    --cleo-text-main: 156 80% 4%;  /* #02130a converted to HSL */
-    --cleo-text-muted: 156 10% 42%;  /* #63706b converted to HSL */
-    --cleo-text-dark: 156 80% 20%;  /* Dark green for text */
-    --cleo-shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.08);
+    --performance-high: 168 65% 32%;
+
+    /* Subject Color Mapping */
+    --math-color: 168 65% 32%;
+    --english-color: 168 50% 40%;
+    --science-color: 168 45% 48%;
+    --history-color: 150 30% 70%;
+    --art-color: 168 55% 38%;
+    --success-color: 168 65% 32%;
+
+    /* Vibrant Subject-based color coding (preserved) */
+    --ks2-color: 16 100% 66%;
+    --eleven-plus-color: 291 65% 40%;
+    --ks3-color: 207 77% 47%;
+    --gcse-color: 122 44% 41%;
+    --sats-color: 4 77% 56%;
+    --year-11-color: 174 100% 29%;
+    --a-level-color: 32 89% 48%;
+    --trial-color: 340 69% 42%;
+
+    /* Gradients — subtle teal */
+    --gradient-primary: linear-gradient(135deg, hsl(168, 65%, 32%) 0%, hsl(168, 50%, 40%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(168, 45%, 48%) 0%, hsl(150, 30%, 70%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(168, 55%, 38%) 0%, hsl(168, 65%, 32%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(168 65% 32% / 0.06) 0%, hsl(150 25% 94% / 0.3) 100%);
+
+    /* Shadows — neutral, no colored tints */
+    --shadow-subtle: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-elevated: 0 8px 32px rgba(0,0,0,0.08);
+    --shadow-focus: 0 0 0 3px hsl(168 65% 32% / 0.15);
+    --shadow-glow: 0 0 24px hsla(168,65%,32%,0.15);
+
+    /* Cleo Design System — remapped to teal */
+    --cleo-green: 168 65% 32%;
+    --cleo-green-dark: 168 65% 22%;
+    --cleo-mint-bg: 150 25% 97%;
+    --cleo-mint-card: 150 25% 94%;
+    --cleo-card-bg: 0 0% 100%;
+    --cleo-border-soft: 220 15% 92%;
+    --cleo-text-main: 220 25% 10%;
+    --cleo-text-muted: 220 10% 45%;
+    --cleo-text-dark: 220 25% 15%;
+    --cleo-shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.06);
     --cleo-radius-xl: 24px;
     --cleo-radius-lg: 18px;
     --cleo-radius-pill: 999px;
+    --cleo-green-soft: 150 25% 94%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --background-alt: 240 4% 10%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: var(--medium-blue);
+    --background: 220 20% 6%;
+    --foreground: 210 20% 95%;
+    --background-alt: 220 15% 10%;
+    --background-cream: 220 15% 10%;
+    --card: 220 18% 10%;
+    --card-foreground: 210 20% 95%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 168 55% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 210 45% 70%;
-    --primary-dark: 210 70% 40%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: hsl(var(--light-green));
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 0 0% 100%;
+    --primary-light: 168 45% 55%;
+    --primary-dark: 168 65% 30%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 220 15% 15%;
+    --accent-foreground: 168 55% 42%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 20% 95%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 168 55% 42%;
   }
 }
 
@@ -135,12 +142,15 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Roboto', sans-serif;
-    background: white;
+    font-family: 'Inter', sans-serif;
+    background: hsl(210, 20%, 99%);
     min-height: 100vh;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
   .font-playfair {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
   .font-sidebar {
     font-family: 'Inter', sans-serif;
@@ -158,39 +168,39 @@
   }
   
   .luxury-button {
-    @apply bg-gradient-to-r from-[hsl(var(--deep-purple-blue))] to-[hsl(var(--medium-blue))] text-white font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
+    @apply bg-primary text-white font-medium rounded-full shadow-[var(--shadow-subtle)] transition-all duration-200;
   }
   
   .luxury-button:hover {
-    @apply shadow-[var(--shadow-card)] transform -translate-y-0.5 opacity-90;
+    @apply shadow-[var(--shadow-glow)] transform -translate-y-0.5;
   }
   
   .luxury-button-green {
-    @apply bg-gradient-to-r from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] text-white font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
+    @apply bg-primary text-white font-medium rounded-full shadow-[var(--shadow-subtle)] transition-all duration-200;
   }
   
   .luxury-button-green:hover {
-    @apply shadow-[var(--shadow-card)] transform -translate-y-0.5 opacity-90;
+    @apply shadow-[var(--shadow-glow)] transform -translate-y-0.5;
   }
   
   .luxury-button-cyan {
-    @apply bg-gradient-to-r from-[hsl(var(--cyan-blue))] to-[hsl(var(--light-green))] text-white font-medium rounded-lg shadow-[var(--shadow-subtle)] transition-all duration-200;
+    @apply bg-primary text-white font-medium rounded-full shadow-[var(--shadow-subtle)] transition-all duration-200;
   }
   
   .luxury-button-cyan:hover {
-    @apply shadow-[var(--shadow-card)] transform -translate-y-0.5 opacity-90;
+    @apply shadow-[var(--shadow-glow)] transform -translate-y-0.5;
   }
   
   .luxury-input {
-    @apply border border-gray-300 rounded-lg bg-white focus:border-[hsl(var(--cyan-blue))] focus:ring-2 focus:ring-[hsl(var(--cyan-blue))]/10 transition-all duration-200;
+    @apply border border-border rounded-lg bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200;
   }
   
   .luxury-gradient-text {
-    @apply bg-gradient-to-r from-[hsl(var(--deep-purple-blue))] to-[hsl(var(--cyan-blue))] bg-clip-text text-transparent;
+    @apply text-primary;
   }
   
   .luxury-gradient-text-green {
-    @apply bg-gradient-to-r from-[hsl(var(--medium-green))] to-[hsl(var(--bright-green))] bg-clip-text text-transparent;
+    @apply text-primary;
   }
   
   .luxury-nav {
@@ -211,11 +221,11 @@
       transform: scale(1);
     }
     50% {
-      background-color: hsl(var(--cyan-blue) / 0.2);
+      background-color: hsl(168 65% 32% / 0.12);
       transform: scale(1.01);
     }
     100% {
-      background-color: hsl(var(--light-green) / 0.1);
+      background-color: hsl(150 25% 94% / 0.5);
       transform: scale(1);
     }
   }
@@ -883,7 +893,7 @@
   .cleo-progress-fill {
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, hsl(145 60% 50%), hsl(145 70% 60%));
+    background: linear-gradient(90deg, hsl(168, 65%, 32%), hsl(168, 50%, 40%));
   }
 
   /* Avatar Circle */
@@ -975,9 +985,9 @@
 
   .cleo-nav-button:hover,
   .cleo-nav-button.is-active {
-    background: linear-gradient(135deg, hsl(var(--cleo-green)), hsl(145 70% 50%));
+    background: hsl(168, 65%, 32%);
     color: white;
-    box-shadow: 0 14px 38px rgba(22, 160, 90, 0.45);
+    box-shadow: var(--shadow-glow);
   }
 
   .cleo-sidebar-footer {
@@ -1099,7 +1109,7 @@
   .progress-bar-thin-fill {
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #1fb86b, #7def9e);
+    background: linear-gradient(90deg, hsl(168, 65%, 32%), hsl(168, 50%, 45%));
     transition: width 0.3s ease;
   }
 
@@ -1375,8 +1385,8 @@
 
 .fc-toolbar-title {
   font-weight: 600 !important;
-  color: hsl(var(--deep-purple-blue)) !important;
-  font-family: 'Playfair Display', serif !important;
+  color: hsl(var(--foreground)) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
   font-size: 1.5rem !important;
 }
 
@@ -1421,23 +1431,24 @@
   width: 100% !important;
 }
 
-/* Professional Scrollbar with gradient colors */
+/* Professional Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--light-green) / 0.1);
+  background: hsl(var(--muted));
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, hsl(var(--medium-blue)) 0%, hsl(var(--cyan-blue)) 100%);
+  background: hsl(168, 65%, 32%);
   border-radius: 3px;
+  opacity: 0.6;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, hsl(var(--deep-purple-blue)) 0%, hsl(var(--medium-green)) 100%);
+  background: hsl(168, 65%, 25%);
 }
 
 /* Blog content styles */
@@ -1676,14 +1687,14 @@
   box-shadow: var(--cleo-shadow-button-hover);
 }
 
-.cleo-btn-primary {
-  border-radius: 999px;
-  padding: 10px 22px;
-  background: linear-gradient(135deg, #1fb86b, #35d086);
-  box-shadow: var(--cleo-shadow-primary);
-  transition: all 0.12s ease;
-  border: none;
-}
+  .cleo-btn-primary {
+    border-radius: 999px;
+    padding: 10px 22px;
+    background: hsl(168, 65%, 32%);
+    box-shadow: var(--shadow-subtle);
+    transition: all 0.12s ease;
+    border: none;
+  }
 
 .cleo-btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -1725,12 +1736,12 @@
   overflow: hidden;
 }
 
-.cleo-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, hsl(var(--cleo-accent-blue)), #8aa5ff);
-  transition: width 0.3s ease;
-}
+  .cleo-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, hsl(168, 65%, 32%), hsl(168, 50%, 40%));
+    transition: width 0.3s ease;
+  }
 
 /* ============================================ */
 /* Exam Paper Question Styling - GCSE Edexcel Style */
@@ -2093,10 +2104,10 @@
 /* ============================================ */
 
 :root {
-  --cleo-course-bg: #f7fafc;
-  --cleo-course-card: #ffffff;
-  --cleo-green-main: #35a853;
-  --cleo-green-light: #e9f7ec;
+    --cleo-course-bg: hsl(210, 20%, 99%);
+    --cleo-course-card: #ffffff;
+    --cleo-green-main: hsl(168, 65%, 32%);
+    --cleo-green-light: hsl(150, 25%, 94%);
   --cleo-text-main: #111827;
   --cleo-text-muted: #6b7280;
   --cleo-border-soft: #e5e7eb;

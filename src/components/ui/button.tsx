@@ -10,17 +10,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-[hsl(var(--cleo-green))] to-[hsl(145,70%,50%)] text-white shadow-[0_12px_26px_rgba(22,160,90,0.35)] hover:shadow-[0_16px_42px_rgba(22,160,90,0.4)] hover:brightness-105 hover:-translate-y-0.5",
+        default: "bg-primary text-primary-foreground shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-glow)] hover:brightness-105 hover:-translate-y-0.5",
         destructive:
-          "bg-gradient-to-r from-[hsl(var(--cleo-danger))] to-[hsl(10,85%,60%)] text-white hover:opacity-90 shadow-sm",
+          "bg-destructive text-destructive-foreground hover:opacity-90 shadow-sm",
         outline:
-          "border-2 border-[hsl(var(--cleo-green))]/50 bg-white/80 text-[hsl(var(--cleo-text-dark))] hover:bg-[hsl(var(--cleo-green-soft))]/90 hover:border-[hsl(var(--cleo-green))] transition-all duration-200 hover:-translate-y-0.5",
+          "border-2 border-primary/40 bg-white text-foreground hover:bg-accent hover:border-primary hover:text-primary transition-all duration-200 hover:-translate-y-0.5",
         secondary:
-          "bg-gradient-to-r from-[hsl(var(--cleo-green))] to-[hsl(145,65%,55%)] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
-        ghost: "hover:bg-[hsl(var(--cleo-green-soft))]/50 hover:text-[hsl(var(--cleo-green))] transition-all duration-200",
-        link: "text-[hsl(var(--cleo-green))] underline-offset-4 hover:underline font-medium",
-        premium: "bg-gradient-to-r from-white to-[hsl(var(--cleo-green-soft))]/20 border border-[hsl(var(--cleo-green))] text-[hsl(var(--cleo-text-dark))] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-[hsl(var(--cleo-green))] hover:text-[hsl(var(--cleo-green))] transition-all duration-200 hover:-translate-y-0.5",
-        success: "bg-gradient-to-r from-[hsl(var(--cleo-green))] to-[hsl(145,70%,45%)] text-white shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
+          "bg-primary text-primary-foreground shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
+        ghost: "hover:bg-accent hover:text-primary transition-all duration-200",
+        link: "text-primary underline-offset-4 hover:underline font-medium",
+        premium: "bg-white border border-primary/30 text-foreground shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-primary hover:text-primary transition-all duration-200 hover:-translate-y-0.5",
+        success: "bg-primary text-primary-foreground shadow-[var(--shadow-subtle)] hover:shadow-[var(--shadow-card)] hover:opacity-90 hover:-translate-y-0.5",
       },
       size: {
         default: "h-10 px-6 py-2 rounded-full",
