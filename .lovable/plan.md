@@ -1,42 +1,39 @@
 
-Update the current card-update flow to match the proposal payment flow as closely as possible, but as one open public page.
 
-1. Replace the route
-- Change `/update-card/:customerId/:token` to a single public route: `/update-card`.
+## Update Card Details Page — Simple, Open, Proposal-Style
 
-2. Rebuild the page to mirror the proposal payment UI
-- Use the same structure and Stripe Elements flow as `PaymentCaptureStep`.
-- Keep the same styling/layout.
-- Change the heading from “Almost There!” to “Update Card”.
-- Change the subtext to: “As part of our routine annual payment method check, please update your payment details using the secure link below.”
-- Keep name + email inputs on the page.
-- Keep the Stripe `PaymentElement`.
-- Change the button text to “Update Card Details”.
-- Remove the token/link-expired logic and remove the current param-based setup.
+Rewrite the existing `/update-card` page and its edge functions to work exactly like the proposal payment step (step 2), but standalone — no proposal needed, no tokens, no lookups.
 
-3. Change the setup-intent function to stop validating links
-- Refactor `create-card-update-setup-intent` so it accepts only `name` and `email`.
-- Do not look up any existing customer.
-- Do not use `card_update_links`.
-- Create a brand new Stripe customer directly from the submitted name/email.
-- Create a SetupIntent for that customer and return the `clientSecret` (same pattern as proposal flow).
+### What changes
 
-4. Change the completion function to match the new flow
-- Refactor `complete-card-update` so it accepts the new `setupIntentId` and the created `customerId`.
-- Remove all token validation.
-- Retrieve the Stripe payment method from the SetupIntent.
-- Set it as the default payment method for that Stripe customer.
-- Save the result in a simple database record for tracking.
+**1. Rewrite `src/pages/UpdateCardDetails.tsx`**
+- Remove `useParams`, token logic, and link-expired state
+- Two-step flow on one page:
+  - User enters name + email, clicks "Continue"
+  - Edge function creates a Stripe customer + SetupIntent (same as `create-proposal-setup-intent`)
+  - Stripe PaymentElement renders with the clientSecret
+  - On submit, calls `complete-card-update` to save the card
+- Copy: "Update Card" heading, "As part of our routine annual payment method check..." subtext, "Update Card Details" button
+- Success screen: "Card Updated!" with checkmark
 
-5. Simplify the database side
-- Stop using the `card_update_links` table entirely.
-- Add a small dedicated table for public card update submissions if needed, since `lesson_proposal_payment_methods` requires a `proposal_id` and cannot cleanly store these standalone updates.
-- Store basics like name, email, stripe customer id, payment method id, card brand/last4, and timestamps.
+**2. Rewrite `supabase/functions/create-card-update-setup-intent/index.ts`**
+- Accept `{ email, name }` only
+- Create a new Stripe customer with that email/name (same as proposal flow — get or create)
+- Create a SetupIntent for that customer
+- Return `{ clientSecret, customerId }`
+- No token validation, no `card_update_links` table usage
 
-6. Keep the success state simple
-- After successful confirmation, show the existing “Card Updated!” success screen.
+**3. Rewrite `supabase/functions/complete-card-update/index.ts`**
+- Accept `{ setupIntentId, customerId }`
+- Retrieve SetupIntent, get payment method details
+- Set as default payment method on the customer
+- Save record to `card_update_submissions` table (name, email, stripe IDs, card details, timestamp)
+- No proposal updates, no notification emails
 
-Technical details
-- This will be fully public: no auth, no token, no customer lookup.
-- It will follow the proposal-style logic: collect name/email, create a Stripe customer, create a SetupIntent, confirm the card, then save the result.
-- Important consequence: this does not “find and update” an existing Stripe customer; it creates a fresh Stripe customer/payment profile each time, exactly as requested.
+**4. New DB table: `card_update_submissions`**
+- `id` (uuid), `stripe_customer_id`, `stripe_payment_method_id`, `stripe_setup_intent_id`, `card_last4`, `card_brand`, `card_exp_month`, `card_exp_year`, `billing_name`, `billing_email`, `created_at`
+- No RLS needed (only written by edge function via service role)
+
+**5. Route in `src/App.tsx`**
+- Keep `/update-card` (no params)
+
