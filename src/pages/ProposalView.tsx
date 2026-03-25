@@ -226,8 +226,19 @@ export default function ProposalView() {
                       <span className="font-semibold"> {time.day}</span> at {time.time} ({time.duration} minutes)
                     </p>
                   ))}
-                </div>
               </div>
+
+              {/* Daily Homework - already included */}
+              {proposal.daily_homework_opt_in && (
+                <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-muted-foreground">📝 Daily Homework Practice</p>
+                    <p className="text-lg font-semibold">Included</p>
+                  </div>
+                  <span className="text-sm font-semibold text-muted-foreground">£12.99/mo</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -278,6 +289,47 @@ export default function ProposalView() {
               </div>
             </div>
           </div>
+
+          {/* Daily Homework Prompt (if not pre-selected) */}
+          {!proposal.daily_homework_opt_in && !homeworkDismissed && (
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-6 space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="rounded-full bg-primary/10 p-3">
+                  <BookOpen className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">📝 Daily Homework Practice</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Would you like to add daily homework assignments for all subjects?
+                  </p>
+                </div>
+                <span className="text-lg font-bold text-primary whitespace-nowrap">£12.99/mo</span>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setHomeworkDismissed(true)}
+                  className="px-6 py-2 rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors font-medium"
+                >
+                  No thanks
+                </button>
+                <button
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from('lesson_proposals')
+                      .update({ daily_homework_opt_in: true } as any)
+                      .eq('id', proposal.id);
+                    if (!error) {
+                      setProposal({ ...proposal, daily_homework_opt_in: true });
+                      toast({ title: 'Added!', description: 'Daily homework practice has been added to your proposal.' });
+                    }
+                  }}
+                  className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+                >
+                  Yes, add it!
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Call to Action */}
           <div className="pt-6 text-center">
