@@ -12,6 +12,7 @@ interface ProposalRequest {
   recipientPhone?: string;
   studentId?: number;
   parentId?: string;
+  dailyHomeworkOptIn?: boolean;
   lessonType: string;
   subject: string;
   pricePerLesson: number;
@@ -107,6 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
         price_per_lesson: proposalData.pricePerLesson,
         payment_cycle: proposalData.paymentCycle,
         lesson_times: proposalData.lessonTimes,
+        daily_homework_opt_in: proposalData.dailyHomeworkOptIn || false,
         access_token: accessToken,
         status: 'sent',
         sent_at: new Date().toISOString(),
