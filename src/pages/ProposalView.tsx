@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, BookOpen } from 'lucide-react';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
 import UrgencyPriceDisplay from '@/components/proposals/UrgencyPriceDisplay';
@@ -19,6 +19,7 @@ interface Proposal {
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
   status: string;
   created_at: string;
+  daily_homework_opt_in: boolean;
 }
 
 export default function ProposalView() {
@@ -27,6 +28,7 @@ export default function ProposalView() {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<'view' | 'agreement' | 'payment'>('view');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
   useEffect(() => {
     loadProposal();
