@@ -759,6 +759,39 @@ export type Database = {
         }
         Relationships: []
       }
+      card_update_links: {
+        Row: {
+          created_at: string
+          customer_id: string
+          email: string
+          expires_at: string
+          id: string
+          name: string
+          token: string
+          used: boolean
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          email: string
+          expires_at?: string
+          id?: string
+          name?: string
+          token?: string
+          used?: boolean
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          name?: string
+          token?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
       cleo_conversations: {
         Row: {
           created_at: string

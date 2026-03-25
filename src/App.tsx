@@ -71,6 +71,7 @@ import TrialBookingMusa from './pages/TrialBookingMusa';
 import ContentEngine from './pages/admin/ContentEngine';
 import TutorContentPage from './pages/tutor/TutorContentPage';
 import ProposalView from './pages/ProposalView';
+import UpdateCardDetails from './pages/UpdateCardDetails';
 import ProposalBuilder from './pages/ProposalBuilder';
 import ProposalDashboard from './pages/admin/ProposalDashboard';
 import EditProposal from './pages/admin/EditProposal';
@@ -124,6 +125,7 @@ function App() {
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 <Route path="/p/:proposalId/:token" element={<ProposalView />} />
+                <Route path="/update-card/:customerId/:token" element={<UpdateCardDetails />} />
                 
                 {/* Main App Layout - all main application routes - Restricted on heycleo.io */}
                 <Route
