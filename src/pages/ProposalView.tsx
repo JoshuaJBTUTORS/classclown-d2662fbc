@@ -226,6 +226,7 @@ export default function ProposalView() {
                       <span className="font-semibold"> {time.day}</span> at {time.time} ({time.duration} minutes)
                     </p>
                   ))}
+                </div>
               </div>
 
               {/* Daily Homework - already included */}
