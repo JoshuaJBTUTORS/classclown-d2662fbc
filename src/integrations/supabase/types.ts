@@ -792,6 +792,48 @@ export type Database = {
         }
         Relationships: []
       }
+      card_update_submissions: {
+        Row: {
+          billing_email: string
+          billing_name: string
+          card_brand: string | null
+          card_exp_month: number | null
+          card_exp_year: number | null
+          card_last4: string | null
+          created_at: string | null
+          id: string
+          stripe_customer_id: string
+          stripe_payment_method_id: string
+          stripe_setup_intent_id: string
+        }
+        Insert: {
+          billing_email: string
+          billing_name: string
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string | null
+          id?: string
+          stripe_customer_id: string
+          stripe_payment_method_id: string
+          stripe_setup_intent_id: string
+        }
+        Update: {
+          billing_email?: string
+          billing_name?: string
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string | null
+          id?: string
+          stripe_customer_id?: string
+          stripe_payment_method_id?: string
+          stripe_setup_intent_id?: string
+        }
+        Relationships: []
+      }
       cleo_conversations: {
         Row: {
           created_at: string

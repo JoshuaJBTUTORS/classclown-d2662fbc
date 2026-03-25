@@ -125,7 +125,7 @@ function App() {
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 <Route path="/p/:proposalId/:token" element={<ProposalView />} />
-                <Route path="/update-card/:customerId/:token" element={<UpdateCardDetails />} />
+                <Route path="/update-card" element={<UpdateCardDetails />} />
                 
                 {/* Main App Layout - all main application routes - Restricted on heycleo.io */}
                 <Route
