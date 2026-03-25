@@ -134,10 +134,10 @@ export default function UpdateCardDetails() {
   return (
     <div className="container max-w-2xl py-12">
       <Card className="p-8 md:p-12 space-y-6">
-        <div className="text-center space-y-2">
-          <CreditCard className="h-12 w-12 text-primary mx-auto" />
-          <h1 className="text-3xl font-bold text-primary">Update Card</h1>
-          <p className="text-muted-foreground">
+        <div className="text-center space-y-1.5">
+          <CreditCard className="h-8 w-8 text-primary mx-auto" />
+          <h1 className="text-xl font-bold text-primary">Update Card</h1>
+          <p className="text-sm text-muted-foreground">
             As part of our routine annual payment method check, please update your payment details using the secure form below.
           </p>
         </div>
