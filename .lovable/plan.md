@@ -1,45 +1,42 @@
 
+Update the current card-update flow to match the proposal payment flow as closely as possible, but as one open public page.
 
-## Update Card Details Page
+1. Replace the route
+- Change `/update-card/:customerId/:token` to a single public route: `/update-card`.
 
-Create a standalone public page where customers can update their card details via a secure link. Reuses the same Stripe SetupIntent pattern as the proposal payment step.
+2. Rebuild the page to mirror the proposal payment UI
+- Use the same structure and Stripe Elements flow as `PaymentCaptureStep`.
+- Keep the same styling/layout.
+- Change the heading from “Almost There!” to “Update Card”.
+- Change the subtext to: “As part of our routine annual payment method check, please update your payment details using the secure link below.”
+- Keep name + email inputs on the page.
+- Keep the Stripe `PaymentElement`.
+- Change the button text to “Update Card Details”.
+- Remove the token/link-expired logic and remove the current param-based setup.
 
-### What gets built
+3. Change the setup-intent function to stop validating links
+- Refactor `create-card-update-setup-intent` so it accepts only `name` and `email`.
+- Do not look up any existing customer.
+- Do not use `card_update_links`.
+- Create a brand new Stripe customer directly from the submitted name/email.
+- Create a SetupIntent for that customer and return the `clientSecret` (same pattern as proposal flow).
 
-**1. New page: `src/pages/UpdateCardDetails.tsx`**
-- Route: `/update-card/:customerId/:token`
-- Identical layout to `PaymentCaptureStep` but with updated copy:
-  - Title: "Update Card" (with CreditCard icon instead of CheckCircle)
-  - Subtitle: "As part of our routine annual payment method check, please update your payment details using the secure link below."
-  - Button: "Update Card Details" instead of "Complete Sign-Up"
-  - Remove the "£0.00 Authorization" box
-- On load, calls a new edge function to create a SetupIntent for the existing Stripe customer
-- On success, calls another edge function to attach the new payment method and update stored records
-- Shows a success confirmation screen after completion
+4. Change the completion function to match the new flow
+- Refactor `complete-card-update` so it accepts the new `setupIntentId` and the created `customerId`.
+- Remove all token validation.
+- Retrieve the Stripe payment method from the SetupIntent.
+- Set it as the default payment method for that Stripe customer.
+- Save the result in a simple database record for tracking.
 
-**2. New edge function: `supabase/functions/create-card-update-setup-intent/index.ts`**
-- Accepts `customerId` and `token` (a secure token for validation)
-- Validates the token against a new `card_update_links` table
-- Creates a Stripe SetupIntent for the existing customer
-- Returns the clientSecret
+5. Simplify the database side
+- Stop using the `card_update_links` table entirely.
+- Add a small dedicated table for public card update submissions if needed, since `lesson_proposal_payment_methods` requires a `proposal_id` and cannot cleanly store these standalone updates.
+- Store basics like name, email, stripe customer id, payment method id, card brand/last4, and timestamps.
 
-**3. New edge function: `supabase/functions/complete-card-update/index.ts`**
-- Accepts `setupIntentId`, `customerId`, and `token`
-- Retrieves the SetupIntent, attaches the new payment method as default on the customer
-- Updates the `lesson_proposal_payment_methods` table with new card details
-- Marks the update link as used
+6. Keep the success state simple
+- After successful confirmation, show the existing “Card Updated!” success screen.
 
-**4. New DB table: `card_update_links`**
-- Columns: `id`, `customer_id` (Stripe customer ID), `token` (UUID), `email`, `name`, `used` (boolean), `expires_at`, `created_at`
-- RLS: public read access filtered by token (no auth required since this is a public link)
-
-**5. Route added to `src/App.tsx`**
-- `<Route path="/update-card/:customerId/:token" element={<UpdateCardDetails />} />`
-
-### Technical details
-
-- Reuses same `loadStripe` key, `Elements`, and `PaymentElement` pattern from `PaymentCaptureStep`
-- The form component is nearly identical — same fields (Cardholder Name, Email, Card Details via PaymentElement)
-- Edge functions use `STRIPE_SECRET_KEY_LESSON_PROPOSAL` same as existing proposal functions
-- Token-based access means no Supabase auth required — customers click a link from email
-
+Technical details
+- This will be fully public: no auth, no token, no customer lookup.
+- It will follow the proposal-style logic: collect name/email, create a Stripe customer, create a SetupIntent, confirm the card, then save the result.
+- Important consequence: this does not “find and update” an existing Stripe customer; it creates a fresh Stripe customer/payment profile each time, exactly as requested.
