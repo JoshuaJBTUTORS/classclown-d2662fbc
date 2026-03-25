@@ -25,9 +25,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				roboto: ['Roboto', 'sans-serif'],
-				bubble: ['Fredoka One', 'cursive'],
-				sans: ['Helvetica', 'Arial', 'sans-serif'],
+				sans: ['Inter', 'sans-serif'],
+				heading: ['Plus Jakarta Sans', 'sans-serif'],
 				sidebar: ['Inter', 'sans-serif'],
 				handwriting: ['Caveat', 'cursive'],
 			},
