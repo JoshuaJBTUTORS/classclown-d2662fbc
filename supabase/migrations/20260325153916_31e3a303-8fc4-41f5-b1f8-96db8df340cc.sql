@@ -1,0 +1,1 @@
+ALTER TABLE lesson_proposals ADD COLUMN daily_homework_opt_in boolean DEFAULT false;
