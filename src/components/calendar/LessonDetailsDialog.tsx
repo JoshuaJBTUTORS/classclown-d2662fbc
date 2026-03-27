@@ -514,6 +514,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                             if (student.email) params.set('email', student.email);
                             if (student.phone) params.set('phone', student.phone);
                           }
+                          if (lesson.subject) params.set('subject', lesson.subject);
                           onClose();
                           navigate(`/admin/proposals/create?${params.toString()}`);
                         }}
