@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -41,6 +41,7 @@ type ProposalFormData = z.infer<typeof proposalSchema>;
 
 export default function ProposalBuilder() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>([
     { day: '', time: '', duration: 60, subject: '' },
@@ -49,9 +50,9 @@ export default function ProposalBuilder() {
   const form = useForm<ProposalFormData>({
     resolver: zodResolver(proposalSchema),
     defaultValues: {
-      recipientName: '',
-      recipientEmail: '',
-      recipientPhone: '',
+      recipientName: searchParams.get('name') || '',
+      recipientEmail: searchParams.get('email') || '',
+      recipientPhone: searchParams.get('phone') || '',
       lessonType: '',
       subject: '',
       pricePerLesson: 45,

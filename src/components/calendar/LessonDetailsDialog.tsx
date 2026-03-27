@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play } from 'lucide-react';
+import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play, Send } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -54,6 +55,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     homework: null
   });
   const [isProcessed, setIsProcessed] = useState(false);
+  const navigate = useNavigate();
   const {
     userRole,
     isAdmin,
@@ -107,7 +109,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           *,
           tutor:tutors(id, first_name, last_name),
           lesson_students(
-            student:students(id, first_name, last_name, email)
+            student:students(id, first_name, last_name, email, phone)
           )
         `).eq('id', lessonId).single();
       if (error) throw error;
@@ -497,6 +499,28 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       >
                         <Play className="h-4 w-4" />
                         Process Lesson
+                      </Button>
+                    )}
+
+                    {/* Send Proposal Button - Only for demo lessons, admin/owner only */}
+                    {lesson.lesson_type === 'demo' && canEditLesson && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const student = validStudents[0]?.student;
+                          const params = new URLSearchParams();
+                          if (student) {
+                            params.set('name', `${student.first_name} ${student.last_name}`.trim());
+                            if (student.email) params.set('email', student.email);
+                            if (student.phone) params.set('phone', student.phone);
+                          }
+                          onClose();
+                          navigate(`/admin/proposals/create?${params.toString()}`);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Send className="h-4 w-4" />
+                        Send Proposal
                       </Button>
                     )}
                   
