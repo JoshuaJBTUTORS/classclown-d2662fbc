@@ -54,7 +54,7 @@ export default function ProposalBuilder() {
       recipientEmail: searchParams.get('email') || '',
       recipientPhone: searchParams.get('phone') || '',
       lessonType: '',
-      subject: '',
+      subject: searchParams.get('subject') || '',
       pricePerLesson: 45,
       paymentCycle: '',
       dailyHomeworkOptIn: false,
