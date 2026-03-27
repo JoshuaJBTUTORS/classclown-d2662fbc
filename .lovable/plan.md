@@ -1,39 +1,28 @@
 
 
-## Update Card Details Page — Simple, Open, Proposal-Style
+## Add "Send Proposal" Button to Demo Lessons in Calendar
 
-Rewrite the existing `/update-card` page and its edge functions to work exactly like the proposal payment step (step 2), but standalone — no proposal needed, no tokens, no lookups.
+### What it does
+When viewing a demo lesson in the calendar details dialog, a "Send Proposal" button appears. Clicking it navigates to `/admin/proposals/create` with the student's name, email, and phone pre-filled in the form.
 
-### What changes
+### Changes
 
-**1. Rewrite `src/pages/UpdateCardDetails.tsx`**
-- Remove `useParams`, token logic, and link-expired state
-- Two-step flow on one page:
-  - User enters name + email, clicks "Continue"
-  - Edge function creates a Stripe customer + SetupIntent (same as `create-proposal-setup-intent`)
-  - Stripe PaymentElement renders with the clientSecret
-  - On submit, calls `complete-card-update` to save the card
-- Copy: "Update Card" heading, "As part of our routine annual payment method check..." subtext, "Update Card Details" button
-- Success screen: "Card Updated!" with checkmark
+**1. Update `LessonDetailsDialog.tsx`**
+- Add a "Send Proposal" button in the actions section, visible only for demo lessons (`lesson.lesson_type === 'demo'`) and admin/owner roles
+- Also fetch `phone` and `parent_first_name`, `parent_last_name`, `parent_email` from the student query (to cover cases where the parent is the recipient)
+- On click, navigate to `/admin/proposals/create` with query params: `?name=...&email=...&phone=...`
+- Import `useNavigate` and `Send` icon
 
-**2. Rewrite `supabase/functions/create-card-update-setup-intent/index.ts`**
-- Accept `{ email, name }` only
-- Create a new Stripe customer with that email/name (same as proposal flow — get or create)
-- Create a SetupIntent for that customer
-- Return `{ clientSecret, customerId }`
-- No token validation, no `card_update_links` table usage
+**2. Update `ProposalBuilder.tsx`**
+- Read URL search params on mount (`useSearchParams` or `useLocation`)
+- Pre-fill `recipientName`, `recipientEmail`, and `recipientPhone` from query params if present
+- User can still edit all fields before submitting
 
-**3. Rewrite `supabase/functions/complete-card-update/index.ts`**
-- Accept `{ setupIntentId, customerId }`
-- Retrieve SetupIntent, get payment method details
-- Set as default payment method on the customer
-- Save record to `card_update_submissions` table (name, email, stripe IDs, card details, timestamp)
-- No proposal updates, no notification emails
+**3. Update student select in lesson fetch query**
+- Change from `students(id, first_name, last_name, email)` to include `phone` field so the phone number is available for the button
 
-**4. New DB table: `card_update_submissions`**
-- `id` (uuid), `stripe_customer_id`, `stripe_payment_method_id`, `stripe_setup_intent_id`, `card_last4`, `card_brand`, `card_exp_month`, `card_exp_year`, `billing_name`, `billing_email`, `created_at`
-- No RLS needed (only written by edge function via service role)
-
-**5. Route in `src/App.tsx`**
-- Keep `/update-card` (no params)
-
+### Technical details
+- Demo lessons are identified by `lesson.lesson_type === 'demo'`
+- The first student in `validStudents` is used to populate the proposal (demos typically have one student)
+- Query params approach keeps it simple — no global state needed
+- Button styled with a `Send` icon, only visible to admin/owner on demo lessons
