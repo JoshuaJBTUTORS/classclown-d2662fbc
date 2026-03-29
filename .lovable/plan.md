@@ -1,49 +1,47 @@
 
 
-## Fix: Lesson Times Showing 1 Hour Late After BST Clock Change
+## Fix: Shift 346 Future Lessons Forward by 1 Hour to Match Last Week
 
-### The problem
+### What I found
 
-Lessons created during GMT (winter) were stored as UTC — e.g. a 9am UK lesson = `09:00+00` UTC. Now that clocks went forward (BST), `convertUTCToUK` correctly shows `09:00 UTC` as `10:00 BST`. But the lesson was meant to always be at 9am UK time, so it now appears 1 hour late.
+Comparing last week (March 22-28, confirmed correct) to this week and beyond:
+- **346 future lessons** are showing 1 hour early (their UK time is 1 hour behind last week's equivalent)
+- **85 lessons** this week already have the correct time (no change needed)
+- The affected lessons span all days and many tutors/subjects
 
-The DB `extend_recurring_lessons` function also copies the raw UTC time without DST adjustment, so all auto-generated future lessons inherit the same issue.
+### The fix
 
-### The fix (two parts)
-
-**Part 1 — One-time DB migration: shift future lessons back 1 hour**
-
-Run a SQL migration to subtract 1 hour from all future lessons' `start_time` and `end_time`, so that a 9am UK lesson becomes `08:00 UTC` (which BST correctly displays as 9am).
+A single SQL update that adds 1 hour to `start_time` and `end_time` for all future non-completed lessons where a matching lesson from last week (same title, tutor, day-of-week) exists and the UK time is exactly 1 hour behind.
 
 ```sql
-UPDATE lessons
-SET start_time = start_time - INTERVAL '1 hour',
-    end_time = end_time - INTERVAL '1 hour'
-WHERE start_time >= '2026-03-29T01:00:00+00'
-  AND status != 'completed';
+UPDATE lessons l2
+SET start_time = l2.start_time + INTERVAL '1 hour',
+    end_time = l2.end_time + INTERVAL '1 hour'
+WHERE l2.start_time >= '2026-03-29'
+  AND l2.status != 'completed'
+  AND EXISTS (
+    SELECT 1 FROM lessons l1
+    WHERE l1.title = l2.title
+      AND l1.tutor_id = l2.tutor_id
+      AND l1.start_time >= '2026-03-22'
+      AND l1.start_time < '2026-03-29'
+      AND EXTRACT(DOW FROM l1.start_time AT TIME ZONE 'Europe/London')
+        = EXTRACT(DOW FROM l2.start_time AT TIME ZONE 'Europe/London')
+      AND EXTRACT(EPOCH FROM
+            (l1.start_time AT TIME ZONE 'Europe/London')::TIME
+          - (l2.start_time AT TIME ZONE 'Europe/London')::TIME
+        ) / 3600 = 1
+  );
 ```
 
-This only affects future, non-completed lessons. Past lessons that already happened at the old time are left as-is.
-
-**Part 2 — Fix `extend_recurring_lessons()` DB function**
-
-Update the function to be DST-aware when generating new lesson instances. Instead of:
-```sql
-working_date + (lesson_record.start_time::TIME)
-```
-Use timezone-aware conversion:
-```sql
-(working_date::date || ' ' || (lesson_record.start_time AT TIME ZONE 'Europe/London')::TIME)::timestamp AT TIME ZONE 'Europe/London'
-```
-This ensures that when new recurring instances are generated, the UK wall-clock time is preserved regardless of whether the date falls in GMT or BST.
+This is precise -- it only touches lessons that have a verified "correct" counterpart from last week and are exactly 1 hour off. Lessons already at the right time (the 85) are untouched.
 
 ### What stays the same
-
-- The frontend `convertUTCToUK` / `convertUKToUTC` functions are correct and don't need changes
-- The `AddLessonForm` and `EditLessonForm` already use `convertUKToUTC` properly
-- The `formatInUKTime` display utility works correctly
+- The `extend_recurring_lessons()` function is already DST-aware from the previous fix
+- No frontend code changes needed
+- No lessons from last week or earlier are modified
 
 ### Risk
-
-- The one-time migration only needs to run once. If run again after a future DST change (October clocks back), it would double-shift.
-- We should verify the migration affects the right lessons by doing a SELECT count first.
+- Low. The query is self-limiting: it only shifts lessons matched against known-correct last-week data
+- Lessons without a last-week equivalent are not touched
 
