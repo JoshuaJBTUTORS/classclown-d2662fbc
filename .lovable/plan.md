@@ -1,28 +1,49 @@
 
 
-## Add "Send Proposal" Button to Demo Lessons in Calendar
+## Fix: Lesson Times Showing 1 Hour Late After BST Clock Change
 
-### What it does
-When viewing a demo lesson in the calendar details dialog, a "Send Proposal" button appears. Clicking it navigates to `/admin/proposals/create` with the student's name, email, and phone pre-filled in the form.
+### The problem
 
-### Changes
+Lessons created during GMT (winter) were stored as UTC — e.g. a 9am UK lesson = `09:00+00` UTC. Now that clocks went forward (BST), `convertUTCToUK` correctly shows `09:00 UTC` as `10:00 BST`. But the lesson was meant to always be at 9am UK time, so it now appears 1 hour late.
 
-**1. Update `LessonDetailsDialog.tsx`**
-- Add a "Send Proposal" button in the actions section, visible only for demo lessons (`lesson.lesson_type === 'demo'`) and admin/owner roles
-- Also fetch `phone` and `parent_first_name`, `parent_last_name`, `parent_email` from the student query (to cover cases where the parent is the recipient)
-- On click, navigate to `/admin/proposals/create` with query params: `?name=...&email=...&phone=...`
-- Import `useNavigate` and `Send` icon
+The DB `extend_recurring_lessons` function also copies the raw UTC time without DST adjustment, so all auto-generated future lessons inherit the same issue.
 
-**2. Update `ProposalBuilder.tsx`**
-- Read URL search params on mount (`useSearchParams` or `useLocation`)
-- Pre-fill `recipientName`, `recipientEmail`, and `recipientPhone` from query params if present
-- User can still edit all fields before submitting
+### The fix (two parts)
 
-**3. Update student select in lesson fetch query**
-- Change from `students(id, first_name, last_name, email)` to include `phone` field so the phone number is available for the button
+**Part 1 — One-time DB migration: shift future lessons back 1 hour**
 
-### Technical details
-- Demo lessons are identified by `lesson.lesson_type === 'demo'`
-- The first student in `validStudents` is used to populate the proposal (demos typically have one student)
-- Query params approach keeps it simple — no global state needed
-- Button styled with a `Send` icon, only visible to admin/owner on demo lessons
+Run a SQL migration to subtract 1 hour from all future lessons' `start_time` and `end_time`, so that a 9am UK lesson becomes `08:00 UTC` (which BST correctly displays as 9am).
+
+```sql
+UPDATE lessons
+SET start_time = start_time - INTERVAL '1 hour',
+    end_time = end_time - INTERVAL '1 hour'
+WHERE start_time >= '2026-03-29T01:00:00+00'
+  AND status != 'completed';
+```
+
+This only affects future, non-completed lessons. Past lessons that already happened at the old time are left as-is.
+
+**Part 2 — Fix `extend_recurring_lessons()` DB function**
+
+Update the function to be DST-aware when generating new lesson instances. Instead of:
+```sql
+working_date + (lesson_record.start_time::TIME)
+```
+Use timezone-aware conversion:
+```sql
+(working_date::date || ' ' || (lesson_record.start_time AT TIME ZONE 'Europe/London')::TIME)::timestamp AT TIME ZONE 'Europe/London'
+```
+This ensures that when new recurring instances are generated, the UK wall-clock time is preserved regardless of whether the date falls in GMT or BST.
+
+### What stays the same
+
+- The frontend `convertUTCToUK` / `convertUKToUTC` functions are correct and don't need changes
+- The `AddLessonForm` and `EditLessonForm` already use `convertUKToUTC` properly
+- The `formatInUKTime` display utility works correctly
+
+### Risk
+
+- The one-time migration only needs to run once. If run again after a future DST change (October clocks back), it would double-shift.
+- We should verify the migration affects the right lessons by doing a SELECT count first.
+
