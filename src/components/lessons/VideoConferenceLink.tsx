@@ -60,8 +60,10 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
   const isHeyCleoLesson = () => {
     const title = (lessonTitle || '').toLowerCase();
     const subject = (lessonSubject || '').toLowerCase();
+    const isExceptionParent = user?.email?.toLowerCase() === 'castrolbecky2002@yahoo.com';
     return title.includes('gcse') || title.includes('year 11') || title.includes('ks3') ||
-           subject.includes('gcse') || subject.includes('year 11') || subject.includes('ks3');
+           subject.includes('gcse') || subject.includes('year 11') || subject.includes('ks3') ||
+           isExceptionParent;
   };
 
   // Handle homework button click
