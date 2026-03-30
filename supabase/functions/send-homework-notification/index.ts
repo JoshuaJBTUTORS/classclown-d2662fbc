@@ -361,13 +361,19 @@ serve(async (req) => {
     // Check if this lesson is eligible for HeyCleo sync (GCSE, Year 11, or KS3)
     const lessonTitle = (homeworkData.lessons.title || '').toLowerCase();
     const lessonSubject = (homeworkData.lessons.subject || '').toLowerCase();
+    // Check if any student has the exception parent (castrolbecky2002@yahoo.com)
+    const hasExceptionParent = homeworkData.lessons.lesson_students?.some(
+      (ls: any) => ls.student?.parent?.email?.toLowerCase() === 'castrolbecky2002@yahoo.com'
+    ) || false;
+    
     const isHeyCleoEligible = 
       lessonTitle.includes('gcse') || 
       lessonTitle.includes('year 11') ||
       lessonTitle.includes('ks3') ||
       lessonSubject.includes('gcse') || 
       lessonSubject.includes('year 11') ||
-      lessonSubject.includes('ks3');
+      lessonSubject.includes('ks3') ||
+      hasExceptionParent;
 
     if (!isHeyCleoEligible) {
       console.log(`HeyCleo sync skipped: Not an eligible lesson (title: "${homeworkData.lessons.title}", subject: "${homeworkData.lessons.subject}")`);
