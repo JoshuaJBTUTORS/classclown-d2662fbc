@@ -515,7 +515,13 @@ CONTENT BLOCK TYPES (with detailed examples):
    Example: { type: "diagram", title: "Plant Cell Structure", data: { description: "A cross-section showing cell wall, chloroplasts, nucleus, and vacuole", elements: ["Cell Wall", "Chloroplasts", "Nucleus", "Vacuole"] } }
 
 6. WORKED EXAMPLE: Step-by-step problem solving (FOR MATHS) - MUST USE LaTeX
-   Example: { type: "worked_example", title: "Example 1: Simplifying Algebraic Fractions", data: { question: "Simplify: $$\\dfrac{3x(x - 2)}{3x}$$", steps: ["Write with factors visible: $$\\dfrac{3x(x - 2)}{3x}$$", "Cancel the common factor $3x$: $$\\dfrac{\\cancel{3x}(x - 2)}{\\cancel{3x}}$$", "Remaining expression: $$x - 2$$"], answer: "$$x - 2$$" } }
+    Example: { type: "worked_example", title: "Example 1: Simplifying Algebraic Fractions", data: { question: "Simplify: $$\\dfrac{3x(x - 2)}{3x}$$", steps: ["Write with factors visible: $$\\dfrac{3x(x - 2)}{3x}$$", "Cancel the common factor $3x$: $$\\dfrac{\\cancel{3x}(x - 2)}{\\cancel{3x}}$$", "Remaining expression: $$x - 2$$"], answer: "$$x - 2$$" } }
+
+7. EXTRACT: Reading passage for students to analyze (English homework)
+   Example: { type: "extract", title: "Source A", data: { content: "The passage text here...", source: "From 'Great Expectations' by Charles Dickens" } }
+   - Use for homework extracts that students must read before answering questions
+   - Always place BEFORE any questions that reference it
+   - This is NOT a question — Cleo will instruct the student to read it
 
 ⚠️ TEXT FORMATTING RULES FOR ALL CONTENT:
 - Use PLAIN TEXT only - NO HTML tags (<h3>, <p>, <ul>, <li>, etc.)

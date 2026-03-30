@@ -138,6 +138,13 @@ export function formatSingleBlock(block: any): string {
         description += `\n      ✅ Answer: ${convertLatexToSpeech(data.answer)}`;
       }
       break;
+
+    case 'extract':
+      description = `   • 📖 EXTRACT (Reading Passage - NOT a question):`;
+      description += `\n      "${convertLatexToSpeech(data?.content || data?.text || '')}"`;
+      if (data?.source) description += `\n      Source: ${data.source}`;
+      description += `\n      ⚠️ INSTRUCTION: Tell the student to READ this extract on screen. Do NOT treat this as a question. Give them time to read before moving to questions.`;
+      break;
       
     default:
       description = `   • ${type}: ${title || id}`;
