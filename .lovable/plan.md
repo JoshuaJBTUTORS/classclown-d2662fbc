@@ -1,50 +1,47 @@
 
 
-## Exception: Route Parent castrolbecky2002@yahoo.com KS2 Homework Through HeyCleo
+## Backfill 3 Homework Assignments to HeyCleo for Serena Oyetunji
 
 ### What we're doing
 
-Adding a special exception so that **Serena Oyetunji (student 173)**, child of parent `castrolbecky2002@yahoo.com`, has all KS2 homework routed through HeyCleo — same as GCSE/A-Level/KS3 students.
+Sending the last 3 KS2 English homework assignments to HeyCleo for Serena Oyetunji (student 173, parent: castrolbecky2002@yahoo.com). These were assigned before the exception was added, so they were never synced to HeyCleo.
 
-### Two places need changes
+### The 3 homework pieces
 
-**1. Edge Function: `supabase/functions/send-homework-notification/index.ts`**
+| # | Title | Due Date | Tutor | Attachment |
+|---|-------|----------|-------|------------|
+| 1 | Report Planning | Apr 3 | Bella Smith | btbqbarv3gk.pdf |
+| 2 | Reading comprehension | Mar 28 | Daniel Alake | 6lhmbyydl3q.pdf |
+| 3 | Nouns & Verbs HW | Mar 21 | Olli Glover | fcy5e6tpu97.pdf |
 
-In the HeyCleo eligibility check (~line 362-370), after checking for `gcse`/`year 11`/`ks3`, add a secondary check: if any student in the lesson has `parent.email = 'castrolbecky2002@yahoo.com'`, mark the lesson as HeyCleo-eligible regardless of subject/title.
+### Important note
 
-The parent email is already fetched in the query (line 144-149), so no additional DB call needed.
+These are **group lessons** with 4+ students, but we only want to sync to HeyCleo for **Serena's parent email** (`castrolbecky2002@yahoo.com`). The other KS2 students in the group should NOT be affected.
 
-```typescript
-// After the existing isHeyCleoEligible check
-const hasExceptionParent = homeworkData.lessons.lesson_students.some(
-  (ls: any) => ls.student?.parent?.email?.toLowerCase() === 'castrolbecky2002@yahoo.com'
-);
-const isHeyCleoEligible = /* existing checks */ || hasExceptionParent;
-```
+### How
 
-**2. Client Component: `src/components/lessons/VideoConferenceLink.tsx`**
+Create a one-off edge function (`backfill-heycleo-homework`) that:
 
-The `isHeyCleoLesson()` function (line 60-65) determines whether clicking the homework button opens HeyCleo or the internal homework page. We need to also check if the current user (parent) has this email.
+1. Calls the same HeyCleo endpoint (`receive-homework-from-crm`) used by the existing `send-homework-notification` function
+2. Sends each of the 3 homework items with:
+   - `studentEmails`: only `['castrolbecky2002@yahoo.com']` (parent email, since Serena has no student email)
+   - `pdfUrl`: the attachment URL
+   - `title`, `description`, `subject` ("KS2 English"), `dueDate`
+   - A valid HMAC token using the tutor's email and `HEYCLEO_CROSS_PLATFORM_SECRET`
+3. After successful execution, the function can be deleted
 
-Since the `useAuth()` hook already provides the `user` object with `user.email`, we add:
+### Technical details
 
-```typescript
-const isHeyCleoLesson = () => {
-  const title = (lessonTitle || '').toLowerCase();
-  const subject = (lessonSubject || '').toLowerCase();
-  const isExceptionParent = user?.email?.toLowerCase() === 'castrolbecky2002@yahoo.com';
-  return title.includes('gcse') || title.includes('year 11') || title.includes('ks3') ||
-         subject.includes('gcse') || subject.includes('year 11') || subject.includes('ks3') ||
-         isExceptionParent;
-};
-```
+- Reuses the same `generateCrossPlatformToken` HMAC logic from `send-homework-notification`
+- Sends to `https://vfhftrmneaizgdvngfwe.supabase.co/functions/v1/receive-homework-from-crm`
+- No database changes needed
+- No notifications (email/WhatsApp) will be sent — just the HeyCleo sync
 
-### Summary of changes
+### Files
 
-| File | Change |
+| File | Action |
 |------|--------|
-| `supabase/functions/send-homework-notification/index.ts` | Add parent email exception to HeyCleo sync eligibility |
-| `src/components/lessons/VideoConferenceLink.tsx` | Add parent email exception to HeyCleo redirect logic |
+| `supabase/functions/backfill-heycleo-homework/index.ts` | Create one-off edge function |
 
-No database changes needed. The parent's data is already linked correctly (parent_id on student 173).
+After running it once, we'll delete the function.
 
