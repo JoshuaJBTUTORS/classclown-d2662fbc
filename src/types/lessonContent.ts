@@ -50,7 +50,7 @@ export interface QuoteAnalysisContent {
 export interface ContentBlock {
   id: string;
   stepId: string;
-  type: 'text' | 'table' | 'definition' | 'question' | 'diagram' | 'worked_example' | 'quote_analysis';
+  type: 'text' | 'table' | 'definition' | 'question' | 'diagram' | 'worked_example' | 'quote_analysis' | 'extract';
   data: TableContent | QuestionContent | DefinitionContent | WorkedExampleContent | QuoteAnalysisContent | string | any;
   visible: boolean;
   title?: string;
