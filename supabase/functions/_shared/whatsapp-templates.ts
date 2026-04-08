@@ -354,6 +354,19 @@ See you tomorrow! 👋
 _💬 If you'd like this sent to ${studentName} directly too, please reply._`;
   },
 
+  enrollmentUpdate: (recipientName: string, childName: string): string => {
+    return `📋 Lesson Schedule Update
+
+Hi ${recipientName}!
+
+There has been an update to ${childName}'s lesson schedule on Class Beyond.
+
+Please visit classclowncrm.com to view the latest changes.
+
+Best regards,
+Class Beyond Team 🎓`;
+  },
+
   overdueHomeworkReminder: (
     recipientName: string,
     studentName: string,

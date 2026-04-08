@@ -94,6 +94,14 @@ export const updateSingleRecurringInstance = async (
   
   // Update students if provided
   if (studentsChanged && selectedStudents) {
+    // Get existing students BEFORE making changes for diff
+    const { data: existingStudentData } = await supabase
+      .from('lesson_students')
+      .select('student_id')
+      .eq('lesson_id', lessonId);
+    
+    const oldStudentIds = existingStudentData?.map(s => s.student_id) || [];
+
     // Delete existing lesson_students entries
     const { error: deleteError } = await supabase
       .from('lesson_students')
@@ -114,6 +122,21 @@ export const updateSingleRecurringInstance = async (
         .insert(lessonStudentsData);
       
       if (studentsError) throw studentsError;
+    }
+
+    // Send enrollment notifications for added/removed students
+    const addedStudents = selectedStudents.filter(id => !oldStudentIds.includes(id));
+    const removedStudents = oldStudentIds.filter(id => !selectedStudents.includes(id));
+
+    if (addedStudents.length > 0) {
+      supabase.functions.invoke('send-enrollment-notification', {
+        body: { studentIds: addedStudents, action: 'added' }
+      }).catch(err => console.error('Failed to send added enrollment notification:', err));
+    }
+    if (removedStudents.length > 0) {
+      supabase.functions.invoke('send-enrollment-notification', {
+        body: { studentIds: removedStudents, action: 'removed' }
+      }).catch(err => console.error('Failed to send removed enrollment notification:', err));
     }
   }
   
@@ -279,6 +302,7 @@ export const updateAllFutureLessons = async (
       
       const existingStudentIds = existingStudents?.map(s => s.student_id) || [];
       const newStudentIds = studentIds.filter(id => !existingStudentIds.includes(id));
+      const removedStudentIds = existingStudentIds.filter(id => !studentIds.includes(id));
       
       // Remove existing student associations for future lessons
       const { error: deleteError } = await supabase
