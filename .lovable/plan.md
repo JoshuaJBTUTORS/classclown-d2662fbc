@@ -1,53 +1,44 @@
 
 
-## Send Notification When Student Added/Removed from Lesson
+## Homework Completion Check Before Setting Homework
 
 ### What we're doing
 
-When a student is added to or removed from a lesson (via the edit lesson flow), we'll send that specific student a simple WhatsApp + email notification saying their lesson schedule has been updated, with a link to check classclowncrm.com. Only the affected student gets notified — not all students on the lesson. For recurring lessons, only one notification per student regardless of how many future instances are affected.
+When a tutor clicks "Set Homework", before the homework assignment dialog opens, a quick checkpoint dialog will appear asking: **"Did the following students complete their homework from last session?"** Each student gets a Yes / No / Excused toggle. This gets saved to the database, then the normal AssignHomeworkDialog opens.
 
-### Changes
+### Database
 
-**1. New Edge Function: `supabase/functions/send-enrollment-notification/index.ts`**
+**New table: `homework_completion_status`**
 
-A lightweight edge function that:
-- Accepts `{ studentIds: number[], action: 'added' | 'removed', lessonTitle: string }`
-- Looks up each student's parent email/phone from the `students → parents` relationship
-- Sends a simple email via Resend: "There has been an update to your lesson schedule. Please check classclowncrm.com to view the update."
-- Sends the same message via WhatsApp (Wazzup) if parent has a phone number
-- Uses the existing `whatsapp-service.ts` and `Resend` patterns already in the codebase
-- One notification per student, no lesson details included
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | |
+| homework_id | uuid FK → homework.id | The previous homework being checked |
+| student_id | int FK → students.id | |
+| status | text | 'completed', 'not_completed', 'excused' |
+| marked_by | uuid FK → auth.users.id | Tutor who marked it |
+| created_at | timestamptz | |
 
-**2. New WhatsApp template in `supabase/functions/_shared/whatsapp-templates.ts`**
+RLS: authenticated users with tutor/admin/owner roles can insert/select.
 
-Add `enrollmentUpdate` template — a simple message:
-> "Hi [parentName]! There has been an update to [childName]'s lesson schedule on Class Beyond. Please visit classclowncrm.com to view the latest changes."
+### New component: `HomeworkCompletionCheckDialog`
 
-**3. New email template: `supabase/functions/send-enrollment-notification/_templates/enrollment-update-email.tsx`**
+- Shown when tutor clicks "Set Homework"
+- Fetches the **most recent previous homework** for that lesson (by `lesson_id` matching the same recurring group or subject)
+- If no previous homework exists, skip straight to AssignHomeworkDialog
+- Lists each student with their name and three radio options: **Yes** / **No** / **Excused**
+- On submit, saves to `homework_completion_status` table, then opens AssignHomeworkDialog
 
-Simple React Email template matching existing style — just says there's been an update, check the portal.
+### Flow change in `LessonDetailsDialog.tsx`
 
-**4. Update `src/services/recurringLessonEditService.ts`**
-
-After successfully updating student associations (both single lesson edit ~line 96-118 and future lessons edit ~line 269-313):
-- Compare old student IDs vs new student IDs
-- Identify added and removed students
-- Call `supabase.functions.invoke('send-enrollment-notification', { body: { studentIds, action, lessonTitle } })`
-- For recurring edits, send once per affected student (not per lesson instance)
-
-### Technical notes
-
-- The existing code already fetches `existingStudents` before changes (line 274-280 in recurringLessonEditService), so diffing is straightforward
-- For single lesson edits (line 96-118), we'll add a similar diff before the delete/insert
-- Edge function uses existing `RESEND_API_KEY`, `WAZZUP_API_KEY`, `WAZZUP_CHANNEL_ID` secrets
-- No database changes needed
+1. "Set Homework" button click → open `HomeworkCompletionCheckDialog` instead of directly opening `AssignHomeworkDialog`
+2. After completion check is submitted (or skipped if no previous homework) → open `AssignHomeworkDialog`
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `supabase/functions/send-enrollment-notification/index.ts` | Create — new edge function |
-| `supabase/functions/send-enrollment-notification/_templates/enrollment-update-email.tsx` | Create — email template |
-| `supabase/functions/_shared/whatsapp-templates.ts` | Edit — add `enrollmentUpdate` template |
-| `src/services/recurringLessonEditService.ts` | Edit — trigger notifications after student changes |
+| Migration | Create `homework_completion_status` table with RLS |
+| `src/components/homework/HomeworkCompletionCheckDialog.tsx` | Create — the checkpoint dialog |
+| `src/components/calendar/LessonDetailsDialog.tsx` | Edit — wire up the new dialog before homework assignment |
 
