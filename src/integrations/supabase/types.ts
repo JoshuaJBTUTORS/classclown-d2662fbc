@@ -2218,6 +2218,48 @@ export type Database = {
           },
         ]
       }
+      homework_completion_status: {
+        Row: {
+          created_at: string
+          homework_id: string
+          id: string
+          marked_by: string
+          status: string
+          student_id: number
+        }
+        Insert: {
+          created_at?: string
+          homework_id: string
+          id?: string
+          marked_by: string
+          status: string
+          student_id: number
+        }
+        Update: {
+          created_at?: string
+          homework_id?: string
+          id?: string
+          marked_by?: string
+          status?: string
+          student_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_completion_status_homework_id_fkey"
+            columns: ["homework_id"]
+            isOneToOne: false
+            referencedRelation: "homework"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homework_completion_status_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homework_submissions: {
         Row: {
           attachment_url: string | null
