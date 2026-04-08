@@ -549,6 +549,20 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       {/* Edit Lesson Dialog - Only for admins/owners */}
       {canEditLesson && <EditLessonForm isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSuccess={handleEditSuccess} lessonId={lessonId} />}
 
+      {/* Homework Completion Check Dialog */}
+      {isCompletionCheckOpen && lesson && (
+        <HomeworkCompletionCheckDialog
+          isOpen={isCompletionCheckOpen}
+          onClose={() => setIsCompletionCheckOpen(false)}
+          onComplete={() => {
+            setIsCompletionCheckOpen(false);
+            setIsHomeworkDialogOpen(true);
+          }}
+          lessonId={lesson.id}
+          students={validStudents.map((e: any) => e.student).filter(Boolean)}
+        />
+      )}
+
       {/* Homework Assignment Dialog */}
       {isHomeworkDialogOpen && lesson && <AssignHomeworkDialog isOpen={isHomeworkDialogOpen} onClose={() => setIsHomeworkDialogOpen(false)} onSuccess={handleHomeworkSuccess} preSelectedLessonId={lesson.id} preloadedLessonData={lesson} editingHomework={homeworkStatus.homework ? {
       id: homeworkStatus.homework.id,
