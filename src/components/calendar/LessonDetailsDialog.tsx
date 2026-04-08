@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
 import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
+import HomeworkCompletionCheckDialog from '@/components/homework/HomeworkCompletionCheckDialog';
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
@@ -42,6 +43,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isHomeworkDialogOpen, setIsHomeworkDialogOpen] = useState(false);
+  const [isCompletionCheckOpen, setIsCompletionCheckOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -485,7 +487,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                   {isTeacherRole && <Button variant="outline" onClick={() => setIsHomeworkDialogOpen(true)} className="flex items-center gap-2">
+                   {isTeacherRole && <Button variant="outline" onClick={() => {
+                      if (homeworkStatus.exists) {
+                        // Edit existing homework — go straight to dialog
+                        setIsHomeworkDialogOpen(true);
+                      } else {
+                        // New homework — show completion check first
+                        setIsCompletionCheckOpen(true);
+                      }
+                    }} className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4" />
                       {homeworkStatus.exists ? 'Edit Homework' : 'Set Homework'}
                     </Button>}
