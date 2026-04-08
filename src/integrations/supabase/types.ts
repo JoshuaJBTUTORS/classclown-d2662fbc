@@ -2221,24 +2221,27 @@ export type Database = {
       homework_completion_status: {
         Row: {
           created_at: string
-          homework_id: string
+          homework_id: string | null
           id: string
+          lesson_id: string | null
           marked_by: string
           status: string
           student_id: number
         }
         Insert: {
           created_at?: string
-          homework_id: string
+          homework_id?: string | null
           id?: string
+          lesson_id?: string | null
           marked_by: string
           status: string
           student_id: number
         }
         Update: {
           created_at?: string
-          homework_id?: string
+          homework_id?: string | null
           id?: string
+          lesson_id?: string | null
           marked_by?: string
           status?: string
           student_id?: number
