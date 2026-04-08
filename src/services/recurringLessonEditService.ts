@@ -335,6 +335,18 @@ export const updateAllFutureLessons = async (
           throw new Error(`Failed to update student associations: ${insertError.message}`);
         }
       }
+
+      // Send enrollment notifications (once per student, not per lesson instance)
+      if (newStudentIds.length > 0) {
+        supabase.functions.invoke('send-enrollment-notification', {
+          body: { studentIds: newStudentIds, action: 'added' }
+        }).catch(err => console.error('Failed to send added enrollment notification:', err));
+      }
+      if (removedStudentIds.length > 0) {
+        supabase.functions.invoke('send-enrollment-notification', {
+          body: { studentIds: removedStudentIds, action: 'removed' }
+        }).catch(err => console.error('Failed to send removed enrollment notification:', err));
+      }
       
       // Generate participant URLs for newly added students
       if (newStudentIds.length > 0) {
