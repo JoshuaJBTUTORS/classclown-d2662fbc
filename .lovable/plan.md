@@ -1,44 +1,29 @@
 
 
-## Homework Completion Check Before Setting Homework
+## Always Show Homework Completion Check Dialog
 
-### What we're doing
+### Problem
+The dialog currently queries for previous homework and auto-skips if none is found. This means tutors never see the completion check step.
 
-When a tutor clicks "Set Homework", before the homework assignment dialog opens, a quick checkpoint dialog will appear asking: **"Did the following students complete their homework from last session?"** Each student gets a Yes / No / Excused toggle. This gets saved to the database, then the normal AssignHomeworkDialog opens.
+### Solution
+Remove the homework lookup entirely. The dialog should always show immediately with the student list and Yes/No/Excused options. Since we won't have a `homework_id` to link to, we'll save the completion status against the **lesson_id** instead.
 
-### Database
+### Changes
 
-**New table: `homework_completion_status`**
+**`src/components/homework/HomeworkCompletionCheckDialog.tsx`**
+- Remove the `fetchPreviousHomework` function and its `useEffect`
+- Remove `isLoading` and `previousHomework` state
+- Remove the loading spinner conditional render
+- Remove the `if (!previousHomework) return null` guard
+- Initialize student statuses immediately when dialog opens
+- Update the header text to simply: "Did the following students complete their homework?"
+- On save, store records with `lesson_id` instead of `homework_id` (since there may be no previous homework record to reference)
+- Update `handleSave` to use `lesson_id` field instead of `homework_id`
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | |
-| homework_id | uuid FK → homework.id | The previous homework being checked |
-| student_id | int FK → students.id | |
-| status | text | 'completed', 'not_completed', 'excused' |
-| marked_by | uuid FK → auth.users.id | Tutor who marked it |
-| created_at | timestamptz | |
+**Migration: alter `homework_completion_status` table**
+- Add `lesson_id` column (text, nullable) to `homework_completion_status`
+- Make `homework_id` nullable (since we may not have one)
+- Update the unique constraint to work with `lesson_id + student_id`
 
-RLS: authenticated users with tutor/admin/owner roles can insert/select.
-
-### New component: `HomeworkCompletionCheckDialog`
-
-- Shown when tutor clicks "Set Homework"
-- Fetches the **most recent previous homework** for that lesson (by `lesson_id` matching the same recurring group or subject)
-- If no previous homework exists, skip straight to AssignHomeworkDialog
-- Lists each student with their name and three radio options: **Yes** / **No** / **Excused**
-- On submit, saves to `homework_completion_status` table, then opens AssignHomeworkDialog
-
-### Flow change in `LessonDetailsDialog.tsx`
-
-1. "Set Homework" button click → open `HomeworkCompletionCheckDialog` instead of directly opening `AssignHomeworkDialog`
-2. After completion check is submitted (or skipped if no previous homework) → open `AssignHomeworkDialog`
-
-### Files
-
-| File | Action |
-|------|--------|
-| Migration | Create `homework_completion_status` table with RLS |
-| `src/components/homework/HomeworkCompletionCheckDialog.tsx` | Create — the checkpoint dialog |
-| `src/components/calendar/LessonDetailsDialog.tsx` | Edit — wire up the new dialog before homework assignment |
+This ensures the dialog always appears, the tutor always marks completion, and we save the data against the lesson.
 
