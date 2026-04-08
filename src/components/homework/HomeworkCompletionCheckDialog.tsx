@@ -80,9 +80,9 @@ const HomeworkCompletionCheckDialog: React.FC<HomeworkCompletionCheckDialogProps
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-lg">Last Session's Homework</DialogTitle>
+          <DialogTitle className="text-lg">Homework Completion Check</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Did the following students complete their homework?
+            Please check — has the student completed their homework?
           </p>
         </DialogHeader>
 
