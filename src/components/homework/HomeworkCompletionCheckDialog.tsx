@@ -17,7 +17,7 @@ interface Student {
 interface HomeworkCompletionCheckDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: () => void; // Called after saving or skipping — opens AssignHomeworkDialog
+  onComplete: () => void;
   lessonId: string;
   students: Student[];
 }
@@ -29,62 +29,28 @@ const HomeworkCompletionCheckDialog: React.FC<HomeworkCompletionCheckDialogProps
   lessonId,
   students,
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [previousHomework, setPreviousHomework] = useState<{ id: string; title: string } | null>(null);
   const [statuses, setStatuses] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    if (isOpen && lessonId) {
-      fetchPreviousHomework();
-    }
-  }, [isOpen, lessonId]);
-
-  const fetchPreviousHomework = async () => {
-    setIsLoading(true);
-    try {
-      // Get the most recent homework for this lesson (excluding current)
-      const { data, error } = await supabase
-        .from('homework')
-        .select('id, title')
-        .eq('lesson_id', lessonId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        // No previous homework — skip straight to AssignHomeworkDialog
-        onComplete();
-        return;
-      }
-
-      setPreviousHomework(data);
-      // Initialize all students as unset
+    if (isOpen) {
       const initial: Record<number, string> = {};
       students.forEach(s => { initial[s.id] = ''; });
       setStatuses(initial);
-    } catch (err) {
-      console.error('Error fetching previous homework:', err);
-      // On error, just proceed to homework dialog
-      onComplete();
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [isOpen, students]);
 
   const allMarked = students.every(s => statuses[s.id] && statuses[s.id] !== '');
 
   const handleSave = async () => {
-    if (!previousHomework || !allMarked) return;
+    if (!allMarked) return;
     setIsSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const rows = students.map(s => ({
-        homework_id: previousHomework.id,
+        lesson_id: lessonId,
         student_id: s.id,
         status: statuses[s.id],
         marked_by: user.id,
@@ -92,7 +58,7 @@ const HomeworkCompletionCheckDialog: React.FC<HomeworkCompletionCheckDialogProps
 
       const { error } = await supabase
         .from('homework_completion_status')
-        .upsert(rows, { onConflict: 'homework_id,student_id' });
+        .upsert(rows, { onConflict: 'lesson_id,student_id' });
 
       if (error) throw error;
 
@@ -110,27 +76,13 @@ const HomeworkCompletionCheckDialog: React.FC<HomeworkCompletionCheckDialogProps
     onComplete();
   };
 
-  if (isLoading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-md">
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (!previousHomework) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-lg">Last Session's Homework</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Did the following students complete their homework: <span className="font-medium">{previousHomework.title}</span>?
+            Did the following students complete their homework?
           </p>
         </DialogHeader>
 
