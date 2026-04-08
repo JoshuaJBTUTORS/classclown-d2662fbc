@@ -1,64 +1,53 @@
 
 
-## Add Extract Content Block Type for English Homework Lessons
+## Send Notification When Student Added/Removed from Lesson
 
-### Problem
+### What we're doing
 
-When English homework includes an extract (additional PDF), Cleo encounters it as the first content block but treats it like a question or regular text. She says "here is the first question" instead of "here is the extract to read."
-
-### Solution
-
-Add a new `extract` content block type across the system so Cleo knows when content is reading material (an extract) rather than a question or instruction.
+When a student is added to or removed from a lesson (via the edit lesson flow), we'll send that specific student a simple WhatsApp + email notification saying their lesson schedule has been updated, with a link to check classclowncrm.com. Only the affected student gets notified — not all students on the lesson. For recurring lessons, only one notification per student regardless of how many future instances are affected.
 
 ### Changes
 
-**1. `src/types/lessonContent.ts`**
-- Add `'extract'` to the `ContentBlock.type` union type
+**1. New Edge Function: `supabase/functions/send-enrollment-notification/index.ts`**
 
-**2. `supabase/functions/_shared/cleoPromptHelpers.ts` and `heycleo-export/edge-functions/_shared/cleoPromptHelpers.ts`**
-- Add `case 'extract'` to `formatSingleBlock` that clearly labels it as an extract/reading passage:
-```
-case 'extract':
-  description = `   • 📖 EXTRACT (Reading Passage - NOT a question):`;
-  description += `\n      "${convertLatexToSpeech(data?.content || data?.text || '')}"`;
-  if (data?.source) description += `\n      Source: ${data.source}`;
-  description += `\n      ⚠️ INSTRUCTION: Tell the student to READ this extract on screen. Do NOT treat this as a question.`;
-```
+A lightweight edge function that:
+- Accepts `{ studentIds: number[], action: 'added' | 'removed', lessonTitle: string }`
+- Looks up each student's parent email/phone from the `students → parents` relationship
+- Sends a simple email via Resend: "There has been an update to your lesson schedule. Please check classclowncrm.com to view the update."
+- Sends the same message via WhatsApp (Wazzup) if parent has a phone number
+- Uses the existing `whatsapp-service.ts` and `Resend` patterns already in the codebase
+- One notification per student, no lesson details included
 
-**3. `heycleo-export/edge-functions/cleo-realtime-session-token/index.ts`**
-- Add extract-specific instructions to the system prompt (after the question answering protocol section, around line 698):
+**2. New WhatsApp template in `supabase/functions/_shared/whatsapp-templates.ts`**
 
-```
-📖 EXTRACT HANDLING (CRITICAL - FOR ENGLISH HOMEWORK):
+Add `enrollmentUpdate` template — a simple message:
+> "Hi [parentName]! There has been an update to [childName]'s lesson schedule on Class Beyond. Please visit classclowncrm.com to view the latest changes."
 
-When a content block is an EXTRACT (reading passage):
-- Say: "Have a look at the extract on your screen. Take your time to read through it carefully."
-- Do NOT say "here's the first question" or treat it as something to answer
-- Give the student 30-60 seconds of quiet reading time
-- After a pause, ask: "Have you had a chance to read through that?"
-- Once they confirm, say: "Great. The questions that follow will be based on this extract."
-- You may briefly summarise what the extract is about to help orient them
+**3. New email template: `supabase/functions/send-enrollment-notification/_templates/enrollment-update-email.tsx`**
 
-⚠️ An extract is SOURCE MATERIAL the student reads BEFORE answering questions about it.
-It is NOT a question itself. Never ask the student to "answer" the extract.
-```
+Simple React Email template matching existing style — just says there's been an update, check the portal.
 
-**4. `heycleo-export/edge-functions/generate-lesson-plan/index.ts`**
-- Add `extract` as a content block type in the prompt (around line 499-515), with an example:
-```
-7. EXTRACT: Reading passage for students to analyze (English homework)
-   Example: { type: "extract", title: "Source A", data: { content: "The passage text here...", source: "From 'Great Expectations' by Charles Dickens" } }
-   - Use for homework extracts that students must read before answering questions
-   - Always place BEFORE any questions that reference it
-```
+**4. Update `src/services/recurringLessonEditService.ts`**
 
-### Summary
+After successfully updating student associations (both single lesson edit ~line 96-118 and future lessons edit ~line 269-313):
+- Compare old student IDs vs new student IDs
+- Identify added and removed students
+- Call `supabase.functions.invoke('send-enrollment-notification', { body: { studentIds, action, lessonTitle } })`
+- For recurring edits, send once per affected student (not per lesson instance)
 
-| File | Change |
+### Technical notes
+
+- The existing code already fetches `existingStudents` before changes (line 274-280 in recurringLessonEditService), so diffing is straightforward
+- For single lesson edits (line 96-118), we'll add a similar diff before the delete/insert
+- Edge function uses existing `RESEND_API_KEY`, `WAZZUP_API_KEY`, `WAZZUP_CHANNEL_ID` secrets
+- No database changes needed
+
+### Files
+
+| File | Action |
 |------|--------|
-| `src/types/lessonContent.ts` | Add `'extract'` to ContentBlock type union |
-| `supabase/functions/_shared/cleoPromptHelpers.ts` | Add `extract` case to `formatSingleBlock` |
-| `heycleo-export/edge-functions/_shared/cleoPromptHelpers.ts` | Same extract case |
-| `heycleo-export/edge-functions/cleo-realtime-session-token/index.ts` | Add extract handling instructions to system prompt |
-| `heycleo-export/edge-functions/generate-lesson-plan/index.ts` | Add extract content block type definition |
+| `supabase/functions/send-enrollment-notification/index.ts` | Create — new edge function |
+| `supabase/functions/send-enrollment-notification/_templates/enrollment-update-email.tsx` | Create — email template |
+| `supabase/functions/_shared/whatsapp-templates.ts` | Edit — add `enrollmentUpdate` template |
+| `src/services/recurringLessonEditService.ts` | Edit — trigger notifications after student changes |
 
