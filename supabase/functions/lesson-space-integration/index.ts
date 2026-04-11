@@ -123,7 +123,10 @@ function generateSpaceId(lesson: any): string {
 }
 
 async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
-  const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY') || "832a4e97-e402-4757-8ba3-a8afb14941b2";
+  const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY');
+  if (!lessonSpaceApiKey) {
+    throw new Error('LESSONSPACE_API_KEY is not configured');
+  }
   const rid = crypto.randomUUID();
   let stage = "init";
   let spaceId: string | undefined;
@@ -396,7 +399,10 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
     console.log("⚠️ No pre-generated URL found, falling back to dynamic generation");
 
     // Fallback: Generate URL dynamically (for students added after room creation)
-    const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY') || "832a4e97-e402-4757-8ba3-a8afb14941b2";
+    const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY');
+    if (!lessonSpaceApiKey) {
+      throw new Error('LESSONSPACE_API_KEY is not configured');
+    }
 
     // Get lesson space details
     const { data: lesson, error: lessonError } = await supabase
@@ -504,7 +510,10 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
 
 // New function to handle adding students to existing rooms
 async function addStudentsToRoom(data: any, supabase: any) {
-  const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY') || "832a4e97-e402-4757-8ba3-a8afb14941b2";
+  const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY');
+  if (!lessonSpaceApiKey) {
+    throw new Error('LESSONSPACE_API_KEY is not configured');
+  }
   
   try {
     console.log("Adding students to existing room...", data);
