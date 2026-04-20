@@ -165,33 +165,45 @@ const createUpdateData = (updates: LessonUpdate) => {
   return updateData;
 };
 
-// Apply time updates to a specific lesson instance using duration-based approach
-const applyTimeUpdatesToInstance = (instanceLesson: any, newStartTime: Date, newEndTime: Date) => {
-  // Get the instance date (preserve the specific date of this instance)
-  const instanceDate = new Date(instanceLesson.start_time);
-  const lessonDuration = differenceInMinutes(newEndTime, newStartTime);
-  
+// Apply time updates to a specific lesson instance using duration-based approach.
+// If dayDelta is non-zero, the instance's date is shifted by that many days
+// (e.g. Mon -> Wed = +2) before applying the new time-of-day. This lets users
+// change the day-of-week of a recurring lesson series.
+const applyTimeUpdatesToInstance = (
+  instanceLesson: any,
+  newStartTime: Date,
+  newEndTime: Date,
+  dayDelta: number = 0
+) => {
+  // Get the instance date (preserve the specific date of this instance), then shift by dayDelta
+  let instanceDate = new Date(instanceLesson.start_time);
+  if (dayDelta !== 0) {
+    instanceDate = addDays(instanceDate, dayDelta);
+  }
+
   // Extract the time components from the new times (in UK timezone)
   const ukStartTime = convertUTCToUK(newStartTime);
   const ukEndTime = convertUTCToUK(newEndTime);
-  
+
   // Create new times for this instance date using UK timezone
-  const instanceUKStartTime = createUKDateTime(instanceDate, 
+  const instanceUKStartTime = createUKDateTime(instanceDate,
     `${ukStartTime.getHours().toString().padStart(2, '0')}:${ukStartTime.getMinutes().toString().padStart(2, '0')}`
   );
   const instanceUKEndTime = createUKDateTime(instanceDate,
     `${ukEndTime.getHours().toString().padStart(2, '0')}:${ukEndTime.getMinutes().toString().padStart(2, '0')}`
   );
-  
+
   // Convert back to UTC for storage
   const instanceStartTime = convertUKToUTC(instanceUKStartTime);
   const instanceEndTime = convertUKToUTC(instanceUKEndTime);
-  
+
   return {
     start_time: instanceStartTime.toISOString(),
     end_time: instanceEndTime.toISOString()
   };
 };
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export const updateAllFutureLessons = async (
   lessonId: string, 
