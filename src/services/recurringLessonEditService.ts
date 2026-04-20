@@ -232,6 +232,23 @@ export const updateAllFutureLessons = async (
     const hasTimeChanges = updates.start_time || updates.end_time;
     const tutorChanged = updates.tutor_id && updates.tutor_id !== originalLesson.tutor_id;
 
+    // Compute day-of-week delta (in UK timezone) so we can shift instances when
+    // the user changes the day (e.g. Mon -> Wed). Compare the original lesson's
+    // start time to the new start time the user submitted.
+    let dayDelta = 0;
+    let newRecurrenceDay: string | null = null;
+    if (hasTimeChanges && updates.start_time) {
+      const originalUKStart = convertUTCToUK(new Date(originalLesson.start_time));
+      const newUKStart = convertUTCToUK(new Date(updates.start_time));
+      const originalDow = originalUKStart.getDay();
+      const newDow = newUKStart.getDay();
+      if (originalDow !== newDow) {
+        dayDelta = newDow - originalDow;
+        newRecurrenceDay = DAY_NAMES[newDow];
+        console.log(`Day-of-week change detected: ${DAY_NAMES[originalDow]} -> ${newRecurrenceDay} (delta ${dayDelta} days)`);
+      }
+    }
+
     // Find all future lessons to update - use gt with 1 second earlier to ensure current lesson is included
     const inclusiveStartDate = new Date(startDate.getTime() - 1000); // 1 second earlier
     
@@ -274,16 +291,24 @@ export const updateAllFutureLessons = async (
       
       // Process each lesson in the batch
       for (const lesson of batch) {
-        let updateData = { ...baseUpdateData };
+        let updateData: any = { ...baseUpdateData };
         
         // Apply time changes if needed (using duration-based approach like working code)
         if (hasTimeChanges) {
           const timeUpdates = applyTimeUpdatesToInstance(
             lesson,
             new Date(updates.start_time!),
-            new Date(updates.end_time!)
+            new Date(updates.end_time!),
+            dayDelta
           );
           updateData = { ...updateData, ...timeUpdates };
+        }
+
+        // If this is the parent recurring lesson and the day-of-week changed,
+        // also persist the new recurrence_day so future auto-generated instances
+        // use the correct weekday.
+        if (newRecurrenceDay && lesson.id === lessonId && (lesson as any).is_recurring) {
+          updateData.recurrence_day = newRecurrenceDay;
         }
 
         // Update the lesson
