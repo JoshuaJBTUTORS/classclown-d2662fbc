@@ -68,6 +68,7 @@ import Earnings from './pages/Earnings';
 import AdminEarnings from './pages/AdminEarnings';
 import AdminDashboard from './pages/AdminDashboard';
 import TrialBookingMusa from './pages/TrialBookingMusa';
+import ReviewRoom from './pages/ReviewRoom';
 import ContentEngine from './pages/admin/ContentEngine';
 import TutorContentPage from './pages/tutor/TutorContentPage';
 import ProposalView from './pages/ProposalView';
@@ -118,6 +119,7 @@ function App() {
                 
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/book-trial-musa" element={<TrialBookingMusa />} />
+                <Route path="/review-room" element={<ReviewRoom />} />
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
                 <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
                 <Route path="/blog" element={<Blog />} />

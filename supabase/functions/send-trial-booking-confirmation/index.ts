@@ -14,6 +14,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+interface ReviewRoomSession {
+  date: string;
+  time: string;
+  subject: string;
+}
+
 interface TrialBookingConfirmationRequest {
   parentName: string;
   childName: string;
@@ -23,6 +29,8 @@ interface TrialBookingConfirmationRequest {
   preferredTime: string;
   message?: string;
   phone?: string;
+  bookingType?: string; // 'review_room' | undefined
+  sessions?: ReviewRoomSession[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -41,9 +49,13 @@ const handler = async (req: Request): Promise<Response> => {
       preferredTime,
       message,
       phone,
+      bookingType,
+      sessions,
     }: TrialBookingConfirmationRequest = await req.json();
 
-    console.log('Sending trial booking confirmation email to:', email);
+    console.log('Sending trial booking confirmation email to:', email, 'type:', bookingType);
+
+    const isReviewRoom = bookingType === 'review_room';
 
     const html = await renderAsync(
       React.createElement(TrialBookingConfirmationEmail, {
@@ -53,13 +65,19 @@ const handler = async (req: Request): Promise<Response> => {
         preferredDate,
         preferredTime,
         message,
+        bookingType,
+        sessions,
       })
     );
+
+    const emailSubject = isReviewRoom
+      ? `Review Room Booking Confirmed - ${childName}`
+      : `Trial Lesson Request Received - ${childName}`;
 
     const emailResponse = await resend.emails.send({
       from: "Class Beyond <enquiries@classbeyondacademy.io>",
       to: [email],
-      subject: `Trial Lesson Request Received - ${childName}`,
+      subject: emailSubject,
       html,
     });
 
@@ -67,13 +85,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send WhatsApp message if phone number is available
     if (phone) {
-      const whatsappText = WhatsAppTemplates.trialBookingConfirmation(
-        parentName,
-        childName,
-        subject,
-        preferredDate,
-        preferredTime
-      );
+      const whatsappText = isReviewRoom && sessions && sessions.length > 0
+        ? WhatsAppTemplates.reviewRoomConfirmation(parentName, childName, sessions)
+        : WhatsAppTemplates.trialBookingConfirmation(
+            parentName,
+            childName,
+            subject,
+            preferredDate,
+            preferredTime
+          );
 
       const whatsappNumber = whatsappService.formatPhoneNumber(phone);
       const whatsappResponse = await whatsappService.sendMessage({

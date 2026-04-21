@@ -43,8 +43,11 @@ import {
   Clock,
   Phone,
   Mail,
-  UserPlus
+  UserPlus,
+  Sparkles
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import TrialBookingApprovalDialogWithAdmin from '@/components/trialBooking/TrialBookingApprovalDialogWithAdmin';
@@ -67,6 +70,7 @@ interface TrialBooking {
   subject_id?: string;
   assigned_tutor_id?: string;
   lesson_id?: string;
+  booking_source?: string;
 }
 
 const TrialBookings = () => {
@@ -76,6 +80,8 @@ const TrialBookings = () => {
   const [filteredBookings, setFilteredBookings] = useState<TrialBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceTab, setSourceTab] = useState<'all' | 'trial' | 'review_room'>('all');
+  const [reviewRoomDayTab, setReviewRoomDayTab] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<TrialBooking | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -99,7 +105,7 @@ const TrialBookings = () => {
 
   useEffect(() => {
     filterBookings();
-  }, [bookings, searchQuery, statusFilter]);
+  }, [bookings, searchQuery, statusFilter, sourceTab, reviewRoomDayTab]);
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -176,6 +182,16 @@ const TrialBookings = () => {
   const filterBookings = () => {
     let filtered = bookings;
 
+    // Source tab filter
+    if (sourceTab === 'review_room') {
+      filtered = filtered.filter((b) => b.booking_source === 'review_room');
+      if (reviewRoomDayTab !== 'all') {
+        filtered = filtered.filter((b) => b.preferred_date === reviewRoomDayTab);
+      }
+    } else if (sourceTab === 'trial') {
+      filtered = filtered.filter((b) => b.booking_source !== 'review_room');
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(booking => 
@@ -191,6 +207,13 @@ const TrialBookings = () => {
 
     setFilteredBookings(filtered);
   };
+
+  const REVIEW_ROOM_DAYS = [
+    { date: '2026-04-25', label: 'Sat 25 Apr' },
+    { date: '2026-04-26', label: 'Sun 26 Apr' },
+    { date: '2026-05-02', label: 'Sat 2 May' },
+    { date: '2026-05-03', label: 'Sun 3 May' },
+  ];
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
     try {
@@ -263,9 +286,42 @@ const TrialBookings = () => {
 
           <Card className="mb-8">
             <CardHeader className="pb-2">
-              <CardTitle>Trial Lesson Requests</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle>Trial Lesson Requests</CardTitle>
+                <Button asChild variant="outline" size="sm" className="gap-1.5 w-fit">
+                  <Link to="/review-room" target="_blank">
+                    <Sparkles className="h-4 w-4" />
+                    Review Room
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              <Tabs value={sourceTab} onValueChange={(v) => setSourceTab(v as typeof sourceTab)} className="mb-4">
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="trial">Trial Lessons</TabsTrigger>
+                  <TabsTrigger value="review_room">Review Room</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {sourceTab === 'review_room' && (
+                <Tabs
+                  value={reviewRoomDayTab}
+                  onValueChange={setReviewRoomDayTab}
+                  className="mb-4"
+                >
+                  <TabsList>
+                    <TabsTrigger value="all">All Days</TabsTrigger>
+                    {REVIEW_ROOM_DAYS.map((d) => (
+                      <TabsTrigger key={d.date} value={d.date}>
+                        {d.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1">
                   <div className="relative">
