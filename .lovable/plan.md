@@ -1,45 +1,77 @@
 
 
-## Fix: Changing the day on a recurring lesson doesn't update future instances
+## "Review Room" Weekend Booking Flow
 
-### The bug
-When you edit a recurring lesson and change its day (e.g. Monday → Wednesday) using "All Future Lessons", the day doesn't change. Only the **time of day** updates — every instance keeps its original date.
+A new public booking page for **Review Room** sessions, separate from the existing trial booking flow. Users pick any combination of fixed sessions across 4 weekend days, submit contact details, and bookings are saved + notifications fired.
 
-### Root cause
-In `src/services/recurringLessonEditService.ts`, the helper `applyTimeUpdatesToInstance` (lines 169-194) does this for every future instance:
+### Fixed timetable
 
-1. Reads the existing instance's date (`new Date(instanceLesson.start_time)`)
-2. Pulls only the **hours/minutes** from the new start/end time
-3. Rebuilds the timestamp using the **old date** + **new time**
+Same 3 sessions on each of the 4 days:
 
-So the new day-of-week selected in the form is thrown away. On top of that, we never update `recurrence_day` on the parent lesson, so the recurring rule itself still says e.g. "Monday".
+| Time | Subject |
+|---|---|
+| 10:00 | GCSE Maths |
+| 12:00 | GCSE Science |
+| 14:00 | GCSE English |
 
-### The fix
+Dates: **Sat 25 Apr, Sun 26 Apr, Sat 2 May, Sun 3 May 2026**.
 
-**1. Shift each instance to the new day-of-week (preserve the week)**
+(Note: your message said "Sunday 25th" and "Sunday 2nd" — I'll assume these are typos for Sun 26 Apr and Sun 3 May based on the calendar.)
 
-Update `applyTimeUpdatesToInstance` so that when the new start time falls on a different day-of-week than the original lesson, each instance is shifted by the day delta within its own week. Example: original Mondays → new Wednesdays = shift every instance's date by +2 days, then apply the new time-of-day.
+### User flow at `/review-room`
+
+**Step 1 – Pick sessions**: 4 day cards (one per date). Each card lists the 3 time slots with checkboxes. User can tick any combination across days. A "Selected: N sessions" counter sits at the bottom.
+
+**Step 2 – Contact info**: Same fields as `/book-trial` (parent name, child name, email, phone). Summary of selected sessions shown above the form.
+
+**Step 3 – Submit**: Inserts one row per selected session into `trial_bookings` with `booking_source = 'review_room'`, then fires notifications.
+
+**Step 4 – Confirmation**: Reuses existing `/trial-booking-confirmation` page.
+
+### Notifications
+
+- **Parent**: One combined email + one combined WhatsApp listing all selected sessions.
+- **Sales (you)**: One sales email per session + one WhatsApp per session (so each shows up individually for triage).
+
+Both messages will include:
+
+> *"Your video lesson link will be sent to you shortly before the session."*
+
+### Admin: `/trial-bookings` page changes
+
+1. **New "Review Room" button** next to the "Trial Lesson Requests" title — links to `/review-room` (so admins can preview / share the booking link).
+2. **Tab switcher** above the existing table:
 
 ```text
-old instance:  Mon 2026-04-13 16:00
-new template:  Wed 16:30
-shifted:       Wed 2026-04-15 16:30   ← +2 days, new time
+[ All ] [ Trial Lessons ] [ Review Room ]
 ```
 
-This keeps each weekly instance in its correct week and only moves the weekday.
+The Review Room tab filters by `booking_source = 'review_room'` and shows day sub-tabs:
 
-**2. Update `recurrence_day` on the parent lesson**
+```text
+[ All Days ] [ Sat 25 Apr ] [ Sun 26 Apr ] [ Sat 2 May ] [ Sun 3 May ]
+```
 
-In `updateAllFutureLessons`, when the day-of-week changes and we're editing the original (parent) lesson, also write the new `recurrence_day` (e.g. `"Wednesday"`) so future auto-generated instances use the new day.
+Status badges + the existing approval dialog continue to work — approval links are out of scope for this round (you said "we'll plan that soon").
 
-**3. Edge case: collisions with already-existing instances on the new day**
+### Files
 
-When shifting (e.g. Mon → Wed), it's possible an instance's new date overlaps another future instance's date. We'll handle this by simply applying the shift per-instance — duplicates are unlikely because all instances were on the same old weekday — but we'll add a console warning and let the existing duplicate-prevention in the DB handle conflicts.
+**New**
+- `src/pages/ReviewRoom.tsx` — 2-step booking page
+- `src/components/reviewRoom/SessionPicker.tsx` — multi-select grid
 
-### Files to change
-- `src/services/recurringLessonEditService.ts` — fix `applyTimeUpdatesToInstance` to detect day-of-week change and shift instance dates; update `updateAllFutureLessons` to write `recurrence_day` on the parent lesson when it changes.
+**Changed**
+- `src/App.tsx` — add public `/review-room` route
+- `src/services/trialBookingService.ts` — add `createReviewRoomBookings(sessions[], contact)`: loops the inserts, fires one combined parent confirmation, one sales notification per booking. Skips HubSpot for `booking_source = 'review_room'`.
+- `src/pages/TrialBookings.tsx` — add "Review Room" button + source/day tabs.
+- `supabase/functions/send-trial-booking-confirmation/index.ts` + email template — accept optional `sessions` array; add the "link sent shortly" line.
+- `supabase/functions/_shared/whatsapp-templates.ts` — add Review Room confirmation template with multi-session summary + "link sent shortly" line.
+- `supabase/functions/send-trial-sales-notification/index.ts` — add the "link sent shortly" line, label "Review Room" booking type.
 
-### Out of scope
-- "This lesson only" edits already work correctly (they pass the full new datetime through).
-- No DB migration required — `recurrence_day` already exists.
+### Database
+No migration needed. `trial_bookings` already has `preferred_date`, `preferred_time`, `subject_id`, `booking_source`. Subjects (GCSE Maths / GCSE Science / GCSE English) already exist in the `subjects` table — IDs will be resolved at submission time.
+
+### Out of scope (per your message)
+- Lesson rooms / LessonSpace links — not created at submission. Notifications explicitly tell the user the link comes "shortly before".
+- Approval workflow + tutor assignment — existing dialog handles approval; link generation will be designed in a follow-up.
 
