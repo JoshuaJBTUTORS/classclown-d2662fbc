@@ -105,10 +105,10 @@ const ReviewRoom = () => {
                 <Quote className="h-8 w-8 shrink-0 text-primary/60" />
                 <div>
                   <blockquote className="text-base md:text-lg italic text-foreground leading-relaxed">
-                    "So happy to see this is back again this year — was a life saver for my son."
+                    "So happy to see this is back again this year was a life saver for my son."
                   </blockquote>
                   <p className="mt-2 text-sm font-medium text-muted-foreground">
-                    — Parent, GCSE Review Room
+                    Nicole Rockwood, GCSE Review Room
                   </p>
                 </div>
               </CardContent>
