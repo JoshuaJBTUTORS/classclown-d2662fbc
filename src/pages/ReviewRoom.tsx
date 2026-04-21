@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Calendar as CalendarIcon, GraduationCap, Quote, AlertTriangle } from 'lucide-react';
 import SessionPicker, { SelectedSession, REVIEW_ROOM_DAYS } from '@/components/reviewRoom/SessionPicker';
 import { createReviewRoomBookings } from '@/services/trialBookingService';
 
