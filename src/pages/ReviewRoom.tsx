@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Calendar as CalendarIcon, GraduationCap, Quote, AlertTriangle } from 'lucide-react';
 import SessionPicker, { SelectedSession, REVIEW_ROOM_DAYS } from '@/components/reviewRoom/SessionPicker';
 import { createReviewRoomBookings } from '@/services/trialBookingService';
 
@@ -84,27 +85,66 @@ const ReviewRoom = () => {
         </div>
 
         {step === 'sessions' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Select your sessions</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Tick any sessions you'd like to attend across the {REVIEW_ROOM_DAYS.length} dates.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <SessionPicker selected={selected} onToggle={toggleSession} />
-
-              <div className="sticky bottom-0 -mx-6 -mb-6 flex items-center justify-between border-t bg-background/95 px-6 py-4 backdrop-blur">
-                <p className="text-sm">
-                  <span className="font-semibold">{selected.length}</span>{' '}
-                  session{selected.length === 1 ? '' : 's'} selected
-                </p>
-                <Button onClick={handleProceed} disabled={selected.length === 0}>
-                  Continue <ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
+          <div className="space-y-6">
+            {/* UK Qualified Teachers hero strip */}
+            <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 flex items-start gap-4">
+              <div className="rounded-lg bg-primary/15 p-2.5 text-primary">
+                <GraduationCap className="h-6 w-6" />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">Led by UK Qualified Teachers</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Free GCSE revision sessions delivered by qualified UK teachers — here purely to support your child's exam prep.
+                </p>
+              </div>
+            </div>
+
+            {/* Parent testimonial */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-6 flex gap-4">
+                <Quote className="h-8 w-8 shrink-0 text-primary/60" />
+                <div>
+                  <blockquote className="text-base md:text-lg italic text-foreground leading-relaxed">
+                    "So happy to see this is back again this year — was a life saver for my son."
+                  </blockquote>
+                  <p className="mt-2 text-sm font-medium text-muted-foreground">
+                    — Parent, GCSE Review Room
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Select your sessions</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Tick any sessions you'd like to attend across the {REVIEW_ROOM_DAYS.length} dates.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Limited spaces notice */}
+                <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800">
+                  <AlertTriangle className="h-4 w-4 !text-amber-600 dark:!text-amber-400" />
+                  <AlertTitle className="text-amber-900 dark:text-amber-100">Limited spaces available</AlertTitle>
+                  <AlertDescription className="text-amber-800 dark:text-amber-200/90">
+                    While these sessions are completely free, please only book if you're sure you can attend. Spaces are first-come, first-served.
+                  </AlertDescription>
+                </Alert>
+
+                <SessionPicker selected={selected} onToggle={toggleSession} />
+
+                <div className="sticky bottom-0 -mx-6 -mb-6 flex items-center justify-between border-t bg-background/95 px-6 py-4 backdrop-blur">
+                  <p className="text-sm">
+                    <span className="font-semibold">{selected.length}</span>{' '}
+                    session{selected.length === 1 ? '' : 's'} selected
+                  </p>
+                  <Button onClick={handleProceed} disabled={selected.length === 0}>
+                    Continue <ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {step === 'contact' && (
