@@ -286,9 +286,42 @@ const TrialBookings = () => {
 
           <Card className="mb-8">
             <CardHeader className="pb-2">
-              <CardTitle>Trial Lesson Requests</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle>Trial Lesson Requests</CardTitle>
+                <Button asChild variant="outline" size="sm" className="gap-1.5 w-fit">
+                  <Link to="/review-room" target="_blank">
+                    <Sparkles className="h-4 w-4" />
+                    Review Room
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              <Tabs value={sourceTab} onValueChange={(v) => setSourceTab(v as typeof sourceTab)} className="mb-4">
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="trial">Trial Lessons</TabsTrigger>
+                  <TabsTrigger value="review_room">Review Room</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {sourceTab === 'review_room' && (
+                <Tabs
+                  value={reviewRoomDayTab}
+                  onValueChange={setReviewRoomDayTab}
+                  className="mb-4"
+                >
+                  <TabsList>
+                    <TabsTrigger value="all">All Days</TabsTrigger>
+                    {REVIEW_ROOM_DAYS.map((d) => (
+                      <TabsTrigger key={d.date} value={d.date}>
+                        {d.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1">
                   <div className="relative">
