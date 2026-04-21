@@ -144,3 +144,130 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
     };
   }
 };
+
+// =====================
+// Review Room bookings
+// =====================
+
+export interface ReviewRoomSession {
+  date: string;       // YYYY-MM-DD
+  time: string;       // HH:mm
+  subject: string;    // Display name
+  subjectId: string;
+}
+
+export interface ReviewRoomContact {
+  parent_name: string;
+  child_name: string;
+  email: string;
+  phone?: string;
+}
+
+interface CreateReviewRoomBookingsArgs {
+  sessions: ReviewRoomSession[];
+  contact: ReviewRoomContact;
+}
+
+interface ReviewRoomResult {
+  success: boolean;
+  bookingIds?: string[];
+  error?: string;
+}
+
+export const createReviewRoomBookings = async (
+  args: CreateReviewRoomBookingsArgs
+): Promise<ReviewRoomResult> => {
+  const { sessions, contact } = args;
+
+  if (!sessions || sessions.length === 0) {
+    return { success: false, error: 'No sessions selected' };
+  }
+
+  try {
+    // Insert one row per session
+    const rows = sessions.map((s) => ({
+      parent_name: contact.parent_name,
+      child_name: contact.child_name,
+      email: contact.email,
+      phone: contact.phone,
+      preferred_date: s.date,
+      preferred_time: s.time,
+      subject_id: s.subjectId,
+      booking_source: 'review_room',
+      is_unique_booking: true,
+      status: 'pending',
+    }));
+
+    const { data: inserted, error } = await supabase
+      .from('trial_bookings')
+      .insert(rows)
+      .select('id, preferred_date, preferred_time, subject_id');
+
+    if (error) {
+      console.error('Error inserting review room bookings:', error);
+      throw new Error(error.message);
+    }
+
+    const bookingIds = (inserted || []).map((r) => r.id);
+
+    // Build a sessions summary for the combined parent confirmation
+    const sortedSessions = [...sessions].sort((a, b) =>
+      `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`)
+    );
+    const sessionsForEmail = sortedSessions.map((s) => ({
+      date: format(new Date(s.date), 'EEEE, MMMM do, yyyy'),
+      time: s.time,
+      subject: s.subject,
+    }));
+
+    // Send ONE combined confirmation to parent
+    try {
+      await supabase.functions.invoke('send-trial-booking-confirmation', {
+        body: {
+          parentName: contact.parent_name,
+          childName: contact.child_name,
+          email: contact.email,
+          phone: contact.phone,
+          subject: 'Review Room',
+          preferredDate: sessionsForEmail[0]?.date || '',
+          preferredTime: sessionsForEmail[0]?.time || '',
+          bookingType: 'review_room',
+          sessions: sessionsForEmail,
+        },
+      });
+    } catch (emailError) {
+      console.error('Failed to send review room confirmation email:', emailError);
+    }
+
+    // Send ONE sales notification per session
+    for (let i = 0; i < sortedSessions.length; i++) {
+      const s = sortedSessions[i];
+      const bookingId = bookingIds[i] ?? bookingIds[0] ?? 'unknown';
+      try {
+        await supabase.functions.invoke('send-trial-sales-notification', {
+          body: {
+            parentName: contact.parent_name,
+            childName: contact.child_name,
+            email: contact.email,
+            phone: contact.phone,
+            subject: s.subject,
+            preferredDate: format(new Date(s.date), 'EEEE, MMMM do, yyyy'),
+            preferredTime: s.time,
+            bookingId,
+            bookingType: 'review_room',
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send review room sales notification:', emailError);
+      }
+    }
+
+    return { success: true, bookingIds };
+  } catch (err) {
+    console.error('createReviewRoomBookings failed:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    };
+  }
+};
