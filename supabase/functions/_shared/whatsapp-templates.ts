@@ -40,13 +40,41 @@ Thank you for booking a trial lesson for ${childName} in ${subject}.
 ⏰ Session Start Time: ${preferredTime}
 ⏱️ Session Structure: 15 mins platform demo + 30 mins trial lesson
 
-We'll contact you within 24 hours to confirm the lesson details and send you the joining link.
+📺 Your video lesson link will be sent to you shortly before the session.
+
+We'll contact you within 24 hours to confirm the lesson details.
 
 Looking forward to meeting ${childName}!
 
 Best regards,
 Class Beyond Team 🎯
   `.trim(),
+
+  reviewRoomConfirmation: (
+    parentName: string,
+    childName: string,
+    sessions: { date: string; time: string; subject: string }[]
+  ) => {
+    const sessionLines = sessions
+      .map((s) => `• ${s.date} at ${s.time} — ${s.subject}`)
+      .join('\n');
+    return `
+✨ Review Room Booking Confirmed! ✨
+
+Hi ${parentName}!
+
+${childName}'s Review Room sessions are booked:
+
+${sessionLines}
+
+📺 Your video lesson link will be sent to you shortly before each session.
+
+If you have any questions, just reply to this message.
+
+Best regards,
+Class Beyond Team 🎓
+    `.trim();
+  },
 
   trialLessonApproval: (parentName: string, childName: string, subject: string, lessonDate: string, lessonTime: string, studentLessonLink: string) => `
 🎉 Trial Lesson Confirmed! 🎉

@@ -24,6 +24,7 @@ interface TrialSalesNotificationRequest {
   preferredTime: string;
   message?: string;
   bookingId: string;
+  bookingType?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -43,9 +44,15 @@ const handler = async (req: Request): Promise<Response> => {
       preferredTime,
       message,
       bookingId,
+      bookingType,
     }: TrialSalesNotificationRequest = await req.json();
 
-    console.log('Sending trial sales notification email for booking:', bookingId);
+    console.log('Sending trial sales notification email for booking:', bookingId, 'type:', bookingType);
+
+    const isReviewRoom = bookingType === 'review_room';
+    const bookingLabel = isReviewRoom ? 'Review Room' : 'Trial';
+    const enrichedMessage = (message ? message + '\n\n' : '') +
+      'Note: Video lesson link will be sent to the parent shortly before the session.';
 
     const html = await renderAsync(
       React.createElement(TrialSalesNotificationEmail, {
@@ -56,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
         subject,
         preferredDate,
         preferredTime,
-        message,
+        message: enrichedMessage,
         bookingId,
       })
     );
@@ -64,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Class Beyond <enquiries@classbeyondacademy.io>",
       to: ["joshua@classbeyondacademy.io", "musa@classbeyondacademy.io"],
-      subject: `New Trial Booking - ${childName} - ${subject}`,
+      subject: `New ${bookingLabel} Booking - ${childName} - ${subject}`,
       html,
     });
 
@@ -82,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
         subject,
         preferredDate,
         preferredTime,
-        message || "No additional message",
+        (message || "No additional message") + (isReviewRoom ? `\n\n[Review Room booking — link to be sent shortly before session]` : ''),
         bookingId
       );
 
