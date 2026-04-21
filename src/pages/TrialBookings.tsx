@@ -43,8 +43,11 @@ import {
   Clock,
   Phone,
   Mail,
-  UserPlus
+  UserPlus,
+  Sparkles
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import TrialBookingApprovalDialogWithAdmin from '@/components/trialBooking/TrialBookingApprovalDialogWithAdmin';
@@ -67,6 +70,7 @@ interface TrialBooking {
   subject_id?: string;
   assigned_tutor_id?: string;
   lesson_id?: string;
+  booking_source?: string;
 }
 
 const TrialBookings = () => {
@@ -76,6 +80,8 @@ const TrialBookings = () => {
   const [filteredBookings, setFilteredBookings] = useState<TrialBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceTab, setSourceTab] = useState<'all' | 'trial' | 'review_room'>('all');
+  const [reviewRoomDayTab, setReviewRoomDayTab] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<TrialBooking | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -99,7 +105,7 @@ const TrialBookings = () => {
 
   useEffect(() => {
     filterBookings();
-  }, [bookings, searchQuery, statusFilter]);
+  }, [bookings, searchQuery, statusFilter, sourceTab, reviewRoomDayTab]);
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -176,6 +182,16 @@ const TrialBookings = () => {
   const filterBookings = () => {
     let filtered = bookings;
 
+    // Source tab filter
+    if (sourceTab === 'review_room') {
+      filtered = filtered.filter((b) => b.booking_source === 'review_room');
+      if (reviewRoomDayTab !== 'all') {
+        filtered = filtered.filter((b) => b.preferred_date === reviewRoomDayTab);
+      }
+    } else if (sourceTab === 'trial') {
+      filtered = filtered.filter((b) => b.booking_source !== 'review_room');
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(booking => 
@@ -191,6 +207,13 @@ const TrialBookings = () => {
 
     setFilteredBookings(filtered);
   };
+
+  const REVIEW_ROOM_DAYS = [
+    { date: '2026-04-25', label: 'Sat 25 Apr' },
+    { date: '2026-04-26', label: 'Sun 26 Apr' },
+    { date: '2026-05-02', label: 'Sat 2 May' },
+    { date: '2026-05-03', label: 'Sun 3 May' },
+  ];
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
     try {
