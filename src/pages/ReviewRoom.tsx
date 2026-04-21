@@ -93,9 +93,9 @@ const ReviewRoom = () => {
                 <GraduationCap className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold tracking-tight">Led by UK Qualified Teachers</h2>
+                <h2 className="text-lg font-semibold tracking-tight">Led by UK Qualified Teachers & Examiners</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Free GCSE revision sessions delivered by qualified UK teachers — here purely to support your child's exam prep.
+                  Free GCSE revision sessions delivered by qualified UK teachers and examiners, here purely to support your child's exam prep.
                 </p>
               </div>
             </div>
