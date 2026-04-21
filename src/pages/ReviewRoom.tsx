@@ -23,6 +23,7 @@ const ReviewRoom = () => {
     child_name: '',
     email: '',
     phone: '',
+    exam_board_level: '',
   });
 
   const toggleSession = (session: SelectedSession) => {
@@ -217,6 +218,20 @@ const ReviewRoom = () => {
                     value={contact.phone}
                     onChange={(e) => setContact({ ...contact, phone: e.target.value })}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="exam_board_level">
+                    For your selected subject(s), please confirm your tier (Higher / Foundation) and exam board
+                  </Label>
+                  <Input
+                    id="exam_board_level"
+                    placeholder="e.g. Higher — AQA Maths, Foundation — Edexcel Science"
+                    value={contact.exam_board_level}
+                    onChange={(e) => setContact({ ...contact, exam_board_level: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Helps us tailor the session to the right specification.
+                  </p>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={submitting} size="lg">

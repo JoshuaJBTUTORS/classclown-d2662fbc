@@ -161,6 +161,7 @@ export interface ReviewRoomContact {
   child_name: string;
   email: string;
   phone?: string;
+  exam_board_level?: string;
 }
 
 interface CreateReviewRoomBookingsArgs {
@@ -184,6 +185,10 @@ export const createReviewRoomBookings = async (
   }
 
   try {
+    const examBoardNote = contact.exam_board_level?.trim()
+      ? `Exam board / tier: ${contact.exam_board_level.trim()}`
+      : undefined;
+
     // Insert one row per session
     const rows = sessions.map((s) => ({
       parent_name: contact.parent_name,
@@ -196,6 +201,7 @@ export const createReviewRoomBookings = async (
       booking_source: 'review_room',
       is_unique_booking: true,
       status: 'pending',
+      message: examBoardNote,
     }));
 
     const { data: inserted, error } = await supabase
@@ -233,6 +239,7 @@ export const createReviewRoomBookings = async (
           preferredTime: sessionsForEmail[0]?.time || '',
           bookingType: 'review_room',
           sessions: sessionsForEmail,
+          examBoardLevel: contact.exam_board_level?.trim() || undefined,
         },
       });
     } catch (emailError) {
@@ -255,6 +262,8 @@ export const createReviewRoomBookings = async (
             preferredTime: s.time,
             bookingId,
             bookingType: 'review_room',
+            examBoardLevel: contact.exam_board_level?.trim() || undefined,
+            message: examBoardNote,
           },
         });
       } catch (emailError) {
