@@ -44,7 +44,7 @@ const ReviewRoom = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contact.parent_name || !contact.child_name || !contact.email) {
+    if (!contact.parent_name || !contact.child_name || !contact.email || !contact.phone) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -211,13 +211,17 @@ const ReviewRoom = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone (recommended for WhatsApp updates)</Label>
+                  <Label htmlFor="phone">Phone *</Label>
                   <Input
                     id="phone"
                     type="tel"
+                    required
                     value={contact.phone}
                     onChange={(e) => setContact({ ...contact, phone: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    We'll send WhatsApp updates and your session link to this number.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="exam_board_level">
