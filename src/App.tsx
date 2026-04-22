@@ -103,6 +103,7 @@ function App() {
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <AppVersionMonitor />
+        <MetaPixelTracker />
         <AuthProvider>
             <OrganizationProvider>
               <LearningHubProvider>
