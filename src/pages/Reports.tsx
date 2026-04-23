@@ -48,7 +48,7 @@ const Reports: React.FC = () => {
   };
 
   // Check if user has access to reports
-  if (userRole !== 'owner') {
+  if (userRole !== 'owner' && userRole !== 'admin') {
     return (
       <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
