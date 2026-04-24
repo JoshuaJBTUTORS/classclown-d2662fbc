@@ -51,6 +51,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import TrialBookingApprovalDialogWithAdmin from '@/components/trialBooking/TrialBookingApprovalDialogWithAdmin';
+import ReviewRoomApprovalDialog from '@/components/trialBooking/ReviewRoomApprovalDialog';
 import { cn } from '@/lib/utils';
 
 interface TrialBooking {
@@ -86,6 +87,7 @@ const TrialBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState<TrialBooking | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isApprovalOpen, setIsApprovalOpen] = useState(false);
+  const [reviewRoomGroup, setReviewRoomGroup] = useState<TrialBooking[] | null>(null);
   const [tutors, setTutors] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
 
