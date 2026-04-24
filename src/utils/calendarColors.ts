@@ -12,6 +12,11 @@ export const getSubjectClass = (subject: string, lessonType?: string): string =>
 
   const subjectLower = subject.toLowerCase();
 
+  // Review Room sessions get their own distinct styling
+  if (subjectLower.includes('review room')) {
+    return 'review-room-event';
+  }
+
   // Handle SATS subjects first
   if (subjectLower.includes('sats') || subjectLower.includes('sat')) {
     return 'sats-event';

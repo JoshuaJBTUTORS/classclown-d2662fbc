@@ -64,34 +64,52 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   const [isFetchingData, setIsFetchingData] = useState(false);
 
   const formSchema = z.object({
-    title: z.string().min(1, { message: "Title is required" }),
+    title: z.string().optional(),
     description: z.string().optional(),
-    subject: z.string().min(1, { message: "Subject is required" }),
+    subject: z.string().optional(),
     tutorId: z.string().min(1, { message: "Tutor is required" }),
     date: z.date({ required_error: "Date is required" }),
     startTime: z.string().min(1, { message: "Start time is required" }),
     endTime: z.string().min(1, { message: "End time is required" }),
     isGroup: z.boolean().default(false),
+    isReviewRoom: z.boolean().default(false),
     isRecurring: z.boolean().default(false),
     recurrenceInterval: z.string().optional(),
     recurrenceEndDate: z.date().optional(),
     noEndDate: z.boolean().default(false),
   }).refine(data => {
+    // Title and subject required only when NOT a review room session
+    if (data.isReviewRoom) return true;
+    return !!data.title && data.title.length > 0;
+  }, {
+    message: "Title is required",
+    path: ["title"],
+  }).refine(data => {
+    if (data.isReviewRoom) return true;
+    return !!data.subject && data.subject.length > 0;
+  }, {
+    message: "Subject is required",
+    path: ["subject"],
+  }).refine(data => {
+    if (data.isReviewRoom) return true;
     return !data.isGroup || (data.isGroup && selectedStudents.length > 0);
   }, {
     message: "Select at least one student for group sessions",
     path: ["studentIds"],
   }).refine(data => {
+    if (data.isReviewRoom) return true;
     return !data.isRecurring || (data.isRecurring && data.recurrenceInterval);
   }, {
     message: "Recurrence pattern is required for recurring lessons",
     path: ["recurrenceInterval"],
   }).refine(data => {
+    if (data.isReviewRoom) return true;
     return !data.isRecurring || (data.isRecurring && (data.recurrenceEndDate || data.noEndDate));
   }, {
     message: "End date is required for recurring lessons (or select 'No End Date')",
     path: ["recurrenceEndDate"],
   }).refine(data => {
+    if (data.isReviewRoom) return true;
     if (data.isRecurring && data.recurrenceEndDate && data.date && !data.noEndDate) {
       return data.recurrenceEndDate > data.date;
     }
@@ -112,6 +130,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       startTime: "",
       endTime: "",
       isGroup: false,
+      isReviewRoom: false,
       isRecurring: false,
       recurrenceInterval: "",
       recurrenceEndDate: undefined,
@@ -203,10 +222,24 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       setIsLoading(true);
       setLoadingStep('Creating lesson...');
 
+      // Apply Review Room defaults / overrides
+      const isReviewRoom = values.isReviewRoom;
+      const effectiveTitle = isReviewRoom ? 'Review Room Session' : (values.title || '');
+      const effectiveSubject = isReviewRoom ? 'Review Room' : (values.subject || '');
+      const effectiveDescription = isReviewRoom
+        ? 'Free GCSE revision session'
+        : (values.description || '');
+      const effectiveIsGroup = isReviewRoom ? true : values.isGroup;
+      // Review Room is always recurring weekly with no end date
+      const effectiveIsRecurring = isReviewRoom ? true : values.isRecurring;
+      const effectiveRecurrenceInterval = isReviewRoom ? 'weekly' : values.recurrenceInterval;
+      const effectiveNoEndDate = isReviewRoom ? true : values.noEndDate;
+      const effectiveRecurrenceEndDate = isReviewRoom ? undefined : values.recurrenceEndDate;
+
       // Create UK local time and convert to UTC for storage
       const ukStartTime = createUKDateTime(values.date, values.startTime);
       const ukEndTime = createUKDateTime(values.date, values.endTime);
-      
+
       const startTime = convertUKToUTC(ukStartTime);
       const endTime = convertUKToUTC(ukEndTime);
 
@@ -218,21 +251,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
         .from('lessons')
         .insert([
           {
-            title: values.title,
-            description: values.description || '',
-            subject: values.subject,
+            title: effectiveTitle,
+            description: effectiveDescription,
+            subject: effectiveSubject,
             tutor_id: values.tutorId,
             start_time: startTime.toISOString(),
             end_time: endTime.toISOString(),
-            is_group: values.isGroup,
+            is_group: effectiveIsGroup,
             status: 'scheduled',
-            is_recurring: values.isRecurring,
+            is_recurring: effectiveIsRecurring,
             is_recurring_instance: false,
             parent_lesson_id: null,
             instance_date: null,
-            recurrence_interval: values.isRecurring ? values.recurrenceInterval : null,
-            recurrence_end_date: values.isRecurring && values.recurrenceEndDate && !values.noEndDate ? values.recurrenceEndDate.toISOString() : null,
-            recurrence_day: values.isRecurring ? dayName : null,
+            recurrence_interval: effectiveIsRecurring ? effectiveRecurrenceInterval : null,
+            recurrence_end_date: effectiveIsRecurring && effectiveRecurrenceEndDate && !effectiveNoEndDate ? effectiveRecurrenceEndDate.toISOString() : null,
+            recurrence_day: effectiveIsRecurring ? dayName : null,
           },
         ])
         .select()
@@ -241,10 +274,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
 
       const newLessonId = lessonData?.[0]?.id;
 
-      setLoadingStep('Adding students...');
-
-      // Add students to the original lesson
-      if (newLessonId && selectedStudents.length > 0) {
+      // Add students to the original lesson (skipped for Review Room — none selected)
+      if (newLessonId && !isReviewRoom && selectedStudents.length > 0) {
+        setLoadingStep('Adding students...');
         const lessonStudentsData = selectedStudents.map(studentId => ({
           lesson_id: newLessonId,
           student_id: studentId
@@ -261,39 +293,42 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       if (newLessonId) {
         try {
           setLoadingStep('Creating video room...');
-          const roomData = await createLessonSpaceRoom(newLessonId, values.tutorId, values.isGroup);
+          const roomData = await createLessonSpaceRoom(newLessonId, values.tutorId, effectiveIsGroup);
           console.log('Room created successfully:', roomData);
         } catch (roomError) {
           console.error('Room creation failed:', roomError);
-          // Don't fail the entire lesson creation if room creation fails
           toast.error('Lesson created but video room creation failed. You can create it manually later.');
         }
       }
 
       // Generate recurring instances if this is a recurring lesson
-      if (values.isRecurring && newLessonId) {
+      if (effectiveIsRecurring && newLessonId) {
         setLoadingStep('Generating recurring lessons...');
-        
+
         const instancesGenerated = await generateRecurringLessonInstances({
           originalLessonId: newLessonId,
-          title: values.title,
-          description: values.description,
-          subject: values.subject,
+          title: effectiveTitle,
+          description: effectiveDescription,
+          subject: effectiveSubject,
           tutorId: values.tutorId,
           startTime,
           endTime,
-          isGroup: values.isGroup,
-          recurrenceInterval: values.recurrenceInterval as any,
-          recurrenceEndDate: values.recurrenceEndDate,
-          isInfinite: values.noEndDate,
-          selectedStudents
+          isGroup: effectiveIsGroup,
+          recurrenceInterval: effectiveRecurrenceInterval as any,
+          recurrenceEndDate: effectiveRecurrenceEndDate,
+          isInfinite: effectiveNoEndDate,
+          selectedStudents: isReviewRoom ? [] : selectedStudents
         });
 
         console.log(`Generated ${instancesGenerated} recurring lesson instances`);
       }
 
       setIsLoading(false);
-      toast.success(`Lesson created successfully${values.isRecurring ? ` with recurring instances` : ''}`);
+      toast.success(
+        isReviewRoom
+          ? 'Review Room session created with recurring weekly instances'
+          : `Lesson created successfully${effectiveIsRecurring ? ` with recurring instances` : ''}`
+      );
       onSuccess();
       onClose();
     } catch (error) {
@@ -351,9 +386,13 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     }}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Lesson</DialogTitle>
+          <DialogTitle>
+            {form.watch('isReviewRoom') ? 'Add Review Room Session' : 'Add New Lesson'}
+          </DialogTitle>
           <DialogDescription>
-            Create a new tutoring session for your students. A video room will be created automatically.
+            {form.watch('isReviewRoom')
+              ? 'Free GCSE revision session — only tutor and time required. Recurs weekly with no end date. A video room is created automatically.'
+              : 'Create a new tutoring session for your students. A video room will be created automatically.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -367,62 +406,87 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="title"
+                name="isReviewRoom"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
+                  <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border-2 border-primary/30 bg-primary/5 p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Review Room Session</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Free GCSE revision — only tutor & time needed. Auto-recurs weekly indefinitely.
+                      </div>
+                    </div>
                     <FormControl>
-                      <Input placeholder="Math Tutoring Session" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subject</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a subject" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {LESSON_SUBJECTS.map((subject) => (
-                          <SelectItem key={subject} value={subject}>
-                            {subject}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Details about the tutoring session"
-                        className="resize-none"
-                        {...field}
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {!form.watch('isReviewRoom') && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Math Tutoring Session" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="subject"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subject</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a subject" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {LESSON_SUBJECTS.map((subject) => (
+                              <SelectItem key={subject} value={subject}>
+                                {subject}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Details about the tutoring session"
+                            className="resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              <div className={cn("grid gap-4", form.watch('isReviewRoom') ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
                 <FormField
                   control={form.control}
                   name="tutorId"
@@ -451,43 +515,47 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                   )}
                 />
 
+                {!form.watch('isReviewRoom') && (
+                  <FormField
+                    control={form.control}
+                    name="isGroup"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
+                        <FormLabel>Group Session</FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              {!form.watch('isReviewRoom') && (
                 <FormField
                   control={form.control}
                   name="isGroup"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
-                      <FormLabel>Group Session</FormLabel>
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Students</FormLabel>
                       <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+                        <MultiSelectStudents
+                          students={students}
+                          selectedStudents={selectedStudents}
+                          onStudentSelect={handleStudentSelect}
+                          onStudentRemove={handleStudentRemove}
+                          placeholder={form.watch('isGroup') ? "Select students for group lesson..." : "Select a student..."}
+                          disabled={isFetchingData}
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="isGroup"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Students</FormLabel>
-                    <FormControl>
-                      <MultiSelectStudents
-                        students={students}
-                        selectedStudents={selectedStudents}
-                        onStudentSelect={handleStudentSelect}
-                        onStudentRemove={handleStudentRemove}
-                        placeholder={form.watch('isGroup') ? "Select students for group lesson..." : "Select a student..."}
-                        disabled={isFetchingData}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
@@ -559,6 +627,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 />
               </div>
 
+              {!form.watch('isReviewRoom') && (
               <div className="space-y-4 border-t pt-4">
                 <FormField
                   control={form.control}
@@ -675,6 +744,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                   </div>
                 )}
               </div>
+              )}
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -713,7 +783,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       {loadingStep}
                     </>
-                  ) : 'Create Lesson'}
+                  ) : (form.watch('isReviewRoom') ? 'Create Review Room Session' : 'Create Lesson')}
                 </Button>
               </DialogFooter>
             </form>
