@@ -222,10 +222,24 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       setIsLoading(true);
       setLoadingStep('Creating lesson...');
 
+      // Apply Review Room defaults / overrides
+      const isReviewRoom = values.isReviewRoom;
+      const effectiveTitle = isReviewRoom ? 'Review Room Session' : (values.title || '');
+      const effectiveSubject = isReviewRoom ? 'Review Room' : (values.subject || '');
+      const effectiveDescription = isReviewRoom
+        ? 'Free GCSE revision session'
+        : (values.description || '');
+      const effectiveIsGroup = isReviewRoom ? true : values.isGroup;
+      // Review Room is always recurring weekly with no end date
+      const effectiveIsRecurring = isReviewRoom ? true : values.isRecurring;
+      const effectiveRecurrenceInterval = isReviewRoom ? 'weekly' : values.recurrenceInterval;
+      const effectiveNoEndDate = isReviewRoom ? true : values.noEndDate;
+      const effectiveRecurrenceEndDate = isReviewRoom ? undefined : values.recurrenceEndDate;
+
       // Create UK local time and convert to UTC for storage
       const ukStartTime = createUKDateTime(values.date, values.startTime);
       const ukEndTime = createUKDateTime(values.date, values.endTime);
-      
+
       const startTime = convertUKToUTC(ukStartTime);
       const endTime = convertUKToUTC(ukEndTime);
 
@@ -237,21 +251,21 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
         .from('lessons')
         .insert([
           {
-            title: values.title,
-            description: values.description || '',
-            subject: values.subject,
+            title: effectiveTitle,
+            description: effectiveDescription,
+            subject: effectiveSubject,
             tutor_id: values.tutorId,
             start_time: startTime.toISOString(),
             end_time: endTime.toISOString(),
-            is_group: values.isGroup,
+            is_group: effectiveIsGroup,
             status: 'scheduled',
-            is_recurring: values.isRecurring,
+            is_recurring: effectiveIsRecurring,
             is_recurring_instance: false,
             parent_lesson_id: null,
             instance_date: null,
-            recurrence_interval: values.isRecurring ? values.recurrenceInterval : null,
-            recurrence_end_date: values.isRecurring && values.recurrenceEndDate && !values.noEndDate ? values.recurrenceEndDate.toISOString() : null,
-            recurrence_day: values.isRecurring ? dayName : null,
+            recurrence_interval: effectiveIsRecurring ? effectiveRecurrenceInterval : null,
+            recurrence_end_date: effectiveIsRecurring && effectiveRecurrenceEndDate && !effectiveNoEndDate ? effectiveRecurrenceEndDate.toISOString() : null,
+            recurrence_day: effectiveIsRecurring ? dayName : null,
           },
         ])
         .select()
@@ -260,10 +274,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
 
       const newLessonId = lessonData?.[0]?.id;
 
-      setLoadingStep('Adding students...');
-
-      // Add students to the original lesson
-      if (newLessonId && selectedStudents.length > 0) {
+      // Add students to the original lesson (skipped for Review Room — none selected)
+      if (newLessonId && !isReviewRoom && selectedStudents.length > 0) {
+        setLoadingStep('Adding students...');
         const lessonStudentsData = selectedStudents.map(studentId => ({
           lesson_id: newLessonId,
           student_id: studentId
@@ -280,39 +293,42 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       if (newLessonId) {
         try {
           setLoadingStep('Creating video room...');
-          const roomData = await createLessonSpaceRoom(newLessonId, values.tutorId, values.isGroup);
+          const roomData = await createLessonSpaceRoom(newLessonId, values.tutorId, effectiveIsGroup);
           console.log('Room created successfully:', roomData);
         } catch (roomError) {
           console.error('Room creation failed:', roomError);
-          // Don't fail the entire lesson creation if room creation fails
           toast.error('Lesson created but video room creation failed. You can create it manually later.');
         }
       }
 
       // Generate recurring instances if this is a recurring lesson
-      if (values.isRecurring && newLessonId) {
+      if (effectiveIsRecurring && newLessonId) {
         setLoadingStep('Generating recurring lessons...');
-        
+
         const instancesGenerated = await generateRecurringLessonInstances({
           originalLessonId: newLessonId,
-          title: values.title,
-          description: values.description,
-          subject: values.subject,
+          title: effectiveTitle,
+          description: effectiveDescription,
+          subject: effectiveSubject,
           tutorId: values.tutorId,
           startTime,
           endTime,
-          isGroup: values.isGroup,
-          recurrenceInterval: values.recurrenceInterval as any,
-          recurrenceEndDate: values.recurrenceEndDate,
-          isInfinite: values.noEndDate,
-          selectedStudents
+          isGroup: effectiveIsGroup,
+          recurrenceInterval: effectiveRecurrenceInterval as any,
+          recurrenceEndDate: effectiveRecurrenceEndDate,
+          isInfinite: effectiveNoEndDate,
+          selectedStudents: isReviewRoom ? [] : selectedStudents
         });
 
         console.log(`Generated ${instancesGenerated} recurring lesson instances`);
       }
 
       setIsLoading(false);
-      toast.success(`Lesson created successfully${values.isRecurring ? ` with recurring instances` : ''}`);
+      toast.success(
+        isReviewRoom
+          ? 'Review Room session created with recurring weekly instances'
+          : `Lesson created successfully${effectiveIsRecurring ? ` with recurring instances` : ''}`
+      );
       onSuccess();
       onClose();
     } catch (error) {
