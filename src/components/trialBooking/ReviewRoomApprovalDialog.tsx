@@ -90,7 +90,7 @@ const ReviewRoomApprovalDialog: React.FC<Props> = ({ isOpen, onClose, bookings, 
       <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
+            <Sparkles className="h-5 w-5 text-primary" />
             Approve Review Room Sessions
           </DialogTitle>
         </DialogHeader>
@@ -137,7 +137,7 @@ const ReviewRoomApprovalDialog: React.FC<Props> = ({ isOpen, onClose, bookings, 
                         {b.preferred_time?.slice(0, 5) || '—'}
                       </div>
                     </div>
-                    <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">
+                    <Badge variant="outline" className="bg-accent/30 text-accent-foreground border-accent">
                       Pending
                     </Badge>
                   </label>
@@ -151,7 +151,7 @@ const ReviewRoomApprovalDialog: React.FC<Props> = ({ isOpen, onClose, bookings, 
             </div>
           </div>
 
-          <div className="rounded-lg bg-purple-50 border border-purple-200 p-3 text-xs text-purple-900">
+          <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-xs text-foreground">
             On approval we'll add {head.child_name} to each selected Review Room lesson on the
             calendar and send <strong>one combined</strong> email + WhatsApp message to the parent
             with the Lessonspace link and a warm welcome.
@@ -165,7 +165,7 @@ const ReviewRoomApprovalDialog: React.FC<Props> = ({ isOpen, onClose, bookings, 
           <Button
             onClick={handleApprove}
             disabled={submitting || selectedIds.length === 0}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Approve & Notify Parent
