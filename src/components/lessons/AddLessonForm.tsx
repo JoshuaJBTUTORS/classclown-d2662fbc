@@ -130,6 +130,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       startTime: "",
       endTime: "",
       isGroup: false,
+      isReviewRoom: false,
       isRecurring: false,
       recurrenceInterval: "",
       recurrenceEndDate: undefined,
