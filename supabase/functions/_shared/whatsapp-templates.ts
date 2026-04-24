@@ -76,6 +76,36 @@ Class Beyond Team 🎓
     `.trim();
   },
 
+  reviewRoomApproval: (
+    parentName: string,
+    childName: string,
+    sessions: { date: string; time: string }[],
+    studentLessonLink: string,
+  ) => {
+    const sessionLines = sessions
+      .map((s) => `• ${s.date} at ${s.time}`)
+      .join('\n');
+    return `
+🎉 Review Room Confirmed! 🎉
+
+Hi ${parentName}!
+
+We're so excited to see ${childName} in The Review Room! Your sessions are confirmed:
+
+${sessionLines}
+
+🔗 Join here (same link for every session):
+${studentLessonLink}
+
+Please save this link — you'll use it for each of the sessions above. Just click in a few minutes before each session starts.
+
+Any questions? Just reply to this message.
+
+See you soon!
+Class Beyond Team 🎓
+    `.trim();
+  },
+
   trialLessonApproval: (parentName: string, childName: string, subject: string, lessonDate: string, lessonTime: string, studentLessonLink: string) => `
 🎉 Trial Lesson Confirmed! 🎉
 
