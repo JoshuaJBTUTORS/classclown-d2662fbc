@@ -247,6 +247,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
       const dayName = values.date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
       // Create the original lesson
+      const REVIEW_ROOM_URL = 'https://www.thelessonspace.com/space/3b3388bf-7e1f-4276-9f37-de5b17053e84';
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
         .insert([
@@ -266,6 +267,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
             recurrence_interval: effectiveIsRecurring ? effectiveRecurrenceInterval : null,
             recurrence_end_date: effectiveIsRecurring && effectiveRecurrenceEndDate && !effectiveNoEndDate ? effectiveRecurrenceEndDate.toISOString() : null,
             recurrence_day: effectiveIsRecurring ? dayName : null,
+            ...(isReviewRoom ? { lesson_space_room_url: REVIEW_ROOM_URL } : {}),
           },
         ])
         .select()
@@ -289,8 +291,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
         if (studentsError) throw studentsError;
       }
 
-      // Automatically create LessonSpace room for the lesson
-      if (newLessonId) {
+      // Automatically create LessonSpace room for the lesson (skipped for Review Room — uses shared link)
+      if (newLessonId && !isReviewRoom) {
         try {
           setLoadingStep('Creating video room...');
           const roomData = await createLessonSpaceRoom(newLessonId, values.tutorId, effectiveIsGroup);

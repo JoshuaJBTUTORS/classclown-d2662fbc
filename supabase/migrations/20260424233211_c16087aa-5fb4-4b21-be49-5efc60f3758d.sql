@@ -1,0 +1,1 @@
+UPDATE lessons SET lesson_space_room_url = 'https://www.thelessonspace.com/space/3b3388bf-7e1f-4276-9f37-de5b17053e84' WHERE LOWER(subject) LIKE '%review room%';
