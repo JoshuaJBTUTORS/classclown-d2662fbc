@@ -391,7 +391,9 @@ export const useCalendarData = ({
             } else if (filters.selectedLessonType === 'Demo Lessons') {
               filteredData = filteredData.filter(lesson => lesson.lesson_type === 'demo');
             } else if (filters.selectedLessonType === 'Full Lessons') {
-              filteredData = filteredData.filter(lesson => lesson.lesson_type !== 'trial' && lesson.lesson_type !== 'demo' || lesson.lesson_type == null);
+              filteredData = filteredData.filter(lesson => (lesson.lesson_type !== 'trial' && lesson.lesson_type !== 'demo' || lesson.lesson_type == null) && !(lesson.subject || '').toLowerCase().includes('review room'));
+            } else if (filters.selectedLessonType === 'Review Room') {
+              filteredData = filteredData.filter(lesson => (lesson.subject || '').toLowerCase().includes('review room'));
             }
           }
 

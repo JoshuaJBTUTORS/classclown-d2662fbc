@@ -497,6 +497,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <SelectItem value="Full Lessons">Full Lessons</SelectItem>
               <SelectItem value="Trial Lessons">Trial Lessons</SelectItem>
               <SelectItem value="Demo Lessons">Demo Lessons</SelectItem>
+              <SelectItem value="Review Room">Review Room</SelectItem>
             </SelectContent>
           </Select>
         </div>
