@@ -486,7 +486,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 </>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className={cn("grid gap-4", form.watch('isReviewRoom') ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
                 <FormField
                   control={form.control}
                   name="tutorId"
@@ -515,43 +515,47 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                   )}
                 />
 
+                {!form.watch('isReviewRoom') && (
+                  <FormField
+                    control={form.control}
+                    name="isGroup"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
+                        <FormLabel>Group Session</FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              {!form.watch('isReviewRoom') && (
                 <FormField
                   control={form.control}
                   name="isGroup"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
-                      <FormLabel>Group Session</FormLabel>
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Students</FormLabel>
                       <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+                        <MultiSelectStudents
+                          students={students}
+                          selectedStudents={selectedStudents}
+                          onStudentSelect={handleStudentSelect}
+                          onStudentRemove={handleStudentRemove}
+                          placeholder={form.watch('isGroup') ? "Select students for group lesson..." : "Select a student..."}
+                          disabled={isFetchingData}
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="isGroup"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Students</FormLabel>
-                    <FormControl>
-                      <MultiSelectStudents
-                        students={students}
-                        selectedStudents={selectedStudents}
-                        onStudentSelect={handleStudentSelect}
-                        onStudentRemove={handleStudentRemove}
-                        placeholder={form.watch('isGroup') ? "Select students for group lesson..." : "Select a student..."}
-                        disabled={isFetchingData}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
