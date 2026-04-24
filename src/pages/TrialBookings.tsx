@@ -722,6 +722,19 @@ const TrialBookings = () => {
         onApprovalComplete={handleApprovalComplete}
         admins={admins}
       />
+
+      {/* Review Room Bulk Approval */}
+      {reviewRoomGroup && (
+        <ReviewRoomApprovalDialog
+          isOpen={!!reviewRoomGroup}
+          onClose={() => setReviewRoomGroup(null)}
+          bookings={reviewRoomGroup as any}
+          onComplete={() => {
+            setReviewRoomGroup(null);
+            fetchBookings();
+          }}
+        />
+      )}
     </>
   );
 };
