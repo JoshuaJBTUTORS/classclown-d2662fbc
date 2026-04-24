@@ -64,34 +64,52 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
   const [isFetchingData, setIsFetchingData] = useState(false);
 
   const formSchema = z.object({
-    title: z.string().min(1, { message: "Title is required" }),
+    title: z.string().optional(),
     description: z.string().optional(),
-    subject: z.string().min(1, { message: "Subject is required" }),
+    subject: z.string().optional(),
     tutorId: z.string().min(1, { message: "Tutor is required" }),
     date: z.date({ required_error: "Date is required" }),
     startTime: z.string().min(1, { message: "Start time is required" }),
     endTime: z.string().min(1, { message: "End time is required" }),
     isGroup: z.boolean().default(false),
+    isReviewRoom: z.boolean().default(false),
     isRecurring: z.boolean().default(false),
     recurrenceInterval: z.string().optional(),
     recurrenceEndDate: z.date().optional(),
     noEndDate: z.boolean().default(false),
   }).refine(data => {
+    // Title and subject required only when NOT a review room session
+    if (data.isReviewRoom) return true;
+    return !!data.title && data.title.length > 0;
+  }, {
+    message: "Title is required",
+    path: ["title"],
+  }).refine(data => {
+    if (data.isReviewRoom) return true;
+    return !!data.subject && data.subject.length > 0;
+  }, {
+    message: "Subject is required",
+    path: ["subject"],
+  }).refine(data => {
+    if (data.isReviewRoom) return true;
     return !data.isGroup || (data.isGroup && selectedStudents.length > 0);
   }, {
     message: "Select at least one student for group sessions",
     path: ["studentIds"],
   }).refine(data => {
+    if (data.isReviewRoom) return true;
     return !data.isRecurring || (data.isRecurring && data.recurrenceInterval);
   }, {
     message: "Recurrence pattern is required for recurring lessons",
     path: ["recurrenceInterval"],
   }).refine(data => {
+    if (data.isReviewRoom) return true;
     return !data.isRecurring || (data.isRecurring && (data.recurrenceEndDate || data.noEndDate));
   }, {
     message: "End date is required for recurring lessons (or select 'No End Date')",
     path: ["recurrenceEndDate"],
   }).refine(data => {
+    if (data.isReviewRoom) return true;
     if (data.isRecurring && data.recurrenceEndDate && data.date && !data.noEndDate) {
       return data.recurrenceEndDate > data.date;
     }
