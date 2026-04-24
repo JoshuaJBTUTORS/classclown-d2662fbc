@@ -627,6 +627,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 />
               </div>
 
+              {!form.watch('isReviewRoom') && (
               <div className="space-y-4 border-t pt-4">
                 <FormField
                   control={form.control}
