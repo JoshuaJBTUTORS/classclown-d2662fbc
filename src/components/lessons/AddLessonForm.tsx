@@ -386,9 +386,13 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     }}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Lesson</DialogTitle>
+          <DialogTitle>
+            {form.watch('isReviewRoom') ? 'Add Review Room Session' : 'Add New Lesson'}
+          </DialogTitle>
           <DialogDescription>
-            Create a new tutoring session for your students. A video room will be created automatically.
+            {form.watch('isReviewRoom')
+              ? 'Free GCSE revision session — only tutor and time required. Recurs weekly with no end date. A video room is created automatically.'
+              : 'Create a new tutoring session for your students. A video room will be created automatically.'}
           </DialogDescription>
         </DialogHeader>
 
