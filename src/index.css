@@ -1372,6 +1372,12 @@
   background: hsl(var(--trial-color)) !important;
 }
 
+.fc-event.review-room-event {
+  background: linear-gradient(135deg, hsl(280 65% 45%), hsl(260 70% 55%)) !important;
+  color: white !important;
+  border: 1px solid hsl(280 65% 35%) !important;
+}
+
 .fc-event.demo-session {
   background: hsl(0 0% 20%) !important; /* Dark gray/black */
   color: white !important;
