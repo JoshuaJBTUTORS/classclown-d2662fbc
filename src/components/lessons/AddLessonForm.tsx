@@ -783,7 +783,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       {loadingStep}
                     </>
-                  ) : 'Create Lesson'}
+                  ) : (form.watch('isReviewRoom') ? 'Create Review Room Session' : 'Create Lesson')}
                 </Button>
               </DialogFooter>
             </form>
