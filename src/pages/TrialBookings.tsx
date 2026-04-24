@@ -359,7 +359,9 @@ const TrialBookings = () => {
                       <TableHead>Parent Name</TableHead>
                       <TableHead>Child Name</TableHead>
                       <TableHead>Contact</TableHead>
-                      <TableHead>Preferred Date</TableHead>
+                      <TableHead>
+                        {sourceTab === 'review_room' ? 'Sessions' : 'Preferred Date'}
+                      </TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Submitted</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -372,6 +374,158 @@ const TrialBookings = () => {
                           Loading trial bookings...
                         </TableCell>
                       </TableRow>
+                    ) : sourceTab === 'review_room' ? (
+                      (() => {
+                        // Group by lowercased email
+                        const groups = new Map<string, TrialBooking[]>();
+                        for (const b of filteredBookings) {
+                          const key = (b.email || '').toLowerCase();
+                          if (!groups.has(key)) groups.set(key, []);
+                          groups.get(key)!.push(b);
+                        }
+                        const groupArr = Array.from(groups.values()).sort((a, b) =>
+                          (a[0].parent_name || '').localeCompare(b[0].parent_name || ''),
+                        );
+
+                        if (groupArr.length === 0) {
+                          return (
+                            <TableRow>
+                              <TableCell colSpan={7} className="h-24 text-center">
+                                No Review Room bookings found
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+
+                        return groupArr.map((group) => {
+                          const head = group[0];
+                          const pendingCount = group.filter((g) => g.status === 'pending').length;
+                          const approvedCount = group.filter((g) => g.status === 'approved').length;
+                          const rejectedCount = group.filter((g) => g.status === 'rejected').length;
+                          const aggregateStatus =
+                            pendingCount > 0
+                              ? 'pending'
+                              : approvedCount > 0
+                                ? 'approved'
+                                : rejectedCount > 0
+                                  ? 'rejected'
+                                  : group[0].status;
+
+                          const sortedSessions = [...group].sort((a, b) =>
+                            `${a.preferred_date}${a.preferred_time}`.localeCompare(
+                              `${b.preferred_date}${b.preferred_time}`,
+                            ),
+                          );
+
+                          return (
+                            <TableRow key={`grp-${head.email}`}>
+                              <TableCell className="font-medium">{head.parent_name}</TableCell>
+                              <TableCell>{head.child_name}</TableCell>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <Mail className="h-3 w-3" />
+                                    {head.email}
+                                  </div>
+                                  {head.phone && (
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                      <Phone className="h-3 w-3" />
+                                      {head.phone}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1 max-w-[260px]">
+                                  <span className="text-xs text-muted-foreground">
+                                    {group.length} session{group.length === 1 ? '' : 's'}
+                                  </span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {sortedSessions.slice(0, 4).map((s) => (
+                                      <Badge
+                                        key={s.id}
+                                        variant="outline"
+                                        className={cn(
+                                          'text-[10px] font-normal',
+                                          s.status === 'approved' && 'border-green-300 bg-green-50 text-green-800',
+                                          s.status === 'rejected' && 'border-red-300 bg-red-50 text-red-700 line-through',
+                                          s.status === 'pending' && 'border-yellow-300 bg-yellow-50 text-yellow-800',
+                                        )}
+                                      >
+                                        {s.preferred_date
+                                          ? format(parseISO(s.preferred_date), 'MMM d')
+                                          : '?'}{' '}
+                                        {s.preferred_time?.slice(0, 5)}
+                                      </Badge>
+                                    ))}
+                                    {sortedSessions.length > 4 && (
+                                      <Badge variant="outline" className="text-[10px] font-normal">
+                                        +{sortedSessions.length - 4} more
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  <Badge className={getStatusColor(aggregateStatus)}>
+                                    {aggregateStatus.charAt(0).toUpperCase() + aggregateStatus.slice(1)}
+                                  </Badge>
+                                  {(approvedCount > 0 || rejectedCount > 0) && pendingCount > 0 && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {pendingCount} pending · {approvedCount} approved
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <span>{format(parseISO(head.created_at), 'MMM d, yyyy')}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => viewBookingDetails(head)}
+                                    title="View first session details"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {pendingCount > 0 && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setReviewRoomGroup(group)}
+                                        className="text-green-600 hover:text-green-800"
+                                        title={`Approve ${pendingCount} session${pendingCount === 1 ? '' : 's'}`}
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={async () => {
+                                          for (const s of group.filter((g) => g.status === 'pending')) {
+                                            await updateBookingStatus(s.id, 'rejected');
+                                          }
+                                        }}
+                                        className="text-red-600 hover:text-red-800"
+                                        title="Reject all pending"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        });
+                      })()
                     ) : filteredBookings.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
