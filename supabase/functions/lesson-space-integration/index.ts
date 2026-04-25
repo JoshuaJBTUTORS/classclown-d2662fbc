@@ -156,6 +156,35 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       throw new Error(`Failed to fetch lesson details: ${lessonError?.message}`);
     }
 
+    // 🛡️ Review Room lessons ALWAYS use the fixed shared link.
+    // Never call LessonSpace API or overwrite lesson_space_room_url for these.
+    if (lesson.lesson_type === 'review_room') {
+      const REVIEW_ROOM_FIXED_URL = 'https://www.thelessonspace.com/space/3b3388bf-7e1f-4276-9f37-de5b17053e84';
+      console.log(`[${rid.substring(0, 8)}] 🛡️ Review Room detected — skipping room creation, enforcing fixed shared URL`);
+
+      await supabase
+        .from("lessons")
+        .update({
+          lesson_space_room_url: REVIEW_ROOM_FIXED_URL,
+          lesson_space_room_id: null,
+          lesson_space_space_id: null,
+          lesson_space_session_id: null,
+        })
+        .eq("id", data.lessonId);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: 'review_room_fixed_url',
+          roomUrl: REVIEW_ROOM_FIXED_URL,
+          message: 'Review Room lessons always use the shared Lessonspace URL. No per-tutor/per-student URL generated.',
+          rid,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!lesson.lesson_students || lesson.lesson_students.length === 0) {
       console.error(`[${rid.substring(0, 8)}] ❌ No students found | stage: ${stage} | lessonId: ${data.lessonId}`);
       throw new Error("No students found for this lesson");
