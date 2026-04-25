@@ -90,6 +90,7 @@ serve(async (req) => {
     console.log(`📅 Date range: ${weekStartStr} to ${weekEndStr}`);
 
     // Fetch all lessons for the current week with participant data
+    // 🛡️ Exclude review_room lessons — they always use the shared fixed URL
     const { data: lessons, error: lessonsError } = await supabase
       .from('lessons')
       .select(`
@@ -98,6 +99,7 @@ serve(async (req) => {
         start_time,
         end_time,
         tutor_id,
+        lesson_type,
         lesson_space_room_id,
         tutors!inner (
           id,
@@ -115,6 +117,7 @@ serve(async (req) => {
           )
         )
       `)
+      .neq('lesson_type', 'review_room')
       .gte('start_time', weekStartStr)
       .lt('start_time', weekEndStr)
       .eq('status', 'scheduled');
