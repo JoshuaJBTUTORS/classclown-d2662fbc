@@ -448,4 +448,37 @@ If you're having any difficulties, contact your tutor for support.
 Best regards,
 Class Beyond Team 🎯`;
   },
+
+  reviewRoomReminder: ({
+    parentName,
+    childName,
+    lessonDate,
+    lessonTime,
+    lessonUrl,
+    isToday,
+  }: {
+    parentName: string;
+    childName: string;
+    lessonDate: string;
+    lessonTime: string;
+    lessonUrl: string;
+    isToday: boolean;
+  }) => `✨ Class Beyond - Review Room Reminder
+
+Hi ${parentName}!
+
+Just a quick reminder that ${childName}'s Review Room session is ${isToday ? 'today' : 'tomorrow'}. We're excited to see them there! 🎉
+
+📅 ${lessonDate}
+⏰ ${lessonTime}
+
+🔗 Join the Review Room here:
+${lessonUrl}
+
+📹 Please ensure the camera stays on throughout the session.
+
+Any questions, just reply to this message.
+
+Best,
+Class Beyond Team 🎯`,
 };
