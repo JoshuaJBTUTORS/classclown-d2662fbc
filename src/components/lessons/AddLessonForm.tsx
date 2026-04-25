@@ -267,7 +267,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
             recurrence_interval: effectiveIsRecurring ? effectiveRecurrenceInterval : null,
             recurrence_end_date: effectiveIsRecurring && effectiveRecurrenceEndDate && !effectiveNoEndDate ? effectiveRecurrenceEndDate.toISOString() : null,
             recurrence_day: effectiveIsRecurring ? dayName : null,
-            ...(isReviewRoom ? { lesson_space_room_url: REVIEW_ROOM_URL } : {}),
+            ...(isReviewRoom
+              ? { lesson_type: 'review_room', lesson_space_room_url: REVIEW_ROOM_URL }
+              : {}),
           },
         ])
         .select()
