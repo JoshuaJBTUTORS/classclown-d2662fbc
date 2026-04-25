@@ -560,6 +560,7 @@ async function addStudentsToRoom(data: any, supabase: any) {
     const { data: lesson, error: lessonError } = await supabase
       .from("lessons")
       .select(`
+        lesson_type,
         lesson_space_space_id,
         lesson_students(
           student:students(id, first_name, last_name, email)
@@ -568,7 +569,26 @@ async function addStudentsToRoom(data: any, supabase: any) {
       .eq("id", lessonId)
       .single();
 
-    if (lessonError || !lesson?.lesson_space_space_id) {
+    if (lessonError) {
+      throw new Error(`Failed to fetch lesson: ${lessonError.message}`);
+    }
+
+    // 🛡️ Review Room lessons always use the shared link — never generate per-student URLs.
+    if (lesson?.lesson_type === 'review_room') {
+      console.log(`🛡️ Review Room lesson ${lessonId} — skipping student URL generation (shared link is used)`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: 'review_room_fixed_url',
+          newStudentUrlsCreated: 0,
+          message: 'Review Room lessons use the shared Lessonspace URL; no per-student URLs are generated.',
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!lesson?.lesson_space_space_id) {
       throw new Error("Lesson space not found or not created yet");
     }
 
