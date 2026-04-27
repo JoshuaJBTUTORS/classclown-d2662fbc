@@ -557,24 +557,75 @@ serve(async (req) => {
       }
     }
 
+    // ============================================================
+    // Fan-out: if more than one recipient was resolved (ambiguous match),
+    // send the same overdue reminder to every additional family on the lesson.
+    // ============================================================
+    const extraSends: Array<Record<string, unknown>> = [];
+    for (let i = 1; i < recipients.length; i++) {
+      const r = recipients[i];
+      const sName = `${r.student.first_name || ""} ${r.student.last_name || ""}`.trim();
+      const sent = { student_email: false, student_whatsapp: false, parent_email: false, parent_whatsapp: false };
+
+      if (r.student.phone) {
+        sent.student_whatsapp = await sendWhatsAppMessage(
+          r.student.phone,
+          WhatsAppTemplates.overdueHomeworkReminder(r.student.first_name || "", sName, payload.homework_title, true)
+        );
+      }
+      if (r.parent?.phone) {
+        sent.parent_whatsapp = await sendWhatsAppMessage(
+          r.parent.phone,
+          WhatsAppTemplates.overdueHomeworkReminder(r.parent.first_name, sName, payload.homework_title, false)
+        );
+      }
+      if (resend && r.student.email) {
+        try {
+          await resend.emails.send({
+            from: "Class Beyond <notifications@classbeyond.online>",
+            to: [r.student.email],
+            subject: `⚠️ Homework Overdue: ${payload.homework_title}`,
+            html: generateOverdueEmailHtml(r.student.first_name || "", sName, payload.homework_title, true),
+          });
+          sent.student_email = true;
+        } catch (e) { console.error("Fan-out student email failed:", e); }
+      }
+      if (resend && r.parent?.email) {
+        try {
+          await resend.emails.send({
+            from: "Class Beyond <notifications@classbeyond.online>",
+            to: [r.parent.email],
+            subject: `⚠️ Homework Overdue: ${payload.homework_title} - ${sName}`,
+            html: generateOverdueEmailHtml(r.parent.first_name, sName, payload.homework_title, false),
+          });
+          sent.parent_email = true;
+        } catch (e) { console.error("Fan-out parent email failed:", e); }
+      }
+      extraSends.push({ student_id: r.student.id, student_name: sName, sent });
+    }
+
     // Log notification in the notifications table
-    const notificationCount = Object.values(notificationsSent).filter(Boolean).length;
+    const notificationCount = Object.values(notificationsSent).filter(Boolean).length
+      + extraSends.reduce((acc, e: any) => acc + Object.values(e.sent).filter(Boolean).length, 0);
     if (notificationCount > 0) {
       await supabase.from("notifications").insert({
         type: "homework_overdue",
         subject: `Overdue homework reminder: ${payload.homework_title}`,
-        email: student.email,
+        email: student.email || parent?.email || payload.student_email,
         status: "sent",
         metadata: {
           student_id: student.id,
           student_name: studentName,
           homework_title: payload.homework_title,
           notifications_sent: notificationsSent,
+          resolution_path: resolutionPath,
+          ambiguous_match: ambiguousMatch,
+          fanout_recipients: extraSends,
         },
       });
     }
 
-    console.log("Overdue reminder complete:", notificationsSent);
+    console.log("Overdue reminder complete:", { resolutionPath, ambiguousMatch, primary: notificationsSent, extras: extraSends.length });
 
     return new Response(
       JSON.stringify({
