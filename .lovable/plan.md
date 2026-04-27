@@ -1,83 +1,52 @@
-# Review Room: Grouped Approval Flow
+## Approach: work backwards from the homework, not from email
 
-## Goal
+You're right — the homework is already linked to a lesson, and the lesson already has its students attached, and each student is linked to their parent. We have all the contact info we need without trying to match the payload's `student_email` (which is actually the Learning Hub login email — often the parent's).
 
-When viewing the **Review Room** tab in `/trial-bookings`, all sessions booked by the same parent appear as a **single grouped row** with one approval action. Approving once will:
+I verified this with the actual failing payloads. For "Density" (Monica Nwankwo's payload), the homework lookup returns **3 enrolled students** with all their parent emails/phones populated. Same for the other 3 failing payloads — every one has full parent contact data reachable via the lesson.
 
-1. Find/create the student record for that parent's child
-2. For each selected session in the group, add the student to the matching existing Review Room lesson on the calendar
-3. Mark all the booking rows as `approved`
-4. Send **one** combined email + WhatsApp message to the parent with the Lessonspace link and an "excited to see you" message listing all their booked sessions
+## New webhook flow
 
-Trial-lesson bookings (non-Review Room) keep the existing per-row flow.
+In `supabase/functions/heycleo-homework-webhook/index.ts`, replace the current student-by-email lookup with this:
 
----
+1. **Find the homework by title.** HeyCleo sends `homework_title`. Look up the most recent matching `homework` row:
+   ```
+   homework where title ILIKE payload.homework_title
+   order by created_at desc limit 1
+   ```
+   If multiple titles match, prefer the one whose lesson is on or just before today (overdue means the lesson already passed).
 
-## UX Changes (`src/pages/TrialBookings.tsx`)
+2. **Load the full enrolment chain in one query:**
+   ```
+   homework -> lessons -> lesson_students -> students -> parents
+   ```
+   Returns every student on that lesson, plus their parent's email/phone/name.
 
-When the **Review Room** tab is active, switch the table from one-row-per-booking to **one-row-per-parent-email**:
+3. **Pick the right student** using the payload's `student_email` / `student_name`:
+   - If `student_email` matches a `students.email` OR a `parents.email` in the result set → use that student.
+   - Else if `student_name` matches a student's `first_name + last_name` (case-insensitive) → use that student.
+   - Else if the lesson has only one student → use that student.
+   - Else: log a warning, fall back to notifying **every** parent on the lesson (safer than dropping the reminder entirely) and tag the notification metadata as `ambiguous_match: true` so an admin can review.
 
-- **Columns**: Parent | Child | Contact | Sessions (count + expandable list of date/time chips) | Status (aggregate: Pending if any pending, else Approved/Rejected) | Actions
-- **Expandable detail**: clicking the row reveals each session with its individual status + an "X" to reject just that one session
-- **Bulk Approve button** (green tick icon) on the row: opens a new `ReviewRoomApprovalDialog`
-- **Bulk Reject** (X icon): rejects all pending sessions in the group
-- Day-tab filter (Sat 25 Apr / Sun 26 Apr / etc.) keeps working — when a day is selected, groups only include sessions on that day, but the bulk action still operates on all that parent's sessions for that day filter.
+4. **Send notifications** to that student's contacts (unchanged from current logic):
+   - Student WhatsApp / email if `students.phone` / `students.email` exist
+   - Parent WhatsApp / email if `parents.phone` / `parents.email` exist
 
-Trial Lessons tab is untouched.
+5. **Fallback** — if no homework row matches the title at all, still try the old email-based lookup (now using `.maybeSingle()` against both `students` and `parents`) so we don't regress on edge cases.
 
-## New Component: `ReviewRoomApprovalDialog.tsx`
+## Code changes
 
-Located at `src/components/trialBooking/ReviewRoomApprovalDialog.tsx`. Shows:
-- Parent + child details, contact info, exam board / tier (from `message`)
-- A checklist of all the parent's pending Review Room sessions (date + time), all checked by default — admin can uncheck to skip individual sessions
-- "Approve & Notify" button
+Single file: `supabase/functions/heycleo-homework-webhook/index.ts`
 
-On confirm → calls a new service `approveReviewRoomBookings({ groupedBookings, sessionIds })`.
+Replace lines ~268–300 (the `students` lookup + parent lookup) with the new homework-first resolution. Everything below it (WhatsApp / email send blocks) stays the same — they already handle "parent only" or "student only" correctly because each is guarded by `if (student.phone)`, `if (parent?.email)`, etc.
 
-## New Service: `src/services/reviewRoomApprovalService.ts`
+Also small cleanups while we're in there:
+- Switch all `.single()` calls to `.maybeSingle()` so missing rows don't log as `PGRST116` errors
+- Add clearer console logs at each resolution step (`"Resolved via lesson enrolment"`, `"Resolved via parent email"`, etc.)
 
-For the selected group:
+## Verification after deploy
 
-1. **Resolve student**: lookup `students` by `email`. If none, create a standalone student (`account_type: 'trial'`, `parent_id: null`, name from `child_name`) — same pattern as `trialLessonService.ts`.
+1. Replay one of the failing payloads (e.g. Monica Nwankwo / Density) via `supabase--curl_edge_functions`
+2. Check the logs show `Resolved via lesson enrolment -> Justice Okereke` and `notifications_sent.parent_email = true`
+3. Confirm a row appears in the `notifications` table with `type = 'homework_overdue'`
 
-2. **For each selected booking**:
-   - Find the matching lesson in `lessons` where `subject ILIKE '%review room%'` AND the lesson's start time matches the booking's `preferred_date` + `preferred_time` (matched against UK local wall-clock — sessions exist as recurring rows on every weekend slot).
-   - Insert into `lesson_students` (lesson_id, student_id) — ignore if duplicate.
-   - Update `trial_bookings` row: `status = 'approved'`, `approved_at`, `lesson_id`, `approved_by` (current user).
-
-3. **Send one combined approval notification** by invoking a new edge function `send-review-room-approval` with:
-   - parent + child name, email, phone
-   - sessions array `[{date, time}]` (the ones approved)
-   - the static Lessonspace link `https://www.thelessonspace.com/space/3b3388bf-7e1f-4276-9f37-de5b17053e84`
-
-## New Edge Function: `supabase/functions/send-review-room-approval/index.ts`
-
-Mirrors `send-trial-lesson-approval` structure:
-- React Email template `_templates/review-room-approval-email.tsx` listing all sessions, the Lessonspace link button, and an excited welcome message ("We're so excited to see [child] in The Review Room…")
-- Sends email via Resend from `enquiries@classbeyondacademy.io`
-- Sends WhatsApp via existing `whatsappService` + a new template method `WhatsAppTemplates.reviewRoomApproval(parentName, childName, sessions, link)` added to `supabase/functions/_shared/whatsapp-templates.ts`
-
-## Lesson-matching Logic (key detail)
-
-Bookings store `preferred_date` (e.g. `2026-04-26`) and `preferred_time` as a wall-clock string (e.g. `10:00:00`). Calendar lessons are stored in UTC. We'll match by:
-
-- Constructing a UK-local datetime from booking date+time
-- Converting to UTC and finding the lesson with the same `start_time` AND `subject ILIKE '%review room%'`
-
-If no matching lesson exists for a given session, we surface it as a per-row warning in the dialog and skip that one (still approve the others).
-
----
-
-## Files
-
-**New:**
-- `src/components/trialBooking/ReviewRoomApprovalDialog.tsx`
-- `src/services/reviewRoomApprovalService.ts`
-- `supabase/functions/send-review-room-approval/index.ts`
-- `supabase/functions/send-review-room-approval/_templates/review-room-approval-email.tsx`
-
-**Edited:**
-- `src/pages/TrialBookings.tsx` — grouped rendering for review_room tab + open new dialog
-- `supabase/functions/_shared/whatsapp-templates.ts` — add `reviewRoomApproval` template
-
-No DB migration required (existing `trial_bookings` columns cover everything).
+No DB schema changes, no migrations — just an edge-function rewrite of the lookup.
