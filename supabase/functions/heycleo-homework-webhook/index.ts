@@ -265,39 +265,221 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-    // Look up the student by email
-    const { data: student, error: studentError } = await supabase
-      .from("students")
-      .select("id, first_name, last_name, email, phone, parent_id")
-      .eq("email", payload.student_email)
+    // ============================================================
+    // Resolve recipients by walking: homework -> lesson -> students -> parents
+    // The payload's student_email is often the Learning Hub login (parent's email),
+    // so we don't trust it as a primary key. Instead, find the homework by title
+    // and load every student enrolled in that lesson with their parent contacts.
+    // ============================================================
+
+    type StudentRow = {
+      id: number;
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+      phone: string | null;
+      parent_id: string | null;
+      parents?: {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+        phone: string | null;
+      } | null;
+    };
+
+    type ResolvedRecipient = {
+      student: StudentRow;
+      parent: { id: string; first_name: string; last_name: string; email: string; phone: string } | null;
+    };
+
+    const buildRecipient = (s: StudentRow): ResolvedRecipient => ({
+      student: s,
+      parent: s.parents
+        ? {
+            id: s.parents.id,
+            first_name: s.parents.first_name || "",
+            last_name: s.parents.last_name || "",
+            email: s.parents.email || "",
+            phone: s.parents.phone || "",
+          }
+        : null,
+    });
+
+    let recipients: ResolvedRecipient[] = [];
+    let resolutionPath = "unresolved";
+    let ambiguousMatch = false;
+
+    // STEP 1: Find the most recent homework matching the title
+    const { data: homeworkRow } = await supabase
+      .from("homework")
+      .select("id, title, lesson_id, created_at")
+      .ilike("title", payload.homework_title)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (studentError || !student) {
-      console.error("Student not found:", payload.student_email, studentError);
+    if (homeworkRow?.lesson_id) {
+      console.log("Found homework:", homeworkRow.id, "→ lesson:", homeworkRow.lesson_id);
+
+      // STEP 2: Load every student enrolled in that lesson + their parent
+      const { data: lessonStudents, error: lsError } = await supabase
+        .from("lesson_students")
+        .select(`
+          student:students (
+            id, first_name, last_name, email, phone, parent_id,
+            parents:parents!students_parent_id_fkey (
+              id, first_name, last_name, email, phone
+            )
+          )
+        `)
+        .eq("lesson_id", homeworkRow.lesson_id);
+
+      if (lsError) {
+        console.error("Failed to load lesson_students:", lsError);
+      }
+
+      const enrolled: StudentRow[] = (lessonStudents || [])
+        .map((row: any) => row.student)
+        .filter((s: any): s is StudentRow => !!s);
+
+      console.log(`Lesson has ${enrolled.length} enrolled student(s)`);
+
+      if (enrolled.length > 0) {
+        // STEP 3: Pick the right student using payload hints
+        const payloadEmail = payload.student_email.toLowerCase();
+        const payloadName = payload.student_name.toLowerCase().trim();
+
+        // 3a) Match by student email OR parent email
+        let match = enrolled.find(
+          (s) =>
+            (s.email && s.email.toLowerCase() === payloadEmail) ||
+            (s.parents?.email && s.parents.email.toLowerCase() === payloadEmail)
+        );
+
+        if (match) {
+          resolutionPath = "matched_by_email";
+        } else {
+          // 3b) Match by student full name
+          match = enrolled.find((s) => {
+            const fullName = `${s.first_name || ""} ${s.last_name || ""}`.toLowerCase().trim();
+            return fullName === payloadName || (payloadName && fullName.includes(payloadName));
+          });
+          if (match) resolutionPath = "matched_by_name";
+        }
+
+        // 3c) Single-student lesson — unambiguous
+        if (!match && enrolled.length === 1) {
+          match = enrolled[0];
+          resolutionPath = "single_student_lesson";
+        }
+
+        if (match) {
+          recipients = [buildRecipient(match)];
+          console.log(
+            `Resolved via lesson enrolment (${resolutionPath}): ${match.first_name} ${match.last_name} (id=${match.id})`
+          );
+        } else {
+          // 3d) Ambiguous — notify ALL parents on the lesson rather than dropping the reminder
+          ambiguousMatch = true;
+          resolutionPath = "ambiguous_fanout";
+          recipients = enrolled.map(buildRecipient);
+          console.warn(
+            `Ambiguous match for "${payload.student_name}" <${payload.student_email}> on lesson ${homeworkRow.lesson_id}. Fanning out to ${recipients.length} families.`
+          );
+        }
+      }
+    } else {
+      console.log("No homework row matched title:", payload.homework_title);
+    }
+
+    // STEP 4: Fallback — old email-based lookup against students AND parents
+    if (recipients.length === 0) {
+      console.log("Falling back to email-based lookup for:", payload.student_email);
+
+      const { data: studentByEmail } = await supabase
+        .from("students")
+        .select(`
+          id, first_name, last_name, email, phone, parent_id,
+          parents:parents!students_parent_id_fkey (
+            id, first_name, last_name, email, phone
+          )
+        `)
+        .eq("email", payload.student_email)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (studentByEmail) {
+        recipients = [buildRecipient(studentByEmail as StudentRow)];
+        resolutionPath = "fallback_student_email";
+        console.log("Resolved via fallback student email:", studentByEmail.id);
+      } else {
+        // Try parent email → load all their children
+        const { data: parentByEmail } = await supabase
+          .from("parents")
+          .select("id, first_name, last_name, email, phone")
+          .eq("email", payload.student_email)
+          .maybeSingle();
+
+        if (parentByEmail) {
+          const { data: kids } = await supabase
+            .from("students")
+            .select("id, first_name, last_name, email, phone, parent_id")
+            .eq("parent_id", parentByEmail.id);
+
+          if (kids && kids.length > 0) {
+            const payloadName = payload.student_name.toLowerCase().trim();
+            const namedChild = kids.find((k) => {
+              const fn = `${k.first_name || ""} ${k.last_name || ""}`.toLowerCase().trim();
+              return fn === payloadName || (payloadName && fn.includes(payloadName));
+            });
+            const chosen = namedChild || (kids.length === 1 ? kids[0] : null);
+            if (chosen) {
+              recipients = [
+                buildRecipient({ ...(chosen as StudentRow), parents: parentByEmail as any }),
+              ];
+              resolutionPath = "fallback_parent_email";
+              console.log(
+                `Resolved via fallback parent email → child ${chosen.first_name} ${chosen.last_name}`
+              );
+            } else {
+              ambiguousMatch = true;
+              resolutionPath = "fallback_parent_fanout";
+              recipients = kids.map((k) =>
+                buildRecipient({ ...(k as StudentRow), parents: parentByEmail as any })
+              );
+              console.warn(
+                `Parent ${parentByEmail.email} has ${kids.length} children — fanning out reminders.`
+              );
+            }
+          }
+        }
+      }
+    }
+
+    if (recipients.length === 0) {
+      console.error(
+        "Could not resolve any recipient for:",
+        payload.student_email,
+        payload.student_name,
+        payload.homework_title
+      );
       return new Response(
-        JSON.stringify({ success: false, error: "Student not found", details: `No student with email: ${payload.student_email}` }),
+        JSON.stringify({
+          success: false,
+          error: "Recipient not found",
+          details: `No student or parent could be matched for email '${payload.student_email}' / homework '${payload.homework_title}'`,
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Found student:", student.id, student.first_name, student.last_name);
-
-    // Look up parent if available
-    let parent: { id: string; first_name: string; last_name: string; email: string; phone: string } | null = null;
-    if (student.parent_id) {
-      const { data: parentData, error: parentError } = await supabase
-        .from("parents")
-        .select("id, first_name, last_name, email, phone")
-        .eq("id", student.parent_id)
-        .single();
-
-      if (!parentError && parentData) {
-        parent = parentData;
-        console.log("Found parent:", parent.first_name, parent.last_name);
-      }
-    }
+    // Use the first recipient as the "primary" for the existing send blocks below.
+    // (Ambiguous fan-out is handled in a loop after the primary send.)
+    const primary = recipients[0];
+    const student = primary.student as any;
+    const parent = primary.parent;
 
     // Track what notifications were sent
     const notificationsSent = {
