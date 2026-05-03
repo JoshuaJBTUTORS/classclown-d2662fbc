@@ -10,6 +10,8 @@ import { VoiceMinutesManager } from '@/components/admin/VoiceMinutesManager';
 import { StripeMetricsCard } from '@/components/admin/StripeMetricsCard';
 
 const AdminDashboard = () => {
+  const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
