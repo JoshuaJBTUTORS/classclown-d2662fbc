@@ -1,52 +1,59 @@
-## Approach: work backwards from the homework, not from email
+## Goal
 
-You're right — the homework is already linked to a lesson, and the lesson already has its students attached, and each student is linked to their parent. We have all the contact info we need without trying to match the payload's `student_email` (which is actually the Learning Hub login email — often the parent's).
+Add a "Stripe Metrics" section to `/admin-dashboard` that shows two key numbers, refreshed on demand:
 
-I verified this with the actual failing payloads. For "Density" (Monica Nwankwo's payload), the homework lookup returns **3 enrolled students** with all their parent emails/phones populated. Same for the other 3 failing payloads — every one has full parent contact data reachable via the lesson.
+1. **Churn rate** — % of subscriptions canceled in the selected window vs active at the start.
+2. **Spend per customer** — average revenue per paying customer (ARPU), plus a top-spenders list.
 
-## New webhook flow
+Refresh-on-load (no webhook sync needed). Both Stripe accounts pulled in parallel: the main account (`STRIPE_SECRET_KEY`) and the lesson-proposal account (`STRIPE_SECRET_KEY_LESSON_PROPOSAL`), with a toggle to switch between them or view combined.
 
-In `supabase/functions/heycleo-homework-webhook/index.ts`, replace the current student-by-email lookup with this:
+## What gets built
 
-1. **Find the homework by title.** HeyCleo sends `homework_title`. Look up the most recent matching `homework` row:
-   ```
-   homework where title ILIKE payload.homework_title
-   order by created_at desc limit 1
-   ```
-   If multiple titles match, prefer the one whose lesson is on or just before today (overdue means the lesson already passed).
+### 1. Edge function: `get-stripe-admin-metrics`
+- Auth-gated: verifies caller has `admin` or `owner` role via `has_role()`.
+- Accepts `{ account: 'main' | 'proposal' | 'both', window: '7d' | '30d' | '90d' | 'mtd' | 'all' }`.
+- For each requested account:
+  - Lists subscriptions (`status=all`, paginated) → counts active at window start, canceled in window → **churn %**.
+  - Lists charges in window (`created[gte]=...`, paginated, `succeeded` only) → groups by `customer` → computes total revenue, unique paying customers, **ARPU = revenue / customers**, and top 10 by spend.
+  - Returns: `{ churnRate, canceledCount, activeAtStart, totalRevenue, payingCustomers, arpu, topCustomers: [{email, name, totalSpent, currency}] }`.
+- Currency-aware (sums per currency; UI shows GBP first since that's the primary).
+- Caches response in-memory per invocation only (no DB writes — always fresh).
 
-2. **Load the full enrolment chain in one query:**
-   ```
-   homework -> lessons -> lesson_students -> students -> parents
-   ```
-   Returns every student on that lesson, plus their parent's email/phone/name.
+### 2. Frontend: `StripeMetricsCard` component on admin dashboard
+- Two big stat cards: **Churn Rate** (with canceled/active sub-numbers) and **Avg Spend per Customer** (with paying customer count).
+- Window selector: `7d / 30d / 90d / MTD / All time`.
+- Account selector: `Main / Lesson Proposals / Combined`.
+- Expandable "Top spenders" list (name, email, total spent).
+- Refresh button + last-updated timestamp.
+- Loading skeleton while fetching; error state with retry.
+- Only rendered for users with admin/owner role (already gated on `/admin-dashboard`).
 
-3. **Pick the right student** using the payload's `student_email` / `student_name`:
-   - If `student_email` matches a `students.email` OR a `parents.email` in the result set → use that student.
-   - Else if `student_name` matches a student's `first_name + last_name` (case-insensitive) → use that student.
-   - Else if the lesson has only one student → use that student.
-   - Else: log a warning, fall back to notifying **every** parent on the lesson (safer than dropping the reminder entirely) and tag the notification metadata as `ambiguous_match: true` so an admin can review.
+### 3. Service hook: `useStripeAdminMetrics(account, window)`
+- Wraps `supabase.functions.invoke('get-stripe-admin-metrics', ...)` via React Query.
+- 5-minute stale time (Stripe's API is rate-limited; avoid hammering it).
 
-4. **Send notifications** to that student's contacts (unchanged from current logic):
-   - Student WhatsApp / email if `students.phone` / `students.email` exist
-   - Parent WhatsApp / email if `parents.phone` / `parents.email` exist
+## Technical details
 
-5. **Fallback** — if no homework row matches the title at all, still try the old email-based lookup (now using `.maybeSingle()` against both `students` and `parents`) so we don't regress on edge cases.
+**Churn calculation:** `(subs canceled in window) / (subs active at window start) * 100`. Pulled from `subscription.canceled_at` filter and a snapshot count at `window_start`.
 
-## Code changes
+**Spend per customer:** Aggregates `charge.amount` (succeeded only, refunds subtracted) grouped by `charge.customer`. Customer name/email fetched in a second batched call (`stripe.customers.retrieve` for the top 10 only — not all, to avoid N+1).
 
-Single file: `supabase/functions/heycleo-homework-webhook/index.ts`
+**Pagination:** Stripe caps at 100 per page. Loop with `starting_after` until `has_more=false`. Hard cap at 10 pages (1000 records) per metric per account to stay within edge-function timeout — log a warning if hit.
 
-Replace lines ~268–300 (the `students` lookup + parent lookup) with the new homework-first resolution. Everything below it (WhatsApp / email send blocks) stays the same — they already handle "parent only" or "student only" correctly because each is guarded by `if (student.phone)`, `if (parent?.email)`, etc.
+**No DB schema changes.** Pure read-through to Stripe.
 
-Also small cleanups while we're in there:
-- Switch all `.single()` calls to `.maybeSingle()` so missing rows don't log as `PGRST116` errors
-- Add clearer console logs at each resolution step (`"Resolved via lesson enrolment"`, `"Resolved via parent email"`, etc.)
+**No new secrets needed** — `STRIPE_SECRET_KEY` and `STRIPE_SECRET_KEY_LESSON_PROPOSAL` already exist.
 
-## Verification after deploy
+## Files
 
-1. Replay one of the failing payloads (e.g. Monica Nwankwo / Density) via `supabase--curl_edge_functions`
-2. Check the logs show `Resolved via lesson enrolment -> Justice Okereke` and `notifications_sent.parent_email = true`
-3. Confirm a row appears in the `notifications` table with `type = 'homework_overdue'`
+- New: `supabase/functions/get-stripe-admin-metrics/index.ts`
+- New: `src/components/admin/StripeMetricsCard.tsx`
+- New: `src/hooks/useStripeAdminMetrics.ts`
+- Edit: `src/pages/AdminDashboard.tsx` — mount the card.
 
-No DB schema changes, no migrations — just an edge-function rewrite of the lookup.
+## Out of scope (can add later)
+
+- Webhook-driven real-time updates
+- Historical charts / trends over time
+- MRR, failed payments, refunds breakdown
+- Cohort retention analysis
