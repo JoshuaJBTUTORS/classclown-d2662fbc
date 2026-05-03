@@ -9,6 +9,7 @@ import { UserPasswordReset } from '@/components/admin/UserPasswordReset';
 import { VoiceMinutesManager } from '@/components/admin/VoiceMinutesManager';
 import { useNavigate } from 'react-router-dom';
 import { useAdminCleoStats } from '@/hooks/useAdminCleoTracker';
+import { StripeMetricsCard } from '@/components/admin/StripeMetricsCard';
 
 const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
