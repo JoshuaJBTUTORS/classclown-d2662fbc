@@ -237,6 +237,9 @@ const AdminDashboard = () => {
         
         {/* Voice Minutes Management */}
         <VoiceMinutesManager />
+
+        {/* Stripe Metrics */}
+        <StripeMetricsCard />
       </div>
     </div>
   );
