@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, Users, Calendar, UserCheck, GraduationCap, TrendingUp, FileText, Bot } from 'lucide-react';
+import { RefreshCw, Calendar, GraduationCap, TrendingUp } from 'lucide-react';
 import { getAdminDashboardData, AdminDashboardData } from '@/services/adminDashboardService';
 import PageTitle from '@/components/ui/PageTitle';
 import { UserPasswordReset } from '@/components/admin/UserPasswordReset';
 import { VoiceMinutesManager } from '@/components/admin/VoiceMinutesManager';
-import { useNavigate } from 'react-router-dom';
-import { useAdminCleoStats } from '@/hooks/useAdminCleoTracker';
 import { StripeMetricsCard } from '@/components/admin/StripeMetricsCard';
 
 const AdminDashboard = () => {
