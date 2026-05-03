@@ -153,9 +153,9 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Active Tutors */}
-
+        {/* User Password Management */}
         <UserPasswordReset />
+
         
         {/* Voice Minutes Management */}
         <VoiceMinutesManager />
