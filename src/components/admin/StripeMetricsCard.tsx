@@ -41,9 +41,6 @@ const AccountPanel = ({ metrics, label }: { metrics: StripeAccountMetrics; label
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary">{formatMoney(metrics.arpu, metrics.currency)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {formatMoney(metrics.totalRevenue, metrics.currency)} from {metrics.payingCustomers} customers
-            </p>
           </CardContent>
         </Card>
       </div>
