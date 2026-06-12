@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, PlusIcon, Trash2 } from 'lucide-react';
+import { Edit, PlusIcon, Trash2, Mail } from 'lucide-react';
+import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/navigation/Navbar';
@@ -52,6 +53,8 @@ const Tutors = () => {
   const [isViewTutorOpen, setIsViewTutorOpen] = useState(false);
   const [isEditTutorOpen, setIsEditTutorOpen] = useState(false);
   const [isDeleteTutorOpen, setIsDeleteTutorOpen] = useState(false);
+  const [isSendOfferOpen, setIsSendOfferOpen] = useState(false);
+  const [offerTutor, setOfferTutor] = useState<Tutor | null>(null);
   const { isOwner } = useAuth();
 
   // Handle window resize to adjust sidebar behavior
@@ -273,6 +276,13 @@ const Tutors = () => {
           <div className="flex justify-between items-center mb-6">
             <PageTitle>Tutors</PageTitle>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { setOfferTutor(null); setIsSendOfferOpen(true); }}
+                className="flex items-center gap-1"
+              >
+                <Mail className="h-4 w-4" /> Send Offer
+              </Button>
               <Button 
                 onClick={() => setIsAddTutorOpen(true)}
                 className="flex items-center gap-1"
@@ -312,6 +322,15 @@ const Tutors = () => {
                       <TableCell>{tutor.subjects && tutor.subjects.length > 0 ? tutor.subjects.join(', ') : 'N/A'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setOfferTutor(tutor); setIsSendOfferOpen(true); }}
+                            title="Send offer letter"
+                          >
+                            <Mail className="h-4 w-4" />
+                            <span className="sr-only">Send Offer</span>
+                          </Button>
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -404,6 +423,14 @@ const Tutors = () => {
             isOpen={isDeleteTutorOpen}
             onClose={() => setIsDeleteTutorOpen(false)}
             onDeleted={fetchTutors}
+          />
+
+          <SendOfferDialog
+            isOpen={isSendOfferOpen}
+            onClose={() => setIsSendOfferOpen(false)}
+            defaultName={offerTutor ? `${offerTutor.first_name} ${offerTutor.last_name}` : ''}
+            defaultEmail={offerTutor?.email || ''}
+            tutorId={offerTutor?.id}
           />
         </main>
       </div>
