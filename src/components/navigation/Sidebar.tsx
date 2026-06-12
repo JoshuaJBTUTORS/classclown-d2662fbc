@@ -29,6 +29,7 @@ import {
   Activity,
   Hand,
   ClipboardCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
