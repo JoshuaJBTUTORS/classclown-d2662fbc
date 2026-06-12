@@ -1,53 +1,63 @@
-## Why deleted lessons keep coming back
+# Send Tutor Offer Letter
 
-There are two systems creating lessons in the future:
+Mirror the lesson-proposal flow for tutor offer letters: an admin/owner clicks **Send Offer** on the Tutors page, fills a short form (name, email, position, hourly rate, start date, min hours/week), the system emails a personalized offer link, and the tutor signs it online. Signed offers are stored and viewable in admin.
 
-1. **`lessons` table** — the actual lesson rows you delete from.
-2. **`recurring_lesson_groups` + `extend_recurring_lessons()` DB function** (run on a schedule) — looks at the original parent lesson and **re-inserts** future occurrences up to ~3 months ahead. Its only dedup check is `DATE(start_time) + tutor_id + title`, so once your deleted rows are gone, it happily recreates them.
+## User flow
 
-It also ignores per-instance deletions and "delete from date onwards" choices, because nothing tells the extender that those dates were intentionally removed.
+1. Tutors page → new **Send Offer** button (top-right, owner/admin only) AND a per-row "Send Offer" action.
+2. Dialog opens prefilled (if launched from a row) with:
+   - Recipient name, recipient email, phone (optional)
+   - Position (default "Tutor")
+   - Hourly rate (£), start date, min hours per week (default 15)
+   - Optional custom intro paragraph
+3. Submit → edge function creates an `offer_letter` row + access token, sends a branded email with a link `/offer/:id/:token` (and `/o/:id/:token` alias).
+4. Tutor opens the link → public OfferView page rendering the letter (same aesthetic as the uploaded PDF), reads it, types full name, draws signature, clicks Accept.
+5. Signature stored → status → `signed`, signed timestamp + IP + user agent captured.
+6. Admin can browse all offers at `/admin/offers` and view a signed copy at `/admin/offers/:id/view`.
 
-## What I'll change
+## Data model (new tables)
 
-### 1. Record cancellations so the extender respects them
-Add a small table `recurring_lesson_cancellations`:
-- `parent_lesson_id` (uuid)
-- `cancelled_date` (date) — single skipped occurrence
-- `cancelled_from` (date, nullable) — "from this date onwards"
-- `reason`, `created_by`, `created_at`
+- `tutor_offers`
+  - tutor_id (nullable — may not yet exist in `tutors` table), created_by, recipient_name, recipient_email, recipient_phone
+  - position, hourly_rate, start_date, min_hours_per_week, custom_intro
+  - access_token (uuid), status (`sent` | `viewed` | `signed` | `declined`)
+  - sent_at, viewed_at, signed_at, document_ref (5-block reference like the PDF)
+- `tutor_offer_signatures`
+  - offer_id, signer_name, signer_email, signature_data (base64 PNG), ip_address, user_agent, signed_at
 
-When a user deletes:
-- **This lesson only** (recurring instance) → insert a `cancelled_date` row.
-- **From date onwards** → insert a `cancelled_from` row **and** update `recurring_lesson_groups.is_infinite=false` + set `instances_generated_until` to the day before, so the extender stops past that point.
-- **All recurring lessons** → delete the matching `recurring_lesson_groups` row (and the parent lesson) so nothing extends ever again.
+RLS: admin/owner full access; public read via access_token (edge function or scoped policy keyed by token); insert into signatures allowed only when matching valid token.
 
-### 2. Update `extend_recurring_lessons()`
-Before inserting a candidate occurrence, skip it if:
-- a `cancelled_date` matches that date, or
-- a `cancelled_from` row exists with `cancelled_from <= working_date`, or
-- the parent lesson no longer exists, or
-- the recurring group's `instances_generated_until` is in the past.
+## Edge functions (new)
 
-Also stop using `title + tutor + date` as the only dedup — additionally check `parent_lesson_id` so unrelated lessons with the same title don't block creation, and cancellations do.
+- `create-tutor-offer` — auth check (admin/owner), insert offer row, invoke send email.
+- `send-tutor-offer-email` — renders React Email template (clone of proposal-email styling, copy adapted to offer letter), sends via Resend from `enquiries@classbeyondacademy.io`. Optional WhatsApp via existing `whatsappService` if phone supplied.
+- `sign-tutor-offer` — validates token, stores signature, updates status to `signed`.
 
-### 3. Update `lessonDeletionService.ts`
-Wire the three delete paths to write the right cancellation row / group update in the same transaction-style flow as the lesson delete.
+## Frontend files
 
-### 4. New admin view: "Recurring lessons"
-A small page at `/admin/recurring-lessons` listing every `recurring_lesson_groups` row with:
-- parent lesson title, tutor, students, cadence
-- next extension date, last generated date, is_infinite
-- buttons: **Extend by 3 months**, **Stop extending**, **Delete series**
+- `src/pages/Tutors.tsx` — add **Send Offer** button + per-row action → opens `SendOfferDialog`.
+- `src/components/tutors/SendOfferDialog.tsx` (new) — form + submit, calls `create-tutor-offer`.
+- `src/pages/OfferView.tsx` (new, public) — renders the offer letter visual (gradient cover page + details page styled to match PDF), signature pad (`react-signature-canvas` already in repo if available, otherwise install), Accept flow, success state showing certificate of signature.
+- `src/pages/admin/TutorOffers.tsx` (new) — list of all offers with status badges, resend, view.
+- `src/pages/admin/ViewTutorOffer.tsx` (new) — read-only signed view with certificate block.
+- Routes added to `src/App.tsx`: `/offer/:id/:token`, `/o/:id/:token`, `/admin/offers`, `/admin/offers/:id/view`.
+- Sidebar entry under admin: "Tutor Offers".
 
-This is what you asked for — "how we can check what lessons we should create more instances for". You'll see exactly which series are still auto-extending and which have run out, and choose what to do.
+## Offer letter content (matches uploaded PDF)
 
-## Files touched
+```text
+Position: {position}
+Salary:   £{hourly_rate} per hour
+Start:    {start_date}
+"To confirm your acceptance of this offer to provide services as a
+self-employed contractor, please sign and return this offer letter
+before your start date. This engagement includes a minimum
+expectation of {min_hours_per_week} hours per week."
+```
 
-- `supabase/migrations/*` — new `recurring_lesson_cancellations` table + grants + RLS, rewrite `extend_recurring_lessons()`.
-- `src/services/lessonDeletionService.ts` — record cancellations on delete.
-- `src/pages/admin/RecurringLessons.tsx` (new) + route in `App.tsx` + sidebar link.
-- `src/components/admin/RecurringLessonsTable.tsx` (new).
+Cover page heading "OFFER LETTER" + "Prepared for: {recipient_name}". Acceptance page: typed-name + drawn signature, generates `document_ref` like `XXXXX-XXXXX-XXXXX-XXXXX`.
 
-## Not in scope
+## Out of scope (ask if needed)
 
-- Backfilling cancellations for lessons you've already deleted in the past — those parents/series are still extending. After this ships I can run a one-off cleanup against the series you point me at, or the new admin page will let you stop them yourself.
+- PDF generation/download of signed offer (can be added later).
+- Auto-creating a `tutors` record on signature (currently the offer is independent of the tutor record).
