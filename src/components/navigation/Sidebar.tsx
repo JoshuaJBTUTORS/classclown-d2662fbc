@@ -29,6 +29,7 @@ import {
   Activity,
   Hand,
   ClipboardCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatModal from '@/components/chat/ChatModal';
@@ -232,6 +233,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: Activity,
           label: 'Cleo Tracker',
           href: '/admin/cleo-tracker',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: RefreshCw,
+          label: 'Recurring Lessons',
+          href: '/admin/recurring-lessons',
           roles: ['admin', 'owner'],
         },
       ]

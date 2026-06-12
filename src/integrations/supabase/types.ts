@@ -3554,6 +3554,36 @@ export type Database = {
           },
         ]
       }
+      recurring_lesson_cancellations: {
+        Row: {
+          cancelled_date: string | null
+          cancelled_from: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          parent_lesson_id: string
+          reason: string | null
+        }
+        Insert: {
+          cancelled_date?: string | null
+          cancelled_from?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          parent_lesson_id: string
+          reason?: string | null
+        }
+        Update: {
+          cancelled_date?: string | null
+          cancelled_from?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          parent_lesson_id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       recurring_lesson_groups: {
         Row: {
           created_at: string | null

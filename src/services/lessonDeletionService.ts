@@ -115,9 +115,16 @@ export const lessonDeletionService = {
 
   async deleteSingleLesson(lessonId: string): Promise<void> {
     try {
+      // Look up parent info so we can record a cancellation if this is a recurring instance
+      const { data: lessonRow } = await supabase
+        .from('lessons')
+        .select('start_time, parent_lesson_id')
+        .eq('id', lessonId)
+        .maybeSingle();
+
       // First, delete related data
       await this.cleanupRelatedData([lessonId]);
-      
+
       // Delete the lesson
       const { error } = await supabase
         .from('lessons')
@@ -126,9 +133,19 @@ export const lessonDeletionService = {
 
       if (error) throw error;
 
+      // If this was a recurring instance, remember the date so the extender doesn't re-create it
+      if (lessonRow?.parent_lesson_id && lessonRow?.start_time) {
+        const cancelledDate = new Date(lessonRow.start_time).toISOString().slice(0, 10);
+        await supabase.from('recurring_lesson_cancellations').insert({
+          parent_lesson_id: lessonRow.parent_lesson_id,
+          cancelled_date: cancelledDate,
+          reason: 'single instance deleted',
+        });
+      }
+
       // Call Google Calendar sync if needed
       await this.syncGoogleCalendarDeletion(lessonId);
-      
+
       toast.success('Lesson deleted successfully');
     } catch (error) {
       console.error('Error deleting lesson:', error);
@@ -188,6 +205,23 @@ export const lessonDeletionService = {
         .in('id', lessonIds);
 
       if (error) throw error;
+
+      // Record a hard stop so the auto-extender stops creating new ones past this date
+      const cutoffDate = new Date(currentStartTime).toISOString().slice(0, 10);
+      await supabase.from('recurring_lesson_cancellations').insert({
+        parent_lesson_id: parentLessonId,
+        cancelled_from: cutoffDate,
+        reason: 'delete from date onwards',
+      });
+
+      // Cap the recurring group so the extender knows it shouldn't grow
+      await supabase
+        .from('recurring_lesson_groups')
+        .update({
+          is_infinite: false,
+          instances_generated_until: currentStartTime,
+        })
+        .eq('original_lesson_id', parentLessonId);
 
       // Sync Google Calendar deletions
       for (const id of lessonIds) {

@@ -1,59 +1,53 @@
-## Goal
+## Why deleted lessons keep coming back
 
-Add a "Stripe Metrics" section to `/admin-dashboard` that shows two key numbers, refreshed on demand:
+There are two systems creating lessons in the future:
 
-1. **Churn rate** — % of subscriptions canceled in the selected window vs active at the start.
-2. **Spend per customer** — average revenue per paying customer (ARPU), plus a top-spenders list.
+1. **`lessons` table** — the actual lesson rows you delete from.
+2. **`recurring_lesson_groups` + `extend_recurring_lessons()` DB function** (run on a schedule) — looks at the original parent lesson and **re-inserts** future occurrences up to ~3 months ahead. Its only dedup check is `DATE(start_time) + tutor_id + title`, so once your deleted rows are gone, it happily recreates them.
 
-Refresh-on-load (no webhook sync needed). Both Stripe accounts pulled in parallel: the main account (`STRIPE_SECRET_KEY`) and the lesson-proposal account (`STRIPE_SECRET_KEY_LESSON_PROPOSAL`), with a toggle to switch between them or view combined.
+It also ignores per-instance deletions and "delete from date onwards" choices, because nothing tells the extender that those dates were intentionally removed.
 
-## What gets built
+## What I'll change
 
-### 1. Edge function: `get-stripe-admin-metrics`
-- Auth-gated: verifies caller has `admin` or `owner` role via `has_role()`.
-- Accepts `{ account: 'main' | 'proposal' | 'both', window: '7d' | '30d' | '90d' | 'mtd' | 'all' }`.
-- For each requested account:
-  - Lists subscriptions (`status=all`, paginated) → counts active at window start, canceled in window → **churn %**.
-  - Lists charges in window (`created[gte]=...`, paginated, `succeeded` only) → groups by `customer` → computes total revenue, unique paying customers, **ARPU = revenue / customers**, and top 10 by spend.
-  - Returns: `{ churnRate, canceledCount, activeAtStart, totalRevenue, payingCustomers, arpu, topCustomers: [{email, name, totalSpent, currency}] }`.
-- Currency-aware (sums per currency; UI shows GBP first since that's the primary).
-- Caches response in-memory per invocation only (no DB writes — always fresh).
+### 1. Record cancellations so the extender respects them
+Add a small table `recurring_lesson_cancellations`:
+- `parent_lesson_id` (uuid)
+- `cancelled_date` (date) — single skipped occurrence
+- `cancelled_from` (date, nullable) — "from this date onwards"
+- `reason`, `created_by`, `created_at`
 
-### 2. Frontend: `StripeMetricsCard` component on admin dashboard
-- Two big stat cards: **Churn Rate** (with canceled/active sub-numbers) and **Avg Spend per Customer** (with paying customer count).
-- Window selector: `7d / 30d / 90d / MTD / All time`.
-- Account selector: `Main / Lesson Proposals / Combined`.
-- Expandable "Top spenders" list (name, email, total spent).
-- Refresh button + last-updated timestamp.
-- Loading skeleton while fetching; error state with retry.
-- Only rendered for users with admin/owner role (already gated on `/admin-dashboard`).
+When a user deletes:
+- **This lesson only** (recurring instance) → insert a `cancelled_date` row.
+- **From date onwards** → insert a `cancelled_from` row **and** update `recurring_lesson_groups.is_infinite=false` + set `instances_generated_until` to the day before, so the extender stops past that point.
+- **All recurring lessons** → delete the matching `recurring_lesson_groups` row (and the parent lesson) so nothing extends ever again.
 
-### 3. Service hook: `useStripeAdminMetrics(account, window)`
-- Wraps `supabase.functions.invoke('get-stripe-admin-metrics', ...)` via React Query.
-- 5-minute stale time (Stripe's API is rate-limited; avoid hammering it).
+### 2. Update `extend_recurring_lessons()`
+Before inserting a candidate occurrence, skip it if:
+- a `cancelled_date` matches that date, or
+- a `cancelled_from` row exists with `cancelled_from <= working_date`, or
+- the parent lesson no longer exists, or
+- the recurring group's `instances_generated_until` is in the past.
 
-## Technical details
+Also stop using `title + tutor + date` as the only dedup — additionally check `parent_lesson_id` so unrelated lessons with the same title don't block creation, and cancellations do.
 
-**Churn calculation:** `(subs canceled in window) / (subs active at window start) * 100`. Pulled from `subscription.canceled_at` filter and a snapshot count at `window_start`.
+### 3. Update `lessonDeletionService.ts`
+Wire the three delete paths to write the right cancellation row / group update in the same transaction-style flow as the lesson delete.
 
-**Spend per customer:** Aggregates `charge.amount` (succeeded only, refunds subtracted) grouped by `charge.customer`. Customer name/email fetched in a second batched call (`stripe.customers.retrieve` for the top 10 only — not all, to avoid N+1).
+### 4. New admin view: "Recurring lessons"
+A small page at `/admin/recurring-lessons` listing every `recurring_lesson_groups` row with:
+- parent lesson title, tutor, students, cadence
+- next extension date, last generated date, is_infinite
+- buttons: **Extend by 3 months**, **Stop extending**, **Delete series**
 
-**Pagination:** Stripe caps at 100 per page. Loop with `starting_after` until `has_more=false`. Hard cap at 10 pages (1000 records) per metric per account to stay within edge-function timeout — log a warning if hit.
+This is what you asked for — "how we can check what lessons we should create more instances for". You'll see exactly which series are still auto-extending and which have run out, and choose what to do.
 
-**No DB schema changes.** Pure read-through to Stripe.
+## Files touched
 
-**No new secrets needed** — `STRIPE_SECRET_KEY` and `STRIPE_SECRET_KEY_LESSON_PROPOSAL` already exist.
+- `supabase/migrations/*` — new `recurring_lesson_cancellations` table + grants + RLS, rewrite `extend_recurring_lessons()`.
+- `src/services/lessonDeletionService.ts` — record cancellations on delete.
+- `src/pages/admin/RecurringLessons.tsx` (new) + route in `App.tsx` + sidebar link.
+- `src/components/admin/RecurringLessonsTable.tsx` (new).
 
-## Files
+## Not in scope
 
-- New: `supabase/functions/get-stripe-admin-metrics/index.ts`
-- New: `src/components/admin/StripeMetricsCard.tsx`
-- New: `src/hooks/useStripeAdminMetrics.ts`
-- Edit: `src/pages/AdminDashboard.tsx` — mount the card.
-
-## Out of scope (can add later)
-
-- Webhook-driven real-time updates
-- Historical charts / trends over time
-- MRR, failed payments, refunds breakdown
-- Cohort retention analysis
+- Backfilling cancellations for lessons you've already deleted in the past — those parents/series are still extending. After this ships I can run a one-off cleanup against the series you point me at, or the new admin page will let you stop them yourself.
