@@ -4604,6 +4604,124 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_offer_signatures: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          offer_id: string
+          signature_data: string
+          signed_at: string
+          signer_email: string
+          signer_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          offer_id: string
+          signature_data: string
+          signed_at?: string
+          signer_email: string
+          signer_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          offer_id?: string
+          signature_data?: string
+          signed_at?: string
+          signer_email?: string
+          signer_name?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_offer_signatures_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_offers: {
+        Row: {
+          access_token: string
+          created_at: string
+          created_by: string | null
+          custom_intro: string | null
+          document_ref: string
+          hourly_rate: number
+          id: string
+          min_hours_per_week: number
+          position: string
+          recipient_email: string
+          recipient_name: string
+          recipient_phone: string | null
+          sent_at: string | null
+          signed_at: string | null
+          start_date: string
+          status: string
+          tutor_id: string | null
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          access_token?: string
+          created_at?: string
+          created_by?: string | null
+          custom_intro?: string | null
+          document_ref: string
+          hourly_rate: number
+          id?: string
+          min_hours_per_week?: number
+          position?: string
+          recipient_email: string
+          recipient_name: string
+          recipient_phone?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          start_date: string
+          status?: string
+          tutor_id?: string | null
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          created_by?: string | null
+          custom_intro?: string | null
+          document_ref?: string
+          hourly_rate?: number
+          id?: string
+          min_hours_per_week?: number
+          position?: string
+          recipient_email?: string
+          recipient_name?: string
+          recipient_phone?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          start_date?: string
+          status?: string
+          tutor_id?: string | null
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_offers_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_subjects: {
         Row: {
           created_at: string | null
