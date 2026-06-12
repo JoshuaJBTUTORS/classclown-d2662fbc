@@ -206,6 +206,23 @@ export const lessonDeletionService = {
 
       if (error) throw error;
 
+      // Record a hard stop so the auto-extender stops creating new ones past this date
+      const cutoffDate = new Date(currentStartTime).toISOString().slice(0, 10);
+      await supabase.from('recurring_lesson_cancellations').insert({
+        parent_lesson_id: parentLessonId,
+        cancelled_from: cutoffDate,
+        reason: 'delete from date onwards',
+      });
+
+      // Cap the recurring group so the extender knows it shouldn't grow
+      await supabase
+        .from('recurring_lesson_groups')
+        .update({
+          is_infinite: false,
+          instances_generated_until: currentStartTime,
+        })
+        .eq('original_lesson_id', parentLessonId);
+
       // Sync Google Calendar deletions
       for (const id of lessonIds) {
         await this.syncGoogleCalendarDeletion(id);
