@@ -378,6 +378,14 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route
+                    path="admin/recurring-lessons"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <RecurringLessons />
+                      </ProtectedRoute>
+                    }
+                  />
                 </Route>
                 <Route
                   path="/join-lesson/:lessonId"
