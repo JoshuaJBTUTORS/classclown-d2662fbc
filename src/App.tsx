@@ -82,6 +82,7 @@ import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OnboardingWizard from './pages/OnboardingWizard';
 import CleoDemo from './pages/CleoDemo';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
+import RecurringLessons from './pages/admin/RecurringLessons';
 import PricingPage from './pages/PricingPage';
 import HubAccessManagement from './pages/admin/HubAccessManagement';
 import CleoTracker from './pages/admin/CleoTracker';
