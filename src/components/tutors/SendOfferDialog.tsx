@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,18 +13,33 @@ interface SendOfferDialogProps {
   onClose: () => void;
   defaultName?: string;
   defaultEmail?: string;
+  defaultHourlyRate?: number;
+  defaultStartDate?: string;
   tutorId?: string;
 }
 
-export default function SendOfferDialog({ isOpen, onClose, defaultName, defaultEmail, tutorId }: SendOfferDialogProps) {
+export default function SendOfferDialog({ isOpen, onClose, defaultName, defaultEmail, defaultHourlyRate, defaultStartDate, tutorId }: SendOfferDialogProps) {
   const [recipientName, setRecipientName] = useState(defaultName || '');
   const [recipientEmail, setRecipientEmail] = useState(defaultEmail || '');
   const [position, setPosition] = useState('Tutor');
-  const [hourlyRate, setHourlyRate] = useState('11.20');
-  const [startDate, setStartDate] = useState('');
+  const [hourlyRate, setHourlyRate] = useState(
+    defaultHourlyRate != null ? String(defaultHourlyRate) : '11.20'
+  );
+  const [startDate, setStartDate] = useState(defaultStartDate || '');
   const [minHoursPerWeek, setMinHoursPerWeek] = useState('15');
   const [customIntro, setCustomIntro] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Re-sync when opening with different tutor
+  React.useEffect(() => {
+    if (isOpen) {
+      setRecipientName(defaultName || '');
+      setRecipientEmail(defaultEmail || '');
+      setHourlyRate(defaultHourlyRate != null ? String(defaultHourlyRate) : '11.20');
+      setStartDate(defaultStartDate || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, defaultName, defaultEmail, defaultHourlyRate, defaultStartDate]);
 
   const handleSend = async () => {
     if (!recipientName.trim() || !recipientEmail.trim() || !hourlyRate || !startDate) {
