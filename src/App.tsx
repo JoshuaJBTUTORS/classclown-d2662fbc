@@ -79,6 +79,7 @@ import ProposalDashboard from './pages/admin/ProposalDashboard';
 import EditProposal from './pages/admin/EditProposal';
 import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
+import OfferView from './pages/OfferView';
 import OnboardingWizard from './pages/OnboardingWizard';
 import CleoDemo from './pages/CleoDemo';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
@@ -130,6 +131,8 @@ function App() {
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 <Route path="/p/:proposalId/:token" element={<ProposalView />} />
+                <Route path="/offer/:offerId/:token" element={<OfferView />} />
+                <Route path="/o/:offerId/:token" element={<OfferView />} />
                 <Route path="/update-card" element={<UpdateCardDetails />} />
                 
                 {/* Main App Layout - all main application routes - Restricted on heycleo.io */}
