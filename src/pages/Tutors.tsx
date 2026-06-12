@@ -430,6 +430,8 @@ const Tutors = () => {
             onClose={() => setIsSendOfferOpen(false)}
             defaultName={offerTutor ? `${offerTutor.first_name} ${offerTutor.last_name}` : ''}
             defaultEmail={offerTutor?.email || ''}
+            defaultHourlyRate={offerTutor?.hourly_rate ?? offerTutor?.normal_hourly_rate}
+            defaultStartDate={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10); })()}
             tutorId={offerTutor?.id}
           />
         </main>
