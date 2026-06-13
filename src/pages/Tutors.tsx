@@ -278,6 +278,13 @@ const Tutors = () => {
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                asChild
+                className="flex items-center gap-1"
+              >
+                <a href="/admin/sent-offers"><Mail className="h-4 w-4" /> Sent Offers</a>
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => { setOfferTutor(null); setIsSendOfferOpen(true); }}
                 className="flex items-center gap-1"
               >

@@ -80,6 +80,7 @@ import EditProposal from './pages/admin/EditProposal';
 import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OfferView from './pages/OfferView';
+import SentOffers from './pages/admin/SentOffers';
 import OnboardingWizard from './pages/OnboardingWizard';
 import CleoDemo from './pages/CleoDemo';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
@@ -247,6 +248,14 @@ function App() {
                         <ViewSignedProposal />
                       </ProtectedRoute>
                     } 
+                  />
+                  <Route
+                    path="admin/sent-offers"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <SentOffers />
+                      </ProtectedRoute>
+                    }
                   />
                   <Route path="progress" element={<Progress />} />
                   <Route 

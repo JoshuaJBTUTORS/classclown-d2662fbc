@@ -1,10 +1,26 @@
-## Fix CORS / deploy failure for `send-tutor-offer`
+## Sent Offers View
 
-The edge function isn't deploying because the email template lives in a `_templates/` subfolder. Lovable edge functions must keep all code in `index.ts`.
+Add an admin page to view and manage all tutor offer letters that have been sent.
 
-### Changes
-1. Inline the `TutorOfferEmail` React Email component (and its styles) directly into `supabase/functions/send-tutor-offer/index.ts`.
-2. Delete `supabase/functions/send-tutor-offer/_templates/tutor-offer-email.tsx` and the `_templates` folder.
-3. Trigger redeploy of `send-tutor-offer`.
+### New page: `src/pages/SentOffers.tsx`
+Route: `/admin/sent-offers` (added to `src/App.tsx`)
 
-No DB or frontend changes.
+Fetches all rows from `tutor_offers` ordered by `created_at desc` and displays them in a table with:
+- Recipient name + email
+- Position
+- Hourly rate
+- Start date
+- Status badge (sent / viewed / signed) with colors
+- Sent date
+- Signed date (when applicable)
+- Actions: **Copy link** (copies `/offer/:id/:token`), **Open** (opens the offer page in a new tab), **Resend email** (re-invokes the `send-tutor-offer` edge function)
+
+### Entry point
+On `src/pages/Tutors.tsx`, add a "View Sent Offers" button next to the existing "Send Offer" button, linking to `/admin/sent-offers`.
+
+### Filtering / UX
+- Search box (filters by name/email)
+- Status filter dropdown (All / Sent / Viewed / Signed)
+- Summary chips at top: totals per status
+
+No database or edge-function changes needed — the `tutor_offers` table and RLS already exist.
