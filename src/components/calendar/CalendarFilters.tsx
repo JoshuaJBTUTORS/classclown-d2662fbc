@@ -286,8 +286,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <Command>
                 <CommandInput 
                   placeholder="Search tutors..." 
-                  value={tutorSearch}
-                  onValueChange={setTutorSearch}
+                  onInput={(e) => setTutorSearch(e.currentTarget.value)}
                 />
                 <CommandList>
                   <CommandEmpty>No tutors found.</CommandEmpty>
