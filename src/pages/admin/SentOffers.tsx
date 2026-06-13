@@ -12,7 +12,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, Loader2, Mail, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw } from 'lucide-react';
+import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 
 interface OfferRow {
   id: string;
@@ -48,6 +49,7 @@ export default function SentOffers() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -124,10 +126,15 @@ export default function SentOffers() {
   return (
     <main className="flex-1 p-4 md:p-8">
       <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-        <PageTitle title="Sent Offers" subtitle="Track tutor offer letters" />
-        <Button variant="outline" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </Button>
+        <PageTitle title="Tutor Onboarding" subtitle="Track and send tutor offer letters" />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+          <Button onClick={() => setSendOpen(true)} className="flex items-center gap-1">
+            <Plus className="h-4 w-4" /> Send Offer
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -232,6 +239,11 @@ export default function SentOffers() {
           </Table>
         )}
       </Card>
+
+      <SendOfferDialog
+        isOpen={sendOpen}
+        onClose={() => { setSendOpen(false); load(); }}
+      />
     </main>
   );
 }
