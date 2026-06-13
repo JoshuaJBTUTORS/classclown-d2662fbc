@@ -51,6 +51,7 @@ export default function SentOffers() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [sendOpen, setSendOpen] = useState(false);
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
