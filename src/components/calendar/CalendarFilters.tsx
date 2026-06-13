@@ -360,8 +360,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <Command>
                 <CommandInput 
                   placeholder="Search parents..." 
-                  value={parentSearch}
-                  onValueChange={setParentSearch}
+                  onInput={(e) => setParentSearch(e.currentTarget.value)}
                 />
                 <CommandList>
                   <CommandEmpty>No parents found.</CommandEmpty>
