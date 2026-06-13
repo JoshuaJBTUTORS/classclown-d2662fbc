@@ -12,7 +12,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 
 interface OfferRow {
@@ -50,6 +51,7 @@ export default function SentOffers() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [sendOpen, setSendOpen] = useState(false);
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
@@ -126,7 +128,12 @@ export default function SentOffers() {
   return (
     <main className="flex-1 p-4 md:p-8">
       <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-        <PageTitle title="Tutor Onboarding" subtitle="Track and send tutor offer letters" />
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" onClick={() => navigate('/tutors')} title="Back">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <PageTitle title="Tutor Onboarding" subtitle="Track and send tutor offer letters" />
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Refresh
