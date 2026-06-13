@@ -91,13 +91,73 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get('Authorization') || '';
-    const token = authHeader.replace('Bearer ', '');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
+
+    const body: any = await req.json();
+
+    // ---------- Public notification: tutor has signed ----------
+    if (body?.action === 'notify_signed') {
+      const { offerId, accessToken } = body;
+      if (!offerId || !accessToken) throw new Error('Missing offerId or accessToken');
+
+      const { data: offer, error: fetchErr } = await supabase
+        .from('tutor_offers')
+        .select('*')
+        .eq('id', offerId)
+        .eq('access_token', accessToken)
+        .maybeSingle();
+      if (fetchErr || !offer) throw new Error('Offer not found');
+
+      const signedAt = offer.signed_at
+        ? new Date(offer.signed_at).toLocaleString('en-GB')
+        : new Date().toLocaleString('en-GB');
+
+      const adminHtml = `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f6f9fc;padding:32px;">
+          <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            <h1 style="color:#1e3a5f;margin:0 0 16px;">✅ Offer Signed</h1>
+            <p style="color:#555;font-size:16px;line-height:24px;">
+              <strong>${offer.recipient_name}</strong> has just signed their offer letter.
+            </p>
+            <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+              <tr><td style="padding:6px 0;color:#666;">Name</td><td style="padding:6px 0;"><strong>${offer.recipient_name}</strong></td></tr>
+              <tr><td style="padding:6px 0;color:#666;">Email</td><td style="padding:6px 0;">${offer.recipient_email}</td></tr>
+              <tr><td style="padding:6px 0;color:#666;">Position</td><td style="padding:6px 0;">${offer.position}</td></tr>
+              <tr><td style="padding:6px 0;color:#666;">Rate</td><td style="padding:6px 0;">£${Number(offer.hourly_rate).toFixed(2)}/hr</td></tr>
+              <tr><td style="padding:6px 0;color:#666;">Start date</td><td style="padding:6px 0;">${new Date(offer.start_date).toLocaleDateString('en-GB')}</td></tr>
+              <tr><td style="padding:6px 0;color:#666;">Signed at</td><td style="padding:6px 0;">${signedAt}</td></tr>
+              <tr><td style="padding:6px 0;color:#666;">Document Ref</td><td style="padding:6px 0;font-family:monospace;font-size:12px;">${offer.document_ref}</td></tr>
+            </table>
+            <p style="margin-top:24px;">
+              <a href="https://classclowncrm.com/offer/${offer.id}/${offer.access_token}"
+                 style="background:#1e3a5f;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">
+                View signed offer
+              </a>
+            </p>
+          </div>
+        </div>`;
+
+      const { error: notifyErr } = await resend.emails.send({
+        from: 'Class Beyond <enquiries@classbeyondacademy.io>',
+        to: ['hannah@classbeyondacademy.io'],
+        subject: `✅ Offer signed by ${offer.recipient_name}`,
+        html: adminHtml,
+      });
+      if (notifyErr) console.error('Admin notification error:', notifyErr);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    // ---------- /Public notification ----------
+
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
@@ -110,7 +170,6 @@ serve(async (req: Request) => {
     const isAdmin = roles?.some((r: any) => r.role === 'admin' || r.role === 'owner');
     if (!isAdmin) throw new Error('Only admins/owners can send offers');
 
-    const body: OfferRequest = await req.json();
     if (!body.recipientName || !body.recipientEmail || !body.hourlyRate || !body.startDate) {
       throw new Error('Missing required fields');
     }

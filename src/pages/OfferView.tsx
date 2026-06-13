@@ -75,6 +75,12 @@ export default function OfferView() {
         .update({ status: 'signed', signed_at: new Date().toISOString() })
         .eq('id', offer.id).eq('access_token', token);
       if (updErr) throw updErr;
+
+      // Fire-and-forget admin notification
+      supabase.functions.invoke('send-tutor-offer', {
+        body: { action: 'notify_signed', offerId: offer.id, accessToken: token },
+      }).catch((e) => console.error('Notify signed error:', e));
+
       toast({ title: 'Offer signed!', description: 'Thank you. We will be in touch shortly.' });
       load();
     } catch (e: any) {
