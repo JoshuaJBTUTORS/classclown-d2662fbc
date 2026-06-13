@@ -12,7 +12,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 
 interface OfferRow {
