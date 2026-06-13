@@ -239,6 +239,11 @@ export default function SentOffers() {
           </Table>
         )}
       </Card>
+
+      <SendOfferDialog
+        isOpen={sendOpen}
+        onClose={() => { setSendOpen(false); load(); }}
+      />
     </main>
   );
 }
