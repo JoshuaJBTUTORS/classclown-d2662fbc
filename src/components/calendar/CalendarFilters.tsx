@@ -212,8 +212,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <Command>
                 <CommandInput 
                   placeholder="Search students..." 
-                  value={studentSearch}
-                  onValueChange={setStudentSearch}
+                  onInput={(e) => setStudentSearch(e.currentTarget.value)}
                 />
                 <CommandList>
                   <CommandEmpty>No students found.</CommandEmpty>
@@ -287,8 +286,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <Command>
                 <CommandInput 
                   placeholder="Search tutors..." 
-                  value={tutorSearch}
-                  onValueChange={setTutorSearch}
+                  onInput={(e) => setTutorSearch(e.currentTarget.value)}
                 />
                 <CommandList>
                   <CommandEmpty>No tutors found.</CommandEmpty>
@@ -362,8 +360,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <Command>
                 <CommandInput 
                   placeholder="Search parents..." 
-                  value={parentSearch}
-                  onValueChange={setParentSearch}
+                  onInput={(e) => setParentSearch(e.currentTarget.value)}
                 />
                 <CommandList>
                   <CommandEmpty>No parents found.</CommandEmpty>
@@ -437,8 +434,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               <Command>
                 <CommandInput 
                   placeholder="Search subjects..." 
-                  value={subjectSearch}
-                  onValueChange={setSubjectSearch}
+                  onInput={(e) => setSubjectSearch(e.currentTarget.value)}
                 />
                 <CommandList>
                   <CommandEmpty>No subjects found.</CommandEmpty>
