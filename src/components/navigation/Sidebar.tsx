@@ -235,12 +235,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           href: '/admin/cleo-tracker',
           roles: ['admin', 'owner'],
         },
-        {
-          icon: RefreshCw,
-          label: 'Recurring Lessons',
-          href: '/admin/recurring-lessons',
-          roles: ['admin', 'owner'],
-        },
       ]
     },
   ];

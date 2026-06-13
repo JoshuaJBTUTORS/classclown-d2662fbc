@@ -1,26 +1,10 @@
-## Sent Offers View
+## Hide Recurring Lessons Page
 
-Add an admin page to view and manage all tutor offer letters that have been sent.
+### Problem
+The Recurring Lessons oversight page is visible in the admin sidebar. Recurring lessons auto-generate via cron, so this page is not needed for normal operations.
 
-### New page: `src/pages/SentOffers.tsx`
-Route: `/admin/sent-offers` (added to `src/App.tsx`)
+### Changes
+1. **Remove menu item** from `src/components/navigation/Sidebar.tsx` — delete the "Recurring Lessons" entry (icon: `RefreshCw`, href: `/admin/recurring-lessons`) from the "Analytics & Insights" group.
+2. **Keep the route** in `src/App.tsx` so the page remains accessible by direct URL if ever needed.
 
-Fetches all rows from `tutor_offers` ordered by `created_at desc` and displays them in a table with:
-- Recipient name + email
-- Position
-- Hourly rate
-- Start date
-- Status badge (sent / viewed / signed) with colors
-- Sent date
-- Signed date (when applicable)
-- Actions: **Copy link** (copies `/offer/:id/:token`), **Open** (opens the offer page in a new tab), **Resend email** (re-invokes the `send-tutor-offer` edge function)
-
-### Entry point
-On `src/pages/Tutors.tsx`, add a "View Sent Offers" button next to the existing "Send Offer" button, linking to `/admin/sent-offers`.
-
-### Filtering / UX
-- Search box (filters by name/email)
-- Status filter dropdown (All / Sent / Viewed / Signed)
-- Summary chips at top: totals per status
-
-No database or edge-function changes needed — the `tutor_offers` table and RLS already exist.
+No other changes required.
