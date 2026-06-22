@@ -197,6 +197,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ============================================================
+  // HOMEWORK REMINDERS DISABLED
+  // All overdue homework reminder delivery (email + WhatsApp) has been
+  // turned off. We still accept the webhook so HeyCleo's side doesn't
+  // error, but we short-circuit before sending anything.
+  // To re-enable: remove this block.
+  // ============================================================
+  console.log("Homework reminders are disabled — ignoring incoming webhook.");
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "Homework reminders are currently disabled",
+      delivered: false,
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+
   try {
     // Only accept POST requests
     if (req.method !== "POST") {
