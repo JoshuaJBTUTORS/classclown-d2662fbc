@@ -35,7 +35,15 @@ export default function OfferView() {
   useEffect(() => { load(); }, [offerId, token]);
 
   const load = async () => {
-    if (!offerId || !token) { setError('Invalid link'); setLoading(false); return; }
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const INVALID_LINK_MSG =
+      'This offer link looks incomplete or invalid. Please open the link directly from your email (avoid copy-pasting), or contact us to resend it.';
+
+    if (!offerId || !token || !UUID_RE.test(offerId) || !UUID_RE.test(token)) {
+      setError(INVALID_LINK_MSG);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('tutor_offers')
@@ -43,7 +51,11 @@ export default function OfferView() {
         .eq('id', offerId)
         .eq('access_token', token)
         .maybeSingle();
-      if (error || !data) throw new Error(error?.message || 'Offer not found');
+      if (error) {
+        console.error('Offer load error:', error);
+        throw new Error(INVALID_LINK_MSG);
+      }
+      if (!data) throw new Error('Offer not found.');
       setOffer(data as Offer);
       setSignerName(data.recipient_name || '');
       if (data.status === 'sent') {
@@ -52,7 +64,8 @@ export default function OfferView() {
           .eq('id', offerId).eq('access_token', token);
       }
     } catch (e: any) {
-      setError(e.message || 'Failed to load offer');
+      console.error('OfferView load failed:', e);
+      setError(e.message || INVALID_LINK_MSG);
     } finally { setLoading(false); }
   };
 
