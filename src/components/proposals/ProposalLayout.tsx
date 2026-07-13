@@ -103,7 +103,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       {/* Top action bar */}
       <header className="no-print sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
-          <img src={jbLogo} alt="Class Beyond" className="h-9" />
+          <span className="font-heading text-2xl font-bold tracking-tight text-foreground md:text-3xl">ClassBeyond</span>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
               <a href={`mailto:${CONTACT_EMAIL}`}>
