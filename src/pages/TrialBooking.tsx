@@ -9,6 +9,7 @@ import StepIndicator from '@/components/trialBooking/StepIndicator';
 import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
 import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
 import ContactInfoStep from '@/components/trialBooking/ContactInfoStep';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
 interface FormData {
   parentName: string;
   childName: string;
