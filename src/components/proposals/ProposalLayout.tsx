@@ -333,8 +333,9 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <span className="text-muted-foreground">per lesson</span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Billed <span className="font-medium text-foreground">{proposal.payment_cycle}</span>. No sign-up fee, cancel anytime with 30 days notice.
+                Billed <span className="font-medium text-foreground">every 4 weeks in advance</span>. No sign-up fee, cancel anytime with 30 days notice.
               </p>
+
 
               {proposal.daily_homework_opt_in && (
                 <div className="mt-6 flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
@@ -413,7 +414,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 hours notice at no cost. Ongoing tuition can be paused or cancelled with 30 days written notice.
               </p>
               <p>
-                <strong className="text-foreground">Payment.</strong> Lessons are billed {proposal.payment_cycle.toLowerCase()} in advance
+                <strong className="text-foreground">Payment.</strong> Lessons are billed every 4 weeks in advance
                 via secure card payment. You'll receive a receipt for every charge.
               </p>
               <p>
