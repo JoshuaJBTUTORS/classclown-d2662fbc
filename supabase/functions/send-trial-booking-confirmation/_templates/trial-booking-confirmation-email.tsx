@@ -59,7 +59,7 @@ export const TrialBookingConfirmationEmail = ({
               <Text style={text}>
                 {sessions!.map((s, i) => (
                   <React.Fragment key={i}>
-                    {s.date} at {s.time} — {s.subject}
+                    {s.date} at {s.time}, {s.subject}
                     <br />
                   </React.Fragment>
                 ))}
@@ -90,7 +90,7 @@ export const TrialBookingConfirmationEmail = ({
                 )}
               </Text>
               <Text style={text}>
-                A quick note — although the trial is free of charge, the tutor is setting this time aside specifically for {childName}. If anything comes up and you can no longer make it, please do let us know so we can offer the slot to another family.
+                A quick note, although the trial is free of charge, the tutor is setting this time aside specifically for {childName}. If anything comes up and you can no longer make it, please do let us know so we can offer the slot to another family.
               </Text>
             </>
           )}
@@ -100,7 +100,7 @@ export const TrialBookingConfirmationEmail = ({
             <Link href="mailto:enquiries@classbeyondacademy.io" style={link}>
               enquiries@classbeyondacademy.io
             </Link>{' '}
-            or 020 3598 9133.
+            or 01438 582848.
           </Text>
 
           <Text style={text}>

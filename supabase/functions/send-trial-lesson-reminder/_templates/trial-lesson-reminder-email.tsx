@@ -49,7 +49,7 @@ export const TrialLessonReminderEmail = ({
         </Text>
 
         <Text style={text}>
-          The session runs in one continuous call — the first 15 minutes is a short platform walkthrough and introduction, and then {childName} does a 30 minute trial lesson with the tutor. You're very welcome to stay on for the whole thing.
+          The session runs in one continuous call, the first 15 minutes is a short platform walkthrough and introduction, and then {childName} does a 30 minute trial lesson with the tutor. You're very welcome to stay on for the whole thing.
         </Text>
 
         <Text style={text}>
@@ -60,7 +60,7 @@ export const TrialLessonReminderEmail = ({
         </Text>
 
         <Text style={text}>
-          A couple of small things that really help — please keep the camera on for the whole session (it's part of how we keep our sessions safe), and try to hop on a few minutes early so we can start on time.
+          A couple of small things that really help, please keep the camera on for the whole session (it's part of how we keep our sessions safe), and try to hop on a few minutes early so we can start on time.
         </Text>
 
         <Text style={text}>

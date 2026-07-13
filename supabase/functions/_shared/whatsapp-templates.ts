@@ -32,7 +32,7 @@ Please review and approve/deny this request in the admin portal.`;
   trialBookingConfirmation: (parentName: string, childName: string, subject: string, preferredDate: string, preferredTime: string) => `
 Hi ${parentName},
 
-Thanks so much for booking a trial lesson for ${childName} in ${subject}. Just wanted to confirm we've received your request — someone from the team will be in touch within 24 hours to confirm everything and match you with a tutor.
+Thanks so much for booking a trial lesson for ${childName} in ${subject}. Just wanted to confirm we've received your request, someone from the team will be in touch within 24 hours to confirm everything and match you with a tutor.
 
 Here's what you sent through:
 Date: ${preferredDate}
@@ -41,7 +41,7 @@ Session: a 15 minute platform walkthrough followed by a 30 minute trial lesson
 
 We'll send the video link across shortly before the session begins.
 
-Just a gentle note — although the trial is free of charge, the tutor is setting this time aside especially for ${childName}. If anything changes and you can't make it, please do let us know so we can offer the slot to another family.
+Just a gentle note, although the trial is free of charge, the tutor is setting this time aside especially for ${childName}. If anything changes and you can't make it, please do let us know so we can offer the slot to another family.
 
 Looking forward to meeting you both.
 
@@ -55,7 +55,7 @@ The Class Beyond Team
     sessions: { date: string; time: string; subject: string }[]
   ) => {
     const sessionLines = sessions
-      .map((s) => `• ${s.date} at ${s.time} — ${s.subject}`)
+      .map((s) => `• ${s.date} at ${s.time}, ${s.subject}`)
       .join('\n');
     return `
 ✨ Review Room Booking Confirmed! ✨
@@ -96,7 +96,7 @@ ${sessionLines}
 🔗 Join here (same link for every session):
 ${studentLessonLink}
 
-Please save this link — you'll use it for each of the sessions above. Just click in a few minutes before each session starts.
+Please save this link, you'll use it for each of the sessions above. Just click in a few minutes before each session starts.
 
 Any questions? Just reply to this message.
 
@@ -108,7 +108,7 @@ Class Beyond Team 🎓
   trialLessonApproval: (parentName: string, childName: string, subject: string, lessonDate: string, lessonTime: string, studentLessonLink: string) => `
 Hi ${parentName},
 
-Good news — we've confirmed ${childName}'s trial lesson and matched you with one of our tutors. Here are the details:
+Good news, we've confirmed ${childName}'s trial lesson and matched you with one of our tutors. Here are the details:
 
 Subject: ${subject}
 Date: ${lessonDate}
@@ -120,7 +120,7 @@ ${studentLessonLink}
 
 The session runs in one continuous call, so you'll jump on at the start time for a quick chat about ${childName}'s goals and ${childName} will join for the lesson after that.
 
-Just a gentle reminder — although the trial is free, this time is being held especially for ${childName}. If anything changes and you can't make it, please do let us know as soon as you can.
+Just a gentle reminder, although the trial is free, this time is being held especially for ${childName}. If anything changes and you can't make it, please do let us know as soon as you can.
 
 Looking forward to meeting you both.
 
@@ -136,12 +136,12 @@ Just a quick reminder about ${childName}'s trial lesson ${isToday ? 'later today
 Date: ${lessonDate}
 Time: ${lessonTime}
 
-The session runs in one continuous call — the first 15 minutes is a short platform walkthrough and introduction, and then ${childName} does a 30 minute trial lesson with the tutor. You're very welcome to stay on for the whole thing.
+The session runs in one continuous call, the first 15 minutes is a short platform walkthrough and introduction, and then ${childName} does a 30 minute trial lesson with the tutor. You're very welcome to stay on for the whole thing.
 
 You can join here when you're ready:
 ${lessonUrl}
 
-A couple of small things that really help — please keep the camera on for the whole session, and try to hop on a few minutes early so we can start on time.
+A couple of small things that really help, please keep the camera on for the whole session, and try to hop on a few minutes early so we can start on time.
 
 And just a gentle note: although the trial is free, this time has been set aside especially for ${childName}. If something's come up and you can no longer attend, please let us know as soon as possible so we can offer it to another family.
 
