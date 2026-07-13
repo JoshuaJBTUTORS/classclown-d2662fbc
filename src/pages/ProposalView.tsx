@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Card } from '@/components/ui/card';
-import { Loader2, CheckCircle2, BookOpen } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
-import UrgencyPriceDisplay from '@/components/proposals/UrgencyPriceDisplay';
-import jbLogo from '@/assets/jb-tutors-logo.png';
+import ProposalLayout from '@/components/proposals/ProposalLayout';
 
 interface Proposal {
   id: string;
