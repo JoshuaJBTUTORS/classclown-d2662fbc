@@ -39,15 +39,21 @@ interface Proposal {
   status: string;
   created_at: string;
   daily_homework_opt_in: boolean;
+  agreed_at?: string | null;
 }
 
 interface Props {
   proposal: Proposal;
   onConfirm: () => void;
   onProposalUpdate: (p: Proposal) => void;
+  signed?: boolean;
+  signedAt?: string | null;
+  onContinuePayment?: () => void;
+  showPaymentBanner?: boolean;
 }
 
-export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }: Props) {
+export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, signed = false, signedAt = null, onContinuePayment, showPaymentBanner = false }: Props) {
+
   const [active, setActive] = useState('overview');
   const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
@@ -71,11 +77,31 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }
   const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const shortRef = `CB-${proposal.id.slice(0, 8).toUpperCase()}`;
+  const signedDateStr = signedAt
+    ? new Date(signedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background proposal-doc">
+      {/* Print + signed watermark styles */}
+      <style>{`
+        .proposal-doc .signed-watermark { position: fixed; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .proposal-doc .signed-watermark span { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 20vw; letter-spacing: 0.05em; color: hsl(var(--primary) / 0.06); transform: rotate(-24deg); user-select: none; white-space: nowrap; }
+        @media print {
+          .proposal-doc .no-print { display: none !important; }
+          .proposal-doc .signed-watermark span { color: rgba(0,0,0,0.12) !important; }
+        }
+      `}</style>
+
+      {signed && (
+        <div className="signed-watermark" aria-hidden>
+          <span>SIGNED</span>
+        </div>
+      )}
+
       {/* Top action bar */}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+      <header className="no-print sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
           <img src={jbLogo} alt="Class Beyond" className="h-9" />
           <div className="flex items-center gap-2">
@@ -85,14 +111,32 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }
               </a>
             </Button>
             <Button variant="ghost" size="sm" onClick={() => window.print()}>
-              <Printer className="mr-2 h-4 w-4" /> Print
+              <Printer className="mr-2 h-4 w-4" /> {signed ? 'Download / Print' : 'Print'}
             </Button>
-            <Button size="sm" onClick={onConfirm}>
-              Confirm & get started
-            </Button>
+            {signed ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-600/30 bg-green-600/10 px-3 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400">
+                <Check className="h-3.5 w-3.5" />
+                Signed{signedDateStr ? ` · ${signedDateStr}` : ''}
+              </span>
+            ) : (
+              <Button size="sm" onClick={onConfirm}>
+                Confirm & get started
+              </Button>
+            )}
           </div>
         </div>
+        {showPaymentBanner && onContinuePayment && (
+          <div className="border-t border-border/60 bg-primary/5">
+            <div className="mx-auto flex max-w-[1400px] flex-col items-start justify-between gap-2 px-6 py-3 sm:flex-row sm:items-center">
+              <p className="text-sm">
+                <span className="font-semibold text-primary">Next step:</span> complete your payment setup to activate lessons.
+              </p>
+              <Button size="sm" onClick={onContinuePayment}>Complete payment setup</Button>
+            </div>
+          </div>
+        )}
       </header>
+
 
       <div className="mx-auto flex max-w-[1400px] gap-12 px-6 py-10">
         {/* Sidebar */}
@@ -156,7 +200,12 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }
             </div>
 
             {/* Prepared by */}
-            <div className="grid gap-6 rounded-2xl border border-border bg-card p-6 md:grid-cols-[auto_1fr_auto] md:items-center">
+            <div className={`relative grid gap-6 rounded-2xl border p-6 md:grid-cols-[auto_1fr_auto] md:items-center ${signed ? 'border-green-600/40 bg-green-600/5' : 'border-border bg-card'}`}>
+              {signed && (
+                <div className="absolute -top-3 right-4 inline-flex items-center gap-1.5 rounded-full border border-green-600/40 bg-background px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-green-700 dark:text-green-400">
+                  <Check className="h-3 w-3" /> Signed
+                </div>
+              )}
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-heading text-xl font-semibold text-primary">
                 CB
               </div>
@@ -171,12 +220,19 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }
                     <Phone className="h-3.5 w-3.5" /> {CONTACT_PHONE}
                   </a>
                 </div>
+                {signed && signedDateStr && (
+                  <p className="pt-2 text-sm font-medium text-green-700 dark:text-green-400">
+                    Agreement accepted by {proposal.recipient_name} on {signedDateStr}.
+                  </p>
+                )}
               </div>
               <div className="text-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Date</p>
                 <p className="mt-1 font-medium">{dateStr}</p>
+                <p className="mt-2 text-[11px] text-muted-foreground">Ref {shortRef}</p>
               </div>
             </div>
+
 
             {/* Video */}
             <div className="space-y-3">
@@ -291,7 +347,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }
               )}
             </div>
 
-            {!proposal.daily_homework_opt_in && !homeworkDismissed && (
+            {!proposal.daily_homework_opt_in && !homeworkDismissed && !signed && (
               <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-start gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
@@ -327,6 +383,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }
                 </div>
               </div>
             )}
+            {signed && !proposal.daily_homework_opt_in && (
+              <p className="mt-4 text-sm text-muted-foreground">Daily Homework Practice: not included.</p>
+            )}
+
           </Section>
 
           {/* FAQs */}
@@ -362,25 +422,51 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }
               </p>
             </div>
 
-            <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl bg-primary p-8 text-primary-foreground md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="font-heading text-2xl font-semibold">Ready to get started?</p>
-                <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
+            {signed ? (
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl border-2 border-green-600/40 bg-green-600/5 p-8 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-heading text-2xl font-semibold text-green-700 dark:text-green-400">
+                    Agreement signed{signedDateStr ? ` on ${signedDateStr}` : ''}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    A permanent copy of this signed proposal is kept on record for both parties.
+                  </p>
+                </div>
+                <Button size="lg" variant="outline" onClick={() => window.print()} className="no-print">
+                  <Printer className="mr-2 h-4 w-4" /> Download / Print
+                </Button>
               </div>
-              <Button size="lg" variant="secondary" onClick={onConfirm}>
-                Confirm & get started
-              </Button>
-            </div>
+            ) : (
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl bg-primary p-8 text-primary-foreground md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-heading text-2xl font-semibold">Ready to get started?</p>
+                  <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
+                </div>
+                <Button size="lg" variant="secondary" onClick={onConfirm}>
+                  Confirm & get started
+                </Button>
+              </div>
+            )}
           </Section>
         </main>
       </div>
 
       {/* Mobile sticky CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
-        <Button className="w-full" size="lg" onClick={onConfirm}>
-          Confirm & get started
-        </Button>
-      </div>
+      {!signed && (
+        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
+          <Button className="w-full" size="lg" onClick={onConfirm}>
+            Confirm & get started
+          </Button>
+        </div>
+      )}
+      {signed && showPaymentBanner && onContinuePayment && (
+        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
+          <Button className="w-full" size="lg" onClick={onContinuePayment}>
+            Complete payment setup
+          </Button>
+        </div>
+      )}
+
     </div>
   );
 }

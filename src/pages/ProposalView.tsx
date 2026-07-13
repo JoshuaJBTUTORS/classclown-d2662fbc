@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
 import ProposalLayout from '@/components/proposals/ProposalLayout';
@@ -18,6 +18,7 @@ interface Proposal {
   status: string;
   created_at: string;
   daily_homework_opt_in: boolean;
+  agreed_at?: string | null;
 }
 
 export default function ProposalView() {
@@ -86,13 +87,8 @@ export default function ProposalView() {
       }
 
       // Determine current step based on status
-      if (data.status === 'viewed' || data.status === 'sent') {
-        setCurrentStep('view');
-      } else if (data.status === 'agreed') {
-        setCurrentStep('payment');
-      } else if (data.status === 'completed') {
-        setCurrentStep('payment');
-      }
+      // Always start on the document view — signed docs stay visible for the record.
+      setCurrentStep('view');
     } catch (error: any) {
       console.error('❌ Error loading proposal:', error);
       console.error('Full error object:', JSON.stringify(error, null, 2));
@@ -135,18 +131,6 @@ export default function ProposalView() {
     );
   }
 
-  if (proposal.status === 'completed') {
-    return (
-      <div className="container max-w-2xl py-16 text-center">
-        <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold mb-2">🎉 Welcome to Class Beyond!</h1>
-        <p className="text-muted-foreground">
-          Your proposal has been completed. We'll be in touch shortly to schedule your first lesson.
-        </p>
-      </div>
-    );
-  }
-
   if (currentStep === 'payment') {
     return <PaymentCaptureStep proposal={proposal} onComplete={() => loadProposal()} />;
   }
@@ -164,11 +148,18 @@ export default function ProposalView() {
     );
   }
 
+  const isSigned = proposal.status === 'agreed' || proposal.status === 'completed';
+
   return (
     <ProposalLayout
       proposal={proposal}
       onConfirm={() => setCurrentStep('agreement')}
       onProposalUpdate={(p) => setProposal(p)}
+      signed={isSigned}
+      signedAt={proposal.agreed_at ?? null}
+      showPaymentBanner={proposal.status === 'agreed'}
+      onContinuePayment={() => setCurrentStep('payment')}
     />
   );
 }
+
