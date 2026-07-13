@@ -230,17 +230,13 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
                   variant={selectedTime === slot.time ? "default" : "outline"}
                   size="sm"
                   onClick={() => onTimeSelect(slot.time)}
-                  className={`flex flex-col items-center p-3 h-auto ${
+                  className={`flex items-center justify-center p-3 h-auto ${
                     selectedTime === slot.time 
                       ? "bg-[#e94b7f] hover:bg-[#d63d6f] text-white" 
                       : "hover:border-[#e94b7f] hover:text-[#e94b7f]"
                   }`}
                 >
                   <span className="font-medium">{slot.time}</span>
-                  <span className="text-xs flex items-center gap-1 mt-1">
-                    <Users className="h-3 w-3" />
-                    {slot.tutorCount} tutor{slot.tutorCount !== 1 ? 's' : ''}
-                  </span>
                 </Button>
               ))}
             </div>
