@@ -18,6 +18,7 @@ interface Proposal {
   status: string;
   created_at: string;
   daily_homework_opt_in: boolean;
+  agreed_at?: string | null;
 }
 
 export default function ProposalView() {
