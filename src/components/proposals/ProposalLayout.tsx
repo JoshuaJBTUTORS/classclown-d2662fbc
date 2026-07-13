@@ -200,7 +200,12 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             </div>
 
             {/* Prepared by */}
-            <div className="grid gap-6 rounded-2xl border border-border bg-card p-6 md:grid-cols-[auto_1fr_auto] md:items-center">
+            <div className={`relative grid gap-6 rounded-2xl border p-6 md:grid-cols-[auto_1fr_auto] md:items-center ${signed ? 'border-green-600/40 bg-green-600/5' : 'border-border bg-card'}`}>
+              {signed && (
+                <div className="absolute -top-3 right-4 inline-flex items-center gap-1.5 rounded-full border border-green-600/40 bg-background px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-green-700 dark:text-green-400">
+                  <Check className="h-3 w-3" /> Signed
+                </div>
+              )}
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-heading text-xl font-semibold text-primary">
                 CB
               </div>
@@ -215,12 +220,19 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                     <Phone className="h-3.5 w-3.5" /> {CONTACT_PHONE}
                   </a>
                 </div>
+                {signed && signedDateStr && (
+                  <p className="pt-2 text-sm font-medium text-green-700 dark:text-green-400">
+                    Agreement accepted by {proposal.recipient_name} on {signedDateStr}.
+                  </p>
+                )}
               </div>
               <div className="text-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Date</p>
                 <p className="mt-1 font-medium">{dateStr}</p>
+                <p className="mt-2 text-[11px] text-muted-foreground">Ref {shortRef}</p>
               </div>
             </div>
+
 
             {/* Video */}
             <div className="space-y-3">
