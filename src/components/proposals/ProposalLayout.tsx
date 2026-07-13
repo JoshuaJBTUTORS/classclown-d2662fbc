@@ -1,0 +1,406 @@
+import { useEffect, useState } from 'react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Check, Mail, Phone, Printer, PlayCircle, BookOpen } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import jbLogo from '@/assets/jb-tutors-logo.png';
+
+const INTRO_VIDEO_URL = 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // Replace with real Class Beyond intro
+const CONTACT_EMAIL = 'enquiries@classbeyondacademy.io';
+const CONTACT_PHONE = '01438 582848';
+
+const SECTIONS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'plan', label: 'The Plan' },
+  { id: 'included', label: "What's Included" },
+  { id: 'results', label: 'Results' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'faqs', label: 'FAQs' },
+  { id: 'terms', label: 'Terms' },
+];
+
+const FAQS = [
+  { q: 'How are tutors matched to my child?', a: 'We match based on subject, exam board, target level, and personality fit. If the pairing does not feel right after the first lesson, we rematch at no cost.' },
+  { q: 'What happens if we need to cancel a lesson?', a: 'Cancel or reschedule with at least 24 hours notice at no charge. Cancellations inside 24 hours are charged at the full lesson rate.' },
+  { q: 'Are lessons recorded?', a: 'Yes. Every lesson is recorded and available in your parent dashboard for revision, so your child can revisit anything they missed.' },
+  { q: 'How is progress tracked?', a: 'You get a parent dashboard with lesson notes, homework completion, and half-termly written assessments with tutor feedback.' },
+  { q: 'What if we want to change subjects or add a session?', a: 'Just reply to any email or call us on 01438 582848. Changes take effect from the following week.' },
+];
+
+interface Proposal {
+  id: string;
+  recipient_name: string;
+  lesson_type: string;
+  subject: string;
+  price_per_lesson: number;
+  payment_cycle: string;
+  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
+  status: string;
+  created_at: string;
+  daily_homework_opt_in: boolean;
+}
+
+interface Props {
+  proposal: Proposal;
+  onConfirm: () => void;
+  onProposalUpdate: (p: Proposal) => void;
+}
+
+export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }: Props) {
+  const [active, setActive] = useState('overview');
+  const [homeworkDismissed, setHomeworkDismissed] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      },
+      { rootMargin: '-40% 0px -55% 0px' }
+    );
+    SECTIONS.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const totalMinutesPerWeek = proposal.lesson_times.reduce((sum, t) => sum + (t.duration || 0), 0);
+  const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const shortRef = `CB-${proposal.id.slice(0, 8).toUpperCase()}`;
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Top action bar */}
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
+          <img src={jbLogo} alt="Class Beyond" className="h-9" />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <a href={`mailto:${CONTACT_EMAIL}`}>
+                <Mail className="mr-2 h-4 w-4" /> Contact us
+              </a>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" /> Print
+            </Button>
+            <Button size="sm" onClick={onConfirm}>
+              Confirm & get started
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto flex max-w-[1400px] gap-12 px-6 py-10">
+        {/* Sidebar */}
+        <aside className="hidden w-56 shrink-0 lg:block">
+          <div className="sticky top-24 space-y-6">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Proposal</p>
+              <p className="mt-1 font-heading text-lg font-semibold text-foreground">{proposal.recipient_name}</p>
+              <p className="text-xs text-muted-foreground">Ref {shortRef}</p>
+            </div>
+            <nav className="flex flex-col gap-1">
+              {SECTIONS.map((s) => (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  className={`rounded-md px-3 py-2 text-sm transition-colors ${
+                    active === s.id
+                      ? 'bg-primary/10 font-medium text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {s.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Mobile section pills */}
+        <nav className="fixed inset-x-0 top-16 z-30 flex gap-2 overflow-x-auto border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
+          {SECTIONS.map((s) => (
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${
+                active === s.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {s.label}
+            </a>
+          ))}
+        </nav>
+
+        {/* Content */}
+        <main className="min-w-0 flex-1 space-y-24 pt-16 lg:pt-0">
+          {/* Overview */}
+          <section id="overview" className="space-y-10 scroll-mt-24">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Class Beyond Proposal
+              </p>
+              <h1 className="mt-3 font-heading text-5xl font-bold leading-[1.05] tracking-tight text-foreground md:text-6xl">
+                A tailored plan for
+                <br />
+                <span className="text-primary">{proposal.recipient_name}</span>
+              </h1>
+              <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+                A dedicated 1-to-1 tuition programme designed around your child's goals, exam board and pace, delivered by
+                subject specialists we've hand-picked.
+              </p>
+            </div>
+
+            {/* Prepared by */}
+            <div className="grid gap-6 rounded-2xl border border-border bg-card p-6 md:grid-cols-[auto_1fr_auto] md:items-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-heading text-xl font-semibold text-primary">
+                CB
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Prepared by</p>
+                <p className="font-heading text-lg font-semibold">Class Beyond Admissions Team</p>
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                  <a href={`mailto:${CONTACT_EMAIL}`} className="flex items-center gap-1.5 hover:text-primary">
+                    <Mail className="h-3.5 w-3.5" /> {CONTACT_EMAIL}
+                  </a>
+                  <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:text-primary">
+                    <Phone className="h-3.5 w-3.5" /> {CONTACT_PHONE}
+                  </a>
+                </div>
+              </div>
+              <div className="text-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Date</p>
+                <p className="mt-1 font-medium">{dateStr}</p>
+              </div>
+            </div>
+
+            {/* Video */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-primary">
+                <PlayCircle className="h-4 w-4" />
+                <p className="text-[11px] font-semibold uppercase tracking-widest">A message from the team</p>
+              </div>
+              <div className="aspect-video overflow-hidden rounded-2xl border border-border bg-muted">
+                <iframe
+                  src={INTRO_VIDEO_URL}
+                  title="Class Beyond intro"
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+
+            {/* Key stats */}
+            <div className="grid gap-6 border-y border-border py-8 md:grid-cols-3">
+              <Stat label="Lessons per week" value={String(proposal.lesson_times.length)} />
+              <Stat label="Minutes per week" value={String(totalMinutesPerWeek)} />
+              <Stat label={uniqueSubjects.length === 1 ? 'Subject' : 'Subjects'} value={String(uniqueSubjects.length)} sub={uniqueSubjects.join(', ')} />
+            </div>
+          </section>
+
+          {/* The Plan */}
+          <Section id="plan" eyebrow="The Plan" title="Your weekly schedule">
+            <div className="overflow-hidden rounded-2xl border border-border">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/60 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Day</th>
+                    <th className="px-5 py-3 font-semibold">Time</th>
+                    <th className="px-5 py-3 font-semibold">Duration</th>
+                    <th className="px-5 py-3 font-semibold">Subject</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proposal.lesson_times.map((t, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="px-5 py-4 font-medium">{t.day}</td>
+                      <td className="px-5 py-4">{t.time}</td>
+                      <td className="px-5 py-4 text-muted-foreground">{t.duration} min</td>
+                      <td className="px-5 py-4">{t.subject || proposal.subject}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Lesson type: <span className="font-medium text-foreground">{proposal.lesson_type}</span>
+            </p>
+          </Section>
+
+          {/* Included */}
+          <Section id="included" eyebrow="What's Included" title="Everything you get, every week">
+            <ul className="grid gap-4 md:grid-cols-2">
+              {[
+                'Lesson recordings available for revision',
+                'Unlimited access to our learning hub e-learning courses',
+                'Parent dashboard with progress updates and six-week check-ins',
+                'Half-termly assessments with written tutor feedback',
+                'Homework after each session, marked to track progress',
+                'Direct line to our admissions team for anything you need',
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+                  <div className="mt-0.5 rounded-full bg-primary/10 p-1 text-primary">
+                    <Check className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-sm leading-relaxed">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </Section>
+
+          {/* Results */}
+          <Section id="results" eyebrow="Results" title="Our track record speaks for itself">
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                { n: '92%', l: 'A*/A rate at GCSE' },
+                { n: '95%', l: '11+ pass rate' },
+                { n: '98%', l: 'Parent satisfaction' },
+              ].map((s) => (
+                <div key={s.n} className="rounded-2xl border border-border bg-card p-8">
+                  <p className="font-heading text-5xl font-bold text-primary">{s.n}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{s.l}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* Pricing */}
+          <Section id="pricing" eyebrow="Pricing" title="Simple, transparent pricing">
+            <div className="rounded-2xl border border-border bg-card p-8">
+              <div className="flex items-baseline gap-2">
+                <span className="font-heading text-5xl font-bold text-foreground">£{proposal.price_per_lesson}</span>
+                <span className="text-muted-foreground">per lesson</span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Billed <span className="font-medium text-foreground">{proposal.payment_cycle}</span>. No sign-up fee, cancel anytime with 30 days notice.
+              </p>
+
+              {proposal.daily_homework_opt_in && (
+                <div className="mt-6 flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
+                  <Check className="h-4 w-4 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Daily Homework Practice included</p>
+                    <p className="text-xs text-muted-foreground">£12.99 / month add-on</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {!proposal.daily_homework_opt_in && !homeworkDismissed && (
+              <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-full bg-primary/10 p-3">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-heading font-semibold">Add Daily Homework Practice</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Daily assignments across all subjects to lock in progress between lessons.
+                    </p>
+                  </div>
+                  <span className="whitespace-nowrap font-heading text-lg font-bold text-primary">£12.99/mo</span>
+                </div>
+                <div className="mt-4 flex justify-end gap-3">
+                  <Button variant="ghost" size="sm" onClick={() => setHomeworkDismissed(true)}>
+                    No thanks
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      const { error } = await supabase
+                        .from('lesson_proposals')
+                        .update({ daily_homework_opt_in: true } as any)
+                        .eq('id', proposal.id);
+                      if (!error) {
+                        onProposalUpdate({ ...proposal, daily_homework_opt_in: true });
+                        toast({ title: 'Added', description: 'Daily homework practice added to your proposal.' });
+                      }
+                    }}
+                  >
+                    Yes, add it
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Section>
+
+          {/* FAQs */}
+          <Section id="faqs" eyebrow="FAQs" title="Common questions">
+            <Accordion type="single" collapsible className="rounded-2xl border border-border bg-card">
+              {FAQS.map((f, i) => (
+                <AccordionItem key={i} value={`f-${i}`} className="border-border px-5 last:border-0">
+                  <AccordionTrigger className="text-left font-medium">{f.q}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </Section>
+
+          {/* Terms */}
+          <Section id="terms" eyebrow="Terms" title="The fine print">
+            <div className="space-y-4 rounded-2xl border border-border bg-card p-8 text-sm leading-relaxed text-muted-foreground">
+              <p>
+                <strong className="text-foreground">Safeguarding.</strong> All tutors are enhanced DBS checked and complete
+                annual safeguarding training. Every session is recorded and stored securely for review.
+              </p>
+              <p>
+                <strong className="text-foreground">Cancellations.</strong> Reschedule or cancel individual lessons with 24
+                hours notice at no cost. Ongoing tuition can be paused or cancelled with 30 days written notice.
+              </p>
+              <p>
+                <strong className="text-foreground">Payment.</strong> Lessons are billed {proposal.payment_cycle.toLowerCase()} in advance
+                via secure card payment. You'll receive a receipt for every charge.
+              </p>
+              <p>
+                <strong className="text-foreground">Data.</strong> We hold pupil and parent data in line with UK GDPR and only
+                share it with the tutor assigned to your child. Full policy on request.
+              </p>
+            </div>
+
+            <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl bg-primary p-8 text-primary-foreground md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-heading text-2xl font-semibold">Ready to get started?</p>
+                <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
+              </div>
+              <Button size="lg" variant="secondary" onClick={onConfirm}>
+                Confirm & get started
+              </Button>
+            </div>
+          </Section>
+        </main>
+      </div>
+
+      {/* Mobile sticky CTA */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
+        <Button className="w-full" size="lg" onClick={onConfirm}>
+          Confirm & get started
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div>
+      <p className="font-heading text-4xl font-bold text-foreground">{value}</p>
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+function Section({ id, eyebrow, title, children }: { id: string; eyebrow: string; title: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-24">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">{eyebrow}</p>
+      <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight md:text-4xl">{title}</h2>
+      <div className="mt-8">{children}</div>
+    </section>
+  );
+}
