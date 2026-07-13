@@ -77,6 +77,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const shortRef = `CB-${proposal.id.slice(0, 8).toUpperCase()}`;
+  const signedDateStr = signedAt
+    ? new Date(signedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+
 
   return (
     <div className="min-h-screen bg-background">
