@@ -83,9 +83,25 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background proposal-doc">
+      {/* Print + signed watermark styles */}
+      <style>{`
+        .proposal-doc .signed-watermark { position: fixed; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .proposal-doc .signed-watermark span { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 20vw; letter-spacing: 0.05em; color: hsl(var(--primary) / 0.06); transform: rotate(-24deg); user-select: none; white-space: nowrap; }
+        @media print {
+          .proposal-doc .no-print { display: none !important; }
+          .proposal-doc .signed-watermark span { color: rgba(0,0,0,0.12) !important; }
+        }
+      `}</style>
+
+      {signed && (
+        <div className="signed-watermark" aria-hidden>
+          <span>SIGNED</span>
+        </div>
+      )}
+
       {/* Top action bar */}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+      <header className="no-print sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
           <img src={jbLogo} alt="Class Beyond" className="h-9" />
           <div className="flex items-center gap-2">
@@ -95,14 +111,32 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               </a>
             </Button>
             <Button variant="ghost" size="sm" onClick={() => window.print()}>
-              <Printer className="mr-2 h-4 w-4" /> Print
+              <Printer className="mr-2 h-4 w-4" /> {signed ? 'Download / Print' : 'Print'}
             </Button>
-            <Button size="sm" onClick={onConfirm}>
-              Confirm & get started
-            </Button>
+            {signed ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-600/30 bg-green-600/10 px-3 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400">
+                <Check className="h-3.5 w-3.5" />
+                Signed{signedDateStr ? ` · ${signedDateStr}` : ''}
+              </span>
+            ) : (
+              <Button size="sm" onClick={onConfirm}>
+                Confirm & get started
+              </Button>
+            )}
           </div>
         </div>
+        {showPaymentBanner && onContinuePayment && (
+          <div className="border-t border-border/60 bg-primary/5">
+            <div className="mx-auto flex max-w-[1400px] flex-col items-start justify-between gap-2 px-6 py-3 sm:flex-row sm:items-center">
+              <p className="text-sm">
+                <span className="font-semibold text-primary">Next step:</span> complete your payment setup to activate lessons.
+              </p>
+              <Button size="sm" onClick={onContinuePayment}>Complete payment setup</Button>
+            </div>
+          </div>
+        )}
       </header>
+
 
       <div className="mx-auto flex max-w-[1400px] gap-12 px-6 py-10">
         {/* Sidebar */}
