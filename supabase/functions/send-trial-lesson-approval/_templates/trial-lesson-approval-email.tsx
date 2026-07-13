@@ -34,7 +34,7 @@ export const TrialLessonApprovalEmail = ({
         <Text style={text}>Hi {parentName},</Text>
 
         <Text style={text}>
-          Good news — we've confirmed {childName}'s trial lesson and matched you with one of our tutors. Here are the details:
+          Good news, we've confirmed {childName}'s trial lesson and matched you with one of our tutors. Here are the details:
         </Text>
 
         <Text style={text}>
@@ -57,7 +57,7 @@ export const TrialLessonApprovalEmail = ({
         </Text>
 
         <Text style={text}>
-          A few small things that help the session run smoothly — please have a pen, some paper and any recent schoolwork to hand, find a quiet spot with a decent connection, and jump on a couple of minutes early so we can start on time.
+          A few small things that help the session run smoothly, please have a pen, some paper and any recent schoolwork to hand, find a quiet spot with a decent connection, and jump on a couple of minutes early so we can start on time.
         </Text>
 
         <Text style={text}>
@@ -69,7 +69,7 @@ export const TrialLessonApprovalEmail = ({
           <Link href="mailto:enquiries@classbeyondacademy.io" style={link}>
             enquiries@classbeyondacademy.io
           </Link>{' '}
-          or 020 3598 9133.
+          or 01438 582848.
         </Text>
 
         <Text style={text}>
