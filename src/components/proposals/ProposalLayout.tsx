@@ -347,7 +347,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               )}
             </div>
 
-            {!proposal.daily_homework_opt_in && !homeworkDismissed && (
+            {!proposal.daily_homework_opt_in && !homeworkDismissed && !signed && (
               <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-start gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
@@ -383,6 +383,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 </div>
               </div>
             )}
+            {signed && !proposal.daily_homework_opt_in && (
+              <p className="mt-4 text-sm text-muted-foreground">Daily Homework Practice: not included.</p>
+            )}
+
           </Section>
 
           {/* FAQs */}
