@@ -414,7 +414,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 hours notice at no cost. Ongoing tuition can be paused or cancelled with 30 days written notice.
               </p>
               <p>
-                <strong className="text-foreground">Payment.</strong> Lessons are billed {proposal.payment_cycle.toLowerCase()} in advance
+                <strong className="text-foreground">Payment.</strong> Lessons are billed every 4 weeks in advance
                 via secure card payment. You'll receive a receipt for every charge.
               </p>
               <p>
