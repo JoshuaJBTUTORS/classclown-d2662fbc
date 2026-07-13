@@ -30,24 +30,23 @@ Please review and approve/deny this request in the admin portal.`;
   },
 
   trialBookingConfirmation: (parentName: string, childName: string, subject: string, preferredDate: string, preferredTime: string) => `
-🌟 Trial Lesson Request Received! 🌟
+Hi ${parentName},
 
-Hi ${parentName}!
+Thanks so much for booking a trial lesson for ${childName} in ${subject}. Just wanted to confirm we've received your request — someone from the team will be in touch within 24 hours to confirm everything and match you with a tutor.
 
-Thank you for booking a trial lesson for ${childName} in ${subject}.
+Here's what you sent through:
+Date: ${preferredDate}
+Start time: ${preferredTime}
+Session: a 15 minute platform walkthrough followed by a 30 minute trial lesson
 
-📅 Preferred Date: ${preferredDate}
-⏰ Session Start Time: ${preferredTime}
-⏱️ Session Structure: 15 mins platform demo + 30 mins trial lesson
+We'll send the video link across shortly before the session begins.
 
-📺 Your video lesson link will be sent to you shortly before the session.
+Just a gentle note — although the trial is free of charge, the tutor is setting this time aside especially for ${childName}. If anything changes and you can't make it, please do let us know so we can offer the slot to another family.
 
-We'll contact you within 24 hours to confirm the lesson details.
+Looking forward to meeting you both.
 
-Looking forward to meeting ${childName}!
-
-Best regards,
-Class Beyond Team 🎯
+Best wishes,
+The Class Beyond Team
   `.trim(),
 
   reviewRoomConfirmation: (
@@ -107,55 +106,47 @@ Class Beyond Team 🎓
   },
 
   trialLessonApproval: (parentName: string, childName: string, subject: string, lessonDate: string, lessonTime: string, studentLessonLink: string) => `
-🎉 Trial Lesson Confirmed! 🎉
+Hi ${parentName},
 
-Hi ${parentName}!
+Good news — we've confirmed ${childName}'s trial lesson and matched you with one of our tutors. Here are the details:
 
-Your trial lesson for ${childName} has been approved:
+Subject: ${subject}
+Date: ${lessonDate}
+Start time: ${lessonTime}
+Length: 45 minutes in total (a 15 minute parent chat followed by a 30 minute lesson)
 
-📚 Subject: ${subject}
-📅 Date: ${lessonDate}
-⏰ Session Start Time: ${lessonTime}
-⏱️ Duration: 45 minutes (15 min consultation + 30 min lesson)
+When it's time, you can join here:
+${studentLessonLink}
 
-🔗 Join the session here: ${studentLessonLink}
+The session runs in one continuous call, so you'll jump on at the start time for a quick chat about ${childName}'s goals and ${childName} will join for the lesson after that.
 
-Please join at the scheduled time for the parent consultation. ${childName} will join the same call after 15 minutes for their lesson.
+Just a gentle reminder — although the trial is free, this time is being held especially for ${childName}. If anything changes and you can't make it, please do let us know as soon as you can.
 
-Looking forward to meeting you both!
+Looking forward to meeting you both.
 
-Best regards,
-Class Beyond Team 🎓
+Best wishes,
+The Class Beyond Team
   `.trim(),
 
   trialLessonReminder: (parentName: string, childName: string, lessonTitle: string, lessonDate: string, lessonTime: string, lessonUrl: string, isToday: boolean) => `
-🌟 ${isToday ? 'Today\'s' : 'Tomorrow\'s'} Trial Session Reminder!
+Hi ${parentName},
 
-Hi ${parentName}!
+Just a quick reminder about ${childName}'s trial lesson ${isToday ? 'later today' : 'tomorrow'}. We're really looking forward to meeting you both.
 
-Excited reminder about ${childName}'s trial session:
+Date: ${lessonDate}
+Time: ${lessonTime}
 
-📚 ${lessonTitle}
-📅 ${lessonDate}
-⏰ ${lessonTime}
+The session runs in one continuous call — the first 15 minutes is a short platform walkthrough and introduction, and then ${childName} does a 30 minute trial lesson with the tutor. You're very welcome to stay on for the whole thing.
 
-⏱️ How it works:
-• First 15 mins: Platform demo & introduction
-• Next 30 mins: Personalized trial lesson with ${childName}
+You can join here when you're ready:
+${lessonUrl}
 
-Parents join with one link and stay for the entire session!
+A couple of small things that really help — please keep the camera on for the whole session, and try to hop on a few minutes early so we can start on time.
 
-🔗 Join here: ${lessonUrl}
+And just a gentle note: although the trial is free, this time has been set aside especially for ${childName}. If something's come up and you can no longer attend, please let us know as soon as possible so we can offer it to another family.
 
-Important:
-📹 Camera must be on throughout
-🕐 Ready 5 minutes early
-👥 Parents welcome to observe everything
-
-We're so excited to meet you both!
-
-Best regards,
-Class Beyond Team 🚀
+See you soon,
+The Class Beyond Team
   `.trim(),
 
   regularLessonReminder: (parentName: string, childName: string, lessonTitle: string, lessonDate: string, lessonTime: string, isToday: boolean) => `
