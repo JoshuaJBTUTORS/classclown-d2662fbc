@@ -39,15 +39,21 @@ interface Proposal {
   status: string;
   created_at: string;
   daily_homework_opt_in: boolean;
+  agreed_at?: string | null;
 }
 
 interface Props {
   proposal: Proposal;
   onConfirm: () => void;
   onProposalUpdate: (p: Proposal) => void;
+  signed?: boolean;
+  signedAt?: string | null;
+  onContinuePayment?: () => void;
+  showPaymentBanner?: boolean;
 }
 
-export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate }: Props) {
+export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, signed = false, signedAt = null, onContinuePayment, showPaymentBanner = false }: Props) {
+
   const [active, setActive] = useState('overview');
   const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
