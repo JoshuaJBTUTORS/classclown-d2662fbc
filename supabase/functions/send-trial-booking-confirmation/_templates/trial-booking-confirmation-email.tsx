@@ -44,91 +44,72 @@ export const TrialBookingConfirmationEmail = ({
       <Head />
       <Preview>
         {isReviewRoom
-          ? `Review Room booking confirmed - ${sessions!.length} session${sessions!.length > 1 ? 's' : ''}`
-          : "Trial lesson request received - We'll contact you within 24 hours"}
+          ? `We've received ${childName}'s Review Room booking`
+          : `Thanks for booking a trial lesson with Class Beyond`}
       </Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>
-            {isReviewRoom ? 'Review Room Booking Confirmed' : 'Trial Lesson Request Received'}
-          </Heading>
-          <Text style={text}>Dear {parentName},</Text>
-          <Text style={text}>
-            {isReviewRoom
-              ? `Thank you for booking ${childName} into the Review Room. Your sessions are confirmed:`
-              : `Thank you for requesting a trial lesson for ${childName}. We have successfully received your request with the following details:`}
-          </Text>
+          <Text style={text}>Hi {parentName},</Text>
 
           {isReviewRoom ? (
-            <div style={detailsBox}>
-              <Text style={detailsText}>
-                <strong>Student:</strong> {childName}<br />
-                <strong>Sessions booked:</strong>
+            <>
+              <Text style={text}>
+                Thank you for booking {childName} into the Review Room. Your sessions are confirmed for the times below:
               </Text>
-              <ul style={listStyle}>
+              <Text style={text}>
                 {sessions!.map((s, i) => (
-                  <li key={i}>
-                    <strong>{s.date}</strong> at {s.time} — {s.subject}
-                  </li>
+                  <React.Fragment key={i}>
+                    {s.date} at {s.time} — {s.subject}
+                    <br />
+                  </React.Fragment>
                 ))}
-              </ul>
-            </div>
+              </Text>
+              <Text style={text}>
+                We'll send the video link across shortly before each session starts.
+              </Text>
+            </>
           ) : (
-            <div style={detailsBox}>
-              <Text style={detailsText}>
-                <strong>Student:</strong> {childName}<br />
-                <strong>Subject:</strong> {subject}<br />
-                <strong>Preferred Date:</strong> {preferredDate}<br />
-                <strong>Session Start Time:</strong> {preferredTime}<br />
-                <strong>Session Structure:</strong> 15 mins platform demo + 30 mins trial lesson
+            <>
+              <Text style={text}>
+                Thanks so much for getting in touch about a trial lesson for {childName}. I just wanted to let you know we've received your request and one of the team will be back in touch within 24 hours to confirm everything and match you with a tutor.
+              </Text>
+              <Text style={text}>
+                Here's what you sent through so we're on the same page:
+              </Text>
+              <Text style={text}>
+                Student: {childName}<br />
+                Subject: {subject}<br />
+                Preferred date: {preferredDate}<br />
+                Preferred start time: {preferredTime}<br />
+                Session: 15 minute platform walkthrough followed by a 30 minute trial lesson
                 {message && (
                   <>
                     <br />
-                    <strong>Additional Message:</strong> {message}
+                    Your note: {message}
                   </>
                 )}
               </Text>
-            </div>
-          )}
-
-          <Text style={text}>
-            <strong>📺 Your video lesson link will be sent to you shortly before the session.</strong>
-          </Text>
-
-          {!isReviewRoom && (
-            <>
               <Text style={text}>
-                <strong>What happens next?</strong>
+                A quick note — although the trial is free of charge, the tutor is setting this time aside specifically for {childName}. If anything comes up and you can no longer make it, please do let us know so we can offer the slot to another family.
               </Text>
-              <Text style={text}>
-                Our admin team will review your request and contact you within 24 hours to:
-              </Text>
-              <ul style={listStyle}>
-                <li>Confirm the lesson details</li>
-                <li>Match you with an experienced tutor</li>
-                <li>Provide the lesson link and joining instructions</li>
-              </ul>
             </>
           )}
 
           <Text style={text}>
-            If you have any questions, please contact us:
+            If you have any questions in the meantime, you can reach me on{' '}
+            <Link href="mailto:enquiries@classbeyondacademy.io" style={link}>
+              enquiries@classbeyondacademy.io
+            </Link>{' '}
+            or 020 3598 9133.
           </Text>
+
           <Text style={text}>
-            📧 <Link href="mailto:enquiries@classbeyondacademy.io" style={link}>enquiries@classbeyondacademy.io</Link><br />
-            📞 Phone: 020 3598 9133
+            Looking forward to meeting you both.
           </Text>
 
           <Text style={text}>
-            We look forward to helping {childName} achieve their academic goals!
-          </Text>
-
-          <Text style={footer}>
-            Best regards,<br />
-            The Class Beyond Team<br />
-            <Link href="https://classbeyond.lovable.app" target="_blank" style={{ ...link, color: '#898989' }}>
-              classbeyond.lovable.app
-            </Link>
+            Best wishes,<br />
+            The Class Beyond Team
           </Text>
         </Container>
       </Body>
@@ -146,65 +127,19 @@ const container = {
   paddingLeft: '12px',
   paddingRight: '12px',
   margin: '0 auto',
-}
-
-const h1 = {
-  color: '#333',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: '24px',
-  fontWeight: 'bold',
-  margin: '40px 0',
-  padding: '0',
+  maxWidth: '600px',
 }
 
 const text = {
   color: '#333',
   fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: '14px',
-  margin: '24px 0',
-}
-
-const detailsBox = {
-  backgroundColor: '#f8f9fa',
-  border: '1px solid #e9ecef',
-  borderRadius: '6px',
-  padding: '20px',
-  margin: '20px 0',
-}
-
-const detailsText = {
-  color: '#333',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: '14px',
-  margin: '0',
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+  fontSize: '15px',
   lineHeight: '1.6',
-}
-
-const listStyle = {
-  color: '#333',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: '14px',
-  paddingLeft: '20px',
+  margin: '16px 0',
 }
 
 const link = {
   color: '#2754C5',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: '14px',
   textDecoration: 'underline',
-}
-
-const footer = {
-  color: '#898989',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: '12px',
-  lineHeight: '22px',
-  marginTop: '12px',
-  marginBottom: '24px',
 }
