@@ -422,25 +422,51 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               </p>
             </div>
 
-            <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl bg-primary p-8 text-primary-foreground md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="font-heading text-2xl font-semibold">Ready to get started?</p>
-                <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
+            {signed ? (
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl border-2 border-green-600/40 bg-green-600/5 p-8 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-heading text-2xl font-semibold text-green-700 dark:text-green-400">
+                    Agreement signed{signedDateStr ? ` on ${signedDateStr}` : ''}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    A permanent copy of this signed proposal is kept on record for both parties.
+                  </p>
+                </div>
+                <Button size="lg" variant="outline" onClick={() => window.print()} className="no-print">
+                  <Printer className="mr-2 h-4 w-4" /> Download / Print
+                </Button>
               </div>
-              <Button size="lg" variant="secondary" onClick={onConfirm}>
-                Confirm & get started
-              </Button>
-            </div>
+            ) : (
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl bg-primary p-8 text-primary-foreground md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-heading text-2xl font-semibold">Ready to get started?</p>
+                  <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
+                </div>
+                <Button size="lg" variant="secondary" onClick={onConfirm}>
+                  Confirm & get started
+                </Button>
+              </div>
+            )}
           </Section>
         </main>
       </div>
 
       {/* Mobile sticky CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
-        <Button className="w-full" size="lg" onClick={onConfirm}>
-          Confirm & get started
-        </Button>
-      </div>
+      {!signed && (
+        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
+          <Button className="w-full" size="lg" onClick={onConfirm}>
+            Confirm & get started
+          </Button>
+        </div>
+      )}
+      {signed && showPaymentBanner && onContinuePayment && (
+        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
+          <Button className="w-full" size="lg" onClick={onContinuePayment}>
+            Complete payment setup
+          </Button>
+        </div>
+      )}
+
     </div>
   );
 }
