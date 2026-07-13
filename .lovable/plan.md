@@ -1,25 +1,23 @@
-## Problem
+## Add confirmation popup before Submit Request
 
-The offer page URL `/offer/6b035c02.../6169199a-8737-4458-8e8e-fec79da1db7` is missing the final character of the access token. The real token in `tutor_offers.access_token` is `6169199a-8737-4458-8e8e-fec79da1db70`.
+When the user clicks **Submit Request** on the trial booking page (`/book-trial`), show an AlertDialog with a courtesy message. The actual booking only submits after the user confirms in the dialog.
 
-Because `access_token` is a `uuid` column, Supabase/Postgres throws `invalid input syntax for type uuid` when the URL token isn't a valid UUID. That raw error is being shown to the recipient.
+### Behaviour
 
-Root cause of truncation: an email client (or copy/paste) cut the trailing `0`. The DB value itself is correct.
+1. Click **Submit Request** → open confirmation dialog (no network call yet).
+2. Dialog shows:
+   > Thank you for considering Class Beyond Academy.
+   >
+   > We're pleased to offer you a free trial lesson. Although there is no cost to you, your tutor sets aside this time especially for your child. We kindly ask that you only book a time that you are confident you can attend, so that no tutor time goes to waste and we can continue offering free trial lessons to other families.
+   >
+   > Thank you for your understanding, and we look forward to welcoming you!
+3. Buttons: **Cancel** (closes dialog, no submission) and **Confirm Booking** (runs the existing `handleSubmit`).
+4. Existing loading state, toast, and confirmation redirect behaviour stay unchanged.
 
-## Fix (frontend only, `src/pages/OfferView.tsx`)
+### Technical
 
-1. Before querying Supabase, validate the `token` route param against a UUID regex.
-2. If invalid, short-circuit with a friendly message:
-   - "This offer link looks incomplete or invalid. Please open the link directly from your email (avoid copy-pasting) or contact us to resend it."
-3. Keep the existing "Offer not found" message for valid-shape tokens that don't match a row.
-4. Wrap the existing `supabase.from('tutor_offers').select(...)` in try/catch so any future Postgres error never leaks raw text to the user — show the same friendly message and log the original to the console.
-
-## Out of scope
-
-- No DB changes (token is correct).
-- No email template changes (the generated link is correct; truncation is downstream).
-- No change to admin notify flow.
-
-## Optional follow-up (not in this change unless you want it)
-
-- Resend this specific offer to `joshua@classbeyondacademy.io` so they get a fresh, working link. Say the word and I'll trigger it.
+- File: `src/pages/TrialBooking.tsx`.
+- Add `showConfirmDialog` state. `Submit Request` button now sets it to `true` instead of calling `handleSubmit` directly.
+- Render `AlertDialog` from `@/components/ui/alert-dialog` with the message above. On `AlertDialogAction` click, close dialog and call existing `handleSubmit`.
+- Keep the pink brand colour (`#e94b7f`) on the confirm button to match the page styling.
+- No changes to `trialBookingService` or backend logic.
