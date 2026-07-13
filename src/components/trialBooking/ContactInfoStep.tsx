@@ -134,7 +134,7 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
           </div>
           
           <div>
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone">Phone Number *</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
@@ -142,10 +142,11 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => onChange('phone', e.target.value)}
-                className="pl-10"
-                placeholder="Enter phone number (optional)"
+                className={`pl-10 ${errors.phone ? 'border-red-500' : ''}`}
+                placeholder="Enter phone number"
               />
             </div>
+            {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
           </div>
 
           <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
