@@ -147,12 +147,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         },
         {
           icon: Film,
-          label: 'Content Engine',
-          href: '/content-engine',
-          roles: ['owner'],
-        },
-        {
-          icon: Film,
           label: 'Content Creation',
           href: '/tutor-content',
           roles: ['tutor'],
@@ -199,27 +193,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner'],
         },
         {
-          icon: FileText,
-          label: 'Blog Management',
-          href: '/blog-management',
-          roles: ['admin', 'owner'],
-        },
-        {
-          icon: BookMarked,
-          label: 'Exam Board Specs',
-          href: '/admin/exam-board-specifications',
-          roles: ['admin', 'owner'],
-        },
-        {
           icon: ClipboardList,
           label: 'Assessment Assignments',
           href: '/assessment-assignments',
-          roles: ['admin', 'owner'],
-        },
-        {
-          icon: Activity,
-          label: 'Cleo Tracker',
-          href: '/admin/cleo-tracker',
           roles: ['admin', 'owner'],
         },
       ]
