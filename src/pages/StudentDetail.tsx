@@ -33,7 +33,7 @@ const StudentDetail: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentName, setStudentName] = useState<string>('Student');
 
-  const { groups, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek } =
+  const { groups, missedCount, cancelledCount, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek } =
     useStudentWeeklyTopics(studentId);
 
   useEffect(() => {
