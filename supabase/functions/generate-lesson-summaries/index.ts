@@ -683,17 +683,27 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
       const textResponse = await fetch(transcription.transcription_url);
       if (textResponse.ok) {
         const transcriptionData = await textResponse.json();
-        console.log('LessonSpace transcription JSON structure keys:', Object.keys(transcriptionData || {}));
-        
-        // Extract transcript text from the JSON structure
-        if (transcriptionData.transcript) {
-          transcriptionText = transcriptionData.transcript;
-        } else if (transcriptionData.text) {
-          transcriptionText = transcriptionData.text;
-        } else if (transcriptionData.transcription) {
-          transcriptionText = transcriptionData.transcription;
+        console.log('LessonSpace transcription JSON type:', Array.isArray(transcriptionData) ? 'array' : typeof transcriptionData);
+
+        // LessonSpace documented shape: array of
+        // { start_time, end_time, user: { id, name }, breakout_id, text }
+        if (Array.isArray(transcriptionData)) {
+          transcriptionText = transcriptionData
+            .map((seg: any) => {
+              const name = seg?.user?.name ?? 'Unknown';
+              const text = (seg?.text ?? '').toString().trim();
+              return text ? `${name}: ${text}` : '';
+            })
+            .filter(Boolean)
+            .join('\n');
         } else if (typeof transcriptionData === 'string') {
           transcriptionText = transcriptionData;
+        } else if (transcriptionData?.transcript) {
+          transcriptionText = String(transcriptionData.transcript);
+        } else if (transcriptionData?.text) {
+          transcriptionText = String(transcriptionData.text);
+        } else if (transcriptionData?.transcription) {
+          transcriptionText = String(transcriptionData.transcription);
         } else {
           console.error('Unknown transcription JSON structure:', transcriptionData);
           transcriptionText = JSON.stringify(transcriptionData);

@@ -180,6 +180,12 @@ verify_jwt = false
 [functions.heycleo-homework-webhook]
 verify_jwt = false
 
+[functions.lessonspace-transcript-webhook]
+verify_jwt = false
+
+[functions.lessonspace-session-webhook]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 port = 54328
