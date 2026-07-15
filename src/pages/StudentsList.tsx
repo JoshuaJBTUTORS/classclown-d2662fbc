@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -17,6 +18,7 @@ import { Loader2, GraduationCap, Search } from 'lucide-react';
 import { useStudentData } from '@/hooks/useStudentData';
 
 const StudentsList: React.FC = () => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { students, isLoading } = useStudentData();
