@@ -37,12 +37,17 @@ serve(async (req) => {
     };
 
     // Get today's date in UTC
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    
-    console.log(`Processing lessons for date: ${todayStr}`);
+    // Only process lessons that ended at least 3 hours ago.
+    // This prevents polling LessonSpace before a real session exists,
+    // which used to create empty "completed" transcript rows that poisoned
+    // downstream summary generation. A 7-day lower bound keeps each run
+    // bounded as the lessons table grows — idempotency for already-processed
+    // lessons comes from the transcription_status / summary checks below.
+    const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    const windowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Get all lessons from today that might need processing
+    console.log(`Processing lessons that ended between ${windowStart} and ${cutoff}`);
+
     const { data: lessons, error: lessonsError } = await supabaseClient
       .from('lessons')
       .select(`
@@ -58,8 +63,10 @@ serve(async (req) => {
           student_id
         )
       `)
-      .gte('start_time', `${todayStr}T00:00:00.000Z`)
-      .lt('start_time', `${new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}T00:00:00.000Z`);
+      .lte('end_time', cutoff)
+      .gte('end_time', windowStart)
+      .neq('status', 'cancelled')
+      .order('end_time', { ascending: false });
 
     if (lessonsError) {
       throw new Error(`Failed to fetch lessons: ${lessonsError.message}`);
@@ -115,11 +122,10 @@ serve(async (req) => {
 
       // Step 2: Fallback recording fetch — normally the recording.finish webhook
       // populates lesson_space_recording_url within minutes of the session ending.
-      // Only poll as a safety net for lessons that ended >6h ago and still have no URL.
-      const lessonEndedLongAgo = lesson.end_time
-        && (Date.now() - new Date(lesson.end_time).getTime()) > 6 * 60 * 60 * 1000;
-      if (lesson.lesson_space_session_id && !lesson.lesson_space_recording_url && lessonEndedLongAgo) {
-        console.log(`Fallback: getting recording for stale lesson ${lesson.id}`);
+      // Every lesson reaching this loop has already ended >=3h ago (query filter),
+      // so if the URL is still missing, the webhook didn't deliver and we poll now.
+      if (lesson.lesson_space_session_id && !lesson.lesson_space_recording_url) {
+        console.log(`Fallback: getting recording for lesson ${lesson.id}`);
 
         const { data: recordingResult, error: recordingError } = await supabaseClient.functions.invoke('get-lessonspace-recording', {
           body: { sessionId: lesson.lesson_space_session_id }
