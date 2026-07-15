@@ -476,53 +476,7 @@ function App() {
                 />
 
 
-                {/* Redirect old learning-hub URLs to new heycleo URLs */}
-                <Route path="/learning-hub/*" element={<Navigate to="/heycleo" replace />} />
 
-                {/* Cleo Demo route - after signup */}
-                <Route
-                  path="/cleo-demo"
-                  element={
-                    <ProtectedRoute>
-                      <CleoDemo />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Onboarding route - no guard */}
-                <Route
-                  path="/heycleo/onboarding"
-                  element={
-                    <ProtectedRoute>
-                      <OnboardingWizard />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Learning Hub routes - with hub access and onboarding guard */}
-                <Route
-                  path="/heycleo"
-                  element={
-                    <ProtectedRoute>
-                      <HubAccessGuard>
-                        <OnboardingGuard>
-                          <LearningHubLayout />
-                        </OnboardingGuard>
-                      </HubAccessGuard>
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<LearningHubDashboard />} />
-                  <Route path="cleo" element={<LearningHubCleo />} />
-                  <Route path="courses" element={<LearningHub />} />
-                  <Route path="library" element={<LearningHub />} />
-                  <Route path="my-courses" element={<LearningHubMyCourses />} />
-                  <Route path="assessments" element={<LearningHubAssessments />} />
-                  <Route path="revision" element={<LearningHubRevision />} />
-                  <Route path="cleo-id" element={<LearningHubCleoID />} />
-                  <Route path="subscription" element={<SubscriptionManagement />} />
-                  <Route path="settings" element={<LearningHubSettings />} />
-                </Route>
 
                 {/* Lesson Planning Route */}
                 <Route
