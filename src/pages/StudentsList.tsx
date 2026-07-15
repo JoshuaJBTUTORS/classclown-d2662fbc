@@ -12,12 +12,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, GraduationCap } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, GraduationCap, Search } from 'lucide-react';
 import { useStudentData } from '@/hooks/useStudentData';
 
 const StudentsList: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { students, isLoading } = useStudentData();
+
+  const q = searchQuery.trim().toLowerCase();
+  const filteredStudents = q
+    ? students.filter((s) => {
+        const name = `${s.first_name ?? ''} ${s.last_name ?? ''}`.toLowerCase();
+        return (
+          name.includes(q) ||
+          (s.email ?? '').toLowerCase().includes(q) ||
+          (s.phone ?? '').toLowerCase().includes(q) ||
+          (s.grade ?? '').toLowerCase().includes(q)
+        );
+      })
+    : students;
 
   return (
     <div className="min-h-screen bg-background">
