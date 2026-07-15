@@ -32,8 +32,6 @@ import TrialBooking from './pages/TrialBooking';
 import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
-import LearningHub from './pages/LearningHub';
-import LearningHubLayout from './components/learningHub/LearningHubLayout';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import BlogManagement from './pages/BlogManagement';
