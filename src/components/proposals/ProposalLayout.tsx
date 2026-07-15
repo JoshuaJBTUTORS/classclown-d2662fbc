@@ -237,8 +237,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             {/* Video */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-primary">
-                <PlayCircle className="h-4 w-4" />
-                <p className="text-[11px] font-semibold uppercase tracking-widest">A message from the team</p>
+                <PlayCircle className="h-6 w-6" />
+                <p className="text-lg md:text-xl font-semibold uppercase tracking-widest">A message from our CEO</p>
               </div>
               <div className="aspect-video overflow-hidden rounded-2xl border border-border bg-muted">
                 <iframe
