@@ -99,6 +99,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner', 'parent'],
         },
         {
+          icon: GraduationCap,
+          label: 'Students',
+          href: '/students-list',
+          roles: ['admin', 'owner'],
+        },
+        {
           icon: UserCheck,
           label: 'Tutors',
           href: '/tutors',
