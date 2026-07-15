@@ -1,30 +1,61 @@
+## Goal
 
-## Changes to `src/components/proposals/ProposalLayout.tsx`
+Delete the in-app HeyCleo learning-hub experience (pages, routes, supporting components/context/hooks/services) and the Cleo-only edge functions. **Keep** the two integrations that are used by the sister Lovable project:
 
-### 1. Add 24-hour countdown timer next to "ClassBeyond" in the top-left header
+- `supabase/functions/generate-heycleo-token` (SSO sign-in)
+- `supabase/functions/heycleo-homework-webhook` (homework sync)
+- `src/services/heyCleoRedirectService.ts` (used by Sidebar / VideoConferenceLink to open HeyCleo)
 
-- Compute a deadline as `proposal.created_at + 24 hours`.
-- Add a small `useEffect` + `useState` that ticks every second and formats remaining time as `HHh MMm SSs` (or `MMm SSs` when under an hour). When expired, show `Expired`.
-- Render a subtle pill immediately to the right of the ClassBeyond wordmark inside the sticky header (`border border-primary/30 bg-primary/5 text-primary`, small text, rounded-full, with a clock icon).
-- Hide the pill entirely when the proposal is already `signed` (no urgency needed once signed).
+## Changes in `src/App.tsx`
 
-### 2. Fix the mobile header (currently overflows)
+Remove imports and routes for:
 
-Current issues on mobile:
-- The action row (`Contact us`, `Print`, `Confirm & get started`) is too wide → causes overshoot.
-- The section pills strip is a horizontal-scroll bar that visually bleeds off-screen.
+- `LearningHub`, `LearningHubLayout`, `LearningHubDashboard`, `LearningHubCleo`, `LearningHubMyCourses`, `LearningHubSettings`, `LearningHubRevision`, `LearningHubAssessments`, `LearningHubCleoID`, `CleoDemo`
+- `LearningHubProvider` wrapper
+- `HubAccessGuard`, `OnboardingGuard`, `OnboardingWizard` (only used by these routes — verify then remove)
+- The `/heycleo`, `/heycleo/*`, `/heycleo/onboarding`, `/cleo-demo`, and `/learning-hub/*` redirect routes
 
-Fixes:
-- In the top action bar (`<header>`):
-  - On mobile (`<md`), collapse `Contact us` / `Print` / (and `Confirm & get started` when appropriate) into a single **dropdown menu** using `@/components/ui/dropdown-menu` (already used elsewhere) triggered by a `Menu` icon button. Keep `Confirm & get started` visible as the primary CTA only if there's room, otherwise place it inside the dropdown too. The countdown pill stays visible on mobile (compact form).
-  - Keep the existing desktop layout (`md:flex`) unchanged.
-- Replace the fixed overflow-scroll pills nav with a **mobile section dropdown**:
-  - Remove the `fixed inset-x-0 top-16 ... overflow-x-auto` pills strip.
-  - Add a compact `Select`-style dropdown ("Jump to section ▾") that sits inline at the top of `<main>` on mobile only (`lg:hidden`). Selecting an option scrolls to that section (`document.getElementById(id)?.scrollIntoView({behavior:'smooth'})`). The current section (from the existing IntersectionObserver `active` state) is shown as the trigger label.
-  - Because we're removing the fixed pills bar, drop the `pt-16 lg:pt-0` top padding on `<main>`.
+Any route pointing to HeyCleo from within the app will 404 (NotFound), which is fine since external HeyCleo SSO still works via `heyCleoRedirectService`.
 
-### Technical notes
+## Files to delete
 
-- Countdown uses `setInterval(..., 1000)` cleared on unmount; deadline stored in `useMemo` from `proposal.created_at`.
-- Dropdown menu items reuse existing button handlers (`onConfirm`, `window.print()`, `mailto:` link).
-- No changes to business logic, data, or other components.
+Pages:
+- `src/pages/LearningHub.tsx`
+- `src/pages/LearningHubDashboard.tsx`
+- `src/pages/LearningHubCleo.tsx`
+- `src/pages/LearningHubMyCourses.tsx`
+- `src/pages/LearningHubSettings.tsx`
+- `src/pages/LearningHubRevision.tsx`
+- `src/pages/LearningHubAssessments.tsx`
+- `src/pages/LearningHubCleoID.tsx`
+- `src/pages/LearningHubEntry.tsx`
+- `src/pages/CleoDemo.tsx`
+- `src/pages/OnboardingWizard.tsx` (only used by removed route)
+
+Supporting code (only referenced by the removed pages):
+- `src/components/learningHub/` (entire folder)
+- `src/contexts/LearningHubContext.tsx`
+- `src/components/routing/HubAccessGuard.tsx`
+- `src/components/routing/OnboardingGuard.tsx`
+
+Edge functions to delete (call `supabase--delete_edge_functions`):
+- `cleo-chat`
+- `cleo-realtime-session-token`
+- `cleo-realtime-voice`
+- `cleo-text-chat`
+- `ai-mark-cleo-question`
+
+Also delete their local source folders under `supabase/functions/`.
+
+## Kept (do NOT remove)
+
+- `supabase/functions/generate-heycleo-token`
+- `supabase/functions/heycleo-homework-webhook`
+- `src/services/heyCleoRedirectService.ts` and its callers in `Sidebar.tsx` / `VideoConferenceLink.tsx`
+- The `heycleo-export/` folder (it's a standalone export, not wired into the app)
+
+## Verification
+
+After deletion:
+1. `rg` for imports of every removed file to catch stragglers and fix them (typically by removing the import/usage).
+2. Rely on the automatic typecheck/build to confirm nothing else referenced the removed modules.

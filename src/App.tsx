@@ -1,17 +1,14 @@
 
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
 import MetaPixelTracker from '@/components/analytics/MetaPixelTracker';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
-import { LearningHubProvider } from '@/contexts/LearningHubContext';
 import { useAppVersion } from '@/hooks/useAppVersion';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
-import { OnboardingGuard } from '@/components/routing/OnboardingGuard';
-import { HubAccessGuard } from '@/components/routing/HubAccessGuard';
 import { DomainRouteGuard } from '@/components/routing/DomainRouteGuard';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -35,21 +32,12 @@ import TrialBooking from './pages/TrialBooking';
 import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
-import LearningHub from './pages/LearningHub';
-import LearningHubLayout from './components/learningHub/LearningHubLayout';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import BlogManagement from './pages/BlogManagement';
 import BlogEdit from './pages/BlogEdit';
 import MainLayout from './components/layout/MainLayout';
-import LearningHubDashboard from './pages/LearningHubDashboard';
-import LearningHubCleo from './pages/LearningHubCleo';
-import LearningHubMyCourses from './pages/LearningHubMyCourses';
-import LearningHubSettings from './pages/LearningHubSettings';
 import SubscriptionManagement from './pages/SubscriptionManagement';
-import LearningHubRevision from './pages/LearningHubRevision';
-import LearningHubAssessments from './pages/LearningHubAssessments';
-import LearningHubCleoID from './pages/LearningHubCleoID';
 import CourseDetail from './pages/CourseDetail';
 import ModuleDetail from './pages/ModuleDetail';
 import LessonPlanning from './pages/LessonPlanning';
@@ -81,8 +69,6 @@ import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OfferView from './pages/OfferView';
 import SentOffers from './pages/admin/SentOffers';
-import OnboardingWizard from './pages/OnboardingWizard';
-import CleoDemo from './pages/CleoDemo';
 import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
 import RecurringLessons from './pages/admin/RecurringLessons';
 import PricingPage from './pages/PricingPage';
@@ -110,7 +96,6 @@ function App() {
         <MetaPixelTracker />
         <AuthProvider>
             <OrganizationProvider>
-              <LearningHubProvider>
               <Routes>
                 {/* Root route with auth redirect */}
                 <Route path="/" element={<AuthRedirect />} />
@@ -481,53 +466,7 @@ function App() {
                 />
 
 
-                {/* Redirect old learning-hub URLs to new heycleo URLs */}
-                <Route path="/learning-hub/*" element={<Navigate to="/heycleo" replace />} />
 
-                {/* Cleo Demo route - after signup */}
-                <Route
-                  path="/cleo-demo"
-                  element={
-                    <ProtectedRoute>
-                      <CleoDemo />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Onboarding route - no guard */}
-                <Route
-                  path="/heycleo/onboarding"
-                  element={
-                    <ProtectedRoute>
-                      <OnboardingWizard />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Learning Hub routes - with hub access and onboarding guard */}
-                <Route
-                  path="/heycleo"
-                  element={
-                    <ProtectedRoute>
-                      <HubAccessGuard>
-                        <OnboardingGuard>
-                          <LearningHubLayout />
-                        </OnboardingGuard>
-                      </HubAccessGuard>
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<LearningHubDashboard />} />
-                  <Route path="cleo" element={<LearningHubCleo />} />
-                  <Route path="courses" element={<LearningHub />} />
-                  <Route path="library" element={<LearningHub />} />
-                  <Route path="my-courses" element={<LearningHubMyCourses />} />
-                  <Route path="assessments" element={<LearningHubAssessments />} />
-                  <Route path="revision" element={<LearningHubRevision />} />
-                  <Route path="cleo-id" element={<LearningHubCleoID />} />
-                  <Route path="subscription" element={<SubscriptionManagement />} />
-                  <Route path="settings" element={<LearningHubSettings />} />
-                </Route>
 
                 {/* Lesson Planning Route */}
                 <Route
@@ -540,7 +479,6 @@ function App() {
                 />
               </Routes>
               <Toaster />
-            </LearningHubProvider>
             </OrganizationProvider>
           </AuthProvider>
     </QueryClientProvider>
