@@ -113,23 +113,25 @@ serve(async (req) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      // Step 2: Get and store recording URL if session exists but no recording URL
-      if (lesson.lesson_space_session_id && !lesson.lesson_space_recording_url) {
-        console.log(`Getting recording for lesson ${lesson.id}`);
-        
-        // Use the existing get-lessonspace-recording edge function
+      // Step 2: Fallback recording fetch — normally the recording.finish webhook
+      // populates lesson_space_recording_url within minutes of the session ending.
+      // Only poll as a safety net for lessons that ended >6h ago and still have no URL.
+      const lessonEndedLongAgo = lesson.end_time
+        && (Date.now() - new Date(lesson.end_time).getTime()) > 6 * 60 * 60 * 1000;
+      if (lesson.lesson_space_session_id && !lesson.lesson_space_recording_url && lessonEndedLongAgo) {
+        console.log(`Fallback: getting recording for stale lesson ${lesson.id}`);
+
         const { data: recordingResult, error: recordingError } = await supabaseClient.functions.invoke('get-lessonspace-recording', {
           body: { sessionId: lesson.lesson_space_session_id }
         });
-        
+
         if (recordingError) {
           console.error(`Error calling get-lessonspace-recording for lesson ${lesson.id}:`, recordingError);
         } else if (recordingResult?.url) {
           stats.recordings_stored++;
           console.log(`Recording URL stored for lesson ${lesson.id}`);
         }
-        
-        // Add delay to avoid rate limiting
+
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
