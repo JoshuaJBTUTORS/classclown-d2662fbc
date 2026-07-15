@@ -1,22 +1,77 @@
-## Fix understanding badge — show confidence on the correct scale
+## Dedicated per-student lesson insights table
 
-The current badge reads e.g. "Understanding: 5% · medium" because I rendered the raw `confidence_score` as a percentage. In reality:
+A new denormalised table so the weekly view reads from one place instead of joining `lesson_students` + `lessons` + `lesson_student_summaries` every time.
 
-- `lesson_student_summaries.confidence_score` is an **integer 1–10** (verified in DB — values seen: 3, 4, 5, 6, 8, etc.)
-- `engagement_score` is also 1–10
-- `engagement_level` is a text label: `High` / `Medium` / `Low`
+### New table: `public.student_lesson_insights`
+One row per student × lesson. Columns:
 
-### Change
-- Convert the raw 1–10 score to a percentage by multiplying by 10 for display, and show both forms so it's unambiguous:
-  - `Understanding: 50% (5/10) · Medium engagement`
-- Recolour thresholds using the true percentage:
-  - ≥ 70% green, ≥ 40% amber, otherwise red.
-- Fall back gracefully when a field is null (hide that piece rather than showing "null").
+- `id` uuid pk
+- `student_id` bigint (FK → `students.id`, indexed)
+- `user_id` uuid nullable (mirrored from `students.user_id` for quick RLS)
+- `parent_id` uuid nullable (mirrored from `students.parent_id` for parent RLS)
+- `lesson_id` uuid (FK → `lessons.id`)
+- `subject` text (mirrored from `lessons.subject`)
+- `lesson_title` text
+- `lesson_start_time` timestamptz
+- `week_start_date` date — **Monday of the London week containing `lesson_start_time`**, indexed
+- `topics` text[] — mirrored from `lesson_student_summaries.topics_covered`
+- `confidence_score` int (1–10)
+- `engagement_score` int (1–10)
+- `engagement_level` text ('High' / 'Medium' / 'Low')
+- `participation_time_percentage` numeric
+- `ai_summary` text
+- `transcription_id` uuid (FK → `lesson_transcriptions.id`, nullable)
+- `source_summary_id` uuid unique (FK → `lesson_student_summaries.id`) — anchor for the trigger upsert
+- `created_at`, `updated_at` timestamptz
 
-### Files
-- Edit only `src/pages/StudentDetail.tsx` — badge label + threshold logic.
-- No hook/data changes; `useStudentWeeklyTopics.ts` already exposes the raw values.
+**Unique key**: `(student_id, lesson_id)` — one insight per student per lesson.
+
+**Indexes**: `(student_id, week_start_date)`, `(student_id, subject)`, `(lesson_id)`, `(week_start_date)`.
+
+### Grants + RLS
+```
+GRANT SELECT ON public.student_lesson_insights TO authenticated;
+GRANT ALL   ON public.student_lesson_insights TO service_role;
+```
+Policies (SELECT only from clients — writes come from the trigger as service_role):
+- Admin/owner can read all rows (`has_role`).
+- A tutor can read rows for lessons they teach (join to `lessons.tutor_id = get_current_user_tutor_id()`).
+- A student can read their own rows (`student_id = get_current_user_student_id()`).
+- A parent can read their children's rows (`student_id IN (SELECT id FROM students WHERE parent_id = get_current_user_parent_id())`).
+- No INSERT/UPDATE/DELETE policies for authenticated → only service_role (and the trigger, which runs `SECURITY DEFINER`) can write.
+
+### Trigger to keep it in sync
+Function `public.sync_student_lesson_insight()` (SECURITY DEFINER, search_path=public) on `lesson_student_summaries`:
+
+- **AFTER INSERT / UPDATE**: look up the associated `lessons` row and `students` row, compute `week_start_date` as `date_trunc('week', lesson.start_time AT TIME ZONE 'Europe/London')::date` (ISO week starts Monday), then `INSERT ... ON CONFLICT (student_id, lesson_id) DO UPDATE` with all the mirrored fields.
+- **AFTER DELETE**: delete the matching insight row.
+
+A second, lighter trigger on `lessons` (AFTER UPDATE of `subject`, `title`, `start_time`) re-syncs the mirrored fields and `week_start_date` for all insight rows tied to that lesson. This keeps the denormalised copy correct if a lesson is retitled or rescheduled.
+
+### One-off backfill (part of the same migration)
+```
+INSERT INTO public.student_lesson_insights (...)
+SELECT ... FROM lesson_student_summaries lss
+JOIN lessons l ON l.id = lss.lesson_id
+JOIN students s ON s.id = lss.student_id
+ON CONFLICT (student_id, lesson_id) DO NOTHING;
+```
+This populates ~7,500 rows from existing summaries so the view works instantly for historical weeks.
+
+### Frontend
+- Rewrite `src/hooks/useStudentWeeklyTopics.ts` to make **one** query:
+  ```
+  supabase
+    .from('student_lesson_insights')
+    .select('lesson_id, subject, lesson_title, lesson_start_time, topics, confidence_score, engagement_score, engagement_level')
+    .eq('student_id', studentId)
+    .eq('week_start_date', weekStartIso)
+    .order('lesson_start_time');
+  ```
+- Drop the three-step join. Everything else in `StudentDetail.tsx` stays the same.
+- Types will regenerate automatically after the migration; no manual edit to `src/integrations/supabase/types.ts`.
 
 ### Out of scope
-- No changes to how the AI generates the score.
-- No aggregation across the week — still one badge per lesson (matches your current view). Weekly average can come next if you want it.
+- No weekly rollup table yet (aggregation still happens in the UI). We can add one later without changing this table.
+- No changes to how summaries are generated by the AI.
+- Year-group backfill is a separate task.

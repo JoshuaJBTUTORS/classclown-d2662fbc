@@ -3962,6 +3962,101 @@ export type Database = {
         }
         Relationships: []
       }
+      student_lesson_insights: {
+        Row: {
+          ai_summary: string | null
+          confidence_score: number | null
+          created_at: string
+          engagement_level: string | null
+          engagement_score: number | null
+          id: string
+          lesson_id: string
+          lesson_start_time: string | null
+          lesson_title: string | null
+          parent_id: string | null
+          participation_time_percentage: number | null
+          source_summary_id: string | null
+          student_id: number
+          subject: string | null
+          topics: string[]
+          transcription_id: string | null
+          updated_at: string
+          user_id: string | null
+          week_start_date: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          engagement_level?: string | null
+          engagement_score?: number | null
+          id?: string
+          lesson_id: string
+          lesson_start_time?: string | null
+          lesson_title?: string | null
+          parent_id?: string | null
+          participation_time_percentage?: number | null
+          source_summary_id?: string | null
+          student_id: number
+          subject?: string | null
+          topics?: string[]
+          transcription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          week_start_date?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          engagement_level?: string | null
+          engagement_score?: number | null
+          id?: string
+          lesson_id?: string
+          lesson_start_time?: string | null
+          lesson_title?: string | null
+          parent_id?: string | null
+          participation_time_percentage?: number | null
+          source_summary_id?: string | null
+          student_id?: number
+          subject?: string | null
+          topics?: string[]
+          transcription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          week_start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_lesson_insights_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_lesson_insights_source_summary_id_fkey"
+            columns: ["source_summary_id"]
+            isOneToOne: true
+            referencedRelation: "lesson_student_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_lesson_insights_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_lesson_insights_transcription_id_fkey"
+            columns: ["transcription_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_transcriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_progress: {
         Row: {
           assessment_completed: boolean | null
