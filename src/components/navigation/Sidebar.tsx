@@ -43,7 +43,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly, hasCleoHubAccess } = useAuth();
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const menuGroups = [
