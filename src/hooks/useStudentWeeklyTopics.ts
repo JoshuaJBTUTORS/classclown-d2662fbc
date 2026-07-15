@@ -79,27 +79,31 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
         // 3) per-student summaries for those lessons
         const { data: summaries, error: sumErr } = await supabase
           .from('lesson_student_summaries')
-          .select('lesson_id, topics_covered')
+          .select('lesson_id, topics_covered, confidence_score, engagement_score, engagement_level')
           .eq('student_id', Number(studentId))
           .in('lesson_id', weekLessonIds);
         if (sumErr) throw sumErr;
 
-        const topicsByLesson = new Map<string, string[]>();
+        const summaryByLesson = new Map<string, any>();
         (summaries ?? []).forEach((s: any) => {
-          topicsByLesson.set(s.lesson_id, Array.isArray(s.topics_covered) ? s.topics_covered : []);
+          summaryByLesson.set(s.lesson_id, s);
         });
 
         // 4) group by subject
         const bySubject = new Map<string, WeeklyLessonEntry[]>();
         (lessons ?? []).forEach((l: any) => {
           const subject = l.subject || 'Uncategorised';
+          const s = summaryByLesson.get(l.id);
           const entry: WeeklyLessonEntry = {
             lessonId: l.id,
             title: l.title || 'Untitled lesson',
             subject,
             startTime: l.start_time,
-            topics: topicsByLesson.get(l.id) ?? [],
-            hasSummary: topicsByLesson.has(l.id),
+            topics: s && Array.isArray(s.topics_covered) ? s.topics_covered : [],
+            hasSummary: !!s,
+            confidenceScore: s?.confidence_score ?? null,
+            engagementScore: s?.engagement_score ?? null,
+            engagementLevel: s?.engagement_level ?? null,
           };
           if (!bySubject.has(subject)) bySubject.set(subject, []);
           bySubject.get(subject)!.push(entry);
