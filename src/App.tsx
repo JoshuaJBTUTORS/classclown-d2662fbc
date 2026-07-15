@@ -34,8 +34,6 @@ import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
-import BlogManagement from './pages/BlogManagement';
-import BlogEdit from './pages/BlogEdit';
 import MainLayout from './components/layout/MainLayout';
 import SubscriptionManagement from './pages/SubscriptionManagement';
 import CourseDetail from './pages/CourseDetail';
@@ -51,14 +49,14 @@ import JBTutorsPreview from './pages/JBTutorsPreview';
 import SchoolProgress from './pages/SchoolProgress';
 import CreateAdmin from './pages/CreateAdmin';
 import Staff from './pages/Staff';
-import Optimiser from './pages/Optimiser';
+
 import LessonSummaries from './pages/LessonSummaries';
 import Earnings from './pages/Earnings';
 import AdminEarnings from './pages/AdminEarnings';
 import AdminDashboard from './pages/AdminDashboard';
 import TrialBookingMusa from './pages/TrialBookingMusa';
 import ReviewRoom from './pages/ReviewRoom';
-import ContentEngine from './pages/admin/ContentEngine';
+
 import TutorContentPage from './pages/tutor/TutorContentPage';
 import ProposalView from './pages/ProposalView';
 import UpdateCardDetails from './pages/UpdateCardDetails';
@@ -69,12 +67,10 @@ import SignedProposals from './pages/admin/SignedProposals';
 import ViewSignedProposal from './pages/admin/ViewSignedProposal';
 import OfferView from './pages/OfferView';
 import SentOffers from './pages/admin/SentOffers';
-import AdminExamBoardSpecifications from './pages/AdminExamBoardSpecifications';
+
 import RecurringLessons from './pages/admin/RecurringLessons';
 import PricingPage from './pages/PricingPage';
 import HubAccessManagement from './pages/admin/HubAccessManagement';
-import CleoTracker from './pages/admin/CleoTracker';
-import CleoUserDetail from './pages/admin/CleoUserDetail';
 import AssessmentCenter from './pages/AssessmentCenter';
 import AssessmentTake from './pages/AssessmentTake';
 import AssessmentAssignments from './pages/admin/AssessmentAssignments';
@@ -276,22 +272,6 @@ function App() {
                     } 
                   />
                   <Route 
-                    path="admin/cleo-tracker" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                        <CleoTracker />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="admin/cleo-tracker/:userId" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                        <CleoUserDetail />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
                     path="topic-requests" 
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
@@ -332,46 +312,6 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['owner']}>
                         <Staff />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="optimiser" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                        <Optimiser />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="blog-management" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                        <BlogManagement />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="blog-management/edit/:id" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                        <BlogEdit />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="content-engine" 
-                    element={
-                      <ProtectedRoute allowedRoles={['owner']}>
-                        <ContentEngine />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="admin/exam-board-specifications" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                        <AdminExamBoardSpecifications />
                       </ProtectedRoute>
                     } 
                   />

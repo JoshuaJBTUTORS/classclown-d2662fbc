@@ -32,7 +32,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import ChatModal from '@/components/chat/ChatModal';
+
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
 
 interface SidebarProps {
@@ -111,12 +111,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['owner'],
         },
         {
-          icon: Bot,
-          label: 'Optimiser',
-          href: '/optimiser',
-          roles: ['admin', 'owner'],
-        },
-        {
           icon: ClipboardList,
           label: 'Time Off Requests',
           href: '/time-off-requests',
@@ -133,13 +127,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           label: 'Time Off',
           href: '/time-off',
           roles: ['tutor'],
-        },
-        {
-          icon: MessageCircle,
-          label: 'Team Chat',
-          href: '#',
-          roles: ['admin', 'owner', 'tutor'],
-          onClick: () => setIsChatModalOpen(true),
         },
       ]
     },
