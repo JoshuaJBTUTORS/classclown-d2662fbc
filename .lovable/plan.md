@@ -1,77 +1,56 @@
-## Dedicated per-student lesson insights table
+# Edge-case handling for `student_lesson_insights`
 
-A new denormalised table so the weekly view reads from one place instead of joining `lesson_students` + `lessons` + `lesson_student_summaries` every time.
+## How the pipeline behaves today
 
-### New table: `public.student_lesson_insights`
-One row per student × lesson. Columns:
+Insights are written by a trigger on `lesson_student_summaries`. That table is populated by the `generate-lesson-summaries` edge function, which runs once a transcript is available and creates **one row per enrolled student**, even if that student never spoke.
 
-- `id` uuid pk
-- `student_id` bigint (FK → `students.id`, indexed)
-- `user_id` uuid nullable (mirrored from `students.user_id` for quick RLS)
-- `parent_id` uuid nullable (mirrored from `students.parent_id` for parent RLS)
-- `lesson_id` uuid (FK → `lessons.id`)
-- `subject` text (mirrored from `lessons.subject`)
-- `lesson_title` text
-- `lesson_start_time` timestamptz
-- `week_start_date` date — **Monday of the London week containing `lesson_start_time`**, indexed
-- `topics` text[] — mirrored from `lesson_student_summaries.topics_covered`
-- `confidence_score` int (1–10)
-- `engagement_score` int (1–10)
-- `engagement_level` text ('High' / 'Medium' / 'Low')
-- `participation_time_percentage` numeric
-- `ai_summary` text
-- `transcription_id` uuid (FK → `lesson_transcriptions.id`, nullable)
-- `source_summary_id` uuid unique (FK → `lesson_student_summaries.id`) — anchor for the trigger upsert
-- `created_at`, `updated_at` timestamptz
 
-**Unique key**: `(student_id, lesson_id)` — one insight per student per lesson.
+| Scenario                                | Transcript?   | Summary row created?                             | Insight row today                           | Problem                                                                                          | &nbsp;                                        | &nbsp;                                                     | &nbsp; |
+| --------------------------------------- | ------------- | ------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------- | ---------------------------------------------------------- | ------ |
+| Student didn't join                     | Yes (others   | Appears in weekly list as a normal lesson with " | spoke)                                      | Yes, with empty contributions and low/defaulted scoresno topics" and a misleading low confidence | Looks like the student attended and did badly | &nbsp;                                                     | &nbsp; |
+| Student joined late                     | &nbsp;        | &nbsp;                                           | Appears normally with real (partial) scores | Yes                                                                                              | Yes, built from partial transcript            | Numbers are technically correct but not flagged as partial | &nbsp; |
+| Lesson cancelled before it ran          | No transcript | No summary → no insight                          | Doesn't appear                              | Correct — nothing to do                                                                          | &nbsp;                                        | &nbsp;                                                     | &nbsp; |
+| Lesson cancelled after it partially ran | Maybe         | Maybe                                            | Appears if summary exists                   | Should not count as a real lesson                                                                | &nbsp;                                        | &nbsp;                                                     | &nbsp; |
 
-**Indexes**: `(student_id, week_start_date)`, `(student_id, subject)`, `(lesson_id)`, `(week_start_date)`.
 
-### Grants + RLS
-```
-GRANT SELECT ON public.student_lesson_insights TO authenticated;
-GRANT ALL   ON public.student_lesson_insights TO service_role;
-```
-Policies (SELECT only from clients — writes come from the trigger as service_role):
-- Admin/owner can read all rows (`has_role`).
-- A tutor can read rows for lessons they teach (join to `lessons.tutor_id = get_current_user_tutor_id()`).
-- A student can read their own rows (`student_id = get_current_user_student_id()`).
-- A parent can read their children's rows (`student_id IN (SELECT id FROM students WHERE parent_id = get_current_user_parent_id())`).
-- No INSERT/UPDATE/DELETE policies for authenticated → only service_role (and the trigger, which runs `SECURITY DEFINER`) can write.
+## What to change
 
-### Trigger to keep it in sync
-Function `public.sync_student_lesson_insight()` (SECURITY DEFINER, search_path=public) on `lesson_student_summaries`:
+### 1. Add attendance context to the insight row
 
-- **AFTER INSERT / UPDATE**: look up the associated `lessons` row and `students` row, compute `week_start_date` as `date_trunc('week', lesson.start_time AT TIME ZONE 'Europe/London')::date` (ISO week starts Monday), then `INSERT ... ON CONFLICT (student_id, lesson_id) DO UPDATE` with all the mirrored fields.
-- **AFTER DELETE**: delete the matching insight row.
+Extend `public.student_lesson_insights` with three columns so the UI can filter and label rows correctly without extra joins:
 
-A second, lighter trigger on `lessons` (AFTER UPDATE of `subject`, `title`, `start_time`) re-syncs the mirrored fields and `week_start_date` for all insight rows tied to that lesson. This keeps the denormalised copy correct if a lesson is retitled or rescheduled.
+- `attendance_status text` — mirrored from `lesson_attendance.status` for `(lesson_id, student_id)` at write time (`present`, `late`, `absent`, `no_show`, or `null` when unknown)
+- `lesson_status text` — mirrored from `lessons.status` (`scheduled`, `completed`, `cancelled`, …)
+- `is_meaningful boolean` — computed: `true` when the student was present/late **and** the lesson wasn't cancelled **and** there is at least one topic OR a non-null confidence score
 
-### One-off backfill (part of the same migration)
-```
-INSERT INTO public.student_lesson_insights (...)
-SELECT ... FROM lesson_student_summaries lss
-JOIN lessons l ON l.id = lss.lesson_id
-JOIN students s ON s.id = lss.student_id
-ON CONFLICT (student_id, lesson_id) DO NOTHING;
-```
-This populates ~7,500 rows from existing summaries so the view works instantly for historical weeks.
+### 2. Update the sync trigger
 
-### Frontend
-- Rewrite `src/hooks/useStudentWeeklyTopics.ts` to make **one** query:
-  ```
-  supabase
-    .from('student_lesson_insights')
-    .select('lesson_id, subject, lesson_title, lesson_start_time, topics, confidence_score, engagement_score, engagement_level')
-    .eq('student_id', studentId)
-    .eq('week_start_date', weekStartIso)
-    .order('lesson_start_time');
-  ```
-- Drop the three-step join. Everything else in `StudentDetail.tsx` stays the same.
-- Types will regenerate automatically after the migration; no manual edit to `src/integrations/supabase/types.ts`.
+`sync_student_lesson_insight()` already reads the parent `lessons` row. Extend it to also read `lesson_attendance` for the same `(lesson_id, student_id)` and populate the three new columns. Recompute `is_meaningful` on every upsert.
 
-### Out of scope
-- No weekly rollup table yet (aggregation still happens in the UI). We can add one later without changing this table.
-- No changes to how summaries are generated by the AI.
-- Year-group backfill is a separate task.
+Add a second lightweight trigger on `lesson_attendance` (`AFTER INSERT/UPDATE/DELETE`) that updates `attendance_status` + `is_meaningful` on the matching insight row so late attendance edits stay in sync.
+
+Extend the existing `resync_insights_for_lesson()` trigger on `lessons` to also propagate `lesson_status` changes (e.g. lesson later marked `cancelled`) and re-evaluate `is_meaningful`.
+
+### 3. Backfill
+
+One-off `UPDATE` to fill `attendance_status`, `lesson_status`, and `is_meaningful` for existing rows from `lesson_attendance` + `lessons`.
+
+### 4. Frontend behaviour in `useStudentWeeklyTopics` + `StudentDetail`
+
+- **Default weekly list**: filter to `lesson_status <> 'cancelled'` and `attendance_status IN ('present','late') OR attendance_status IS NULL` (null = attendance never recorded, keep visible so nothing silently disappears).
+- **Cancelled lessons**: hidden by default. Optional collapsed "Cancelled this week (N)" section at the bottom.
+- **No-shows / absences**: hidden from the topics list (they shouldn't dilute understanding scores), but shown in a small "Missed lessons this week (N)" chip so parents can see them.
+- **Late joins**: keep in the main list, but if `attendance_status = 'late'` render a small "Joined late" badge next to the lesson title and suppress the confidence % badge (show only "Joined late — partial data").
+- **Empty summaries** (row exists but `topics = []` and `confidence_score IS NULL`): treat as "transcript still processing" wording already in the UI — no change needed, `is_meaningful = false` will exclude them from any future averages.
+
+## Out of scope
+
+- No changes to `generate-lesson-summaries` itself — still writes one row per enrolled student; we just interpret those rows correctly downstream.
+- No weekly rollup / averaging table yet — `is_meaningful` is the flag a future rollup would filter on.
+- No retroactive deletion of misleading historic insight rows; the flags make them harmless.
+
+## Technical notes
+
+- Trigger on `lesson_attendance` must be `SECURITY DEFINER` with `search_path = public` to match the existing pattern.
+- `is_meaningful` stored (not generated) so it can be indexed if we later filter large ranges.
+- Add index `student_lesson_insights (student_id, week_start_date) WHERE is_meaningful` for the common weekly-list query.
