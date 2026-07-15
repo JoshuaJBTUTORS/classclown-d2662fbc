@@ -127,11 +127,26 @@ const StudentDetail: React.FC = () => {
                           key={l.lessonId}
                           className="border-l-2 border-primary/30 pl-4 py-1"
                         >
-                          <div className="flex flex-wrap items-baseline gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs text-muted-foreground">
                               {formatLessonDate(l.startTime)}
                             </span>
                             <span className="font-medium">{l.title}</span>
+                            {l.confidenceScore !== null && (
+                              <Badge
+                                variant="outline"
+                                className={
+                                  l.confidenceScore >= 75
+                                    ? 'border-green-500 text-green-700 dark:text-green-400'
+                                    : l.confidenceScore >= 50
+                                    ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400'
+                                    : 'border-red-500 text-red-700 dark:text-red-400'
+                                }
+                              >
+                                Understanding: {Math.round(l.confidenceScore)}%
+                                {l.engagementLevel ? ` · ${l.engagementLevel}` : ''}
+                              </Badge>
+                            )}
                           </div>
                           {l.topics.length > 0 ? (
                             <div className="mt-2 flex flex-wrap gap-1.5">
