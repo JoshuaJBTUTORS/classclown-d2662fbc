@@ -86,10 +86,20 @@ const StudentDetail: React.FC = () => {
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-xs text-muted-foreground">
                     {totalLessons} lesson{totalLessons === 1 ? '' : 's'} this week
                   </span>
+                  {missedCount > 0 && (
+                    <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400">
+                      {missedCount} missed
+                    </Badge>
+                  )}
+                  {cancelledCount > 0 && (
+                    <Badge variant="outline" className="border-muted-foreground/40 text-muted-foreground">
+                      {cancelledCount} cancelled
+                    </Badge>
+                  )}
                   <Button variant="secondary" size="sm" onClick={goThisWeek}>
                     This week
                   </Button>
