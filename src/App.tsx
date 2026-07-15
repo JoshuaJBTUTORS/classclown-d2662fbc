@@ -477,7 +477,6 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-              </Routes>
               <Toaster />
             </LearningHubProvider>
             </OrganizationProvider>
