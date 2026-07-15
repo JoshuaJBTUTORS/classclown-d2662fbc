@@ -197,6 +197,11 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     spaceId = generateSpaceId(lesson);
     console.log(`[${rid.substring(0, 8)}] 🔑 Generated space ID: ${spaceId} | stage: ${stage}`);
 
+    // Webhook URLs LessonSpace should call for this space
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const transcriptWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook`;
+    const sessionWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-session-webhook`;
+
     // Store all participant URLs
     const participantUrls = [];
 
@@ -218,6 +223,10 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       },
       features: {
         invite: true
+      },
+      webhooks: {
+        session: { end: sessionWebhookUrl },
+        transcription: { finish: transcriptWebhookUrl }
       }
     };
 
@@ -278,6 +287,10 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         },
         features: {
           invite: true
+        },
+        webhooks: {
+          session: { end: sessionWebhookUrl },
+          transcription: { finish: transcriptWebhookUrl }
         }
       };
 
