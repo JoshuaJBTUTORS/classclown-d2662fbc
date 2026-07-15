@@ -1,48 +1,22 @@
-## Student detail view — weekly topics covered, grouped by subject
+## Fix understanding badge — show confidence on the correct scale
 
-Clicking a row on `/students-list` opens a detail page that shows, for the selected week, every topic the student covered — grouped by subject — with prev/next week navigation.
+The current badge reads e.g. "Understanding: 5% · medium" because I rendered the raw `confidence_score` as a percentage. In reality:
 
-### Route & entry
-- New route: `/students-list/:studentId` → new page `src/pages/StudentDetail.tsx`.
-- On `/students-list`, each table row becomes clickable (row `onClick` + `cursor-pointer`) → navigates to the detail page.
-- Detail page uses the same shell (`Navbar` + `Sidebar` + `PageTitle`), roles `admin`/`owner`.
+- `lesson_student_summaries.confidence_score` is an **integer 1–10** (verified in DB — values seen: 3, 4, 5, 6, 8, etc.)
+- `engagement_score` is also 1–10
+- `engagement_level` is a text label: `High` / `Medium` / `Low`
 
-### Data source
-For the student, join:
-- `lesson_students` → find lesson ids for that `student_id`.
-- `lessons` (filter `start_time` inside the selected week, Europe/London Mon–Sun) → gives `subject` and lesson date/title.
-- `lesson_student_summaries` (match `student_id` + `lesson_id`) → gives `topics_covered` (text array).
-
-If no summary exists for a lesson yet, the lesson is still listed under its subject with a "Topics pending — transcript still processing" note.
-
-### Layout
-```
-[ ← Prev week ]   Mon 13 Jul – Sun 19 Jul 2026   [ Next week → ]   [ This week ]
-
-Subject: GCSE Biology
-  • Mon 13 Jul — "Cell structure"
-      Topics: Prokaryotes, Eukaryotes, Organelles
-  • Wed 15 Jul — "Enzymes"
-      Topics: Active site, Lock & key model
-
-Subject: GCSE Maths
-  • Tue 14 Jul — "Trigonometry"
-      Topics: SOH CAH TOA, Right-angled triangles
-
-(Empty state) No lessons this week.
-```
-- One `Card` per subject; inside, one row per lesson with date, lesson title, and its topics as small badges.
-- Header shows week range and lesson count.
-
-### Week logic
-- Week = Monday 00:00 → Sunday 23:59 in `Europe/London`.
-- Default = current week. Prev/Next shift by ±7 days. "This week" resets.
+### Change
+- Convert the raw 1–10 score to a percentage by multiplying by 10 for display, and show both forms so it's unambiguous:
+  - `Understanding: 50% (5/10) · Medium engagement`
+- Recolour thresholds using the true percentage:
+  - ≥ 70% green, ≥ 40% amber, otherwise red.
+- Fall back gracefully when a field is null (hide that piece rather than showing "null").
 
 ### Files
-- New: `src/pages/StudentDetail.tsx`, `src/hooks/useStudentWeeklyTopics.ts` (fetch + week state).
-- Edit: `src/App.tsx` — add nested route `students-list/:studentId` under the same protected group.
-- Edit: `src/pages/StudentsList.tsx` — make rows navigate on click.
+- Edit only `src/pages/StudentDetail.tsx` — badge label + threshold logic.
+- No hook/data changes; `useStudentWeeklyTopics.ts` already exposes the raw values.
 
 ### Out of scope
-- No editing, no exports, no mastery/engagement scores yet — only the weekly topic list grouped by subject, per your request.
-- No changes to summary generation — read-only view of existing data.
+- No changes to how the AI generates the score.
+- No aggregation across the week — still one badge per lesson (matches your current view). Weekly average can come next if you want it.
