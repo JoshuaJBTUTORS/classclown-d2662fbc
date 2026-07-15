@@ -1,0 +1,1 @@
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS lesson_space_recording_expires_at TIMESTAMPTZ;
