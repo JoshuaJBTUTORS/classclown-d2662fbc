@@ -687,28 +687,6 @@ const TrialBookings = () => {
                   <p className="text-sm text-muted-foreground">{format(parseISO(selectedBooking.created_at), 'MMM d, yyyy h:mm a')}</p>
                 </div>
               </div>
-              {selectedBooking.status === 'pending' && (
-                <div className="flex gap-2 pt-4">
-                  <Button 
-                    onClick={() => {
-                      updateBookingStatus(selectedBooking.id, 'approved');
-                      setIsDetailsOpen(false);
-                    }}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Approve
-                  </Button>
-                  <Button 
-                    variant="destructive"
-                    onClick={() => {
-                      updateBookingStatus(selectedBooking.id, 'rejected');
-                      setIsDetailsOpen(false);
-                    }}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              )}
             </div>
           )}
         </DialogContent>
