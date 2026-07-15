@@ -3050,6 +3050,7 @@ export type Database = {
           lesson_space_room_url: string | null
           lesson_space_session_id: string | null
           lesson_space_space_id: string | null
+          lesson_space_webhook_secret: string | null
           lesson_type: string | null
           parent_lesson_id: string | null
           recurrence_day: string | null
@@ -3087,6 +3088,7 @@ export type Database = {
           lesson_space_room_url?: string | null
           lesson_space_session_id?: string | null
           lesson_space_space_id?: string | null
+          lesson_space_webhook_secret?: string | null
           lesson_type?: string | null
           parent_lesson_id?: string | null
           recurrence_day?: string | null
@@ -3124,6 +3126,7 @@ export type Database = {
           lesson_space_room_url?: string | null
           lesson_space_session_id?: string | null
           lesson_space_space_id?: string | null
+          lesson_space_webhook_secret?: string | null
           lesson_type?: string | null
           parent_lesson_id?: string | null
           recurrence_day?: string | null

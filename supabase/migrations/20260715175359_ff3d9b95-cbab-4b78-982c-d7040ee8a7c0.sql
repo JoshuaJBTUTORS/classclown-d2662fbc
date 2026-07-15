@@ -1,0 +1,2 @@
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS lesson_space_webhook_secret text;
+COMMENT ON COLUMN public.lessons.lesson_space_webhook_secret IS 'Per-space secret returned by LessonSpace Launch API; used to verify inbound webhook HMAC signatures.';
