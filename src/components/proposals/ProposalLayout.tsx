@@ -58,6 +58,24 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   const [active, setActive] = useState('overview');
   const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
+  // 24h countdown from proposal creation
+  const deadline = useMemo(() => new Date(proposal.created_at).getTime() + 24 * 60 * 60 * 1000, [proposal.created_at]);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const remainingMs = deadline - now;
+  const countdownLabel = (() => {
+    if (remainingMs <= 0) return 'Expired';
+    const totalSec = Math.floor(remainingMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return h > 0 ? `${h}h ${pad(m)}m ${pad(s)}s` : `${pad(m)}m ${pad(s)}s`;
+  })();
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -73,6 +91,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
     });
     return () => observer.disconnect();
   }, []);
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const totalMinutesPerWeek = proposal.lesson_times.reduce((sum, t) => sum + (t.duration || 0), 0);
   const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
