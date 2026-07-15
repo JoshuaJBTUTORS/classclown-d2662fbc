@@ -11,6 +11,10 @@ export interface WeeklyLessonEntry {
   confidenceScore: number | null;
   engagementScore: number | null;
   engagementLevel: string | null;
+  attendanceStatus: string | null;
+  lessonStatus: string | null;
+  isMeaningful: boolean;
+  wasLate: boolean;
 }
 
 export interface SubjectGroup {
@@ -21,14 +25,13 @@ export interface SubjectGroup {
 // Monday 00:00 of the London week containing d.
 function startOfLondonWeek(d: Date): Date {
   const londonNow = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/London' }));
-  const day = londonNow.getDay(); // 0=Sun..6=Sat
+  const day = londonNow.getDay();
   const diffToMonday = (day + 6) % 7;
   londonNow.setHours(0, 0, 0, 0);
   londonNow.setDate(londonNow.getDate() - diffToMonday);
   return londonNow;
 }
 
-// Format a Date as YYYY-MM-DD (local calendar day) for the `date` column.
 function toIsoDate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -39,6 +42,8 @@ function toIsoDate(d: Date): string {
 export function useStudentWeeklyTopics(studentId: string | number | undefined) {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfLondonWeek(new Date()));
   const [groups, setGroups] = useState<SubjectGroup[]>([]);
+  const [missedCount, setMissedCount] = useState(0);
+  const [cancelledCount, setCancelledCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const weekEnd = useMemo(() => {
@@ -57,7 +62,7 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
         const { data, error } = await supabase
           .from('student_lesson_insights')
           .select(
-            'lesson_id, subject, lesson_title, lesson_start_time, topics, confidence_score, engagement_score, engagement_level'
+            'lesson_id, subject, lesson_title, lesson_start_time, topics, confidence_score, engagement_score, engagement_level, attendance_status, lesson_status, is_meaningful'
           )
           .eq('student_id', Number(studentId))
           .eq('week_start_date', toIsoDate(weekStart))
@@ -66,7 +71,22 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
         if (error) throw error;
 
         const bySubject = new Map<string, WeeklyLessonEntry[]>();
+        let missed = 0;
+        let cancelledN = 0;
+
         (data ?? []).forEach((row: any) => {
+          const lessonStatus = row.lesson_status ?? null;
+          const attendance = row.attendance_status ?? null;
+
+          if (lessonStatus === 'cancelled') {
+            cancelledN += 1;
+            return;
+          }
+          if (attendance && !['attended', 'late'].includes(attendance)) {
+            missed += 1;
+            return;
+          }
+
           const subject = row.subject || 'Uncategorised';
           const entry: WeeklyLessonEntry = {
             lessonId: row.lesson_id,
@@ -78,6 +98,10 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
             confidenceScore: row.confidence_score ?? null,
             engagementScore: row.engagement_score ?? null,
             engagementLevel: row.engagement_level ?? null,
+            attendanceStatus: attendance,
+            lessonStatus,
+            isMeaningful: !!row.is_meaningful,
+            wasLate: attendance === 'late',
           };
           if (!bySubject.has(subject)) bySubject.set(subject, []);
           bySubject.get(subject)!.push(entry);
@@ -87,10 +111,18 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
           .map(([subject, lessons]) => ({ subject, lessons }))
           .sort((a, b) => a.subject.localeCompare(b.subject));
 
-        if (!cancelled) setGroups(grouped);
+        if (!cancelled) {
+          setGroups(grouped);
+          setMissedCount(missed);
+          setCancelledCount(cancelledN);
+        }
       } catch (err) {
         console.error('useStudentWeeklyTopics error', err);
-        if (!cancelled) setGroups([]);
+        if (!cancelled) {
+          setGroups([]);
+          setMissedCount(0);
+          setCancelledCount(0);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -114,5 +146,5 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
   };
   const goThisWeek = () => setWeekStart(startOfLondonWeek(new Date()));
 
-  return { groups, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek };
+  return { groups, missedCount, cancelledCount, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek };
 }

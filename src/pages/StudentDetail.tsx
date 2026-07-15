@@ -33,7 +33,7 @@ const StudentDetail: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentName, setStudentName] = useState<string>('Student');
 
-  const { groups, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek } =
+  const { groups, missedCount, cancelledCount, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek } =
     useStudentWeeklyTopics(studentId);
 
   useEffect(() => {
@@ -86,10 +86,20 @@ const StudentDetail: React.FC = () => {
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-xs text-muted-foreground">
                     {totalLessons} lesson{totalLessons === 1 ? '' : 's'} this week
                   </span>
+                  {missedCount > 0 && (
+                    <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400">
+                      {missedCount} missed
+                    </Badge>
+                  )}
+                  {cancelledCount > 0 && (
+                    <Badge variant="outline" className="border-muted-foreground/40 text-muted-foreground">
+                      {cancelledCount} cancelled
+                    </Badge>
+                  )}
                   <Button variant="secondary" size="sm" onClick={goThisWeek}>
                     This week
                   </Button>
@@ -132,7 +142,12 @@ const StudentDetail: React.FC = () => {
                               {formatLessonDate(l.startTime)}
                             </span>
                             <span className="font-medium">{l.title}</span>
-                            {l.confidenceScore !== null && (() => {
+                            {l.wasLate && (
+                              <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400">
+                                Joined late — partial data
+                              </Badge>
+                            )}
+                            {!l.wasLate && l.confidenceScore !== null && (() => {
                               const raw = l.confidenceScore as number;
                               const pct = Math.round(raw * 10);
                               const colour =
@@ -148,7 +163,7 @@ const StudentDetail: React.FC = () => {
                                 </Badge>
                               );
                             })()}
-                            {l.confidenceScore === null && l.engagementLevel && (
+                            {!l.wasLate && l.confidenceScore === null && l.engagementLevel && (
                               <Badge variant="outline">{l.engagementLevel} engagement</Badge>
                             )}
                           </div>
