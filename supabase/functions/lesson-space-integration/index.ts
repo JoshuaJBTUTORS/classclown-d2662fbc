@@ -201,6 +201,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const transcriptWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook`;
     const sessionWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-session-webhook`;
+    const recordingWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-recording-webhook`;
 
     // Store all participant URLs
     const participantUrls = [];
@@ -226,7 +227,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
       },
       webhooks: {
         session: { end: sessionWebhookUrl },
-        transcription: { finish: transcriptWebhookUrl }
+        transcription: { finish: transcriptWebhookUrl },
+        recording: { finish: recordingWebhookUrl }
       }
     };
 
@@ -290,7 +292,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         },
         webhooks: {
           session: { end: sessionWebhookUrl },
-          transcription: { finish: transcriptWebhookUrl }
+          transcription: { finish: transcriptWebhookUrl },
+          recording: { finish: recordingWebhookUrl }
         }
       };
 
@@ -486,7 +489,8 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       },
       webhooks: {
         session: { end: `${supabaseUrl}/functions/v1/lessonspace-session-webhook` },
-        transcription: { finish: `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook` }
+        transcription: { finish: `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook` },
+        recording: { finish: `${supabaseUrl}/functions/v1/lessonspace-recording-webhook` }
       }
     };
 
@@ -645,7 +649,8 @@ async function addStudentsToRoom(data: any, supabase: any) {
         },
         webhooks: {
           session: { end: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook` },
-          transcription: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-transcript-webhook` }
+          transcription: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-transcript-webhook` },
+          recording: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-recording-webhook` }
         }
       };
 

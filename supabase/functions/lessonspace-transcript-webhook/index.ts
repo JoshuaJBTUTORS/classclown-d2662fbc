@@ -179,10 +179,13 @@ serve(async (req) => {
       upsertRow.transcript_size_bytes = transcriptSize;
     }
 
+    let transcriptionRowId: string | null = null;
     if (lessonRow?.id) {
-      const { error: upErr } = await supabase
+      const { data: upserted, error: upErr } = await supabase
         .from("lesson_transcriptions")
-        .upsert(upsertRow, { onConflict: "lesson_id", ignoreDuplicates: false });
+        .upsert(upsertRow, { onConflict: "lesson_id", ignoreDuplicates: false })
+        .select("id")
+        .maybeSingle();
       if (upErr) {
         console.error(`[${rid}] transcript upsert failed:`, upErr.message);
         return new Response(JSON.stringify({ error: upErr.message }), {
@@ -190,10 +193,29 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      transcriptionRowId = upserted?.id ?? null;
     } else {
       // No lesson row to key on — insert loosely, will be reconciled when session captured
       const { error: insErr } = await supabase.from("lesson_transcriptions").insert(upsertRow);
       if (insErr) console.error(`[${rid}] orphan transcript insert failed:`, insErr.message);
+    }
+
+    // Fire-and-forget: push straight into summary generation so downstream
+    // (student summaries, revision plans, badges) doesn't wait for the hourly poll.
+    if (fetchOk && lessonRow?.id && transcriptionRowId) {
+      supabase.functions
+        .invoke("generate-lesson-summaries", {
+          body: {
+            action: "generate-summaries",
+            lessonId: lessonRow.id,
+            transcriptionId: transcriptionRowId,
+          },
+        })
+        .then(({ error }) => {
+          if (error) console.error(`[${rid}] generate-lesson-summaries invoke error:`, error.message);
+          else console.log(`[${rid}] generate-lesson-summaries invoked for lesson ${lessonRow.id}`);
+        })
+        .catch((e) => console.error(`[${rid}] generate-lesson-summaries invoke threw:`, (e as Error).message));
     }
 
     console.log(`[${rid}] transcript stored (fetchOk=${fetchOk}, size=${transcriptSize})`);
