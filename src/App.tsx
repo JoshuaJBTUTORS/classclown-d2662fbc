@@ -97,7 +97,6 @@ function App() {
         <AuthProvider>
             <OrganizationProvider>
               <Routes>
-              <Routes>
                 {/* Root route with auth redirect */}
                 <Route path="/" element={<AuthRedirect />} />
                 
