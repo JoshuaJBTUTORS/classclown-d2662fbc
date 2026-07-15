@@ -148,6 +148,14 @@ function App() {
                     } 
                   />
                   <Route 
+                    path="students-list/:studentId" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <StudentDetail />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
                     path="tutors" 
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
