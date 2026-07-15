@@ -32,7 +32,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import ChatModal from '@/components/chat/ChatModal';
+
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
 
 interface SidebarProps {
@@ -43,7 +43,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { isAdmin, isOwner, isTutor, isParent, isStudent, isLearningHubOnly, hasCleoHubAccess } = useAuth();
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const menuGroups = [
@@ -111,12 +111,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['owner'],
         },
         {
-          icon: Bot,
-          label: 'Optimiser',
-          href: '/optimiser',
-          roles: ['admin', 'owner'],
-        },
-        {
           icon: ClipboardList,
           label: 'Time Off Requests',
           href: '/time-off-requests',
@@ -134,13 +128,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           href: '/time-off',
           roles: ['tutor'],
         },
-        {
-          icon: MessageCircle,
-          label: 'Team Chat',
-          href: '#',
-          roles: ['admin', 'owner', 'tutor'],
-          onClick: () => setIsChatModalOpen(true),
-        },
       ]
     },
     {
@@ -157,12 +144,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           label: 'Lesson Proposals',
           href: '/admin/proposals',
           roles: ['admin', 'owner'],
-        },
-        {
-          icon: Film,
-          label: 'Content Engine',
-          href: '/content-engine',
-          roles: ['owner'],
         },
         {
           icon: Film,
@@ -212,27 +193,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner'],
         },
         {
-          icon: FileText,
-          label: 'Blog Management',
-          href: '/blog-management',
-          roles: ['admin', 'owner'],
-        },
-        {
-          icon: BookMarked,
-          label: 'Exam Board Specs',
-          href: '/admin/exam-board-specifications',
-          roles: ['admin', 'owner'],
-        },
-        {
           icon: ClipboardList,
           label: 'Assessment Assignments',
           href: '/assessment-assignments',
-          roles: ['admin', 'owner'],
-        },
-        {
-          icon: Activity,
-          label: 'Cleo Tracker',
-          href: '/admin/cleo-tracker',
           roles: ['admin', 'owner'],
         },
       ]
@@ -432,10 +395,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
       </aside>
 
-      <ChatModal
-        isOpen={isChatModalOpen}
-        onClose={() => setIsChatModalOpen(false)}
-      />
     </>
   );
 };
