@@ -96,7 +96,7 @@ function App() {
         <MetaPixelTracker />
         <AuthProvider>
             <OrganizationProvider>
-              <LearningHubProvider>
+              <Routes>
               <Routes>
                 {/* Root route with auth redirect */}
                 <Route path="/" element={<AuthRedirect />} />
