@@ -3965,13 +3965,16 @@ export type Database = {
       student_lesson_insights: {
         Row: {
           ai_summary: string | null
+          attendance_status: string | null
           confidence_score: number | null
           created_at: string
           engagement_level: string | null
           engagement_score: number | null
           id: string
+          is_meaningful: boolean
           lesson_id: string
           lesson_start_time: string | null
+          lesson_status: string | null
           lesson_title: string | null
           parent_id: string | null
           participation_time_percentage: number | null
@@ -3986,13 +3989,16 @@ export type Database = {
         }
         Insert: {
           ai_summary?: string | null
+          attendance_status?: string | null
           confidence_score?: number | null
           created_at?: string
           engagement_level?: string | null
           engagement_score?: number | null
           id?: string
+          is_meaningful?: boolean
           lesson_id: string
           lesson_start_time?: string | null
+          lesson_status?: string | null
           lesson_title?: string | null
           parent_id?: string | null
           participation_time_percentage?: number | null
@@ -4007,13 +4013,16 @@ export type Database = {
         }
         Update: {
           ai_summary?: string | null
+          attendance_status?: string | null
           confidence_score?: number | null
           created_at?: string
           engagement_level?: string | null
           engagement_score?: number | null
           id?: string
+          is_meaningful?: boolean
           lesson_id?: string
           lesson_start_time?: string | null
+          lesson_status?: string | null
           lesson_title?: string | null
           parent_id?: string | null
           participation_time_percentage?: number | null
