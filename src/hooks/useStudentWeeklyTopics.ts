@@ -8,6 +8,9 @@ export interface WeeklyLessonEntry {
   startTime: string;
   topics: string[];
   hasSummary: boolean;
+  confidenceScore: number | null;
+  engagementScore: number | null;
+  engagementLevel: string | null;
 }
 
 export interface SubjectGroup {
