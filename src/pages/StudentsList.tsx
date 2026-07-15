@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -17,6 +18,7 @@ import { Loader2, GraduationCap, Search } from 'lucide-react';
 import { useStudentData } from '@/hooks/useStudentData';
 
 const StudentsList: React.FC = () => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { students, isLoading } = useStudentData();
@@ -88,7 +90,11 @@ const StudentsList: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredStudents.map((s) => (
-                        <TableRow key={s.id}>
+                        <TableRow
+                          key={s.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => navigate(`/students-list/${s.id}`)}
+                        >
                           <TableCell className="font-medium">
                             {s.first_name} {s.last_name}
                           </TableCell>
