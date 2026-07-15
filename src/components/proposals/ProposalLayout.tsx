@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Check, Mail, Phone, Printer, PlayCircle, BookOpen } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Check, Mail, Phone, Printer, PlayCircle, BookOpen, Clock, Menu, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import jbLogo from '@/assets/jb-tutors-logo.png';
@@ -57,6 +58,24 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   const [active, setActive] = useState('overview');
   const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
+  // 24h countdown from proposal creation
+  const deadline = useMemo(() => new Date(proposal.created_at).getTime() + 24 * 60 * 60 * 1000, [proposal.created_at]);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const remainingMs = deadline - now;
+  const countdownLabel = (() => {
+    if (remainingMs <= 0) return 'Expired';
+    const totalSec = Math.floor(remainingMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return h > 0 ? `${h}h ${pad(m)}m ${pad(s)}s` : `${pad(m)}m ${pad(s)}s`;
+  })();
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -72,6 +91,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
     });
     return () => observer.disconnect();
   }, []);
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const totalMinutesPerWeek = proposal.lesson_times.reduce((sum, t) => sum + (t.duration || 0), 0);
   const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
@@ -102,9 +125,26 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
       {/* Top action bar */}
       <header className="no-print sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
-          <span className="font-heading text-2xl font-bold tracking-tight text-foreground md:text-3xl">Class<span className="text-primary">Beyond</span></span>
-          <div className="flex items-center gap-2">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-3 px-4 md:px-6">
+          <div className="flex min-w-0 items-center gap-2 md:gap-3">
+            <span className="font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">Class<span className="text-primary">Beyond</span></span>
+            {!signed && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold tabular-nums md:text-xs ${
+                  remainingMs <= 0
+                    ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                    : 'border-primary/30 bg-primary/5 text-primary'
+                }`}
+                title="Time remaining to confirm this proposal"
+              >
+                <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                {countdownLabel}
+              </span>
+            )}
+          </div>
+
+          {/* Desktop actions */}
+          <div className="hidden items-center gap-2 md:flex">
             <Button variant="ghost" size="sm" asChild>
               <a href={`mailto:${CONTACT_EMAIL}`}>
                 <Mail className="mr-2 h-4 w-4" /> Contact us
@@ -124,6 +164,41 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               </Button>
             )}
           </div>
+
+          {/* Mobile actions */}
+          <div className="flex items-center gap-2 md:hidden">
+            {signed ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-green-600/30 bg-green-600/10 px-2 py-1 text-[11px] font-semibold text-green-700 dark:text-green-400">
+                <Check className="h-3 w-3" /> Signed
+              </span>
+            ) : (
+              <Button size="sm" onClick={onConfirm} className="h-8 px-3 text-xs">
+                Confirm
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <a href={`mailto:${CONTACT_EMAIL}`}>
+                    <Mail className="mr-2 h-4 w-4" /> Contact us
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`}>
+                    <Phone className="mr-2 h-4 w-4" /> Call {CONTACT_PHONE}
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.print()}>
+                  <Printer className="mr-2 h-4 w-4" /> {signed ? 'Download / Print' : 'Print'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         {showPaymentBanner && onContinuePayment && (
           <div className="border-t border-border/60 bg-primary/5">
@@ -138,7 +213,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       </header>
 
 
-      <div className="mx-auto flex max-w-[1400px] gap-12 px-6 py-10">
+      <div className="mx-auto flex max-w-[1400px] gap-12 px-4 py-8 md:px-6 md:py-10">
         {/* Sidebar */}
         <aside className="hidden w-56 shrink-0 lg:block">
           <div className="sticky top-24 space-y-6">
@@ -165,23 +240,34 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           </div>
         </aside>
 
-        {/* Mobile section pills */}
-        <nav className="fixed inset-x-0 top-16 z-30 flex gap-2 overflow-x-auto border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
-          {SECTIONS.map((s) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${
-                active === s.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {s.label}
-            </a>
-          ))}
-        </nav>
-
         {/* Content */}
-        <main className="min-w-0 flex-1 space-y-24 pt-16 lg:pt-0">
+        <main className="min-w-0 flex-1 space-y-24">
+          {/* Mobile section jump dropdown */}
+          <div className="lg:hidden -mt-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full justify-between">
+                  <span className="truncate">
+                    <span className="text-muted-foreground">Jump to: </span>
+                    <span className="font-medium">{SECTIONS.find((s) => s.id === active)?.label ?? 'Section'}</span>
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[calc(100vw-2rem)] max-w-sm">
+                {SECTIONS.map((s) => (
+                  <DropdownMenuItem
+                    key={s.id}
+                    onClick={() => scrollToSection(s.id)}
+                    className={active === s.id ? 'bg-primary/10 text-primary font-medium' : ''}
+                  >
+                    {s.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {/* Overview */}
           <section id="overview" className="space-y-10 scroll-mt-24">
             <div>
