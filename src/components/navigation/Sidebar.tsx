@@ -419,10 +419,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
       </aside>
 
-      <ChatModal
-        isOpen={isChatModalOpen}
-        onClose={() => setIsChatModalOpen(false)}
-      />
     </>
   );
 };
