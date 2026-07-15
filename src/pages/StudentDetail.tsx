@@ -132,20 +132,24 @@ const StudentDetail: React.FC = () => {
                               {formatLessonDate(l.startTime)}
                             </span>
                             <span className="font-medium">{l.title}</span>
-                            {l.confidenceScore !== null && (
-                              <Badge
-                                variant="outline"
-                                className={
-                                  l.confidenceScore >= 75
-                                    ? 'border-green-500 text-green-700 dark:text-green-400'
-                                    : l.confidenceScore >= 50
-                                    ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400'
-                                    : 'border-red-500 text-red-700 dark:text-red-400'
-                                }
-                              >
-                                Understanding: {Math.round(l.confidenceScore)}%
-                                {l.engagementLevel ? ` · ${l.engagementLevel}` : ''}
-                              </Badge>
+                            {l.confidenceScore !== null && (() => {
+                              const raw = l.confidenceScore as number;
+                              const pct = Math.round(raw * 10);
+                              const colour =
+                                pct >= 70
+                                  ? 'border-green-500 text-green-700 dark:text-green-400'
+                                  : pct >= 40
+                                  ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400'
+                                  : 'border-red-500 text-red-700 dark:text-red-400';
+                              return (
+                                <Badge variant="outline" className={colour}>
+                                  Understanding: {pct}% ({raw}/10)
+                                  {l.engagementLevel ? ` · ${l.engagementLevel} engagement` : ''}
+                                </Badge>
+                              );
+                            })()}
+                            {l.confidenceScore === null && l.engagementLevel && (
+                              <Badge variant="outline">{l.engagementLevel} engagement</Badge>
                             )}
                           </div>
                           {l.topics.length > 0 ? (
