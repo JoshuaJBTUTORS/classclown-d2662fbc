@@ -464,6 +464,7 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       throw new Error("No lesson space found for this lesson");
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     // Create request body for student joining the existing space
     const requestBody = {
       id: lesson.lesson_space_space_id,
@@ -482,6 +483,10 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       },
       features: {
         invite: true
+      },
+      webhooks: {
+        session: { end: `${supabaseUrl}/functions/v1/lessonspace-session-webhook` },
+        transcription: { finish: `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook` }
       }
     };
 
@@ -617,6 +622,7 @@ async function addStudentsToRoom(data: any, supabase: any) {
 
     const newParticipantUrls = [];
 
+    const supabaseUrlForStudents = Deno.env.get("SUPABASE_URL") ?? "";
     // Create Launch API URLs for new students
     for (const student of newStudents) {
       const studentRequestBody = {
@@ -636,6 +642,10 @@ async function addStudentsToRoom(data: any, supabase: any) {
         },
         features: {
           invite: true
+        },
+        webhooks: {
+          session: { end: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook` },
+          transcription: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-transcript-webhook` }
         }
       };
 
