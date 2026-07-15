@@ -18,6 +18,7 @@ import Index from './pages/Index';
 import Calendar from './pages/Calendar';
 import Students from './pages/Students';
 import StudentsList from './pages/StudentsList';
+import StudentDetail from './pages/StudentDetail';
 import Tutors from './pages/Tutors';
 import Lessons from './pages/Lessons';
 import LessonPlans from './pages/LessonPlans';
