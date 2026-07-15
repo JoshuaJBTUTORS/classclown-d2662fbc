@@ -18,16 +18,22 @@ export interface SubjectGroup {
   lessons: WeeklyLessonEntry[];
 }
 
-// Get Monday 00:00 of the week containing the given date, in Europe/London.
-// Uses local Date math shifted by London offset — good enough for UI grouping.
+// Monday 00:00 of the London week containing d.
 function startOfLondonWeek(d: Date): Date {
-  // Format date parts in London TZ
   const londonNow = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/London' }));
   const day = londonNow.getDay(); // 0=Sun..6=Sat
-  const diffToMonday = (day + 6) % 7; // Sun->6, Mon->0, Tue->1...
+  const diffToMonday = (day + 6) % 7;
   londonNow.setHours(0, 0, 0, 0);
   londonNow.setDate(londonNow.getDate() - diffToMonday);
   return londonNow;
+}
+
+// Format a Date as YYYY-MM-DD (local calendar day) for the `date` column.
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function useStudentWeeklyTopics(studentId: string | number | undefined) {
@@ -48,62 +54,30 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
     const load = async () => {
       setIsLoading(true);
       try {
-        // 1) lesson ids the student is on
-        const { data: linkRows, error: linkErr } = await supabase
-          .from('lesson_students')
-          .select('lesson_id')
-          .eq('student_id', Number(studentId));
-        if (linkErr) throw linkErr;
-        const lessonIds = (linkRows ?? []).map((r: any) => r.lesson_id).filter(Boolean);
-        if (lessonIds.length === 0) {
-          if (!cancelled) setGroups([]);
-          return;
-        }
-
-        // 2) lessons within the week
-        const { data: lessons, error: lessonsErr } = await supabase
-          .from('lessons')
-          .select('id, title, subject, start_time')
-          .in('id', lessonIds)
-          .gte('start_time', weekStart.toISOString())
-          .lt('start_time', weekEnd.toISOString())
-          .order('start_time', { ascending: true });
-        if (lessonsErr) throw lessonsErr;
-
-        const weekLessonIds = (lessons ?? []).map((l: any) => l.id);
-        if (weekLessonIds.length === 0) {
-          if (!cancelled) setGroups([]);
-          return;
-        }
-
-        // 3) per-student summaries for those lessons
-        const { data: summaries, error: sumErr } = await supabase
-          .from('lesson_student_summaries')
-          .select('lesson_id, topics_covered, confidence_score, engagement_score, engagement_level')
+        const { data, error } = await supabase
+          .from('student_lesson_insights')
+          .select(
+            'lesson_id, subject, lesson_title, lesson_start_time, topics, confidence_score, engagement_score, engagement_level'
+          )
           .eq('student_id', Number(studentId))
-          .in('lesson_id', weekLessonIds);
-        if (sumErr) throw sumErr;
+          .eq('week_start_date', toIsoDate(weekStart))
+          .order('lesson_start_time', { ascending: true });
 
-        const summaryByLesson = new Map<string, any>();
-        (summaries ?? []).forEach((s: any) => {
-          summaryByLesson.set(s.lesson_id, s);
-        });
+        if (error) throw error;
 
-        // 4) group by subject
         const bySubject = new Map<string, WeeklyLessonEntry[]>();
-        (lessons ?? []).forEach((l: any) => {
-          const subject = l.subject || 'Uncategorised';
-          const s = summaryByLesson.get(l.id);
+        (data ?? []).forEach((row: any) => {
+          const subject = row.subject || 'Uncategorised';
           const entry: WeeklyLessonEntry = {
-            lessonId: l.id,
-            title: l.title || 'Untitled lesson',
+            lessonId: row.lesson_id,
+            title: row.lesson_title || 'Untitled lesson',
             subject,
-            startTime: l.start_time,
-            topics: s && Array.isArray(s.topics_covered) ? s.topics_covered : [],
-            hasSummary: !!s,
-            confidenceScore: s?.confidence_score ?? null,
-            engagementScore: s?.engagement_score ?? null,
-            engagementLevel: s?.engagement_level ?? null,
+            startTime: row.lesson_start_time,
+            topics: Array.isArray(row.topics) ? row.topics : [],
+            hasSummary: true,
+            confidenceScore: row.confidence_score ?? null,
+            engagementScore: row.engagement_score ?? null,
+            engagementLevel: row.engagement_level ?? null,
           };
           if (!bySubject.has(subject)) bySubject.set(subject, []);
           bySubject.get(subject)!.push(entry);
@@ -126,7 +100,7 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [studentId, weekStart, weekEnd]);
+  }, [studentId, weekStart]);
 
   const goPrev = () => {
     const d = new Date(weekStart);
