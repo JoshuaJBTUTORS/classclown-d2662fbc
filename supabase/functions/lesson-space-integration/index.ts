@@ -358,7 +358,10 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         lesson_space_room_id: tutorSpaceData.room_id,
         lesson_space_room_url: tutorSpaceData.client_url, // Teacher's authenticated URL
         lesson_space_space_id: spaceId, // Store the space ID for reference
-        // lesson_space_session_id: Do NOT set this here - it's created when users join
+        // Store the per-space webhook secret (used to verify inbound webhook signatures).
+        // LessonSpace returns this on Launch responses.
+        lesson_space_webhook_secret: tutorSpaceData.secret ?? tutorSpaceData.webhook_secret ?? null,
+        // lesson_space_session_id: Do NOT set this here - populated by session.end webhook
       })
       .eq("id", data.lessonId);
 
