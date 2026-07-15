@@ -1,76 +1,58 @@
-# Adopt LessonSpace's recommended transcript flow
+## Current state
 
-## Current state vs. LessonSpace docs
+**Transcripts (webhook path):** `lessonspace-transcript-webhook` receives `transcription.finish`, fetches the JSON, and stores `transcription_text` / marks `completed`. It does **NOT** trigger any downstream work — student summaries, revision, lesson_completion_badges, etc. still wait for the hourly poller (`hourly-lesson-processing` → `ensureSummaries`) to notice the row and call `generate-lesson-summaries`. Result: summaries can lag by up to an hour and rely on the same poll loop we just tried to move away from.
 
-Our auth header (`Authorization: Organisation <key>`) and the transcript endpoint (`GET /v2/organisations/20704/sessions/{id}/transcript/`) are correct. Everything else diverges from what LessonSpace documents as best practice.
+**Recordings:** Still 100% polled. `hourly-lesson-processing` and the on-demand `get-lessonspace-recording` hit `/v2/sessions/{id}/playback`. Same fragility we had with transcripts: URL expiry, missing session IDs, no retry accounting, no push notification when the recording is actually ready.
 
-| Area | Today | Docs recommend |
-|---|---|---|
-| Delivery mechanism | Poll from **4 separate cron/edge functions** hitting the same GET endpoint | Subscribe to `webhooks.transcription.finish` — pushed the moment the transcript is ready |
-| URL validity | 12h (poll path) | **24h** if delivered via webhook — more headroom before expiry |
-| Session ID discovery | Fragile ±30-min time-window heuristic against the sessions-list endpoint (`daily-lesson-processing/index.ts:210-271`) + `find-lesson-sessions` (`hourly-lesson-processing/index.ts:88-114`) | `webhooks.session.end` pushes `{session.id, room.id}` at close — no guessing |
-| Transcript body parsing | Guesses at `{transcript}` / `{text}` / `{transcription}` / string shapes (`generate-lesson-summaries/index.ts:688-700`) | Documented shape is an **array** `[{start_time,end_time,user:{id,name},breakout_id,text}]` |
-| Body fetch timing | Fetched **on the hot path** during summary generation **and** duplicated inside `hourly-lesson-processing` — race + double S3 fetch | Fetch once, off the hot path, immediately after URL is known |
-| Retry accounting | `MAX_PROCESSING_ATTEMPTS` exists only for AI summarization; transcript fetch polls indefinitely | Cap + backoff (webhook path has this built in; polling fallback should mirror) |
-| Eligibility gating | None — <5 min or single-user sessions poll forever | Docs: transcripts only generated for sessions >300s with >1 user |
+LessonSpace publishes two more webhook events we're not using:
+- `recording.finish` — pushed when the AV recording is processed and downloadable
+- (already using) `transcription.finish`, `session.end`
 
 ## Plan
 
-### Step 1 — Find & inspect the LessonSpace Launch call
-Locate the file that creates the LessonSpace space/room (not in the 4 files already reviewed). Confirm we're setting `transcribe: true` and enabling AV recording — without those, no transcript is ever generated regardless of extraction method. Note the exact JSON body shape so we know where to add the `webhooks` block.
+### 1. Fire downstream work directly from the transcript webhook
+In `lessonspace-transcript-webhook/index.ts`, after a successful `completed` upsert, invoke `generate-lesson-summaries` (`action: "generate-summaries"`) with `lessonId` + the new `transcription.id`. Fire-and-forget (don't block the 200 back to LessonSpace). This makes summaries land seconds after the transcript instead of up-to-an-hour later, and matches the same push model we chose for transcripts.
 
-### Step 2 — Add webhook subscriptions to the Launch payload
-Extend the Launch API body with:
-```json
-"webhooks": {
-  "session":       { "end":    "https://<project>.functions.supabase.co/lessonspace-session-webhook" },
-  "transcription": { "finish": "https://<project>.functions.supabase.co/lessonspace-transcript-webhook" }
+Keep the hourly poll as a low-frequency safety net only.
+
+### 2. Add a `recording.finish` webhook
+New edge function `lessonspace-recording-webhook`:
+- `verify_jwt = false` in `supabase/config.toml`
+- HMAC-SHA256 verify using the same per-space `lesson_space_webhook_secret` already stored on `lessons`
+- Look up the lesson by `session.id` (fall back to `room.id`)
+- Write `lessons.lesson_space_recording_url` + a new `lessons.lesson_space_recording_expires_at` timestamp (24h from webhook, vs 12h on the poll GET)
+- Log + return 200
+
+### 3. Register the recording webhook at launch
+In all four Launch API bodies inside `lesson-space-integration/index.ts` (tutor + student, both create paths — lines ~227, ~291, ~487, ~646), extend the `webhooks` block:
+```
+webhooks: {
+  session: { end: sessionWebhookUrl },
+  transcription: { finish: transcriptWebhookUrl },
+  recording: { finish: recordingWebhookUrl }
 }
 ```
-Persist the returned space `secret` (used later for HMAC verification) alongside the existing `lesson_space_room_id` / `lesson_space_space_id` columns.
 
-### Step 3 — New inbound webhook: `lessonspace-transcript-webhook`
-- Verify `x-webhook-signature` (HMAC-SHA256 of the raw body using the space secret) and `x-webhook-timestamp`.
-- Upsert `lesson_transcriptions` by matching payload `session.id` → existing `lesson_space_session_id`; set status `available`, `expires_at = now() + 24h`.
-- Immediately fetch the pre-signed URL **once**, parse the documented array schema, join `text` fields into `transcription_text`, set status `completed`.
-- Return 2xx within 30s to avoid LessonSpace's retry/backoff.
+### 4. Schema (tiny)
+Migration: add `lessons.lesson_space_recording_expires_at timestamptz` so the frontend player can decide when to force a fresh fetch. No new grants/RLS (existing lesson policies cover it).
 
-### Step 4 — New inbound webhook: `lessonspace-session-webhook`
-- Same signature verification.
-- On `session.end`, write `session.id` into `lessons.lesson_space_session_id` for the matching `lesson_space_room_id`. This retires the time-window guessing in `findLessonSpaceSession` and the `find-lesson-sessions` invocation.
+### 5. Simplify the pollers
+- `hourly-lesson-processing`: keep as a fallback but drop the "call get-lessonspace-recording per lesson" step to something rarer (e.g. only when `lesson_space_recording_url IS NULL AND end_time < now() - 6h`). Same for transcript polling.
+- Leave `get-lessonspace-recording` in place for the "user pressed play and we still don't have a URL" edge case — it's now the fallback, not the primary path.
 
-### Step 5 — Fix the transcript-body parser
-Rewrite the shape-guessing block at `generate-lesson-summaries/index.ts:688-700` to parse the real documented array: `segments.map(s => `${s.user.name}: ${s.text}`).join('\n')` (or similar). This fix belongs in one place — the webhook handler — with the old callers removed.
+### 6. Verify
+- Book one test lesson, end it, confirm in edge-function logs: `session.end` → `transcription.finish` → summaries invoked → `recording.finish` → recording URL stored, all within a couple of minutes and with no polling involvement.
 
-### Step 6 — Collapse the 4 pollers into 1 fallback
-- Remove transcript-fetch logic from `hourly-lesson-processing` (`ensureTranscription`, `index.ts:182-286`) and from `daily-lesson-processing` (`getTranscription` + heuristic session lookup).
-- Keep exactly one fallback: reduce `pollPendingTranscriptions` in `generate-lesson-summaries` (`index.ts:919-990`) to run every few hours (not every request), with `MAX_TRANSCRIPT_FETCH_ATTEMPTS = 5` and exponential backoff. Its only job: catch webhooks that permanently failed after LessonSpace's 5 retries.
-- Delete `supabase/functions/process-lesson-transcripts/` (redundant fourth entry point).
+## Files touched
 
-### Step 7 — Eligibility gate
-Before creating a `processing` row (or polling the fallback), check lesson duration ≥ 300s AND participant count > 1. Otherwise mark `error` with reason `"ineligible_for_transcription"`. Prevents infinite polling of short/solo sessions.
+- `supabase/functions/lessonspace-transcript-webhook/index.ts` — invoke `generate-lesson-summaries` on completed upsert
+- `supabase/functions/lessonspace-recording-webhook/index.ts` — **new**
+- `supabase/functions/lesson-space-integration/index.ts` — register recording webhook in 4 Launch bodies, persist nothing extra (secret already saved)
+- `supabase/config.toml` — `verify_jwt = false` for the new webhook
+- `supabase/functions/hourly-lesson-processing/index.ts` — de-prioritise recording/transcript polling
+- One migration for `lessons.lesson_space_recording_expires_at`
 
-### Step 8 — Verify
-- Deploy webhooks. Book/finish a real short test lesson (≥5 min, 2 participants). Confirm:
-  - `session.end` webhook fires → `lesson_space_session_id` populated without cron delay.
-  - `transcription.finish` webhook fires → row goes `available` → `completed` in a single call, with real text.
-- Check `supabase--edge_function_logs` for signature-verification failures.
-- Confirm poll fallback is quiet (should almost never do work).
-
-## Technical notes
-
-- Files touched: the yet-to-be-found Launch caller; new `supabase/functions/lessonspace-transcript-webhook/index.ts`; new `supabase/functions/lessonspace-session-webhook/index.ts`; slimmed `generate-lesson-summaries/index.ts`; slimmed `hourly-lesson-processing/index.ts` and `daily-lesson-processing/index.ts`; deleted `process-lesson-transcripts/`.
-- Both new webhook functions need `verify_jwt = false` in `supabase/config.toml` (LessonSpace calls them, not our authed users).
-- No new secrets: existing `LESSONSPACE_API_KEY` covers outbound; space `secret` for HMAC verification comes back on each Launch call and should be stored per-lesson (new column on `lessons`, e.g. `lesson_space_webhook_secret`).
-- No schema changes for `lesson_transcriptions` — existing columns cover the new flow. One column addition on `lessons` for the webhook secret.
-
-## Explicitly out of scope
-
-- Backfilling the 1,451 rows stuck in `processing` and 2,103 in `available` (per your instruction).
-- Video recording playback flow (`get-lessonspace-recording`) — separate 3h URL lifecycle, not touched here.
-
-## Open items to confirm before Step 2
-
-1. Location of the LessonSpace Launch API call — need to grep `rg -l "record_av|transcribe|api.thelessonspace.com" supabase/functions src` to find it.
-2. Whether `transcribe: true` is currently set at Launch (if not, no transcripts have ever been eligible regardless of extraction path).
-3. Whether any prior LessonSpace inbound webhook receiver already exists to reuse patterns from.
+## Out of scope
+- Backfilling stuck rows (per your earlier call)
+- Any UI change to `LessonSpacePlayer` beyond it continuing to read `lesson_space_recording_url`
+- Video/summary business logic changes
