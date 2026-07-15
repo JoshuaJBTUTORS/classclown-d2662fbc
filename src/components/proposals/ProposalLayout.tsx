@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import jbLogo from '@/assets/jb-tutors-logo.png';
 
-const INTRO_VIDEO_URL = 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // Replace with real Class Beyond intro
+const INTRO_VIDEO_URL = 'https://share.descript.com/embed/FyFnjajOdYE';
 const CONTACT_EMAIL = 'enquiries@classbeyondacademy.io';
 const CONTACT_PHONE = '01438 582848';
 
