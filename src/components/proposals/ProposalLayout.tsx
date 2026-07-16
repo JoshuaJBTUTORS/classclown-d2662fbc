@@ -532,8 +532,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 annual safeguarding training. Every session is recorded and stored securely for review.
               </p>
               <p>
-                <strong className="text-foreground">Cancellations.</strong> Reschedule or cancel individual lessons with 24
-                hours notice at no cost. Ongoing tuition can be paused or cancelled with 30 days written notice.
+                <strong className="text-foreground">Cancellations & term.</strong> Reschedule or cancel individual lessons with 24 hours notice at no cost. Your contract term is{' '}
+                <strong className="text-foreground">
+                  {proposal.contract_term === '12_months' ? '12 months' : proposal.contract_term === '3_months' ? '3 months' : 'month to month'}
+                </strong>{' '}
+                and auto-renews at the end. During the term you cannot reduce the number of sessions or downgrade — upgrades are always welcome. To cancel or downgrade at renewal, give us at least 30 days' written notice before the term end date.
               </p>
               <p>
                 <strong className="text-foreground">Payment.</strong> Lessons are billed every 4 weeks in advance
