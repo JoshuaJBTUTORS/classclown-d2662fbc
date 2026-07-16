@@ -2762,6 +2762,7 @@ export type Database = {
           access_token: string
           agreed_at: string | null
           completed_at: string | null
+          contract_term: string
           created_at: string
           created_by: string | null
           daily_homework_opt_in: boolean | null
@@ -2786,6 +2787,7 @@ export type Database = {
           access_token: string
           agreed_at?: string | null
           completed_at?: string | null
+          contract_term?: string
           created_at?: string
           created_by?: string | null
           daily_homework_opt_in?: boolean | null
@@ -2810,6 +2812,7 @@ export type Database = {
           access_token?: string
           agreed_at?: string | null
           completed_at?: string | null
+          contract_term?: string
           created_at?: string
           created_by?: string | null
           daily_homework_opt_in?: boolean | null
