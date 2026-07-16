@@ -32,6 +32,9 @@ const proposalSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   pricePerLesson: z.number().min(0, 'Price must be positive'),
   paymentCycle: z.string().min(1, 'Payment cycle is required'),
+  contractTerm: z.enum(['month_to_month', '3_months', '12_months'], {
+    required_error: 'Contract term is required',
+  }),
   lessonTimes: z.array(lessonTimeSchema).min(1, 'At least one lesson time is required'),
 });
 
