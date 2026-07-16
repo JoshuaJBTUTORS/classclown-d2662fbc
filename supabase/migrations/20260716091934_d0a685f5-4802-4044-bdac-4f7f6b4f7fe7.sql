@@ -1,0 +1,1 @@
+ALTER TABLE public.lesson_proposals ADD COLUMN IF NOT EXISTS contract_term TEXT NOT NULL DEFAULT 'month_to_month' CHECK (contract_term IN ('month_to_month','3_months','12_months'));

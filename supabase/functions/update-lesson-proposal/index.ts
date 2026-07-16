@@ -11,6 +11,7 @@ interface UpdateProposalRequest {
   subject: string;
   pricePerLesson: number;
   paymentCycle: string;
+  contractTerm?: 'month_to_month' | '3_months' | '12_months';
   lessonTimes: Array<{
     day: string;
     time: string;
@@ -94,6 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
       paymentCycle,
       lessonTimes,
       dailyHomeworkOptIn,
+      contractTerm,
     } = requestData;
 
     // Validate required fields
@@ -136,6 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
         subject: subject,
         price_per_lesson: pricePerLesson,
         payment_cycle: paymentCycle,
+        ...(contractTerm ? { contract_term: contractTerm } : {}),
         lesson_times: lessonTimes,
         daily_homework_opt_in: dailyHomeworkOptIn ?? false,
         updated_at: new Date().toISOString(),

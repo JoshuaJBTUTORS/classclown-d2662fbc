@@ -32,6 +32,9 @@ const proposalSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   pricePerLesson: z.number().min(0, 'Price must be positive'),
   paymentCycle: z.string().min(1, 'Payment cycle is required'),
+  contractTerm: z.enum(['month_to_month', '3_months', '12_months'], {
+    required_error: 'Contract term is required',
+  }),
   lessonTimes: z.array(lessonTimeSchema).min(1, 'At least one lesson time is required'),
 });
 
@@ -57,6 +60,7 @@ export default function EditProposal() {
       subject: '',
       pricePerLesson: 45,
       paymentCycle: '',
+      contractTerm: 'month_to_month',
       lessonTimes: [],
     },
   });
@@ -114,6 +118,7 @@ export default function EditProposal() {
         subject: proposal.subject || '',
         pricePerLesson: proposal.price_per_lesson || 45,
         paymentCycle: proposal.payment_cycle || '',
+        contractTerm: ((proposal as any).contract_term as 'month_to_month' | '3_months' | '12_months') || 'month_to_month',
         lessonTimes: parsedLessonTimes,
       });
 
@@ -401,7 +406,34 @@ export default function EditProposal() {
                 />
               </div>
 
+              <FormField
+                control={form.control}
+                name="contractTerm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contract Term</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contract term" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="month_to_month">Month to Month</SelectItem>
+                        <SelectItem value="3_months">3 Months</SelectItem>
+                        <SelectItem value="12_months">12 Months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      During the term, sessions cannot be reduced and plans cannot be downgraded (upgrades are always allowed). Auto-renews at term end — clients must give 30 days' notice before the end date to cancel.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="space-y-4">
+
                 <div className="flex items-center justify-between">
                   <FormLabel>Lesson Times</FormLabel>
                   <Button type="button" variant="outline" size="sm" onClick={addLessonTime}>

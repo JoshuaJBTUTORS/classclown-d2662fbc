@@ -36,6 +36,7 @@ interface Proposal {
   subject: string;
   price_per_lesson: number;
   payment_cycle: string;
+  contract_term?: 'month_to_month' | '3_months' | '12_months' | null;
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
   status: string;
   created_at: string;
@@ -419,8 +420,43 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <span className="text-muted-foreground">per lesson</span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Billed <span className="font-medium text-foreground">every 4 weeks in advance</span>. No sign-up fee, cancel anytime with 30 days notice.
+                Billed <span className="font-medium text-foreground">every 4 weeks in advance</span>. No sign-up fee.
               </p>
+
+              {/* Contract term */}
+              {(() => {
+                const term = proposal.contract_term || 'month_to_month';
+                const label = term === '12_months' ? '12 Months' : term === '3_months' ? '3 Months' : 'Month to Month';
+                return (
+                  <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Contract term</p>
+                        <p className="mt-1 font-heading text-2xl font-bold text-foreground">{label}</p>
+                      </div>
+                      <span className="rounded-full border border-primary/30 bg-background px-3 py-1 text-xs font-semibold text-primary">
+                        Auto-renews
+                      </span>
+                    </div>
+                    <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>During the term, the number of sessions cannot be reduced and the plan cannot be downgraded.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>You can increase sessions or upgrade at any time.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>At the end of the term the contract auto-renews. To cancel or downgrade, let us know at least <strong className="text-foreground">30 days before</strong> the term end date.</span>
+                      </li>
+                    </ul>
+                  </div>
+                );
+              })()}
+
+
 
 
               {proposal.daily_homework_opt_in && (
@@ -496,8 +532,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 annual safeguarding training. Every session is recorded and stored securely for review.
               </p>
               <p>
-                <strong className="text-foreground">Cancellations.</strong> Reschedule or cancel individual lessons with 24
-                hours notice at no cost. Ongoing tuition can be paused or cancelled with 30 days written notice.
+                <strong className="text-foreground">Cancellations & term.</strong> Reschedule or cancel individual lessons with 24 hours notice at no cost. Your contract term is{' '}
+                <strong className="text-foreground">
+                  {proposal.contract_term === '12_months' ? '12 months' : proposal.contract_term === '3_months' ? '3 months' : 'month to month'}
+                </strong>{' '}
+                and auto-renews at the end. During the term you cannot reduce the number of sessions or downgrade — upgrades are always welcome. To cancel or downgrade at renewal, give us at least 30 days' written notice before the term end date.
               </p>
               <p>
                 <strong className="text-foreground">Payment.</strong> Lessons are billed every 4 weeks in advance
