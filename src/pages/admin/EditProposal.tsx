@@ -118,6 +118,7 @@ export default function EditProposal() {
         subject: proposal.subject || '',
         pricePerLesson: proposal.price_per_lesson || 45,
         paymentCycle: proposal.payment_cycle || '',
+        contractTerm: ((proposal as any).contract_term as 'month_to_month' | '3_months' | '12_months') || 'month_to_month',
         lessonTimes: parsedLessonTimes,
       });
 
