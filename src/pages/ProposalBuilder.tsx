@@ -264,7 +264,34 @@ export default function ProposalBuilder() {
                 />
               </div>
 
+              <FormField
+                control={form.control}
+                name="contractTerm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contract Term</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contract term" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="month_to_month">Month to Month</SelectItem>
+                        <SelectItem value="3_months">3 Months</SelectItem>
+                        <SelectItem value="12_months">12 Months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      During the term, sessions cannot be reduced and plans cannot be downgraded (upgrades are always allowed). Auto-renews at term end — clients must give 30 days' notice before the end date to cancel.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="space-y-4">
+
                 <div className="flex items-center justify-between">
                   <FormLabel>Lesson Times</FormLabel>
                   <Button type="button" variant="outline" size="sm" onClick={addLessonTime}>
