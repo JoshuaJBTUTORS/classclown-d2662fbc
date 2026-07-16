@@ -60,6 +60,7 @@ export default function ProposalBuilder() {
       subject: searchParams.get('subject') || '',
       pricePerLesson: 45,
       paymentCycle: '',
+      contractTerm: 'month_to_month',
       dailyHomeworkOptIn: false,
       lessonTimes: [],
     },
