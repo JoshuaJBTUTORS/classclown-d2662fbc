@@ -60,6 +60,7 @@ export default function EditProposal() {
       subject: '',
       pricePerLesson: 45,
       paymentCycle: '',
+      contractTerm: 'month_to_month',
       lessonTimes: [],
     },
   });
