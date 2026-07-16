@@ -108,6 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
         subject: proposalData.subject,
         price_per_lesson: proposalData.pricePerLesson,
         payment_cycle: proposalData.paymentCycle,
+        contract_term: proposalData.contractTerm || 'month_to_month',
         lesson_times: proposalData.lessonTimes,
         daily_homework_opt_in: proposalData.dailyHomeworkOptIn || false,
         access_token: accessToken,
