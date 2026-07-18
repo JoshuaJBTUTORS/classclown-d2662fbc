@@ -281,8 +281,9 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <span className="text-primary">{proposal.recipient_name}</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-                A dedicated 1-to-1 tuition programme designed around your child's goals, exam board and pace, delivered by
-                subject specialists we've hand-picked.
+                {proposal.lesson_type === 'group'
+                  ? "A focused small-group tuition programme aligned to your child's exam board and pace, delivered by subject specialists we've hand-picked."
+                  : "A dedicated 1-to-1 tuition programme designed around your child's goals, exam board and pace, delivered by subject specialists we've hand-picked."}
               </p>
             </div>
 
