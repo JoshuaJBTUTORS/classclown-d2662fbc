@@ -174,7 +174,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Send email to Joshua
       await resend.emails.send({
         from: 'Class Beyond CRM <enquiries@classbeyondacademy.io>',
-        to: ['joshua@classbeyondacademy.io'],
+        to: ['joshua@classbeyondacademy.io', 'hannah@classbeyondacademy.io'],
         subject: `✅ New Enrollment: ${updatedProposal.recipient_name} - ${updatedProposal.subject}`,
         html: emailHtml,
       });
