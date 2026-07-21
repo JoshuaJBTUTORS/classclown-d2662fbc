@@ -24,38 +24,35 @@ export const ProposalEmail = ({
 }: ProposalEmailProps) => (
   <Html>
     <Head />
-    <Preview>Your Personalized Lesson Proposal from Class Beyond</Preview>
+    <Preview>Your lesson proposal from Class Beyond</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>✨ Your Personalized Proposal</Heading>
-        
-        <Text style={greeting}>Dear {recipientName},</Text>
-        
+        <Heading style={h1}>Your lesson proposal</Heading>
+
+        <Text style={greeting}>Hi {recipientName},</Text>
+
         <Text style={text}>
-          Thank you for joining the trial lesson! It was a pleasure to connect and discuss how we can support you here at <strong>Class Beyond</strong>. 
+          Hope you're well. It was really nice to meet you for the trial lesson and chat through how we can support you at Class Beyond.
         </Text>
 
         <Text style={text}>
-          We've prepared a personalized proposal just for you. Click below to review all the details:
+          I've put together a lesson proposal for {subject} so you can have a look through when you get a moment. Nothing is set in stone, so if you'd like to adjust anything just let me know.
         </Text>
 
-        <Link
-          href={proposalUrl}
-          target="_blank"
-          style={button}
-        >
-          📋 View Your Proposal
+        <Link href={proposalUrl} target="_blank" style={button}>
+          View your proposal
         </Link>
+
+        <Text style={text}>
+          Any questions at all, feel free to reply to this email or give us a call on 01438 582848.
+        </Text>
 
         <Hr style={hr} />
 
-        <Text style={footerText}>
-          💬 Have questions? We're here to help! Feel free to reach out anytime.
-        </Text>
-
         <Text style={footer}>
-          <strong>Class Beyond</strong><br />
-          Helping Every Child Shine ✨
+          Thanks,<br />
+          Joshua<br />
+          Class Beyond Academy
         </Text>
       </Container>
     </Body>
@@ -81,66 +78,52 @@ const container = {
 
 const h1 = {
   color: '#1e3a5f',
-  fontSize: '36px',
-  fontWeight: '700',
-  margin: '0 0 32px 0',
+  fontSize: '28px',
+  fontWeight: '600',
+  margin: '0 0 24px 0',
   padding: '0 48px',
-  textAlign: 'center' as const,
-  letterSpacing: '-0.5px',
 };
 
 const greeting = {
   color: '#333',
-  fontSize: '18px',
-  fontWeight: '600',
-  lineHeight: '28px',
-  margin: '24px 0 16px 0',
+  fontSize: '16px',
+  fontWeight: '500',
+  lineHeight: '26px',
+  margin: '16px 0 8px 0',
   padding: '0 48px',
 };
 
 const text = {
-  color: '#555',
+  color: '#333',
   fontSize: '16px',
-  lineHeight: '28px',
+  lineHeight: '26px',
   margin: '16px 0',
   padding: '0 48px',
 };
 
 const button = {
   backgroundColor: '#1e3a5f',
-  borderRadius: '10px',
+  borderRadius: '8px',
   color: '#fff',
-  fontSize: '18px',
-  fontWeight: '700',
+  fontSize: '16px',
+  fontWeight: '600',
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'block',
-  padding: '18px 40px',
-  margin: '40px 48px',
-  boxShadow: '0 4px 14px rgba(30, 58, 95, 0.25)',
-  transition: 'all 0.3s ease',
+  padding: '14px 24px',
+  margin: '24px 48px',
 };
 
 const hr = {
   borderColor: '#e6ebf1',
-  margin: '40px 48px',
+  margin: '32px 48px',
   borderWidth: '1px',
 };
 
-const footerText = {
-  color: '#666',
-  fontSize: '15px',
-  lineHeight: '26px',
-  margin: '24px 0',
-  padding: '0 48px',
-  textAlign: 'center' as const,
-};
-
 const footer = {
-  color: '#8898aa',
-  fontSize: '13px',
-  lineHeight: '20px',
+  color: '#555',
+  fontSize: '15px',
+  lineHeight: '22px',
   padding: '0 48px',
-  marginTop: '32px',
-  textAlign: 'center' as const,
+  marginTop: '16px',
 };

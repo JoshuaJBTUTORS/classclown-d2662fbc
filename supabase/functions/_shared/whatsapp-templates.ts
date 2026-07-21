@@ -230,26 +230,20 @@ Class Beyond Team
     subject: string,
     proposalUrl: string
   ): string => {
-    return `🎓 *Lesson Proposal from Class Beyond*
+    return `Hi ${recipientName}, hope you're well.
 
-Hi ${recipientName}! 👋
+It was great meeting you for the trial lesson. I've put together your lesson proposal for ${subject} so you can have a look through when you get a moment.
 
-Thank you for joining the trial lesson! We've prepared a personalized lesson proposal for you:
+You can view it here: ${proposalUrl}
 
-📚 *Subject:* ${subject}
+If anything doesn't quite make sense, or you'd like to tweak the plan, just let me know and I'm happy to sort it.
 
-To view your full proposal and get started:
-👉 ${proposalUrl}
-
-✅ Review all the details
-✅ Agree to terms
-✅ Set up your payment method
-
-If you have any questions, feel free to reply to this message!
-
-_Class Beyond Academy_
-Building confidence, one lesson at a time 🌟`;
+Thanks,
+Joshua
+Class Beyond Academy
+01438 582848`;
   },
+
 
   trialSalesNotification: (parentName: string, childName: string, email: string, phone: string, subject: string, preferredDate: string, preferredTime: string, message: string, bookingId: string) => `
 🚨 NEW TRIAL BOOKING ALERT! 🚨
@@ -327,27 +321,18 @@ Class Beyond Team
     paymentCycle: string,
     proposalUrl: string
   ): string => {
-    return `📢 *Reminder: Your Lesson Proposal - JB Tutors*
+    return `Hi ${recipientName}, hope you're having a good week.
 
-Hi ${recipientName}! 👋
+Just wanted to gently follow up on the lesson proposal I sent through for ${subject}. It's £${pricePerLesson.toFixed(2)} ${paymentCycle.toLowerCase()} if that helps.
 
-Just a friendly reminder about your personalized lesson proposal:
+Whenever you have a spare few minutes, you can look through it here: ${proposalUrl}
 
-📚 *Subject:* ${subject}
-💰 *Price:* £${pricePerLesson.toFixed(2)} ${paymentCycle.toLowerCase()}
+No rush at all. If you have any questions or want to chat it through first, just reply here.
 
-👉 Review and sign here: ${proposalUrl}
-
-✨ *What's included:*
-• Personalized learning approach
-• Expert tutors since 2009
-• Flexible online lessons
-• Proven exam success
-
-Questions? Just reply to this message!
-
-_Journey Beyond Education_
-Building confidence, one lesson at a time 🌟`;
+Thanks,
+Joshua
+Class Beyond Academy
+01438 582848`;
   },
 
   proposalAgreedReminder: (
@@ -355,28 +340,20 @@ Building confidence, one lesson at a time 🌟`;
     subject: string,
     proposalUrl: string
   ): string => {
-    return `⏰ *Complete Your Proposal - Class Beyond*
+    return `Hi ${recipientName}, hope you're well.
 
-Hi ${recipientName}! 👋
+Thanks again for agreeing to the ${subject} proposal. There's just one last step to lock in your lesson times, which is popping in your payment details.
 
-Thanks for agreeing to your lesson proposal! To secure your lesson times and lock in your pricing, please complete the final step:
+You can finish that off here whenever you have a moment: ${proposalUrl}
 
-📚 *Subject:* ${subject}
+Once that's done we'll get everything set up on our side. Any questions, just reply here.
 
-👉 Complete your proposal here: ${proposalUrl}
-
-🔒 *Secure your spot:*
-• Lock in your current pricing
-• Reserve your preferred lesson times
-• Start lessons as soon as possible
-
-Don't miss out - lesson slots fill up fast!
-
-Questions? Just reply to this message!
-
-_Class Beyond Academy_
-Building confidence, one lesson at a time 🌟`;
+Thanks,
+Joshua
+Class Beyond Academy
+01438 582848`;
   },
+
 
   preLessonPrep: (
     studentName: string,

@@ -71,9 +71,10 @@ const handler = async (req: Request): Promise<Response> => {
           await resend.emails.send({
             from: 'Class Beyond <enquiries@classbeyondacademy.io>',
             to: [proposal.recipient_email],
-            subject: isAgreedStatus 
-              ? '⏰ Complete Your Proposal - Secure Your Spot'
-              : '📢 Reminder: Your Lesson Proposal from Journey Beyond',
+            subject: isAgreedStatus
+              ? 'One last step to finish your proposal'
+              : 'Just following up on your lesson proposal',
+
             html: emailHtml,
           });
 

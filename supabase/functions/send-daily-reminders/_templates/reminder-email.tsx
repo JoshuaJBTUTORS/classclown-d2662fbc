@@ -28,49 +28,35 @@ export const ReminderEmail = ({
 }: ReminderEmailProps) => (
   <Html>
     <Head />
-    <Preview>Reminder: Your Personalized Lesson Proposal from Class Beyond</Preview>
+    <Preview>Just following up on your lesson proposal</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>📢 Friendly Reminder</Heading>
-        
-        <Text style={greeting}>Dear {recipientName},</Text>
-        
+        <Heading style={h1}>Just following up</Heading>
+
+        <Text style={greeting}>Hi {recipientName},</Text>
+
         <Text style={text}>
-          We wanted to follow up on the personalized lesson proposal we sent you. Have you had a chance to review it?
+          Hope you're having a good week. I wanted to gently follow up on the lesson proposal I sent through for {subject}. It's £{pricePerLesson.toFixed(2)} {paymentCycle.toLowerCase()} if that helps as a reminder.
         </Text>
 
         <Text style={text}>
-          At <strong>Class Beyond</strong>, we've been helping students excel since 2009 with our personalized learning approach. Your proposal includes:
+          Whenever you have a spare few minutes, you can look through everything here:
         </Text>
 
-        <div style={highlightBox}>
-          <Text style={highlightText}>
-            📚 <strong>Subject:</strong> {subject}<br />
-            💰 <strong>Price:</strong> £{pricePerLesson.toFixed(2)} per lesson ({paymentCycle.toLowerCase()})
-          </Text>
-        </div>
-
-        <Text style={text}>
-          Click below to review your proposal, agree to the terms, and set up your payment method:
-        </Text>
-
-        <Link
-          href={proposalUrl}
-          target="_blank"
-          style={button}
-        >
-          📋 Review Your Proposal
+        <Link href={proposalUrl} target="_blank" style={button}>
+          View your proposal
         </Link>
+
+        <Text style={text}>
+          No rush at all. If you'd like to chat it through first, or you have any questions, just reply to this email or call us on 01438 582848.
+        </Text>
 
         <Hr style={hr} />
 
-        <Text style={footerText}>
-          💬 Have questions? We're here to help! Feel free to reach out anytime.
-        </Text>
-
         <Text style={footer}>
-          <strong>Class Beyond</strong><br />
-          Helping Every Child Shine ✨
+          Thanks,<br />
+          Joshua<br />
+          Class Beyond Academy
         </Text>
       </Container>
     </Body>
@@ -96,81 +82,52 @@ const container = {
 
 const h1 = {
   color: '#1e3a5f',
-  fontSize: '36px',
-  fontWeight: '700',
-  margin: '0 0 32px 0',
+  fontSize: '28px',
+  fontWeight: '600',
+  margin: '0 0 24px 0',
   padding: '0 48px',
-  textAlign: 'center' as const,
-  letterSpacing: '-0.5px',
 };
 
 const greeting = {
   color: '#333',
-  fontSize: '18px',
-  fontWeight: '600',
-  lineHeight: '28px',
-  margin: '24px 0 16px 0',
+  fontSize: '16px',
+  fontWeight: '500',
+  lineHeight: '26px',
+  margin: '16px 0 8px 0',
   padding: '0 48px',
 };
 
 const text = {
-  color: '#555',
+  color: '#333',
   fontSize: '16px',
-  lineHeight: '28px',
+  lineHeight: '26px',
   margin: '16px 0',
   padding: '0 48px',
 };
 
-const highlightBox = {
-  backgroundColor: '#f0f7ff',
-  borderLeft: '4px solid #1e3a5f',
-  padding: '16px 24px',
-  margin: '24px 48px',
-  borderRadius: '6px',
-};
-
-const highlightText = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '26px',
-  margin: '0',
-};
-
 const button = {
   backgroundColor: '#1e3a5f',
-  borderRadius: '10px',
+  borderRadius: '8px',
   color: '#fff',
-  fontSize: '18px',
-  fontWeight: '700',
+  fontSize: '16px',
+  fontWeight: '600',
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'block',
-  padding: '18px 40px',
-  margin: '40px 48px',
-  boxShadow: '0 4px 14px rgba(30, 58, 95, 0.25)',
-  transition: 'all 0.3s ease',
+  padding: '14px 24px',
+  margin: '24px 48px',
 };
 
 const hr = {
   borderColor: '#e6ebf1',
-  margin: '40px 48px',
+  margin: '32px 48px',
   borderWidth: '1px',
 };
 
-const footerText = {
-  color: '#666',
-  fontSize: '15px',
-  lineHeight: '26px',
-  margin: '24px 0',
-  padding: '0 48px',
-  textAlign: 'center' as const,
-};
-
 const footer = {
-  color: '#8898aa',
-  fontSize: '13px',
-  lineHeight: '20px',
+  color: '#555',
+  fontSize: '15px',
+  lineHeight: '22px',
   padding: '0 48px',
-  marginTop: '32px',
-  textAlign: 'center' as const,
+  marginTop: '16px',
 };
