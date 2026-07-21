@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: emailError } = await resend.emails.send({
       from: 'Class Beyond <enquiries@classbeyondacademy.io>',
       to: [recipientEmail],
-      subject: 'Your Lesson Proposal from Journey Beyond Education',
+      subject: 'Your lesson proposal from Class Beyond',
       html,
     });
 

@@ -24,62 +24,35 @@ export const AgreedReminderEmail = ({
 }: AgreedReminderEmailProps) => (
   <Html>
     <Head />
-    <Preview>Complete Your Proposal - Secure Your Lesson Times & Pricing</Preview>
+    <Preview>One last step to finish your proposal</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>⏰ Complete Your Proposal</Heading>
-        
-        <Text style={greeting}>Dear {recipientName},</Text>
-        
+        <Heading style={h1}>One last step</Heading>
+
+        <Text style={greeting}>Hi {recipientName},</Text>
+
         <Text style={text}>
-          Thank you for agreeing to your lesson proposal! We're excited to start working with you.
+          Thanks again for agreeing to the {subject} proposal. There's just one last thing left to lock in your lesson times, which is popping in your payment details.
         </Text>
 
         <Text style={text}>
-          To <strong>secure your lesson times and lock in your current pricing</strong>, please complete the final step of your proposal:
+          You can finish that off here whenever you have a moment:
         </Text>
 
-        <div style={urgencyBox}>
-          <Text style={urgencyText}>
-            🔒 <strong>Secure Your Spot</strong><br />
-            Complete your proposal to reserve your preferred lesson times and guarantee your current pricing. Lesson slots fill up fast!
-          </Text>
-        </div>
-
-        <div style={highlightBox}>
-          <Text style={highlightText}>
-            📚 <strong>Subject:</strong> {subject}
-          </Text>
-        </div>
-
-        <Link
-          href={proposalUrl}
-          target="_blank"
-          style={button}
-        >
-          🎯 Complete Your Proposal Now
+        <Link href={proposalUrl} target="_blank" style={button}>
+          Complete your proposal
         </Link>
 
-        <Text style={benefitsTitle}>
-          <strong>What happens when you complete:</strong>
-        </Text>
-        
-        <Text style={benefitsList}>
-          ✅ Your lesson times are reserved<br />
-          ✅ Your pricing is locked in<br />
-          ✅ You can start lessons immediately<br />
-          ✅ Access to learning materials
+        <Text style={text}>
+          Once that's done we'll get everything set up on our side and be in touch with next steps. Any questions at all, just reply to this email or call us on 01438 582848.
         </Text>
 
         <Hr style={hr} />
 
-        <Text style={footerText}>
-          💬 Have questions? We're here to help! Feel free to reach out anytime.
-        </Text>
-
         <Text style={footer}>
-          <strong>Class Beyond</strong><br />
-          Helping Every Child Shine ✨
+          Thanks,<br />
+          Joshua<br />
+          Class Beyond Academy
         </Text>
       </Container>
     </Body>
@@ -105,113 +78,52 @@ const container = {
 
 const h1 = {
   color: '#1e3a5f',
-  fontSize: '36px',
-  fontWeight: '700',
-  margin: '0 0 32px 0',
-  padding: '0 48px',
-  textAlign: 'center' as const,
-  letterSpacing: '-0.5px',
-};
-
-const greeting = {
-  color: '#333',
-  fontSize: '18px',
+  fontSize: '28px',
   fontWeight: '600',
-  lineHeight: '28px',
-  margin: '24px 0 16px 0',
-  padding: '0 48px',
-};
-
-const text = {
-  color: '#555',
-  fontSize: '16px',
-  lineHeight: '28px',
-  margin: '16px 0',
-  padding: '0 48px',
-};
-
-const urgencyBox = {
-  backgroundColor: '#fff3cd',
-  borderLeft: '4px solid #ffa500',
-  padding: '20px 24px',
-  margin: '24px 48px',
-  borderRadius: '6px',
-};
-
-const urgencyText = {
-  color: '#856404',
-  fontSize: '16px',
-  lineHeight: '26px',
-  margin: '0',
-};
-
-const highlightBox = {
-  backgroundColor: '#f0f7ff',
-  borderLeft: '4px solid #1e3a5f',
-  padding: '16px 24px',
-  margin: '24px 48px',
-  borderRadius: '6px',
-};
-
-const highlightText = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '26px',
-  margin: '0',
-};
-
-const button = {
-  backgroundColor: '#1e3a5f',
-  borderRadius: '10px',
-  color: '#fff',
-  fontSize: '18px',
-  fontWeight: '700',
-  textDecoration: 'none',
-  textAlign: 'center' as const,
-  display: 'block',
-  padding: '18px 40px',
-  margin: '40px 48px',
-  boxShadow: '0 4px 14px rgba(30, 58, 95, 0.25)',
-  transition: 'all 0.3s ease',
-};
-
-const benefitsTitle = {
-  color: '#333',
-  fontSize: '16px',
-  fontWeight: '600',
-  lineHeight: '28px',
-  margin: '32px 0 12px 0',
-  padding: '0 48px',
-};
-
-const benefitsList = {
-  color: '#555',
-  fontSize: '16px',
-  lineHeight: '32px',
   margin: '0 0 24px 0',
   padding: '0 48px',
 };
 
+const greeting = {
+  color: '#333',
+  fontSize: '16px',
+  fontWeight: '500',
+  lineHeight: '26px',
+  margin: '16px 0 8px 0',
+  padding: '0 48px',
+};
+
+const text = {
+  color: '#333',
+  fontSize: '16px',
+  lineHeight: '26px',
+  margin: '16px 0',
+  padding: '0 48px',
+};
+
+const button = {
+  backgroundColor: '#1e3a5f',
+  borderRadius: '8px',
+  color: '#fff',
+  fontSize: '16px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'block',
+  padding: '14px 24px',
+  margin: '24px 48px',
+};
+
 const hr = {
   borderColor: '#e6ebf1',
-  margin: '40px 48px',
+  margin: '32px 48px',
   borderWidth: '1px',
 };
 
-const footerText = {
-  color: '#666',
-  fontSize: '15px',
-  lineHeight: '26px',
-  margin: '24px 0',
-  padding: '0 48px',
-  textAlign: 'center' as const,
-};
-
 const footer = {
-  color: '#8898aa',
-  fontSize: '13px',
-  lineHeight: '20px',
+  color: '#555',
+  fontSize: '15px',
+  lineHeight: '22px',
   padding: '0 48px',
-  marginTop: '32px',
-  textAlign: 'center' as const,
+  marginTop: '16px',
 };
