@@ -218,6 +218,23 @@ serve(async (req) => {
 
       console.log('✅ Deleted parent rows matching email:', deletedParentsByEmail || []);
 
+      if (existingAuthUserIds.length > 0) {
+        const { error: unlinkProposalsError } = await supabaseAdmin
+          .from('lesson_proposals')
+          .update({ parent_id: null })
+          .in('parent_id', existingAuthUserIds);
+        if (unlinkProposalsError) {
+          console.error('Failed to unlink proposals from existing auth users:', unlinkProposalsError);
+          return new Response(
+            JSON.stringify({
+              error: 'Failed to unlink proposals from existing account: ' + unlinkProposalsError.message,
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.log('✅ Cleared parent_id on lesson_proposals for existing auth users');
+      }
+
       for (const existingAuthUser of existingAuthUsers) {
         console.log('🧹 Deleting existing auth user for email:', existingAuthUser.id);
         const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(existingAuthUser.id);
