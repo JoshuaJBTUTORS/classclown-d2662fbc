@@ -400,7 +400,7 @@ const Onboarding: React.FC = () => {
                           loadingProposals
                             ? 'Loading proposals…'
                             : proposals.length === 0
-                            ? 'No completed proposals without a parent account'
+                            ? 'No completed proposals'
                             : 'Select a completed proposal'
                         }
                       />
