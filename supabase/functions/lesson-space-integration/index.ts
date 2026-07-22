@@ -292,8 +292,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         },
         webhooks: {
           session: { end: sessionWebhookUrl },
-          transcription: { finish: transcriptWebhookUrl },
-          recording: { finish: recordingWebhookUrl }
+          transcription: { finish: transcriptWebhookUrl }
         }
       };
 
