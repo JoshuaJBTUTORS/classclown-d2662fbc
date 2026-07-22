@@ -987,7 +987,7 @@ Format your response as a JSON object with the following structure:
       }
 
       // Save the summary to the database with proper field mapping
-      const summaryData = {
+      const summaryData: any = {
         lesson_id: lessonId,
         student_id: student.id,
         transcription_id: transcriptionId,
@@ -1002,6 +1002,18 @@ Format your response as a JSON object with the following structure:
         confidence_indicators: analysisData.confidence_indicators || {},
         ai_summary: analysisData.overall_summary || 'Analysis completed',
       };
+
+      // Generate structured homework brief (internal only).
+      const homeworkBrief = await generateHomeworkBrief(lessonId, studentName, {
+        topics_covered: summaryData.topics_covered,
+        what_went_well: summaryData.what_went_well,
+        areas_for_improvement: summaryData.areas_for_improvement,
+        student_contributions: summaryData.student_contributions,
+        confidence_score: summaryData.confidence_score,
+        engagement_level: summaryData.engagement_level,
+        confidence_indicators: summaryData.confidence_indicators,
+      });
+      if (homeworkBrief) summaryData.homework_brief = homeworkBrief;
 
       console.log(`Saving summary for student ${studentName}:`, summaryData);
 
