@@ -76,8 +76,14 @@ serve(async (req) => {
     const signatureHeader = req.headers.get("x-webhook-signature") ?? "";
     const eventHeader = req.headers.get("x-webhook-event") ?? "";
     const webhookIdHeader = req.headers.get("x-webhook-id") ?? "";
+    const replayTokenHeader = req.headers.get("x-replay-token") ?? "";
+    const replayTokenExpected = Deno.env.get("LESSONSPACE_REPLAY_TOKEN") ?? "";
+    const isTrustedReplay =
+      replayTokenExpected.length > 0 &&
+      replayTokenHeader.length === replayTokenExpected.length &&
+      timingSafeEq(replayTokenHeader, replayTokenExpected);
     console.log(
-      `[${rid}] 📥 INCOMING transcript webhook | event=${eventHeader} | webhookId=${webhookIdHeader} | sig=${signatureHeader ? "present" : "missing"} | bytes=${rawBody.length}`,
+      `[${rid}] 📥 INCOMING transcript webhook | event=${eventHeader} | webhookId=${webhookIdHeader} | sig=${signatureHeader ? "present" : "missing"} | replay=${isTrustedReplay} | bytes=${rawBody.length}`,
     );
 
     let payload: any;
