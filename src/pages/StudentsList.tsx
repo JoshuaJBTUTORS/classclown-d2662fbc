@@ -44,10 +44,16 @@ const StudentsList: React.FC = () => {
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1">
           <div className="container mx-auto px-4 py-8">
-            <PageTitle
-              title="Students"
-              subtitle="A simple list of all students"
-            />
+            <div className="flex items-start justify-between gap-4">
+              <PageTitle
+                title="Students"
+                subtitle="A simple list of all students"
+              />
+              <Button onClick={() => {}} className="mt-2">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Onboarding
+              </Button>
+            </div>
 
             <Card className="mt-6">
               <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
