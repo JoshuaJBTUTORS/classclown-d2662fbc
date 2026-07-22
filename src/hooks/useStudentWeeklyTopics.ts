@@ -15,6 +15,12 @@ export interface WeeklyLessonEntry {
   lessonStatus: string | null;
   isMeaningful: boolean;
   wasLate: boolean;
+  homeworkBrief: {
+    subject?: string;
+    year_group?: string;
+    topics?: string[];
+    difficulty_tag?: string;
+  } | null;
 }
 
 export interface SubjectGroup {

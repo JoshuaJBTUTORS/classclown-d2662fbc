@@ -1,26 +1,26 @@
-## Tighten the hourly fallback to a 1-hour window
+## Goal
 
-Right now `hourly-lesson-processing` scans everything that ended between 3 hours ago and 7 days ago on every run. That means the same 7-day backlog gets re-scanned 24 times a day — expensive, slow, and it churns lessons that were already handled or already skipped for good reason.
+Expose the per-lesson `homework_brief` (subject, year group, topics, difficulty tag 1/2) on the existing admin-facing student report at `/students-list/:studentId`, so you can visually confirm the new field is being generated correctly.
 
-### Change
+## Scope
 
-In `supabase/functions/hourly-lesson-processing/index.ts`, replace the 7-day lower bound with a 1-hour slice, sitting behind the existing 3-hour "must be finished" buffer:
+Admin-only. No permission or routing changes. Reuses the current page.
 
-- `cutoff = now − 3h` (unchanged — upper bound, lesson must have ended ≥3h ago)
-- `windowStart = now − 4h` (new — lower bound, only the slice that just crossed the 3h mark)
+## Changes
 
-So each hourly run only touches lessons whose `end_time` falls in `[now−4h, now−3h]`. A lesson finishing at 8pm gets picked up by the 11pm run and nothing else.
+1. **`src/hooks/useStudentWeeklyTopics.ts`**
+   - After fetching `student_lesson_insights` for the week, do a second lookup on `lesson_student_summaries` filtered by `student_id` + the same lesson IDs, selecting `lesson_id, homework_brief`.
+   - Attach the resulting `homework_brief` onto each `WeeklyLessonEntry` (new optional field).
 
-Idempotency checks further down (skip if `transcription_status` already set, skip if summary already generated) stay as-is, so a retry on the same slice is still safe.
+2. **`src/pages/StudentDetail.tsx`**
+   - Under each lesson row, if `homework_brief` exists, render a small "Homework brief" panel showing:
+     - Subject, Year group
+     - Topics (chips)
+     - Difficulty tag with clear label: `1 — Not understanding` or `2 — Partial understanding`
+   - If missing, show a muted "Homework brief not yet generated" line so it's obvious when the pipeline hasn't run.
 
-### Technical notes
+## Out of scope
 
+- No student/parent-facing exposure.
 - No schema changes.
-- Only `supabase/functions/hourly-lesson-processing/index.ts` changes.
-- Existing log line (`Processing lessons that ended between X and Y`) already prints the window, nothing else to update.
-
-### Out of scope
-
-- No daily catch-up sweep (per your instruction — will not implement).
-- No webhook changes.
-- No changes to `find-lesson-sessions`, summary generator, or `failed_room_creations`.
+- No changes to generation logic.
