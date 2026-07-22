@@ -81,6 +81,14 @@ const Onboarding: React.FC = () => {
 
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdProposal, setCreatedProposal] = useState<Proposal | null>(null);
+  const [createdParentId, setCreatedParentId] = useState<string | null>(null);
+
+  // Step 3 state
+  const [hasOpenedCalendar, setHasOpenedCalendar] = useState(false);
+  const [checkingLessons, setCheckingLessons] = useState(false);
+  const [foundLessons, setFoundLessons] = useState<FoundLesson[]>([]);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const [hasChecked, setHasChecked] = useState(false);
 
   const loadProposals = async () => {
     setLoadingProposals(true);
