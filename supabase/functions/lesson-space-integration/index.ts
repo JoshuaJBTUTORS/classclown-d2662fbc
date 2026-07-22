@@ -488,8 +488,7 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       },
       webhooks: {
         session: { end: `${supabaseUrl}/functions/v1/lessonspace-session-webhook` },
-        transcription: { finish: `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook` },
-        recording: { finish: `${supabaseUrl}/functions/v1/lessonspace-recording-webhook` }
+        transcription: { finish: `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook` }
       }
     };
 
