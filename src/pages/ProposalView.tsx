@@ -141,7 +141,6 @@ export default function ProposalView() {
         proposal={proposal}
         onAgree={() => {
           setCurrentStep('payment');
-          loadProposal();
         }}
         onBack={() => setCurrentStep('view')}
       />
