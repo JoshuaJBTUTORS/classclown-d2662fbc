@@ -92,6 +92,50 @@ const Onboarding: React.FC = () => {
   const [checkError, setCheckError] = useState<string | null>(null);
   const [hasChecked, setHasChecked] = useState(false);
 
+  // Step 4 state
+  const [pushingTicket, setPushingTicket] = useState(false);
+  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [ticketError, setTicketError] = useState<string | null>(null);
+
+  const handleAddedLessons = async () => {
+    setCompleted((c) => Array.from(new Set([...c, 3])));
+    setCurrentStep(4);
+    if (!createdProposal || !createdProposal.recipient_email) {
+      setTicketError('Missing proposal data — cannot push ticket');
+      return;
+    }
+    setPushingTicket(true);
+    setTicketError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('hubspot-create-payment-ticket', {
+        body: {
+          proposalId: createdProposal.id,
+          parentEmail: createdProposal.recipient_email,
+          parentName: createdProposal.recipient_name || '',
+          parentPhone: createdProposal.recipient_phone,
+          subject: createdProposal.subject,
+          lessonType: createdProposal.lesson_type,
+          contractTerm: createdProposal.contract_term,
+          lessonTimes: createdProposal.lesson_times,
+          sessionsPerWeek: Array.isArray(createdProposal.lesson_times) ? createdProposal.lesson_times.length : null,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.ticketId) {
+        setTicketId((data as any).ticketId);
+        toast.success('Payment setup ticket created in HubSpot');
+      } else {
+        throw new Error((data as any)?.error || 'Unknown response from HubSpot');
+      }
+    } catch (e: any) {
+      console.error('HubSpot ticket push failed:', e);
+      setTicketError(e?.message || 'Failed to push ticket');
+      toast.error('Could not create HubSpot ticket');
+    } finally {
+      setPushingTicket(false);
+    }
+  };
+
   const loadProposals = async () => {
     setLoadingProposals(true);
     const { data, error } = await supabase
