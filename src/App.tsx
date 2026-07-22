@@ -71,6 +71,7 @@ import OfferView from './pages/OfferView';
 import SentOffers from './pages/admin/SentOffers';
 
 import RecurringLessons from './pages/admin/RecurringLessons';
+import LessonSpaceReplay from './pages/admin/LessonSpaceReplay';
 import PricingPage from './pages/PricingPage';
 import HubAccessManagement from './pages/admin/HubAccessManagement';
 import AssessmentCenter from './pages/AssessmentCenter';
