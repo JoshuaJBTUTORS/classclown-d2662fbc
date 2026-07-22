@@ -186,6 +186,11 @@ verify_jwt = false
 [functions.lessonspace-session-webhook]
 verify_jwt = false
 
+[functions.lessonspace-replay-session]
+verify_jwt = true
+
+
+
 
 [edge_runtime]
 enabled = true

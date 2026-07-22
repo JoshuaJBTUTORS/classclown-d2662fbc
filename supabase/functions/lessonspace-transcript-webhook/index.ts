@@ -76,8 +76,14 @@ serve(async (req) => {
     const signatureHeader = req.headers.get("x-webhook-signature") ?? "";
     const eventHeader = req.headers.get("x-webhook-event") ?? "";
     const webhookIdHeader = req.headers.get("x-webhook-id") ?? "";
+    const replayTokenHeader = req.headers.get("x-replay-token") ?? "";
+    const replayTokenExpected = Deno.env.get("LESSONSPACE_REPLAY_TOKEN") ?? "";
+    const isTrustedReplay =
+      replayTokenExpected.length > 0 &&
+      replayTokenHeader.length === replayTokenExpected.length &&
+      timingSafeEq(replayTokenHeader, replayTokenExpected);
     console.log(
-      `[${rid}] 📥 INCOMING transcript webhook | event=${eventHeader} | webhookId=${webhookIdHeader} | sig=${signatureHeader ? "present" : "missing"} | bytes=${rawBody.length}`,
+      `[${rid}] 📥 INCOMING transcript webhook | event=${eventHeader} | webhookId=${webhookIdHeader} | sig=${signatureHeader ? "present" : "missing"} | replay=${isTrustedReplay} | bytes=${rawBody.length}`,
     );
 
     let payload: any;
@@ -122,7 +128,9 @@ serve(async (req) => {
 
     // If we have a stored secret, verify the signature. If not, log and accept
     // (rollout: historical lessons launched before webhook adoption won't have one).
-    if (lessonRow?.lesson_space_webhook_secret && signatureHeader) {
+    if (isTrustedReplay) {
+      console.log(`[${rid}] trusted replay token — skipping signature verification`);
+    } else if (lessonRow?.lesson_space_webhook_secret && signatureHeader) {
       const expected = await hmacSha256Hex(lessonRow.lesson_space_webhook_secret, rawBody);
       if (!timingSafeEq(expected, signatureHeader.trim())) {
         console.warn(`[${rid}] signature mismatch for lesson ${lessonRow.id}`);
@@ -142,6 +150,7 @@ serve(async (req) => {
       // We still fetch and store keyed by session_id — future join will surface it
       console.warn(`[${rid}] no lesson matched session=${sessionId} room=${roomId}; storing orphan transcript row`);
     }
+
 
     // Fetch the transcript body ONCE, off the hot path.
     let transcriptionText: string | null = null;
