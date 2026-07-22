@@ -336,7 +336,9 @@ export default function EditProposal() {
                         <SelectContent>
                           <SelectItem value="1-to-1 Online">1-to-1 Online</SelectItem>
                           <SelectItem value="1-to-1 In-Person">1-to-1 In-Person</SelectItem>
-                          <SelectItem value="Group Session">Group Session</SelectItem>
+                          <SelectItem value="Group Session">Small Group Session</SelectItem>
+                          <SelectItem value="Large Group Session">Large Group Session</SelectItem>
+                          <SelectItem value="Mixed">Mixed (1-to-1 & Group)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
