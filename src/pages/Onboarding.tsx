@@ -94,8 +94,6 @@ const Onboarding: React.FC = () => {
 
   // Step 4 state
   const [pushingTicket, setPushingTicket] = useState(false);
-  const [ticketId, setTicketId] = useState<string | null>(null);
-  const [ticketError, setTicketError] = useState<string | null>(null);
 
   const handleAddedLessons = async () => {
     setCompleted((c) => Array.from(new Set([...c, 3])));
