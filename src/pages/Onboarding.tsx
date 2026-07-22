@@ -81,7 +81,8 @@ const Onboarding: React.FC = () => {
 
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdProposal, setCreatedProposal] = useState<Proposal | null>(null);
-  const [createdParentId, setCreatedParentId] = useState<string | null>(null);
+  const [createdParentRowId, setCreatedParentRowId] = useState<string | null>(null);
+  const [createdParentUserId, setCreatedParentUserId] = useState<string | null>(null);
 
   // Step 3 state
   const [hasOpenedCalendar, setHasOpenedCalendar] = useState(false);
