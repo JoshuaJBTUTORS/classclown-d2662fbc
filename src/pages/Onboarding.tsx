@@ -20,7 +20,7 @@ import {
 
 const STEPS = [
   { id: 1, label: 'Parent', description: 'From completed proposal' },
-  { id: 2, label: 'Student', description: 'Coming soon' },
+  { id: 2, label: 'Sessions', description: 'Review proposal sessions' },
   { id: 3, label: 'Review', description: 'Coming soon' },
 ];
 
