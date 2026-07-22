@@ -81,7 +81,8 @@ const Onboarding: React.FC = () => {
 
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdProposal, setCreatedProposal] = useState<Proposal | null>(null);
-  const [createdParentId, setCreatedParentId] = useState<string | null>(null);
+  const [createdParentRowId, setCreatedParentRowId] = useState<string | null>(null);
+  const [createdParentUserId, setCreatedParentUserId] = useState<string | null>(null);
 
   // Step 3 state
   const [hasOpenedCalendar, setHasOpenedCalendar] = useState(false);
@@ -146,11 +147,12 @@ const Onboarding: React.FC = () => {
       }
 
       // Link proposal to newly created parent so it disappears from the picker
-      const newParentId = data?.parent?.id;
-      if (newParentId) {
+      const newParentRowId = data?.parent?.id;
+      const newParentUserId = data?.parent?.user_id;
+      if (newParentUserId) {
         const { error: linkErr } = await supabase
           .from('lesson_proposals')
-          .update({ parent_id: newParentId })
+          .update({ parent_id: newParentUserId })
           .eq('id', selectedProposal.id);
         if (linkErr) {
           const msg = `Parent created, but failed to link proposal: ${linkErr.message}`;
@@ -163,7 +165,8 @@ const Onboarding: React.FC = () => {
       toast.success(data?.message || 'Parent account created (default password: classbeyond123!)');
       setCreatedEmail(selectedProposal.recipient_email);
       setCreatedProposal(selectedProposal);
-      setCreatedParentId(newParentId || null);
+      setCreatedParentRowId(newParentRowId || null);
+      setCreatedParentUserId(newParentUserId || null);
       setCompleted((c) => Array.from(new Set([...c, 1])));
       setProposals((list) => list.filter((p) => p.id !== selectedProposal.id));
       setCurrentStep(2);
@@ -184,7 +187,7 @@ const Onboarding: React.FC = () => {
   const handleCheckLessons = async () => {
     setCheckError(null);
     setHasChecked(true);
-    if (!createdParentId) {
+    if (!createdParentRowId) {
       setCheckError('Missing parent id — complete step 1 first.');
       return;
     }
@@ -193,7 +196,7 @@ const Onboarding: React.FC = () => {
       const { data: studentRows, error: sErr } = await supabase
         .from('students')
         .select('id')
-        .eq('parent_id', createdParentId);
+        .eq('parent_id', createdParentRowId);
       if (sErr) throw sErr;
       const studentIds = (studentRows || []).map((s: any) => s.id);
       if (studentIds.length === 0) {
