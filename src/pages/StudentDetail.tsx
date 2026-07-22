@@ -182,6 +182,49 @@ const StudentDetail: React.FC = () => {
                                 : 'Topics pending — transcript still processing.'}
                             </p>
                           )}
+                          {l.homeworkBrief ? (
+                            <div className="mt-3 rounded-md border border-dashed border-primary/30 bg-primary/5 p-3">
+                              <div className="text-xs font-semibold text-primary mb-1.5">
+                                Homework brief (internal)
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 text-xs">
+                                {l.homeworkBrief.subject && (
+                                  <Badge variant="outline">Subject: {l.homeworkBrief.subject}</Badge>
+                                )}
+                                {l.homeworkBrief.year_group && (
+                                  <Badge variant="outline">Year: {l.homeworkBrief.year_group}</Badge>
+                                )}
+                                {l.homeworkBrief.difficulty_tag && (
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      l.homeworkBrief.difficulty_tag === '1'
+                                        ? 'border-red-500 text-red-700 dark:text-red-400'
+                                        : 'border-yellow-500 text-yellow-700 dark:text-yellow-400'
+                                    }
+                                  >
+                                    Difficulty {l.homeworkBrief.difficulty_tag} —{' '}
+                                    {l.homeworkBrief.difficulty_tag === '1'
+                                      ? 'Not understanding'
+                                      : 'Partial understanding'}
+                                  </Badge>
+                                )}
+                              </div>
+                              {Array.isArray(l.homeworkBrief.topics) && l.homeworkBrief.topics.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {l.homeworkBrief.topics.map((t, i) => (
+                                    <Badge key={`hb-${l.lessonId}-${i}`} variant="secondary" className="text-xs">
+                                      {t}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-xs italic text-muted-foreground">
+                              Homework brief not yet generated.
+                            </p>
+                          )}
                         </div>
                       ))}
                     </CardContent>
