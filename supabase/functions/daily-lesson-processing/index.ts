@@ -259,8 +259,8 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
         }
       }
       
-      console.log(`Best match session: ${closestSession.id}, time diff: ${Math.round(closestTimeDiff / 60000)} minutes`);
-      return closestSession.id;
+      console.log(`Best match session: uuid=${closestSession.uuid} (id=${closestSession.id}), time diff: ${Math.round(closestTimeDiff / 60000)} minutes`);
+      return closestSession.uuid;
     }
     
     console.log('No sessions found in the specified time range');
