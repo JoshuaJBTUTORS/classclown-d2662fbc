@@ -237,6 +237,13 @@ const Onboarding: React.FC = () => {
                   </div>
                 )}
 
+                {createError && (
+                  <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-3">
+                    <strong className="block mb-1">Couldn't create parent account</strong>
+                    {createError}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Completed proposal</label>
                   <Select
