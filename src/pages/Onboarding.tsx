@@ -437,19 +437,92 @@ const Onboarding: React.FC = () => {
             </Card>
           )}
 
-          {currentStep > 2 && (
+          {currentStep === 3 && (
             <Card>
               <CardHeader>
-                <CardTitle>Step {currentStep}: {STEPS[currentStep - 1].label}</CardTitle>
-                <CardDescription>This step is coming soon.</CardDescription>
+                <CardTitle>Step 3: Add lessons in the calendar</CardTitle>
+                <CardDescription>
+                  Open the calendar in a new tab and schedule the sessions agreed on the proposal.
+                  Once done, come back here and click <strong>Check lessons</strong> to verify.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                  Back
-                </Button>
+              <CardContent className="flex flex-col gap-4">
+                {createdProposal && (
+                  <div className="rounded-md border p-3 text-sm">
+                    <div className="font-medium mb-1">Reminder — sessions to schedule</div>
+                    <div className="text-muted-foreground mb-2">
+                      Parent: {createdProposal.recipient_name} · Subject: {createdProposal.subject || '—'} · Type: {createdProposal.lesson_type || '—'}
+                    </div>
+                    {Array.isArray(createdProposal.lesson_times) && createdProposal.lesson_times.length > 0 ? (
+                      <ul className="list-disc pl-5 space-y-1">
+                        {createdProposal.lesson_times.map((lt, i) => (
+                          <li key={i}>
+                            {lt.day || '—'} at {lt.time || '—'} ({lt.duration ? `${lt.duration} min` : '—'})
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-muted-foreground">No sessions listed on this proposal.</div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleOpenCalendar}>Add lessons</Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleCheckLessons}
+                    disabled={!hasOpenedCalendar || checkingLessons}
+                  >
+                    {checkingLessons && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Check lessons
+                  </Button>
+                </div>
+
+                {checkError && (
+                  <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-3">
+                    {checkError}
+                  </div>
+                )}
+
+                {hasChecked && !checkError && foundLessons.length === 0 && !checkingLessons && (
+                  <div className="text-sm text-muted-foreground bg-muted/50 border rounded-md p-3">
+                    No upcoming lessons found yet for this parent's students. Schedule them in the calendar, then click <strong>Check lessons</strong> again.
+                  </div>
+                )}
+
+                {foundLessons.length > 0 && (
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-primary mb-2">
+                      <Check className="h-4 w-4" />
+                      Found {foundLessons.length} upcoming lesson{foundLessons.length === 1 ? '' : 's'}
+                    </div>
+                    <ul className="space-y-1">
+                      {foundLessons.map((l) => (
+                        <li key={l.id}>
+                          {new Date(l.start_time).toLocaleString()} — {l.subject || l.title || 'Lesson'}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setCurrentStep(2)}>Back</Button>
+                  <Button
+                    onClick={() => {
+                      toast.success('Onboarding complete');
+                      navigate('/students');
+                    }}
+                    disabled={foundLessons.length === 0}
+                  >
+                    Finish
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
+
         </main>
       </div>
     </>
