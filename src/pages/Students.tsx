@@ -444,6 +444,12 @@ const Students = () => {
             </div>
             <div className="flex gap-2">
               {(isAdmin || isOwner) && (
+                <Button variant="outline" onClick={() => {}} className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Onboarding
+                </Button>
+              )}
+              {(isAdmin || isOwner) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button className="flex items-center gap-2">
