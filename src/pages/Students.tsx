@@ -57,6 +57,7 @@ import {
 } from '@/components/ui/pagination';
 
 const Students = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
