@@ -1,33 +1,16 @@
-# Step 4: HubSpot Payment Setup Ticket
+## Prevent skipping steps in the Onboarding stepper
 
-Trigger a HubSpot ticket when the user clicks **"I have added lessons"** on Step 3 of `/onboarding`, then advance to a new Step 4 confirmation screen.
+In `src/pages/Onboarding.tsx`, the stepper circles (1, 2, 3) are clickable and call `setCurrentStep(step.id)` unconditionally, letting users jump ahead without completing prior steps.
 
-## New edge function: `hubspot-create-payment-ticket`
+### Change
+Restrict stepper navigation so users can only:
+- Click the current step (no-op), or
+- Click a step that has already been completed (to go back and review)
 
-- Auth: uses existing `HUBSPOT_API_KEY` secret (same pattern as `hubspot-trial-integration`).
-- Input: `{ proposalId, parentEmail, parentName, parentPhone }`.
-- Logic:
-  1. Load proposal from DB (subject, lesson_type, contract_term, sessions_per_week, etc.).
-  2. Find-or-create HubSpot contact by email (reuse pattern from `hubspot-trial-integration`).
-  3. `POST /crm/v3/objects/tickets` with:
-     - `subject`: `Payment Setup — <Parent Name>`
-     - `content`: parent name/email/phone + subject, lesson type, contract term, sessions/week
-     - `hs_pipeline`: `"0"`, `hs_pipeline_stage`: `"1"`
-     - `hs_ticket_priority`: `"HIGH"`
-     - `associations`: contact via `associationTypeId: 16`
-  4. Return `{ ticketId, contactId }`; log failures but don't block UI.
-- CORS headers on all responses.
+Any step that is not yet completed and is ahead of the current step will be non-clickable (disabled cursor, no action).
 
-## Frontend: `src/pages/Onboarding.tsx`
-
-- On "I have added lessons" click:
-  - Call `supabase.functions.invoke('hubspot-create-payment-ticket', { body: {...} })`.
-  - Show toast on success/failure (failure is non-blocking — still advance).
-  - Advance to new **Step 4**.
-- New Step 4 UI: confirmation card ("Payment setup ticket created in HubSpot") with a **Finish** button that routes to `/students`.
-- Update stepper to show 4 steps.
-
-## Out of scope
-
-- No pipeline/stage secrets (hardcoded 0/1 per your choice).
-- No changes to existing trial HubSpot integration.
+### Technical details
+- Update the `<button>` in the stepper to compute `canNavigate = isDone || isActive`.
+- Set `disabled={!canNavigate}` and only call `setCurrentStep` when allowed.
+- Adjust styling (`cursor-not-allowed opacity` on locked steps) so it's visually clear future steps are locked until the current one is finished.
+- No changes to the actual step completion logic — Step 1 already pushes `1` into `completed` after parent creation, Step 2 pushes `2` on continue, so gating uses the existing `completed` array.

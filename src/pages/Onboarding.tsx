@@ -321,12 +321,17 @@ const Onboarding: React.FC = () => {
             {STEPS.map((step, i) => {
               const isDone = completed.includes(step.id);
               const isActive = currentStep === step.id;
+              const canNavigate = isDone || isActive;
               return (
                 <React.Fragment key={step.id}>
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(step.id)}
-                    className="flex flex-col items-center gap-2 flex-1 min-w-0"
+                    disabled={!canNavigate}
+                    onClick={() => canNavigate && setCurrentStep(step.id)}
+                    className={cn(
+                      'flex flex-col items-center gap-2 flex-1 min-w-0',
+                      !canNavigate && 'cursor-not-allowed opacity-60'
+                    )}
                   >
                     <div
                       className={cn(
