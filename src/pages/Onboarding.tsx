@@ -22,7 +22,7 @@ const STEPS = [
   { id: 1, label: 'Parent', description: 'From completed proposal' },
   { id: 2, label: 'Sessions', description: 'Review proposal sessions' },
   { id: 3, label: 'Add Lessons', description: 'Schedule in calendar' },
-  { id: 4, label: 'Payment Setup', description: 'HubSpot ticket' },
+  
 ];
 
 interface FoundLesson {
