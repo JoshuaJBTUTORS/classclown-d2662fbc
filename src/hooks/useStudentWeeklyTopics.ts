@@ -108,10 +108,31 @@ export function useStudentWeeklyTopics(studentId: string | number | undefined) {
             lessonStatus,
             isMeaningful: !!row.is_meaningful,
             wasLate: attendance === 'late',
+            homeworkBrief: null,
           };
           if (!bySubject.has(subject)) bySubject.set(subject, []);
           bySubject.get(subject)!.push(entry);
         });
+
+        // Attach homework_brief from lesson_student_summaries.
+        const lessonIds = Array.from(bySubject.values()).flat().map((l) => l.lessonId);
+        if (lessonIds.length > 0) {
+          const { data: briefRows } = await supabase
+            .from('lesson_student_summaries')
+            .select('lesson_id, homework_brief')
+            .eq('student_id', Number(studentId))
+            .in('lesson_id', lessonIds);
+          const briefMap = new Map<string, any>();
+          (briefRows ?? []).forEach((r: any) => {
+            if (r.homework_brief) briefMap.set(r.lesson_id, r.homework_brief);
+          });
+          bySubject.forEach((lessons) => {
+            lessons.forEach((l) => {
+              const b = briefMap.get(l.lessonId);
+              if (b) l.homeworkBrief = b;
+            });
+          });
+        }
 
         const grouped: SubjectGroup[] = Array.from(bySubject.entries())
           .map(([subject, lessons]) => ({ subject, lessons }))
