@@ -647,8 +647,7 @@ async function addStudentsToRoom(data: any, supabase: any) {
         },
         webhooks: {
           session: { end: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook` },
-          transcription: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-transcript-webhook` },
-          recording: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-recording-webhook` }
+          transcription: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-transcript-webhook` }
         }
       };
 
