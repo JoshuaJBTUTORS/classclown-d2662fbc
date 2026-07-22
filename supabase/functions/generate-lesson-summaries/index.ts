@@ -492,7 +492,7 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
     const overallEngagement = avgEngagement <= 1.5 ? 'Low' : avgEngagement <= 2.5 ? 'Medium' : 'High';
     
     // Create final summary
-    const summaryData = {
+    const summaryData: any = {
       lesson_id: lessonId,
       student_id: student.id,
       transcription_id: transcriptionId,
@@ -510,7 +510,23 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
       },
       ai_summary: `Combined analysis from ${studentSummaries.length} transcript segments. Student showed ${overallEngagement.toLowerCase()} engagement with ${allContributions.length} notable contributions across the lesson.`,
     };
-    
+
+    // Generate structured homework brief (internal only — drives future homework generation).
+    const homeworkBrief = await generateHomeworkBrief(
+      lessonId,
+      `${student.first_name || ''} ${student.last_name || ''}`.trim() || `student ${student.id}`,
+      {
+        topics_covered: summaryData.topics_covered,
+        what_went_well: summaryData.what_went_well,
+        areas_for_improvement: summaryData.areas_for_improvement,
+        student_contributions: summaryData.student_contributions,
+        confidence_score: summaryData.confidence_score,
+        engagement_level: summaryData.engagement_level,
+        confidence_indicators: summaryData.confidence_indicators,
+      }
+    );
+    if (homeworkBrief) summaryData.homework_brief = homeworkBrief;
+
     // Save to database
     const { data: summary, error: summaryError } = await supabase
       .from('lesson_student_summaries')
@@ -520,7 +536,7 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
       })
       .select()
       .single();
-    
+
     if (summaryError) {
       console.error(`Error saving combined summary for student ${student.id}:`, summaryError);
     } else {
