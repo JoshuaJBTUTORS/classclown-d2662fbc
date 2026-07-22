@@ -342,6 +342,14 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="admin/lessonspace-replay"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <LessonSpaceReplay />
+                      </ProtectedRoute>
+                    }
+                  />
                 </Route>
                 <Route
                   path="/join-lesson/:lessonId"
