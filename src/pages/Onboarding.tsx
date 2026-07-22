@@ -446,7 +446,6 @@ const Onboarding: React.FC = () => {
                 <CardTitle>Step 3: Add lessons in the calendar</CardTitle>
                 <CardDescription>
                   Open the calendar in a new tab and schedule the sessions agreed on the proposal.
-                  Once done, come back here and click <strong>Check lessons</strong> to verify.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
@@ -474,41 +473,14 @@ const Onboarding: React.FC = () => {
                   <Button onClick={handleOpenCalendar}>Add lessons</Button>
                   <Button
                     variant="outline"
-                    onClick={handleCheckLessons}
-                    disabled={!hasOpenedCalendar || checkingLessons}
+                    onClick={() => {
+                      setCompleted((c) => Array.from(new Set([...c, 3])));
+                      toast.success('Marked lessons as added');
+                    }}
                   >
-                    {checkingLessons && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Check lessons
+                    I have added lessons
                   </Button>
                 </div>
-
-                {checkError && (
-                  <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-3">
-                    {checkError}
-                  </div>
-                )}
-
-                {hasChecked && !checkError && foundLessons.length === 0 && !checkingLessons && (
-                  <div className="text-sm text-muted-foreground bg-muted/50 border rounded-md p-3">
-                    No upcoming lessons found yet for this parent's students. Schedule them in the calendar, then click <strong>Check lessons</strong> again.
-                  </div>
-                )}
-
-                {foundLessons.length > 0 && (
-                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-                    <div className="flex items-center gap-2 font-medium text-primary mb-2">
-                      <Check className="h-4 w-4" />
-                      Found {foundLessons.length} upcoming lesson{foundLessons.length === 1 ? '' : 's'}
-                    </div>
-                    <ul className="space-y-1">
-                      {foundLessons.map((l) => (
-                        <li key={l.id}>
-                          {new Date(l.start_time).toLocaleString()} — {l.subject || l.title || 'Lesson'}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>Back</Button>
@@ -517,11 +489,11 @@ const Onboarding: React.FC = () => {
                       toast.success('Onboarding complete');
                       navigate('/students');
                     }}
-                    disabled={foundLessons.length === 0}
                   >
                     Finish
                   </Button>
                 </div>
+
               </CardContent>
             </Card>
           )}
