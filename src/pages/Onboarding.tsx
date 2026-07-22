@@ -159,7 +159,6 @@ const Onboarding: React.FC = () => {
       .from('lesson_proposals')
       .select('id, recipient_name, recipient_email, recipient_phone, completed_at, subject, lesson_type, lesson_times, price_per_lesson, payment_cycle, contract_term')
       .eq('status', 'completed')
-      .is('parent_id', null)
       .order('completed_at', { ascending: false })
       .limit(200);
     if (error) {
@@ -401,7 +400,7 @@ const Onboarding: React.FC = () => {
                           loadingProposals
                             ? 'Loading proposals…'
                             : proposals.length === 0
-                            ? 'No completed proposals without a parent account'
+                            ? 'No completed proposals'
                             : 'Select a completed proposal'
                         }
                       />
