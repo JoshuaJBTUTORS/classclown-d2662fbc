@@ -99,8 +99,11 @@ const Onboarding: React.FC = () => {
   const selectedProposal = proposals.find((p) => p.id === selectedProposalId);
 
   const handleCreateFromProposal = async () => {
+    setCreateError(null);
     if (!selectedProposal || !selectedProposal.recipient_email) {
-      toast.error('Selected proposal is missing an email');
+      const msg = 'Selected proposal is missing an email';
+      setCreateError(msg);
+      toast.error(msg);
       return;
     }
     setCreating(true);
@@ -115,10 +118,13 @@ const Onboarding: React.FC = () => {
         },
       });
       if (error) {
-        toast.error(error.message || 'Failed to create parent account');
+        const msg = error.message || 'Failed to create parent account';
+        setCreateError(msg);
+        toast.error(msg);
         return;
       }
       if (data?.error) {
+        setCreateError(data.error);
         toast.error(data.error);
         return;
       }
@@ -126,19 +132,28 @@ const Onboarding: React.FC = () => {
       // Link proposal to newly created parent so it disappears from the picker
       const newParentId = data?.parent?.id;
       if (newParentId) {
-        await supabase
+        const { error: linkErr } = await supabase
           .from('lesson_proposals')
           .update({ parent_id: newParentId })
           .eq('id', selectedProposal.id);
+        if (linkErr) {
+          const msg = `Parent created, but failed to link proposal: ${linkErr.message}`;
+          setCreateError(msg);
+          toast.error(msg);
+          return;
+        }
       }
 
       toast.success(data?.message || 'Parent account created (default password: classbeyond123!)');
       setCreatedEmail(selectedProposal.recipient_email);
+      setCreatedProposal(selectedProposal);
       setCompleted((c) => Array.from(new Set([...c, 1])));
       setProposals((list) => list.filter((p) => p.id !== selectedProposal.id));
-      setSelectedProposalId('');
+      setCurrentStep(2);
     } catch (e: any) {
-      toast.error(e?.message || 'Unexpected error');
+      const msg = e?.message || 'Unexpected error';
+      setCreateError(msg);
+      toast.error(msg);
     } finally {
       setCreating(false);
     }
