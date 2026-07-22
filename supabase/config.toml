@@ -186,8 +186,6 @@ verify_jwt = false
 [functions.lessonspace-session-webhook]
 verify_jwt = false
 
-[functions.lessonspace-recording-webhook]
-verify_jwt = false
 
 [edge_runtime]
 enabled = true
