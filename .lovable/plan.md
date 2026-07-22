@@ -1,41 +1,49 @@
-## Revised current state (verified against LessonSpace docs)
 
-Per LessonSpace's official webhook docs (`/docs/guide/webhooks`):
-- Webhooks are set **only** via the Launch endpoint payload. There is no org-level registration API. Any new Launch call for the same space fully overwrites the webhooks.
-- Only these events exist: `session.{start,end,idle}`, `user.{join,leave,idle}`, `chat.message`, `cobrowser.{start,stop}`, `transcription.finish`, `knock.{request,admit,deny}`.
-- **`recording.finish` is not a real event.** Recordings must be retrieved via the recordings API/polling — no webhook exists.
-- The signing secret is returned in the Launch API response and is per-space.
-- Signature = `HMAC-SHA256(JSON.stringify(body), spaceSecret)`, header `x-webhook-signature`.
+## Goal
 
-Confirmed against our data:
-- 194 recent lessons have `lesson_space_webhook_secret` populated → LessonSpace accepted the inline `webhooks` block and returned a secret.
-- Multiple lessons have already ended (e.g. `e5fd9948…`, ended 2026-07-21 17:00) with a secret stored, yet **zero** invocations recorded for `lessonspace-transcript-webhook` or `lessonspace-session-webhook`.
-- Transcripts remain `processing`, updated only by the hourly poll.
-- `lessonspace-recording-webhook` will never fire — the event doesn't exist. Recording capture must stay on the polling/GET path.
+Prove the transcript/recording storage pipeline works end-to-end by running a past LessonSpace session (one we know completed cleanly and has a transcript on LessonSpace's side) through the exact same code path the live webhook uses — without waiting for a new live session.
 
-So the fallback is doing all the work, and the reason webhooks aren't landing is not "org-level vs inline" — it's something in the current inline registration or delivery path.
+## Why this is needed
 
-## Revised plan
+LessonSpace only fires `transcription.finish` / `session.end` webhooks once, at the moment the session ends. We can't ask them to resend historical webhooks. So to validate the pipeline against a real, known-good session we have to synthesize the webhook call ourselves, using real IDs pulled from LessonSpace's API.
 
-### 1. Fix the launch payload
-- Remove `recording: { finish: ... }` from every Launch payload in `supabase/functions/lesson-space-integration/index.ts` (4 call sites: primary tutor launch, primary student launch, dynamic student launch, on-demand student launch). This is not a valid event; sending it may be causing LessonSpace to reject or ignore the whole `webhooks` block silently.
-- Keep `session.end` and `transcription.finish` inline. Optionally add `session.start` so we get "actually joined" signal.
+## Approach
 
-### 2. Delete the recording webhook (dead code)
-- Delete `supabase/functions/lessonspace-recording-webhook/` and its entry in `supabase/config.toml`. Recording continues via the existing polling path in `hourly-lesson-processing` + `get-lessonspace-recording`.
+Add a new admin-only edge function `lessonspace-replay-session` that takes a `lesson_space_session_id` (or a `lesson_id`) and does the following:
 
-### 3. Prove delivery works with a controlled probe
-- Add a tiny `console.log` at the top of both remaining webhook handlers that logs headers + raw body length so any attempted delivery — successful signature or not — is visible in logs.
-- Launch one fresh test lesson, end it, then check within ~5 min:
-  - `lessonspace-session-webhook` logs an incoming request for `session.end`.
-  - `lessonspace-transcript-webhook` logs an incoming request for `transcription.finish`.
-- If they arrive: confirm signature verification passes and the transcript row flips to `completed` with a non-null `transcript_size_bytes`.
-- If nothing arrives even after the payload cleanup, the next step is to open a LessonSpace support ticket with our session id — at that point the issue is on their side, not ours.
+1. Calls the LessonSpace API to fetch that session's metadata:
+   - `GET /v2/sessions/{sessionId}` → confirms room id, start/end, duration
+   - `GET /v2/sessions/{sessionId}/transcription` → returns the signed transcript URL (12h validity)
+   - `GET /v2/sessions/{sessionId}/playback` → returns the recording URL
+2. Builds a payload that matches the real webhook shape:
+   ```json
+   { "room": { "id": "..." }, "session": { "id": "..." }, "transcriptionUrl": "..." }
+   ```
+3. Invokes the existing `lessonspace-transcript-webhook` function internally (server-to-server, service role) with that payload — **skipping signature check** by passing an internal `x-replay-token` header the webhook trusts only from the service role. This exercises the same parse → fetch → store code path used in production.
+4. Separately writes the recording URL directly to `lessons.lesson_space_recording_url` for the matched lesson (same logic `get-lessonspace-recording` already uses).
+5. Returns a summary: whether the transcript was stored, size in bytes, recording URL, matched lesson id.
 
-### 4. Tighten the fallback
-- Leave `hourly-lesson-processing` in place as the safety net (transcripts + recordings), with its existing `end_time <= now() - 3h` guard.
+## UI
 
-## Out of scope
-- No backfill of `processing` rows.
-- No changes to summary/insight generation — both paths already fan out to `generate-lesson-summaries`.
-- No changes to non-LessonSpace edge functions.
+Small admin panel section (only visible to admins) at `/admin/lessonspace-replay` with:
+- Input: session id OR lesson id
+- Button: "Replay session through webhook"
+- Result panel showing the JSON summary from the edge function
+
+## Picking a known-good session
+
+To find a real session id to replay, the plan includes running a quick query against `lessons` to list rows where `lesson_space_session_id IS NOT NULL AND lesson_transcript IS NOT NULL` (or the equivalent transcript table) — those are sessions that previously produced a transcript successfully. You pick one from that list; we replay it and confirm the pipeline re-stores the same content.
+
+## Files touched
+
+- `supabase/functions/lessonspace-replay-session/index.ts` (new)
+- `supabase/functions/lessonspace-transcript-webhook/index.ts` (add trusted-replay bypass on `x-replay-token` matching a new secret)
+- `src/pages/admin/LessonSpaceReplay.tsx` (new, admin-gated)
+- `src/App.tsx` route + sidebar entry under admin tools
+- New secret: `LESSONSPACE_REPLAY_TOKEN`
+
+## What this proves (and doesn't)
+
+Proves: our matcher, transcript fetch, parse, storage, and recording-URL update all work against real LessonSpace data.
+
+Does NOT prove: that LessonSpace is actually delivering webhooks to us in the wild — that still requires one clean live session where someone stays in the room long enough for LessonSpace to end a session naturally. Both checks are needed; this plan covers the first.
