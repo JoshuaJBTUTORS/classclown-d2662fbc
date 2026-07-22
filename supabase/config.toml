@@ -189,6 +189,10 @@ verify_jwt = false
 [functions.lessonspace-replay-session]
 verify_jwt = true
 
+[functions.send-welcome-email]
+verify_jwt = true
+
+
 
 
 
