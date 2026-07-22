@@ -302,7 +302,68 @@ const Onboarding: React.FC = () => {
             </Card>
           )}
 
-          {currentStep > 1 && (
+          {/* Step 2 */}
+          {currentStep === 2 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 2: Sessions offered on the proposal</CardTitle>
+                <CardDescription>
+                  Make a note of the sessions offered — these are the times agreed on the signed proposal.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {!createdProposal ? (
+                  <div className="text-sm text-muted-foreground">
+                    Complete step 1 first to load the proposal's sessions.
+                  </div>
+                ) : (
+                  <>
+                    <div className="rounded-md border p-3 text-sm grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div><span className="text-muted-foreground">Parent:</span> {createdProposal.recipient_name}</div>
+                      <div><span className="text-muted-foreground">Subject:</span> {createdProposal.subject || '—'}</div>
+                      <div><span className="text-muted-foreground">Lesson type:</span> {createdProposal.lesson_type || '—'}</div>
+                      <div><span className="text-muted-foreground">Contract term:</span> {createdProposal.contract_term || 'Month to Month'}</div>
+                      <div><span className="text-muted-foreground">Price per lesson:</span> {createdProposal.price_per_lesson != null ? `£${createdProposal.price_per_lesson}` : '—'}</div>
+                      <div><span className="text-muted-foreground">Payment cycle:</span> {createdProposal.payment_cycle || '—'}</div>
+                    </div>
+
+                    <div>
+                      <div className="text-sm font-medium mb-2">Sessions</div>
+                      {Array.isArray(createdProposal.lesson_times) && createdProposal.lesson_times.length > 0 ? (
+                        <ul className="space-y-2">
+                          {createdProposal.lesson_times.map((lt, i) => (
+                            <li key={i} className="rounded-md border p-3 text-sm flex flex-wrap gap-x-6 gap-y-1">
+                              <div><span className="text-muted-foreground">Day:</span> {lt.day || '—'}</div>
+                              <div><span className="text-muted-foreground">Time:</span> {lt.time || '—'}</div>
+                              <div><span className="text-muted-foreground">Duration:</span> {lt.duration ? `${lt.duration} min` : '—'}</div>
+                              <div><span className="text-muted-foreground">Subject:</span> {createdProposal.subject || '—'}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">No sessions listed on this proposal.</div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setCurrentStep(1)}>Back</Button>
+                  <Button
+                    onClick={() => {
+                      setCompleted((c) => Array.from(new Set([...c, 2])));
+                      setCurrentStep(3);
+                    }}
+                    disabled={!createdProposal}
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {currentStep > 2 && (
             <Card>
               <CardHeader>
                 <CardTitle>Step {currentStep}: {STEPS[currentStep - 1].label}</CardTitle>
