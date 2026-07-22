@@ -1,24 +1,29 @@
-## Step 1: Auto-create parent from a completed proposal
+## Onboarding wizard — Step 1 error handling + Step 2 session preview
 
-Replace the "Open parent form" button with a searchable picker of completed proposals. Selecting one calls the same `create-parent-account` edge function used by `AddParentOnlyForm` — no manual form, no new backend logic.
+### Step 1: Parent account creation
+- Wrap the `create-parent-account` invocation in strict error handling:
+  - If the edge function returns an error, or the response contains an `error` field, surface it inline (red alert box under the action button) with the exact message.
+  - Show a `toast.error` as well.
+  - Do NOT mark step 1 as complete and do NOT advance to step 2.
+  - Keep the proposal selected so the user can retry.
+- Only on a clean success (parent account created + proposal linked) do we:
+  - Mark step 1 complete.
+  - Auto-advance to step 2 (or enable Continue and move forward on click — whichever matches current wizard behaviour).
 
-### UX
-- Step 1 card shows a searchable Combobox: "Select a completed proposal".
-- Options list shows recipient name + email + completion date, sourced from `lesson_proposals` where `status = 'completed'` AND `parent_id IS NULL` (hide proposals whose parent has already been created).
-- Selecting a proposal shows a small preview (name, email, phone) and a "Create parent account" button.
-- Clicking it calls `supabase.functions.invoke('create-parent-account', { body: { first_name, last_name, email, phone } })` — same defaults (password `classbeyond123!`, auto-confirm) as the existing flow.
-- On success: mark step 1 complete, show a green tick with the created parent's email, and unlock "Continue".
+### Step 2: Session preview (read-only)
+- Reuse the same proposal selected in step 1 (carry `proposalId` forward in wizard state — no re-picking).
+- Fetch the proposal's session/lesson details (subject, day/time, duration, frequency, lesson type, tutor if present) from `lesson_proposals` (and any related session rows already used by the proposal view).
+- Render a clean read-only summary card listing each session offered on the proposal:
+  - Subject
+  - Day + time
+  - Duration
+  - Frequency / recurrence
+  - Lesson type (1-to-1 / group)
+- Header copy: "Make a note of the sessions offered" with a short helper line explaining these are the sessions agreed in the proposal and will be scheduled in a later step.
+- No edits, no actions — just display + a Continue button to move to step 3 (Review).
 
-### Data mapping
-- `recipient_name` → split on first space → `first_name` + `last_name` (fallback: whole string as first_name).
-- `recipient_email` → `email`.
-- `recipient_phone` → `phone`.
-- After the edge function succeeds, link the proposal to the new parent: `UPDATE lesson_proposals SET parent_id = <new parent id> WHERE id = <proposal id>` so it disappears from the picker.
+### Files to touch
+- `src/pages/Onboarding.tsx` — error state on step 1, gating logic, step 2 rendering, carry proposal id.
+- Possibly a small helper to parse session details from the proposal record (inline in the page unless a reusable one already exists in `src/components/proposals`).
 
-### Files
-1. **`src/pages/Onboarding.tsx`** — replace Step 1 body: swap the "Open parent form" button for the proposal picker + preview + create button. Remove the `AddParentOnlyForm` dialog usage on this step (keep the import removed).
-2. No edge function changes. No schema changes.
-
-### Out of scope
-- Steps 2+ remain placeholder.
-- Any student/lesson creation from the proposal (future step).
+No database or edge function changes.

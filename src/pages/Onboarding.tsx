@@ -20,9 +20,15 @@ import {
 
 const STEPS = [
   { id: 1, label: 'Parent', description: 'From completed proposal' },
-  { id: 2, label: 'Student', description: 'Coming soon' },
+  { id: 2, label: 'Sessions', description: 'Review proposal sessions' },
   { id: 3, label: 'Review', description: 'Coming soon' },
 ];
+
+interface LessonTime {
+  day?: string;
+  time?: string;
+  duration?: number;
+}
 
 interface Proposal {
   id: string;
@@ -30,6 +36,12 @@ interface Proposal {
   recipient_email: string | null;
   recipient_phone: string | null;
   completed_at: string | null;
+  subject?: string | null;
+  lesson_type?: string | null;
+  lesson_times?: LessonTime[] | null;
+  price_per_lesson?: number | null;
+  payment_cycle?: string | null;
+  contract_term?: string | null;
 }
 
 const splitName = (full: string) => {
@@ -59,11 +71,14 @@ const Onboarding: React.FC = () => {
     }
   }, [isAdmin, isOwner, navigate]);
 
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createdProposal, setCreatedProposal] = useState<Proposal | null>(null);
+
   const loadProposals = async () => {
     setLoadingProposals(true);
     const { data, error } = await supabase
       .from('lesson_proposals')
-      .select('id, recipient_name, recipient_email, recipient_phone, completed_at')
+      .select('id, recipient_name, recipient_email, recipient_phone, completed_at, subject, lesson_type, lesson_times, price_per_lesson, payment_cycle, contract_term')
       .eq('status', 'completed')
       .is('parent_id', null)
       .order('completed_at', { ascending: false })
@@ -84,8 +99,11 @@ const Onboarding: React.FC = () => {
   const selectedProposal = proposals.find((p) => p.id === selectedProposalId);
 
   const handleCreateFromProposal = async () => {
+    setCreateError(null);
     if (!selectedProposal || !selectedProposal.recipient_email) {
-      toast.error('Selected proposal is missing an email');
+      const msg = 'Selected proposal is missing an email';
+      setCreateError(msg);
+      toast.error(msg);
       return;
     }
     setCreating(true);
@@ -100,10 +118,13 @@ const Onboarding: React.FC = () => {
         },
       });
       if (error) {
-        toast.error(error.message || 'Failed to create parent account');
+        const msg = error.message || 'Failed to create parent account';
+        setCreateError(msg);
+        toast.error(msg);
         return;
       }
       if (data?.error) {
+        setCreateError(data.error);
         toast.error(data.error);
         return;
       }
@@ -111,19 +132,28 @@ const Onboarding: React.FC = () => {
       // Link proposal to newly created parent so it disappears from the picker
       const newParentId = data?.parent?.id;
       if (newParentId) {
-        await supabase
+        const { error: linkErr } = await supabase
           .from('lesson_proposals')
           .update({ parent_id: newParentId })
           .eq('id', selectedProposal.id);
+        if (linkErr) {
+          const msg = `Parent created, but failed to link proposal: ${linkErr.message}`;
+          setCreateError(msg);
+          toast.error(msg);
+          return;
+        }
       }
 
       toast.success(data?.message || 'Parent account created (default password: classbeyond123!)');
       setCreatedEmail(selectedProposal.recipient_email);
+      setCreatedProposal(selectedProposal);
       setCompleted((c) => Array.from(new Set([...c, 1])));
       setProposals((list) => list.filter((p) => p.id !== selectedProposal.id));
-      setSelectedProposalId('');
+      setCurrentStep(2);
     } catch (e: any) {
-      toast.error(e?.message || 'Unexpected error');
+      const msg = e?.message || 'Unexpected error';
+      setCreateError(msg);
+      toast.error(msg);
     } finally {
       setCreating(false);
     }
@@ -207,6 +237,13 @@ const Onboarding: React.FC = () => {
                   </div>
                 )}
 
+                {createError && (
+                  <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-3">
+                    <strong className="block mb-1">Couldn't create parent account</strong>
+                    {createError}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Completed proposal</label>
                   <Select
@@ -265,7 +302,68 @@ const Onboarding: React.FC = () => {
             </Card>
           )}
 
-          {currentStep > 1 && (
+          {/* Step 2 */}
+          {currentStep === 2 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 2: Sessions offered on the proposal</CardTitle>
+                <CardDescription>
+                  Make a note of the sessions offered — these are the times agreed on the signed proposal.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {!createdProposal ? (
+                  <div className="text-sm text-muted-foreground">
+                    Complete step 1 first to load the proposal's sessions.
+                  </div>
+                ) : (
+                  <>
+                    <div className="rounded-md border p-3 text-sm grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div><span className="text-muted-foreground">Parent:</span> {createdProposal.recipient_name}</div>
+                      <div><span className="text-muted-foreground">Subject:</span> {createdProposal.subject || '—'}</div>
+                      <div><span className="text-muted-foreground">Lesson type:</span> {createdProposal.lesson_type || '—'}</div>
+                      <div><span className="text-muted-foreground">Contract term:</span> {createdProposal.contract_term || 'Month to Month'}</div>
+                      <div><span className="text-muted-foreground">Price per lesson:</span> {createdProposal.price_per_lesson != null ? `£${createdProposal.price_per_lesson}` : '—'}</div>
+                      <div><span className="text-muted-foreground">Payment cycle:</span> {createdProposal.payment_cycle || '—'}</div>
+                    </div>
+
+                    <div>
+                      <div className="text-sm font-medium mb-2">Sessions</div>
+                      {Array.isArray(createdProposal.lesson_times) && createdProposal.lesson_times.length > 0 ? (
+                        <ul className="space-y-2">
+                          {createdProposal.lesson_times.map((lt, i) => (
+                            <li key={i} className="rounded-md border p-3 text-sm flex flex-wrap gap-x-6 gap-y-1">
+                              <div><span className="text-muted-foreground">Day:</span> {lt.day || '—'}</div>
+                              <div><span className="text-muted-foreground">Time:</span> {lt.time || '—'}</div>
+                              <div><span className="text-muted-foreground">Duration:</span> {lt.duration ? `${lt.duration} min` : '—'}</div>
+                              <div><span className="text-muted-foreground">Subject:</span> {createdProposal.subject || '—'}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">No sessions listed on this proposal.</div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setCurrentStep(1)}>Back</Button>
+                  <Button
+                    onClick={() => {
+                      setCompleted((c) => Array.from(new Set([...c, 2])));
+                      setCurrentStep(3);
+                    }}
+                    disabled={!createdProposal}
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {currentStep > 2 && (
             <Card>
               <CardHeader>
                 <CardTitle>Step {currentStep}: {STEPS[currentStep - 1].label}</CardTitle>
