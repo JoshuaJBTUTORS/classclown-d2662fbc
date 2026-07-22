@@ -1,169 +1,153 @@
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "npm:resend@4.0.0";
-import { renderAsync } from "npm:@react-email/components@0.0.22";
-import React from "npm:react@18.3.1";
-import { WelcomeEmail } from "./_templates/welcome-email.tsx";
-import { whatsappService } from '../_shared/whatsapp-service.ts';
-import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-interface WelcomeEmailRequest {
-  userId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  password?: string;
+interface LessonTime {
+  day?: string;
+  time?: string;
+  duration?: number;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+interface Payload {
+  parentEmail: string;
+  parentName?: string | null;
+  childName?: string | null;
+  lessonTimes?: LessonTime[] | null;
+  startDateTime?: string | null;
+}
+
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+function formatStart(payload: Payload): string {
+  if (payload.startDateTime) return payload.startDateTime;
+  const lt = payload.lessonTimes?.[0];
+  if (lt?.day && lt?.time) return `${lt.day} at ${lt.time}`;
+  if (lt?.day) return lt.day;
+  return 'your first scheduled lesson time';
+}
+
+function firstName(name?: string | null): string {
+  if (!name) return 'there';
+  return name.trim().split(/\s+/)[0];
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-    );
-
-    const { userId, email, firstName, lastName, role, password = "classbeyond123!" }: WelcomeEmailRequest = await req.json();
-
-    if (!userId || !email || !firstName || !lastName || !role) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!RESEND_API_KEY || !LOVABLE_API_KEY) {
+      throw new Error('Email service not configured');
+    }
+    const payload = (await req.json()) as Payload;
+    if (!payload.parentEmail) {
+      return new Response(JSON.stringify({ error: 'parentEmail is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Create notification record
-    const { data: notification, error: notificationError } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        type: 'welcome',
-        email: email,
-        subject: `Welcome to JB Tutors - Your ${role} account has been created`,
-        status: 'pending'
-      })
-      .select()
-      .single();
+    const parentFirst = firstName(payload.parentName);
+    const childName = (payload.childName || '').trim() || 'your child';
+    const startStr = formatStart(payload);
 
-    if (notificationError) {
-      console.error('Error creating notification record:', notificationError);
-    }
+    const html = `
+<div style="font-family: Arial, Helvetica, sans-serif; color:#111; font-size:15px; line-height:1.6;">
+  <p>Hello ${parentFirst},</p>
 
-    // Generate the HTML email content
-    const loginUrl = `${Deno.env.get("SUPABASE_URL")?.replace('/supabase', '')}/auth` || "https://your-app.com/auth";
-    
-    const html = await renderAsync(
-      React.createElement(WelcomeEmail, {
-        firstName,
-        lastName,
-        email,
-        role,
-        password,
-        loginUrl,
-      })
-    );
+  <p>I hope this message finds you well. My name is Hannah and I'll be your dedicated point of contact here at Class Beyond Academy (formerly JB Tutors) to support you and ${childName}. I'd love to arrange a quick call to properly introduce myself — when would be a convenient time for you?</p>
 
-    // Send the email with verified domain
-    const { error: emailError } = await resend.emails.send({
-      from: 'Class Beyond <enquiries@classbeyondacademy.io>',
-      to: [email],
-      subject: `Welcome to JB Tutors - Your ${role} account has been created`,
-      html,
+  <p>In the meantime, we've set up your account. Lessons commence on <strong>${startStr}</strong>.</p>
+
+  <p><strong>Get started in 3 easy steps:</strong></p>
+  <ol>
+    <li>Visit: <a href="https://classclowncrm.com/auth">https://classclowncrm.com/auth</a></li>
+    <li>Log in with your credentials:<br/>
+      Email: ${payload.parentEmail}<br/>
+      Password: classbeyond123!
+    </li>
+    <li>You're in — head to your calendar to join lessons.</li>
+  </ol>
+
+  <p><strong>To join a lesson:</strong></p>
+  <ol>
+    <li>Once logged in, you'll land on your calendar.</li>
+    <li>Click your scheduled lesson.</li>
+    <li>Select "Join Lesson."</li>
+  </ol>
+
+  <p><strong>Camera &amp; microphone policy:</strong><br/>
+  Before entering, you'll be prompted to review our Camera and Microphone Policy. Please read this carefully, then click "I Accept and Join My Lesson" to proceed.</p>
+
+  <p>If you have any issues logging in or joining, simply reply to this email — we're always here to help.</p>
+
+  <p>${childName}'s tutors are really looking forward to seeing them in class.</p>
+
+  <p>Kind regards,<br/>Hannah<br/>Class Beyond Academy</p>
+</div>`;
+
+    const text = `Hello ${parentFirst},
+
+I hope this message finds you well. My name is Hannah and I'll be your dedicated point of contact here at Class Beyond Academy (formerly JB Tutors) to support you and ${childName}. I'd love to arrange a quick call to properly introduce myself — when would be a convenient time for you?
+
+In the meantime, we've set up your account. Lessons commence on ${startStr}.
+
+Get started in 3 easy steps:
+1. Visit: https://classclowncrm.com/auth
+2. Log in with your credentials:
+   Email: ${payload.parentEmail}
+   Password: classbeyond123!
+3. You're in — head to your calendar to join lessons.
+
+To join a lesson:
+1. Once logged in, you'll land on your calendar.
+2. Click your scheduled lesson.
+3. Select "Join Lesson."
+
+Camera & microphone policy:
+Before entering, you'll be prompted to review our Camera and Microphone Policy. Please read this carefully, then click "I Accept and Join My Lesson" to proceed.
+
+If you have any issues logging in or joining, simply reply to this email — we're always here to help.
+
+${childName}'s tutors are really looking forward to seeing them in class.
+
+Kind regards,
+Hannah
+Class Beyond Academy`;
+
+    const resp = await fetch('https://connector-gateway.lovable.dev/resend/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        'X-Connection-Api-Key': RESEND_API_KEY,
+      },
+      body: JSON.stringify({
+        from: 'Hannah <hannah@classbeyondacademy.io>',
+        to: [payload.parentEmail],
+        reply_to: 'hannah@classbeyondacademy.io',
+        subject: 'Welcome to Class Beyond Academy',
+        html,
+        text,
+      }),
     });
 
-    if (emailError) {
-      console.error('Error sending email:', emailError);
-      
-      // Update notification status to failed
-      if (notification) {
-        await supabase
-          .from('notifications')
-          .update({
-            status: 'failed',
-            error_message: emailError.message
-          })
-          .eq('id', notification.id);
-      }
-
+    if (!resp.ok) {
+      const body = await resp.text();
+      console.error(`Resend error [${resp.status}]:`, body);
       return new Response(
-        JSON.stringify({ error: "Failed to send welcome email", details: emailError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: 'Failed to send welcome email', status: resp.status, details: body }),
+        { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // Update notification status to sent
-    if (notification) {
-      await supabase
-        .from('notifications')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString()
-        })
-        .eq('id', notification.id);
-    }
-
-    console.log(`Welcome email sent successfully to ${email} for ${role} role`);
-
-    // Send WhatsApp welcome message if user has phone number
-    // First, try to get phone number from parents or students table based on role
-    let phoneNumber = null;
-    
-    if (role === 'parent') {
-      const { data: parentData } = await supabase
-        .from('parents')
-        .select('phone, whatsapp_number')
-        .eq('user_id', userId)
-        .single();
-      
-      phoneNumber = parentData?.whatsapp_number || parentData?.phone;
-    } else if (role === 'student') {
-      const { data: studentData } = await supabase
-        .from('students')
-        .select('phone, whatsapp_number')
-        .eq('email', email)
-        .single();
-      
-      phoneNumber = studentData?.whatsapp_number || studentData?.phone;
-    }
-
-    if (phoneNumber) {
-      const whatsappText = WhatsAppTemplates.welcomeMessage(firstName, lastName);
-      const whatsappNumber = whatsappService.formatPhoneNumber(phoneNumber);
-      
-      const whatsappResponse = await whatsappService.sendMessage({
-        phoneNumber: whatsappNumber,
-        text: whatsappText
-      });
-
-      console.log(`WhatsApp welcome message to ${whatsappNumber}:`, whatsappResponse);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Welcome email sent successfully",
-        notification_id: notification?.id 
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
-  } catch (error: any) {
-    console.error("Error in send-welcome-email function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const data = await resp.json();
+    return new Response(JSON.stringify({ success: true, id: data?.id }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (e: any) {
+    console.error('send-welcome-email error:', e);
+    return new Response(JSON.stringify({ error: e?.message || 'Unexpected error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
