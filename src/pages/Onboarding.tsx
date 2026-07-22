@@ -515,8 +515,13 @@ const Onboarding: React.FC = () => {
                   <Button
                     variant="outline"
                     onClick={handleAddedLessons}
+                    disabled={pushingTicket}
                   >
-                    I have added lessons
+                    {pushingTicket ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Finishing…</>
+                    ) : (
+                      'I have added lessons'
+                    )}
                   </Button>
                 </div>
 
