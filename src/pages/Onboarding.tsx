@@ -99,13 +99,12 @@ const Onboarding: React.FC = () => {
 
   const handleAddedLessons = async () => {
     setCompleted((c) => Array.from(new Set([...c, 3])));
-    setCurrentStep(4);
     if (!createdProposal || !createdProposal.recipient_email) {
-      setTicketError('Missing proposal data — cannot push ticket');
+      toast.error('Missing proposal data — cannot push HubSpot ticket');
+      navigate('/students');
       return;
     }
     setPushingTicket(true);
-    setTicketError(null);
     try {
       const { data, error } = await supabase.functions.invoke('hubspot-create-payment-ticket', {
         body: {
@@ -122,17 +121,16 @@ const Onboarding: React.FC = () => {
       });
       if (error) throw error;
       if ((data as any)?.ticketId) {
-        setTicketId((data as any).ticketId);
-        toast.success('Payment setup ticket created in HubSpot');
+        toast.success('Onboarding complete — payment setup ticket created in HubSpot');
       } else {
         throw new Error((data as any)?.error || 'Unknown response from HubSpot');
       }
     } catch (e: any) {
       console.error('HubSpot ticket push failed:', e);
-      setTicketError(e?.message || 'Failed to push ticket');
-      toast.error('Could not create HubSpot ticket');
+      toast.error('Onboarding complete, but HubSpot ticket failed — please create manually');
     } finally {
       setPushingTicket(false);
+      navigate('/students');
     }
   };
 
