@@ -281,9 +281,19 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <span className="text-primary">{proposal.recipient_name}</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-                {proposal.lesson_type === 'group'
-                  ? "A focused small-group tuition programme aligned to your child's exam board and pace, delivered by subject specialists we've hand-picked."
-                  : "A dedicated 1-to-1 tuition programme designed around your child's goals, exam board and pace, delivered by subject specialists we've hand-picked."}
+                {(() => {
+                  switch (proposal.lesson_type) {
+                    case 'Group Session':
+                    case 'group':
+                      return "A focused small-group tuition programme aligned to your child's exam board and pace, delivered by subject specialists we've hand-picked.";
+                    case 'Large Group Session':
+                      return "A structured large-group tuition programme aligned to your child's exam board and pace, delivered in a classroom-style setting by subject specialists we've hand-picked.";
+                    case 'Mixed':
+                      return "A blended tuition programme combining focused 1-to-1 sessions with collaborative group learning, aligned to your child's exam board and pace, delivered by subject specialists we've hand-picked.";
+                    default:
+                      return "A dedicated 1-to-1 tuition programme designed around your child's goals, exam board and pace, delivered by subject specialists we've hand-picked.";
+                  }
+                })()}
               </p>
             </div>
 
