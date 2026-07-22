@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, GraduationCap, Search } from 'lucide-react';
+import { Loader2, GraduationCap, Search, UserPlus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/useStudentData';
 
 const StudentsList: React.FC = () => {
