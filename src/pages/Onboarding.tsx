@@ -187,7 +187,7 @@ const Onboarding: React.FC = () => {
   const handleCheckLessons = async () => {
     setCheckError(null);
     setHasChecked(true);
-    if (!createdParentId) {
+    if (!createdParentRowId) {
       setCheckError('Missing parent id — complete step 1 first.');
       return;
     }
@@ -196,7 +196,7 @@ const Onboarding: React.FC = () => {
       const { data: studentRows, error: sErr } = await supabase
         .from('students')
         .select('id')
-        .eq('parent_id', createdParentId);
+        .eq('parent_id', createdParentRowId);
       if (sErr) throw sErr;
       const studentIds = (studentRows || []).map((s: any) => s.id);
       if (studentIds.length === 0) {
