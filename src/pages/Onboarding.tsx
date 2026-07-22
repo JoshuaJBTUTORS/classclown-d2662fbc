@@ -21,8 +21,16 @@ import {
 const STEPS = [
   { id: 1, label: 'Parent', description: 'From completed proposal' },
   { id: 2, label: 'Sessions', description: 'Review proposal sessions' },
-  { id: 3, label: 'Review', description: 'Coming soon' },
+  { id: 3, label: 'Add Lessons', description: 'Schedule in calendar' },
 ];
+
+interface FoundLesson {
+  id: string;
+  start_time: string;
+  end_time: string;
+  subject: string | null;
+  title: string | null;
+}
 
 interface LessonTime {
   day?: string;
