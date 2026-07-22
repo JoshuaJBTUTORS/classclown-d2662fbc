@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
@@ -444,7 +445,7 @@ const Students = () => {
             </div>
             <div className="flex gap-2">
               {(isAdmin || isOwner) && (
-                <Button variant="outline" onClick={() => {}} className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => navigate('/onboarding')} className="flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />
                   Onboarding
                 </Button>
