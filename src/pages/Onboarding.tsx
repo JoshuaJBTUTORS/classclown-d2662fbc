@@ -71,11 +71,14 @@ const Onboarding: React.FC = () => {
     }
   }, [isAdmin, isOwner, navigate]);
 
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createdProposal, setCreatedProposal] = useState<Proposal | null>(null);
+
   const loadProposals = async () => {
     setLoadingProposals(true);
     const { data, error } = await supabase
       .from('lesson_proposals')
-      .select('id, recipient_name, recipient_email, recipient_phone, completed_at')
+      .select('id, recipient_name, recipient_email, recipient_phone, completed_at, subject, lesson_type, lesson_times, price_per_lesson, payment_cycle, contract_term')
       .eq('status', 'completed')
       .is('parent_id', null)
       .order('completed_at', { ascending: false })
