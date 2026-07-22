@@ -1,24 +1,27 @@
 ## Problem
 
-Step 1 fails with:
-> insert or update on table "lesson_proposals" violates foreign key constraint "lesson_proposals_parent_id_fkey"
+When Step 1 of onboarding returns a non-2xx error, an orphan `auth.users` row can be left behind (e.g. auth user created but `parents` insert failed, or a prior aborted attempt). Retrying then fails with "email already registered" or the FK link issue, because a stale auth user is blocking a clean create.
 
-## Root cause
+## Fix
 
-- `lesson_proposals.parent_id` FKs to **`auth.users(id)`**.
-- `students.parent_id` FKs to **`parents(id)`**.
-- The onboarding code uses a single `createdParentId` set to `data.parent.id` (the `parents` table row id) and passes it to both — so the proposal link fails, and the Step 3 lesson lookup would also be wrong.
+Update `supabase/functions/create-parent-account/index.ts` so that **before** we create anything, we look up any existing auth user with the same email and delete it if it is orphaned. This becomes the first data step after auth/role checks.
 
-`create-parent-account` already returns `parent: parentData`, which includes both `id` (parents.id) and `user_id` (auth user id).
+### New pre-create cleanup step (runs before the current `parents` email check)
 
-## Fix (single file: `src/pages/Onboarding.tsx`)
+1. Find any existing auth user for `email` via `supabaseAdmin.auth.admin.listUsers` (paged) or a filtered lookup.
+2. If found:
+   - Check `parents` for a row with that `user_id`.
+   - If a linked `parents` row exists → return the existing "A parent account with this email already exists" 400 (don't delete a live account).
+   - If no `parents` row exists → it's orphaned. Call `supabaseAdmin.auth.admin.deleteUser(existingUser.id)` and log the cleanup.
+3. Proceed with the existing flow (parents email check → find trial students → create auth user → insert parent → link students).
 
-- Track two ids in state: `createdParentRowId` (parents.id) and `createdParentUserId` (auth.users.id).
-- When linking the proposal, use `data.parent.user_id`.
-- In `handleCheckLessons`, query `students.parent_id = createdParentRowId`.
-- Rename the existing `createdParentId` reference sites accordingly; no other files need changes.
+### Notes
+
+- Keep the existing rollback (delete auth user if `parents` insert fails) — this new step handles orphans from prior runs; the rollback handles the current run.
+- No frontend changes. `src/pages/Onboarding.tsx` will just stop seeing the "email already exists" / FK errors on retry.
 
 ## Verification
 
-- Select the same completed proposal, click Create parent account — no FK error, proposal disappears from picker, wizard advances to Step 2.
-- On Step 3, "Check lessons" finds lessons for students linked to the new parent.
+- Manually create an orphan (auth user with no `parents` row), then run Step 1 for that email → succeeds, orphan deleted, new parent created, proposal linked.
+- Run Step 1 for an email that already has a real `parents` row → still returns 400 with the existing message.
+- Run Step 1 for a brand-new email → unchanged behavior.
