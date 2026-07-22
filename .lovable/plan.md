@@ -1,26 +1,24 @@
 ## Problem
 
-After a parent signs the agreement, the app is supposed to move them straight to the payment setup screen. Instead they land back on the proposal document.
+Step 1 fails with:
+> insert or update on table "lesson_proposals" violates foreign key constraint "lesson_proposals_parent_id_fkey"
 
 ## Root cause
 
-In `src/pages/ProposalView.tsx`, `AgreementStep`'s `onAgree` handler does two things:
+- `lesson_proposals.parent_id` FKs to **`auth.users(id)`**.
+- `students.parent_id` FKs to **`parents(id)`**.
+- The onboarding code uses a single `createdParentId` set to `data.parent.id` (the `parents` table row id) and passes it to both — so the proposal link fails, and the Step 3 lesson lookup would also be wrong.
 
-1. `setCurrentStep('payment')`
-2. `loadProposal()` — which unconditionally runs `setCurrentStep('view')` at line 91, overwriting step 1.
+`create-parent-account` already returns `parent: parentData`, which includes both `id` (parents.id) and `user_id` (auth user id).
 
-So the payment screen is set for one render, then immediately replaced by the document view.
+## Fix (single file: `src/pages/Onboarding.tsx`)
 
-## Fix
-
-In `src/pages/ProposalView.tsx`:
-
-- Remove the `loadProposal()` call from `AgreementStep`'s `onAgree`. Signing already updates the proposal status server-side; the local `proposal` object doesn't need to be re-fetched to render `PaymentCaptureStep`. Just call `setCurrentStep('payment')`.
-- Optionally refresh the proposal after the user finishes payment (already handled by `PaymentCaptureStep`'s `onComplete` → `loadProposal()`).
-
-No other files need changes.
+- Track two ids in state: `createdParentRowId` (parents.id) and `createdParentUserId` (auth.users.id).
+- When linking the proposal, use `data.parent.user_id`.
+- In `handleCheckLessons`, query `students.parent_id = createdParentRowId`.
+- Rename the existing `createdParentId` reference sites accordingly; no other files need changes.
 
 ## Verification
 
-- Open a proposal link, sign the agreement, confirm the app lands on the payment setup screen (not the document).
-- Confirm the existing "signed docs stay visible for the record" behaviour still holds on subsequent visits (unchanged, because we didn't touch the initial `setCurrentStep('view')` on load).
+- Select the same completed proposal, click Create parent account — no FK error, proposal disappears from picker, wizard advances to Step 2.
+- On Step 3, "Check lessons" finds lessons for students linked to the new parent.
