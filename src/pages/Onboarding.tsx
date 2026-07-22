@@ -181,7 +181,7 @@ const Onboarding: React.FC = () => {
 
   const handleOpenCalendar = () => {
     setHasOpenedCalendar(true);
-    window.open('/calendar', '_blank');
+    window.open('https://classclown.io/calendar', '_blank');
   };
 
   const handleCheckLessons = async () => {
