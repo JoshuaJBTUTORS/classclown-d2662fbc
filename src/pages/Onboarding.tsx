@@ -24,12 +24,24 @@ const STEPS = [
   { id: 3, label: 'Review', description: 'Coming soon' },
 ];
 
+interface LessonTime {
+  day?: string;
+  time?: string;
+  duration?: number;
+}
+
 interface Proposal {
   id: string;
   recipient_name: string | null;
   recipient_email: string | null;
   recipient_phone: string | null;
   completed_at: string | null;
+  subject?: string | null;
+  lesson_type?: string | null;
+  lesson_times?: LessonTime[] | null;
+  price_per_lesson?: number | null;
+  payment_cycle?: string | null;
+  contract_term?: string | null;
 }
 
 const splitName = (full: string) => {
