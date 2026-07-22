@@ -22,7 +22,7 @@ const STEPS = [
   { id: 1, label: 'Parent', description: 'From completed proposal' },
   { id: 2, label: 'Sessions', description: 'Review proposal sessions' },
   { id: 3, label: 'Add Lessons', description: 'Schedule in calendar' },
-  { id: 4, label: 'Payment Setup', description: 'HubSpot ticket' },
+  
 ];
 
 interface FoundLesson {
@@ -94,18 +94,15 @@ const Onboarding: React.FC = () => {
 
   // Step 4 state
   const [pushingTicket, setPushingTicket] = useState(false);
-  const [ticketId, setTicketId] = useState<string | null>(null);
-  const [ticketError, setTicketError] = useState<string | null>(null);
 
   const handleAddedLessons = async () => {
     setCompleted((c) => Array.from(new Set([...c, 3])));
-    setCurrentStep(4);
     if (!createdProposal || !createdProposal.recipient_email) {
-      setTicketError('Missing proposal data — cannot push ticket');
+      toast.error('Missing proposal data — cannot push HubSpot ticket');
+      navigate('/students');
       return;
     }
     setPushingTicket(true);
-    setTicketError(null);
     try {
       const { data, error } = await supabase.functions.invoke('hubspot-create-payment-ticket', {
         body: {
@@ -122,17 +119,16 @@ const Onboarding: React.FC = () => {
       });
       if (error) throw error;
       if ((data as any)?.ticketId) {
-        setTicketId((data as any).ticketId);
-        toast.success('Payment setup ticket created in HubSpot');
+        toast.success('Onboarding complete — payment setup ticket created in HubSpot');
       } else {
         throw new Error((data as any)?.error || 'Unknown response from HubSpot');
       }
     } catch (e: any) {
       console.error('HubSpot ticket push failed:', e);
-      setTicketError(e?.message || 'Failed to push ticket');
-      toast.error('Could not create HubSpot ticket');
+      toast.error('Onboarding complete, but HubSpot ticket failed — please create manually');
     } finally {
       setPushingTicket(false);
+      navigate('/students');
     }
   };
 
@@ -519,8 +515,13 @@ const Onboarding: React.FC = () => {
                   <Button
                     variant="outline"
                     onClick={handleAddedLessons}
+                    disabled={pushingTicket}
                   >
-                    I have added lessons
+                    {pushingTicket ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Finishing…</>
+                    ) : (
+                      'I have added lessons'
+                    )}
                   </Button>
                 </div>
 
@@ -532,53 +533,6 @@ const Onboarding: React.FC = () => {
             </Card>
           )}
 
-          {currentStep === 4 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Step 4: Payment setup ticket</CardTitle>
-                <CardDescription>
-                  A HubSpot ticket is created so the team can chase payment setup with the parent.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                {pushingTicket && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Creating HubSpot ticket…
-                  </div>
-                )}
-                {ticketId && (
-                  <div className="rounded-md border p-3 text-sm">
-                    <div className="flex items-center gap-2 font-medium text-green-700">
-                      <Check className="h-4 w-4" /> Ticket created in HubSpot
-                    </div>
-                    <div className="text-muted-foreground mt-1">Ticket ID: {ticketId}</div>
-                  </div>
-                )}
-                {ticketError && !pushingTicket && (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
-                    <div className="font-medium text-destructive">Ticket push failed</div>
-                    <div className="text-muted-foreground mt-1">{ticketError}</div>
-                    <Button size="sm" variant="outline" className="mt-2" onClick={handleAddedLessons} disabled={pushingTicket}>
-                      Retry
-                    </Button>
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" onClick={() => setCurrentStep(3)}>Back</Button>
-                  <Button
-                    onClick={() => {
-                      setCompleted((c) => Array.from(new Set([...c, 4])));
-                      toast.success('Onboarding complete');
-                      navigate('/students');
-                    }}
-                  >
-                    Finish
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
         </main>
       </div>
