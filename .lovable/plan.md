@@ -1,26 +1,23 @@
-## Goal
+## Build the Onboarding route
 
-Expose the per-lesson `homework_brief` (subject, year group, topics, difficulty tag 1/2) on the existing admin-facing student report at `/students-list/:studentId`, so you can visually confirm the new field is being generated correctly.
+Create a dedicated `/onboarding` route that will house all onboarding flows. First section: Parent Only, reusing the existing `AddParentOnlyForm` component and its edge function — no new business logic.
 
-## Scope
+### Files
 
-Admin-only. No permission or routing changes. Reuses the current page.
+1. **`src/pages/Onboarding.tsx`** (new)
+   - Wrapped in `Sidebar` + `Navbar` + `PageTitle` matching `Students.tsx` layout.
+   - Admin/owner gated (redirect to `/unauthorized` otherwise).
+   - Single card for now: **Parent Only** — icon, title, short description, and a "Start" button that opens `AddParentOnlyForm` modal.
+   - Grid layout ready to accept future onboarding cards (Family, Student, Trial, etc.) as siblings.
+   - Reuses the exact modal from `src/components/parents/AddParentOnlyForm.tsx` — no changes to the form or its edge function.
 
-## Changes
+2. **`src/App.tsx`**
+   - Add `<Route path="/onboarding" element={<Onboarding />} />` inside the authenticated routes.
 
-1. **`src/hooks/useStudentWeeklyTopics.ts`**
-   - After fetching `student_lesson_insights` for the week, do a second lookup on `lesson_student_summaries` filtered by `student_id` + the same lesson IDs, selecting `lesson_id, homework_brief`.
-   - Attach the resulting `homework_brief` onto each `WeeklyLessonEntry` (new optional field).
+3. **`src/pages/Students.tsx`**
+   - Wire the existing "Onboarding" button (line 447) to `navigate('/onboarding')`.
 
-2. **`src/pages/StudentDetail.tsx`**
-   - Under each lesson row, if `homework_brief` exists, render a small "Homework brief" panel showing:
-     - Subject, Year group
-     - Topics (chips)
-     - Difficulty tag with clear label: `1 — Not understanding` or `2 — Partial understanding`
-   - If missing, show a muted "Homework brief not yet generated" line so it's obvious when the pipeline hasn't run.
-
-## Out of scope
-
-- No student/parent-facing exposure.
-- No schema changes.
-- No changes to generation logic.
+### Out of scope
+- No changes to `AddParentOnlyForm` UI/logic.
+- No new edge functions.
+- No sidebar link (button on Clients page is the entry point for now).
