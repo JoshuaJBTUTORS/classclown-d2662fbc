@@ -119,6 +119,7 @@ serve(async (req) => {
           hs_pipeline: '0',
           hs_pipeline_stage: '1',
           hs_ticket_priority: 'HIGH',
+          hubspot_owner_id: '69644926',
         },
         associations: [
           {

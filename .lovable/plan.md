@@ -1,16 +1,31 @@
-## Prevent skipping steps in the Onboarding stepper
+## Goal
 
-In `src/pages/Onboarding.tsx`, the stepper circles (1, 2, 3) are clickable and call `setCurrentStep(step.id)` unconditionally, letting users jump ahead without completing prior steps.
+Assign every ticket created by `hubspot-create-payment-ticket` to Britney using her HubSpot owner ID `69644926` directly — no Owners API lookup needed.
 
-### Change
-Restrict stepper navigation so users can only:
-- Click the current step (no-op), or
-- Click a step that has already been completed (to go back and review)
+## Change
 
-Any step that is not yet completed and is ahead of the current step will be non-clickable (disabled cursor, no action).
+**`supabase/functions/hubspot-create-payment-ticket/index.ts`**
 
-### Technical details
-- Update the `<button>` in the stepper to compute `canNavigate = isDone || isActive`.
-- Set `disabled={!canNavigate}` and only call `setCurrentStep` when allowed.
-- Adjust styling (`cursor-not-allowed opacity` on locked steps) so it's visually clear future steps are locked until the current one is finished.
-- No changes to the actual step completion logic — Step 1 already pushes `1` into `completed` after parent creation, Step 2 pushes `2` on continue, so gating uses the existing `completed` array.
+In the ticket create call (around lines 115–122), add `hubspot_owner_id: '69644926'` to `properties`:
+
+```ts
+properties: {
+  subject: `Payment Setup — ${parentName}`,
+  content,
+  hs_pipeline: '0',
+  hs_pipeline_stage: '1',
+  hs_ticket_priority: 'HIGH',
+  hubspot_owner_id: '69644926',
+},
+```
+
+Then redeploy the function.
+
+## Verification
+
+Run onboarding for a test proposal → click "I have added lessons" → confirm the new HubSpot ticket's Owner is Britney.
+
+## Out of scope
+
+- Existing tickets already created stay on their current owner.
+- Owner ID is hard-coded; if you later want it configurable per environment we can move it to a secret.
