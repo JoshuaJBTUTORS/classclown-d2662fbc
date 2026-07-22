@@ -101,14 +101,14 @@ export default function LessonSpaceReplay() {
           ) : (
             <ul className="space-y-2 text-sm">
               {candidates.map((l) => (
-                <li key={l.id} className="flex items-center justify-between border rounded p-2">
+                <li key={l.session_id} className="flex items-center justify-between border rounded p-2">
                   <div>
-                    <div className="font-medium">{l.title}</div>
+                    <div className="font-medium">{l.lessons?.title ?? '(untitled)'}</div>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(l.start_time).toLocaleString()} · session {l.lesson_space_session_id}
+                      {l.lessons?.start_time ? new Date(l.lessons.start_time).toLocaleString() : ''} · session {l.session_id}
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => { setSessionId(l.lesson_space_session_id); setLessonId(''); }}>
+                  <Button size="sm" variant="outline" onClick={() => { setSessionId(l.session_id); setLessonId(''); }}>
                     Use
                   </Button>
                 </li>
