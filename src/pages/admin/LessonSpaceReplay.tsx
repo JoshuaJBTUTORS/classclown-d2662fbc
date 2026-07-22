@@ -16,11 +16,11 @@ export default function LessonSpaceReplay() {
 
   const loadCandidates = async () => {
     const { data, error } = await supabase
-      .from('lessons')
-      .select('id, title, start_time, lesson_space_session_id, lesson_transcript')
-      .not('lesson_space_session_id', 'is', null)
-      .not('lesson_transcript', 'is', null)
-      .order('start_time', { ascending: false })
+      .from('lesson_transcriptions')
+      .select('session_id, lesson_id, transcription_status, created_at, lessons:lesson_id(title, start_time)')
+      .eq('transcription_status', 'completed')
+      .not('session_id', 'is', null)
+      .order('created_at', { ascending: false })
       .limit(20);
     if (error) {
       toast.error(error.message);
