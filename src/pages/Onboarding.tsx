@@ -104,6 +104,25 @@ const Onboarding: React.FC = () => {
     }
     setPushingTicket(true);
     try {
+      // Fire welcome email in parallel with HubSpot ticket
+      const welcomeEmailPromise = supabase.functions.invoke('send-welcome-email', {
+        body: {
+          parentEmail: createdProposal.recipient_email,
+          parentName: createdProposal.recipient_name || '',
+          lessonTimes: createdProposal.lesson_times,
+        },
+      }).then(({ error }) => {
+        if (error) {
+          console.error('Welcome email failed:', error);
+          toast.warning('Welcome email failed to send — please send manually');
+        } else {
+          toast.success('Welcome email sent to client');
+        }
+      }).catch((err) => {
+        console.error('Welcome email exception:', err);
+        toast.warning('Welcome email failed to send — please send manually');
+      });
+
       const { data, error } = await supabase.functions.invoke('hubspot-create-payment-ticket', {
         body: {
           proposalId: createdProposal.id,
@@ -123,6 +142,7 @@ const Onboarding: React.FC = () => {
       } else {
         throw new Error((data as any)?.error || 'Unknown response from HubSpot');
       }
+      await welcomeEmailPromise;
     } catch (e: any) {
       console.error('HubSpot ticket push failed:', e);
       toast.error('Onboarding complete, but HubSpot ticket failed — please create manually');
@@ -131,6 +151,7 @@ const Onboarding: React.FC = () => {
       navigate('/students');
     }
   };
+
 
   const loadProposals = async () => {
     setLoadingProposals(true);
