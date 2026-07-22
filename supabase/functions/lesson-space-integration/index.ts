@@ -197,11 +197,12 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     spaceId = generateSpaceId(lesson);
     console.log(`[${rid.substring(0, 8)}] 🔑 Generated space ID: ${spaceId} | stage: ${stage}`);
 
-    // Webhook URLs LessonSpace should call for this space
+    // Webhook URLs LessonSpace should call for this space.
+    // Note: LessonSpace only supports session.*, transcription.finish, user.*, chat.*,
+    // cobrowser.* and knock.*. Recording delivery is polled — no webhook for it.
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const transcriptWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook`;
     const sessionWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-session-webhook`;
-    const recordingWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-recording-webhook`;
 
     // Store all participant URLs
     const participantUrls = [];
