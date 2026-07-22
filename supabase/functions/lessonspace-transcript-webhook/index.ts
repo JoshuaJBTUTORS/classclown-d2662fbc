@@ -75,7 +75,10 @@ serve(async (req) => {
     const rawBody = await req.text();
     const signatureHeader = req.headers.get("x-webhook-signature") ?? "";
     const eventHeader = req.headers.get("x-webhook-event") ?? "";
-    console.log(`[${rid}] Incoming transcript webhook | event=${eventHeader} | bytes=${rawBody.length}`);
+    const webhookIdHeader = req.headers.get("x-webhook-id") ?? "";
+    console.log(
+      `[${rid}] 📥 INCOMING transcript webhook | event=${eventHeader} | webhookId=${webhookIdHeader} | sig=${signatureHeader ? "present" : "missing"} | bytes=${rawBody.length}`,
+    );
 
     let payload: any;
     try {
