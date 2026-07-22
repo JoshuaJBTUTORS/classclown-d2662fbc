@@ -492,7 +492,7 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
     const overallEngagement = avgEngagement <= 1.5 ? 'Low' : avgEngagement <= 2.5 ? 'Medium' : 'High';
     
     // Create final summary
-    const summaryData = {
+    const summaryData: any = {
       lesson_id: lessonId,
       student_id: student.id,
       transcription_id: transcriptionId,
@@ -510,7 +510,23 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
       },
       ai_summary: `Combined analysis from ${studentSummaries.length} transcript segments. Student showed ${overallEngagement.toLowerCase()} engagement with ${allContributions.length} notable contributions across the lesson.`,
     };
-    
+
+    // Generate structured homework brief (internal only — drives future homework generation).
+    const homeworkBrief = await generateHomeworkBrief(
+      lessonId,
+      `${student.first_name || ''} ${student.last_name || ''}`.trim() || `student ${student.id}`,
+      {
+        topics_covered: summaryData.topics_covered,
+        what_went_well: summaryData.what_went_well,
+        areas_for_improvement: summaryData.areas_for_improvement,
+        student_contributions: summaryData.student_contributions,
+        confidence_score: summaryData.confidence_score,
+        engagement_level: summaryData.engagement_level,
+        confidence_indicators: summaryData.confidence_indicators,
+      }
+    );
+    if (homeworkBrief) summaryData.homework_brief = homeworkBrief;
+
     // Save to database
     const { data: summary, error: summaryError } = await supabase
       .from('lesson_student_summaries')
@@ -520,7 +536,7 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
       })
       .select()
       .single();
-    
+
     if (summaryError) {
       console.error(`Error saving combined summary for student ${student.id}:`, summaryError);
     } else {
@@ -532,9 +548,10 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
 }
 
 async function callOpenAI(prompt: string, studentName: string, segmentNumber: number, useRetry: boolean = false): Promise<any> {
-  const model = useRetry ? 'gpt-4o-mini' : 'o3-2025-04-16'; // Use smaller model for retries
+  // Primary: gpt-5.5. Retry on payload/size issues with gpt-5-mini.
+  const model = useRetry ? 'gpt-5-mini' : 'gpt-5.5';
   const maxTokens = useRetry ? 1000 : 2000;
-  
+
   try {
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -545,13 +562,12 @@ async function callOpenAI(prompt: string, studentName: string, segmentNumber: nu
       body: JSON.stringify({
         model,
         messages: [
-          { 
-            role: 'system', 
-            content: 'You are an expert educational analyst. Analyze lesson transcription segments to provide detailed, constructive feedback. Always respond with valid JSON.' 
+          {
+            role: 'system',
+            content: 'You are an expert educational analyst. Analyze lesson transcription segments to provide detailed, constructive feedback. Always respond with valid JSON.'
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3,
         max_completion_tokens: maxTokens,
       }),
     });
@@ -581,11 +597,97 @@ async function callOpenAI(prompt: string, studentName: string, segmentNumber: nu
     } else if (cleanContent.startsWith('```')) {
       cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
-    
+
     return JSON.parse(cleanContent);
-    
+
   } catch (error) {
     console.error(`Error calling OpenAI for ${studentName} segment ${segmentNumber}:`, error);
+    return null;
+  }
+}
+
+// Derive KS2 / KS3 / GCSE / 11PLUS / A-LEVEL from the lesson subject string.
+function deriveYearGroup(subject: string | null | undefined): string {
+  const s = (subject || '').toLowerCase();
+  if (s.includes('11 plus') || s.includes('11plus') || s.includes('11+')) return '11PLUS';
+  if (s.includes('ks2') || s.includes('sats')) return 'KS2';
+  if (s.includes('ks3')) return 'KS3';
+  if (s.includes('a-level') || s.includes('a level') || s.includes('alevel')) return 'A-LEVEL';
+  if (s.includes('gcse') || s.includes('year 11')) return 'GCSE';
+  return 'GCSE';
+}
+
+// Generate a structured homework brief for a single student from their aggregated summary.
+// Returns { subject, year_group, topics, difficulty_tag } or null on failure.
+async function generateHomeworkBrief(
+  lessonId: string,
+  studentName: string,
+  aggregated: {
+    topics_covered: string[];
+    what_went_well: string;
+    areas_for_improvement: string;
+    student_contributions?: string;
+    confidence_score?: number | null;
+    engagement_level?: string | null;
+    confidence_indicators?: any;
+  }
+): Promise<any | null> {
+  try {
+    const { data: lesson } = await supabase
+      .from('lessons')
+      .select('subject, title')
+      .eq('id', lessonId)
+      .single();
+
+    const subject = lesson?.subject || lesson?.title || 'Unknown';
+    const yearGroup = deriveYearGroup(subject);
+
+    const prompt = `You are preparing an INTERNAL homework brief that will be fed to another AI to generate practice questions. This brief is NEVER shown to the student or parent.
+
+Lesson subject: ${subject}
+Year group bucket: ${yearGroup}
+
+Topics covered this lesson: ${JSON.stringify(aggregated.topics_covered || [])}
+
+Evidence the student UNDERSTOOD material (what went well, contributions, confident statements):
+${aggregated.what_went_well || '(none)'}
+${aggregated.student_contributions || ''}
+Confidence signals: ${JSON.stringify(aggregated.confidence_indicators?.confident_statements || [])}
+
+Evidence the student STRUGGLED (areas for improvement, hesitations):
+${aggregated.areas_for_improvement || '(none)'}
+Hesitation signals: ${JSON.stringify(aggregated.confidence_indicators?.hesitation_patterns || [])}
+
+Numeric hints: confidence_score=${aggregated.confidence_score ?? 'n/a'} (0-10), engagement_level=${aggregated.engagement_level ?? 'n/a'}.
+
+Return STRICT JSON with this exact shape and nothing else:
+{
+  "subject": "${subject}",
+  "year_group": "${yearGroup}",
+  "topics": ["topic 1", "topic 2"],
+  "difficulty_tag": "1" | "2"
+}
+
+Rules for difficulty_tag — this is critical:
+- "1" = student REALLY did not understand the topic. Use when struggle signals clearly dominate, confidence_score <= 4, or the student produced little/no correct reasoning.
+- "2" = student PARTIALLY understands the topic. Use when there is a mix of understanding and gaps, or when signals are unclear.
+- NEVER output any value other than "1" or "2". Do NOT invent tags like "3", "mastered", or "challenge". If in doubt, output "2".
+
+"topics" must be the concrete topics covered in this lesson (max 6). Keep them short (e.g. "Photosynthesis", "Quadratic equations").`;
+
+    const brief = await callOpenAI(prompt, `${studentName} (homework brief)`, 0);
+    if (!brief) return null;
+
+    // Enforce constraints server-side.
+    const difficulty = brief.difficulty_tag === '1' || brief.difficulty_tag === 1 ? '1' : '2';
+    return {
+      subject,
+      year_group: yearGroup,
+      topics: Array.isArray(brief.topics) ? brief.topics.slice(0, 6) : (aggregated.topics_covered || []).slice(0, 6),
+      difficulty_tag: difficulty,
+    };
+  } catch (err) {
+    console.error('Homework brief generation failed:', err);
     return null;
   }
 }
@@ -885,7 +987,7 @@ Format your response as a JSON object with the following structure:
       }
 
       // Save the summary to the database with proper field mapping
-      const summaryData = {
+      const summaryData: any = {
         lesson_id: lessonId,
         student_id: student.id,
         transcription_id: transcriptionId,
@@ -900,6 +1002,18 @@ Format your response as a JSON object with the following structure:
         confidence_indicators: analysisData.confidence_indicators || {},
         ai_summary: analysisData.overall_summary || 'Analysis completed',
       };
+
+      // Generate structured homework brief (internal only).
+      const homeworkBrief = await generateHomeworkBrief(lessonId, studentName, {
+        topics_covered: summaryData.topics_covered,
+        what_went_well: summaryData.what_went_well,
+        areas_for_improvement: summaryData.areas_for_improvement,
+        student_contributions: summaryData.student_contributions,
+        confidence_score: summaryData.confidence_score,
+        engagement_level: summaryData.engagement_level,
+        confidence_indicators: summaryData.confidence_indicators,
+      });
+      if (homeworkBrief) summaryData.homework_brief = homeworkBrief;
 
       console.log(`Saving summary for student ${studentName}:`, summaryData);
 

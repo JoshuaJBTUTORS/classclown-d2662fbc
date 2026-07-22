@@ -2852,6 +2852,7 @@ export type Database = {
           created_at: string
           engagement_level: string | null
           engagement_score: number | null
+          homework_brief: Json | null
           id: string
           lesson_id: string
           participation_time_percentage: number | null
@@ -2870,6 +2871,7 @@ export type Database = {
           created_at?: string
           engagement_level?: string | null
           engagement_score?: number | null
+          homework_brief?: Json | null
           id?: string
           lesson_id: string
           participation_time_percentage?: number | null
@@ -2888,6 +2890,7 @@ export type Database = {
           created_at?: string
           engagement_level?: string | null
           engagement_score?: number | null
+          homework_brief?: Json | null
           id?: string
           lesson_id?: string
           participation_time_percentage?: number | null
