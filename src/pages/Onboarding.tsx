@@ -518,10 +518,7 @@ const Onboarding: React.FC = () => {
                   <Button onClick={handleOpenCalendar}>Add lessons</Button>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setCompleted((c) => Array.from(new Set([...c, 3])));
-                      toast.success('Marked lessons as added');
-                    }}
+                    onClick={handleAddedLessons}
                   >
                     I have added lessons
                   </Button>
@@ -529,8 +526,49 @@ const Onboarding: React.FC = () => {
 
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>Back</Button>
+                </div>
+
+              </CardContent>
+            </Card>
+          )}
+
+          {currentStep === 4 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 4: Payment setup ticket</CardTitle>
+                <CardDescription>
+                  A HubSpot ticket is created so the team can chase payment setup with the parent.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {pushingTicket && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Creating HubSpot ticket…
+                  </div>
+                )}
+                {ticketId && (
+                  <div className="rounded-md border p-3 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-green-700">
+                      <Check className="h-4 w-4" /> Ticket created in HubSpot
+                    </div>
+                    <div className="text-muted-foreground mt-1">Ticket ID: {ticketId}</div>
+                  </div>
+                )}
+                {ticketError && !pushingTicket && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                    <div className="font-medium text-destructive">Ticket push failed</div>
+                    <div className="text-muted-foreground mt-1">{ticketError}</div>
+                    <Button size="sm" variant="outline" className="mt-2" onClick={handleAddedLessons} disabled={pushingTicket}>
+                      Retry
+                    </Button>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setCurrentStep(3)}>Back</Button>
                   <Button
                     onClick={() => {
+                      setCompleted((c) => Array.from(new Set([...c, 4])));
                       toast.success('Onboarding complete');
                       navigate('/students');
                     }}
@@ -538,7 +576,6 @@ const Onboarding: React.FC = () => {
                     Finish
                   </Button>
                 </div>
-
               </CardContent>
             </Card>
           )}
