@@ -1,29 +1,39 @@
-## Onboarding wizard — Step 1 error handling + Step 2 session preview
+## Step 3: Add lessons + verification gate
 
-### Step 1: Parent account creation
-- Wrap the `create-parent-account` invocation in strict error handling:
-  - If the edge function returns an error, or the response contains an `error` field, surface it inline (red alert box under the action button) with the exact message.
-  - Show a `toast.error` as well.
-  - Do NOT mark step 1 as complete and do NOT advance to step 2.
-  - Keep the proposal selected so the user can retry.
-- Only on a clean success (parent account created + proposal linked) do we:
-  - Mark step 1 complete.
-  - Auto-advance to step 2 (or enable Continue and move forward on click — whichever matches current wizard behaviour).
+### Behavior
+- Replace the current "Review" step with a new step 3 titled "Add Lessons".
+- Show a summary reminder of the parent (from step 1) and the sessions from the proposal (from step 2) so the admin knows what to schedule.
+- Primary action: **Add lessons** button — opens `/calendar` in a new tab (so the wizard state is preserved in the current tab). Uses `window.open('/calendar', '_blank')`.
+- Secondary action: **Check lessons** button — queries the DB to verify lessons exist for the parent's students. Disabled until the user has clicked "Add lessons" at least once (tracked in local state).
+- Verification logic:
+  - Look up students linked to the parent created in step 1 (`students.parent_id = <parent_id>` — or via the parent record created by `create-parent-account`).
+  - Query `lessons` joined via `lesson_students` for any lesson with `start_time >= now()` belonging to those students.
+  - If ≥1 upcoming lesson found → mark step 3 complete, show green success card listing the found lessons (date, time, subject, tutor), enable a **Continue / Finish** button.
+  - If none found → show inline warning "No lessons found yet for this parent's students. Add them in the calendar, then click Check lessons again." Do NOT advance.
+- Add a new step 4 "Done" (or reuse existing Review) that just confirms onboarding complete and offers a "Start new onboarding" / "Go to students" button. If simpler, keep step 3 as the terminal step and show the completion state inline once verified.
 
-### Step 2: Session preview (read-only)
-- Reuse the same proposal selected in step 1 (carry `proposalId` forward in wizard state — no re-picking).
-- Fetch the proposal's session/lesson details (subject, day/time, duration, frequency, lesson type, tutor if present) from `lesson_proposals` (and any related session rows already used by the proposal view).
-- Render a clean read-only summary card listing each session offered on the proposal:
-  - Subject
-  - Day + time
-  - Duration
-  - Frequency / recurrence
-  - Lesson type (1-to-1 / group)
-- Header copy: "Make a note of the sessions offered" with a short helper line explaining these are the sessions agreed in the proposal and will be scheduled in a later step.
-- No edits, no actions — just display + a Continue button to move to step 3 (Review).
+### Wizard state additions
+- Carry `parentId` forward from step 1 (already created).
+- Carry `proposalId` from step 2.
+- New local state: `hasOpenedCalendar: boolean`, `foundLessons: Lesson[]`, `checking: boolean`.
 
 ### Files to touch
-- `src/pages/Onboarding.tsx` — error state on step 1, gating logic, step 2 rendering, carry proposal id.
-- Possibly a small helper to parse session details from the proposal record (inline in the page unless a reusable one already exists in `src/components/proposals`).
+- `src/pages/Onboarding.tsx` — add step 3 UI, open-calendar handler, check-lessons handler, verification query, gating logic.
 
-No database or edge function changes.
+### Technical notes
+- Parent → students linkage: `students.parent_id` references the `parents` table. After `create-parent-account` we need the resulting `parents.id`. If that isn't already returned/captured in step 1 state, fetch it by parent email or `user_id` right after creation and store in wizard state.
+- Query for verification:
+  ```sql
+  select l.id, l.start_time, l.end_time, l.subject, l.tutor_id
+  from lessons l
+  join lesson_students ls on ls.lesson_id = l.id
+  where ls.student_id in (<student ids for parent>)
+    and l.start_time >= now()
+  order by l.start_time asc;
+  ```
+- No DB or edge function changes.
+- No changes to the calendar page itself — admin uses the existing "Schedule Lesson" flow there.
+
+### Edge cases
+- Parent has no students yet: "Check lessons" surfaces a message telling the admin to also add students to the parent in the calendar's add-lesson flow (students can be created inline there).
+- User closes the calendar tab without adding anything: check button simply returns no results; they can retry.
