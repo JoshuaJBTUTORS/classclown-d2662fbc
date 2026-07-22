@@ -176,6 +176,63 @@ const Onboarding: React.FC = () => {
     }
   };
 
+  const handleOpenCalendar = () => {
+    setHasOpenedCalendar(true);
+    window.open('/calendar', '_blank');
+  };
+
+  const handleCheckLessons = async () => {
+    setCheckError(null);
+    setHasChecked(true);
+    if (!createdParentId) {
+      setCheckError('Missing parent id — complete step 1 first.');
+      return;
+    }
+    setCheckingLessons(true);
+    try {
+      const { data: studentRows, error: sErr } = await supabase
+        .from('students')
+        .select('id')
+        .eq('parent_id', createdParentId);
+      if (sErr) throw sErr;
+      const studentIds = (studentRows || []).map((s: any) => s.id);
+      if (studentIds.length === 0) {
+        setFoundLessons([]);
+        setCheckError("No students linked to this parent yet. Add the student while scheduling the lesson in the calendar, then check again.");
+        return;
+      }
+      const { data: lsRows, error: lsErr } = await supabase
+        .from('lesson_students')
+        .select('lesson_id')
+        .in('student_id', studentIds);
+      if (lsErr) throw lsErr;
+      const lessonIds = Array.from(new Set((lsRows || []).map((r: any) => r.lesson_id)));
+      if (lessonIds.length === 0) {
+        setFoundLessons([]);
+        return;
+      }
+      const { data: lessonRows, error: lErr } = await supabase
+        .from('lessons')
+        .select('id, start_time, end_time, subject, title')
+        .in('id', lessonIds)
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true });
+      if (lErr) throw lErr;
+      const found = (lessonRows || []) as FoundLesson[];
+      setFoundLessons(found);
+      if (found.length > 0) {
+        setCompleted((c) => Array.from(new Set([...c, 3])));
+        toast.success(`Found ${found.length} upcoming lesson${found.length === 1 ? '' : 's'}`);
+      }
+    } catch (e: any) {
+      setCheckError(e?.message || 'Failed to check lessons');
+    } finally {
+      setCheckingLessons(false);
+    }
+  };
+
+
+
   return (
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
