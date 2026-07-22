@@ -163,6 +163,7 @@ const Onboarding: React.FC = () => {
       toast.success(data?.message || 'Parent account created (default password: classbeyond123!)');
       setCreatedEmail(selectedProposal.recipient_email);
       setCreatedProposal(selectedProposal);
+      setCreatedParentId(newParentId || null);
       setCompleted((c) => Array.from(new Set([...c, 1])));
       setProposals((list) => list.filter((p) => p.id !== selectedProposal.id));
       setCurrentStep(2);
