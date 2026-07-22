@@ -135,16 +135,17 @@ serve(async (req) => {
 
     console.log('Creating parent account for email:', email);
 
-    // STEP 0: Clean up any orphan auth user for this email.
-    // Look up any existing auth user; if they don't have a linked parents row,
-    // delete them so we can create a fresh account cleanly.
+    // STEP 0: Always clear any existing parent/auth account for this email before recreating.
+    // Onboarding retries must start from a clean state, so any matching auth user is deleted
+    // straight away, along with stale parent rows that would block the new insert.
     try {
-      let existingAuthUser: { id: string; email?: string } | null = null;
+      const existingAuthUsers: { id: string; email?: string }[] = [];
       let page = 1;
       const perPage = 1000;
-      // Paginate through auth users to find a match (admin API has no email filter)
-      // Most projects will match on page 1.
-      while (page <= 10) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+
+      // Paginate through auth users to find a match (admin API has no email filter).
+      while (page <= 100) {
         const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
           page,
           perPage,
@@ -153,48 +154,38 @@ serve(async (req) => {
           console.error('Error listing auth users for orphan check:', listError);
           break;
         }
-        const match = listData?.users?.find(
-          (u: any) => (u.email || '').toLowerCase() === String(email).toLowerCase()
+        const matches = (listData?.users || []).filter(
+          (u: any) => (u.email || '').trim().toLowerCase() === normalizedEmail
         );
-        if (match) {
-          existingAuthUser = { id: match.id, email: match.email };
-          break;
+        if (matches.length > 0) {
+          existingAuthUsers.push(
+            ...matches.map((match: any) => ({ id: match.id, email: match.email }))
+          );
         }
         if (!listData?.users || listData.users.length < perPage) break;
         page++;
       }
 
-      if (existingAuthUser) {
-        console.log('🧹 Found existing auth user for email:', existingAuthUser.id);
-        const { data: linkedParent, error: linkedParentError } = await supabaseAdmin
+      const existingAuthUserIds = existingAuthUsers.map((u) => u.id);
+
+      console.log('🧹 Pre-create cleanup check:', {
+        email: normalizedEmail,
+        matchingAuthUsers: existingAuthUserIds.length,
+        authUserIds: existingAuthUserIds,
+      });
+
+      if (existingAuthUserIds.length > 0) {
+        const { data: deletedParentsByUserId, error: deleteParentsByUserIdError } = await supabaseAdmin
           .from('parents')
-          .select('id')
-          .eq('user_id', existingAuthUser.id)
-          .maybeSingle();
+          .delete()
+          .in('user_id', existingAuthUserIds)
+          .select('id, user_id, email');
 
-        if (linkedParentError) {
-          console.error('Error checking linked parent for existing auth user:', linkedParentError);
-        }
-
-        if (linkedParent) {
-          return new Response(
-            JSON.stringify({ error: 'A parent account with this email already exists' }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          );
-        }
-
-        // Orphan: delete the auth user so we can recreate cleanly.
-        const { error: deleteOrphanError } = await supabaseAdmin.auth.admin.deleteUser(
-          existingAuthUser.id
-        );
-        if (deleteOrphanError) {
-          console.error('Failed to delete orphan auth user:', deleteOrphanError);
+        if (deleteParentsByUserIdError) {
+          console.error('Failed to delete parent rows by auth user id:', deleteParentsByUserIdError);
           return new Response(
             JSON.stringify({
-              error: 'Failed to clean up existing orphan account: ' + deleteOrphanError.message,
+              error: 'Failed to clean up existing parent account: ' + deleteParentsByUserIdError.message,
             }),
             {
               status: 500,
@@ -202,10 +193,57 @@ serve(async (req) => {
             }
           );
         }
-        console.log('✅ Orphan auth user deleted:', existingAuthUser.id);
+
+        console.log('✅ Deleted parent rows linked to existing auth users:', deletedParentsByUserId || []);
+      }
+
+      const { data: deletedParentsByEmail, error: deleteParentsByEmailError } = await supabaseAdmin
+        .from('parents')
+        .delete()
+        .ilike('email', normalizedEmail)
+        .select('id, user_id, email');
+
+      if (deleteParentsByEmailError) {
+        console.error('Failed to delete parent rows by email:', deleteParentsByEmailError);
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to clean up existing parent account: ' + deleteParentsByEmailError.message,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      console.log('✅ Deleted parent rows matching email:', deletedParentsByEmail || []);
+
+      for (const existingAuthUser of existingAuthUsers) {
+        console.log('🧹 Deleting existing auth user for email:', existingAuthUser.id);
+        const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(existingAuthUser.id);
+        if (deleteAuthUserError) {
+          console.error('Failed to delete existing auth user:', deleteAuthUserError);
+          return new Response(
+            JSON.stringify({
+              error: 'Failed to clean up existing auth account: ' + deleteAuthUserError.message,
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+        console.log('✅ Existing auth user deleted:', existingAuthUser.id);
       }
     } catch (cleanupError) {
       console.error('Unexpected error during orphan auth cleanup:', cleanupError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to clean up existing account before retry' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     // Check if email already exists in parents table (safety net)
