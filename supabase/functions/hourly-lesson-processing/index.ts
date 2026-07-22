@@ -36,15 +36,13 @@ serve(async (req) => {
       summaries_generated: 0,
     };
 
-    // Get today's date in UTC
-    // Only process lessons that ended at least 3 hours ago.
-    // This prevents polling LessonSpace before a real session exists,
-    // which used to create empty "completed" transcript rows that poisoned
-    // downstream summary generation. A 7-day lower bound keeps each run
-    // bounded as the lessons table grows — idempotency for already-processed
-    // lessons comes from the transcription_status / summary checks below.
+    // Only process lessons that ended at least 3 hours ago (buffer to ensure
+    // the session has truly finished on LessonSpace's side). We slice a 1-hour
+    // window so each hourly run only picks up lessons that just crossed the
+    // 3h mark — a lesson ending at 8pm is handled by the 11pm run and nothing
+    // else. Idempotency checks below still make retries safe.
     const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-    const windowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const windowStart = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
 
     console.log(`Processing lessons that ended between ${windowStart} and ${cutoff}`);
 

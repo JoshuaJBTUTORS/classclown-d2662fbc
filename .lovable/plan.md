@@ -1,49 +1,26 @@
+## Tighten the hourly fallback to a 1-hour window
 
-## Goal
+Right now `hourly-lesson-processing` scans everything that ended between 3 hours ago and 7 days ago on every run. That means the same 7-day backlog gets re-scanned 24 times a day — expensive, slow, and it churns lessons that were already handled or already skipped for good reason.
 
-Prove the transcript/recording storage pipeline works end-to-end by running a past LessonSpace session (one we know completed cleanly and has a transcript on LessonSpace's side) through the exact same code path the live webhook uses — without waiting for a new live session.
+### Change
 
-## Why this is needed
+In `supabase/functions/hourly-lesson-processing/index.ts`, replace the 7-day lower bound with a 1-hour slice, sitting behind the existing 3-hour "must be finished" buffer:
 
-LessonSpace only fires `transcription.finish` / `session.end` webhooks once, at the moment the session ends. We can't ask them to resend historical webhooks. So to validate the pipeline against a real, known-good session we have to synthesize the webhook call ourselves, using real IDs pulled from LessonSpace's API.
+- `cutoff = now − 3h` (unchanged — upper bound, lesson must have ended ≥3h ago)
+- `windowStart = now − 4h` (new — lower bound, only the slice that just crossed the 3h mark)
 
-## Approach
+So each hourly run only touches lessons whose `end_time` falls in `[now−4h, now−3h]`. A lesson finishing at 8pm gets picked up by the 11pm run and nothing else.
 
-Add a new admin-only edge function `lessonspace-replay-session` that takes a `lesson_space_session_id` (or a `lesson_id`) and does the following:
+Idempotency checks further down (skip if `transcription_status` already set, skip if summary already generated) stay as-is, so a retry on the same slice is still safe.
 
-1. Calls the LessonSpace API to fetch that session's metadata:
-   - `GET /v2/sessions/{sessionId}` → confirms room id, start/end, duration
-   - `GET /v2/sessions/{sessionId}/transcription` → returns the signed transcript URL (12h validity)
-   - `GET /v2/sessions/{sessionId}/playback` → returns the recording URL
-2. Builds a payload that matches the real webhook shape:
-   ```json
-   { "room": { "id": "..." }, "session": { "id": "..." }, "transcriptionUrl": "..." }
-   ```
-3. Invokes the existing `lessonspace-transcript-webhook` function internally (server-to-server, service role) with that payload — **skipping signature check** by passing an internal `x-replay-token` header the webhook trusts only from the service role. This exercises the same parse → fetch → store code path used in production.
-4. Separately writes the recording URL directly to `lessons.lesson_space_recording_url` for the matched lesson (same logic `get-lessonspace-recording` already uses).
-5. Returns a summary: whether the transcript was stored, size in bytes, recording URL, matched lesson id.
+### Technical notes
 
-## UI
+- No schema changes.
+- Only `supabase/functions/hourly-lesson-processing/index.ts` changes.
+- Existing log line (`Processing lessons that ended between X and Y`) already prints the window, nothing else to update.
 
-Small admin panel section (only visible to admins) at `/admin/lessonspace-replay` with:
-- Input: session id OR lesson id
-- Button: "Replay session through webhook"
-- Result panel showing the JSON summary from the edge function
+### Out of scope
 
-## Picking a known-good session
-
-To find a real session id to replay, the plan includes running a quick query against `lessons` to list rows where `lesson_space_session_id IS NOT NULL AND lesson_transcript IS NOT NULL` (or the equivalent transcript table) — those are sessions that previously produced a transcript successfully. You pick one from that list; we replay it and confirm the pipeline re-stores the same content.
-
-## Files touched
-
-- `supabase/functions/lessonspace-replay-session/index.ts` (new)
-- `supabase/functions/lessonspace-transcript-webhook/index.ts` (add trusted-replay bypass on `x-replay-token` matching a new secret)
-- `src/pages/admin/LessonSpaceReplay.tsx` (new, admin-gated)
-- `src/App.tsx` route + sidebar entry under admin tools
-- New secret: `LESSONSPACE_REPLAY_TOKEN`
-
-## What this proves (and doesn't)
-
-Proves: our matcher, transcript fetch, parse, storage, and recording-URL update all work against real LessonSpace data.
-
-Does NOT prove: that LessonSpace is actually delivering webhooks to us in the wild — that still requires one clean live session where someone stays in the room long enough for LessonSpace to end a session naturally. Both checks are needed; this plan covers the first.
+- No daily catch-up sweep (per your instruction — will not implement).
+- No webhook changes.
+- No changes to `find-lesson-sessions`, summary generator, or `failed_room_creations`.
