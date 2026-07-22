@@ -1,33 +1,41 @@
-## Current state (verified)
+## Revised current state (verified against LessonSpace docs)
 
-- All three LessonSpace webhook endpoints are deployed, public, and correctly configured (`verify_jwt = false`); a manual POST returns the expected validation error, so the URL is reachable.
-- Zero invocations logged for `lessonspace-transcript-webhook`, `lessonspace-recording-webhook`, `lessonspace-session-webhook` since deploy.
-- Every recent `lesson_transcriptions` row is stuck at `transcription_status = 'processing'`, with `transcript_size_bytes = null`, and `updated_at` timestamps matching the hourly cron — i.e. the polling fallback in `hourly-lesson-processing` is still doing 100% of the work.
-- 194 lessons launched in the last 3 days have `lesson_space_webhook_secret` populated, so the inline per-launch webhook block is being accepted by LessonSpace, but no callbacks are being made.
+Per LessonSpace's official webhook docs (`/docs/guide/webhooks`):
+- Webhooks are set **only** via the Launch endpoint payload. There is no org-level registration API. Any new Launch call for the same space fully overwrites the webhooks.
+- Only these events exist: `session.{start,end,idle}`, `user.{join,leave,idle}`, `chat.message`, `cobrowser.{start,stop}`, `transcription.finish`, `knock.{request,admit,deny}`.
+- **`recording.finish` is not a real event.** Recordings must be retrieved via the recordings API/polling — no webhook exists.
+- The signing secret is returned in the Launch API response and is per-space.
+- Signature = `HMAC-SHA256(JSON.stringify(body), spaceSecret)`, header `x-webhook-signature`.
 
-Conclusion: the new webhook path is not working; we're entirely on the old fallback.
+Confirmed against our data:
+- 194 recent lessons have `lesson_space_webhook_secret` populated → LessonSpace accepted the inline `webhooks` block and returned a secret.
+- Multiple lessons have already ended (e.g. `e5fd9948…`, ended 2026-07-21 17:00) with a secret stored, yet **zero** invocations recorded for `lessonspace-transcript-webhook` or `lessonspace-session-webhook`.
+- Transcripts remain `processing`, updated only by the hourly poll.
+- `lessonspace-recording-webhook` will never fire — the event doesn't exist. Recording capture must stay on the polling/GET path.
 
-## Plan to fix
+So the fallback is doing all the work, and the reason webhooks aren't landing is not "org-level vs inline" — it's something in the current inline registration or delivery path.
 
-### 1. Confirm the root cause with LessonSpace
-- Pull one recent launch's stored `lesson_space_webhook_secret` + `lesson_space_session_id` and cross-check with LessonSpace support/docs whether inline `webhooks` on `POST /v2/spaces/launch/` are actually honoured, or whether webhooks must be registered once at the organisation/space level via a separate endpoint.
-- Confirm the exact header LessonSpace sends (`x-webhook-signature` vs `x-lessonspace-signature`) and the signing scheme, so our HMAC check matches.
+## Revised plan
 
-### 2. Register webhooks at the org/space level (expected fix)
-- Add a one-time setup edge function `lessonspace-register-webhooks` that calls the LessonSpace org-level webhook registration endpoint for `session.end`, `transcription.finish`, and `recording.finish`, pointing to our three edge functions. Store the returned organisation-level `secret` in a new `app_settings` row (`lessonspace_org_webhook_secret`).
-- Update the three webhook handlers to verify against that org-level secret when present, falling back to the per-lesson secret for compatibility.
-- Stop attaching `webhooks` inline in `lesson-space-integration` launch payloads once org-level registration is in place (keep the per-launch block only if LessonSpace supports both).
+### 1. Fix the launch payload
+- Remove `recording: { finish: ... }` from every Launch payload in `supabase/functions/lesson-space-integration/index.ts` (4 call sites: primary tutor launch, primary student launch, dynamic student launch, on-demand student launch). This is not a valid event; sending it may be causing LessonSpace to reject or ignore the whole `webhooks` block silently.
+- Keep `session.end` and `transcription.finish` inline. Optionally add `session.start` so we get "actually joined" signal.
 
-### 3. Verify end-to-end
-- After registration, launch a real test lesson, end the session, and confirm:
-  - `lessonspace-session-webhook` logs an invocation and updates `lessons.status`.
-  - `lessonspace-transcript-webhook` logs an invocation and writes `transcription_status = 'completed'` with a non-null `transcript_size_bytes`.
-  - `lessonspace-recording-webhook` logs an invocation and populates `lesson_space_recording_url`.
-- Confirm signature verification passes (no `signature mismatch` warnings in logs).
+### 2. Delete the recording webhook (dead code)
+- Delete `supabase/functions/lessonspace-recording-webhook/` and its entry in `supabase/config.toml`. Recording continues via the existing polling path in `hourly-lesson-processing` + `get-lessonspace-recording`.
 
-### 4. Keep the fallback, tighten its role
-- Leave `hourly-lesson-processing` in place strictly as a safety net for missed webhooks, with its existing "only touch lessons ended > 3h ago" guard.
+### 3. Prove delivery works with a controlled probe
+- Add a tiny `console.log` at the top of both remaining webhook handlers that logs headers + raw body length so any attempted delivery — successful signature or not — is visible in logs.
+- Launch one fresh test lesson, end it, then check within ~5 min:
+  - `lessonspace-session-webhook` logs an incoming request for `session.end`.
+  - `lessonspace-transcript-webhook` logs an incoming request for `transcription.finish`.
+- If they arrive: confirm signature verification passes and the transcript row flips to `completed` with a non-null `transcript_size_bytes`.
+- If nothing arrives even after the payload cleanup, the next step is to open a LessonSpace support ticket with our session id — at that point the issue is on their side, not ours.
+
+### 4. Tighten the fallback
+- Leave `hourly-lesson-processing` in place as the safety net (transcripts + recordings), with its existing `end_time <= now() - 3h` guard.
 
 ## Out of scope
-- No backfill of historical `processing` rows — those stay on the polling path.
-- No changes to summary/insight generation; both paths already fan out to `generate-lesson-summaries`.
+- No backfill of `processing` rows.
+- No changes to summary/insight generation — both paths already fan out to `generate-lesson-summaries`.
+- No changes to non-LessonSpace edge functions.
