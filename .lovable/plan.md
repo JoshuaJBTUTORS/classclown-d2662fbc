@@ -1,35 +1,33 @@
-## Goal
+## Current state (verified)
 
-Rewrite the lesson proposal notification templates (email + WhatsApp) so they read like a natural, calm message from a person rather than a marketing blast. Strip all emojis and remove hyphens/em-dashes/en-dashes from the copy, matching the tone we already applied to the trial lesson notifications.
+- All three LessonSpace webhook endpoints are deployed, public, and correctly configured (`verify_jwt = false`); a manual POST returns the expected validation error, so the URL is reachable.
+- Zero invocations logged for `lessonspace-transcript-webhook`, `lessonspace-recording-webhook`, `lessonspace-session-webhook` since deploy.
+- Every recent `lesson_transcriptions` row is stuck at `transcription_status = 'processing'`, with `transcript_size_bytes = null`, and `updated_at` timestamps matching the hourly cron — i.e. the polling fallback in `hourly-lesson-processing` is still doing 100% of the work.
+- 194 lessons launched in the last 3 days have `lesson_space_webhook_secret` populated, so the inline per-launch webhook block is being accepted by LessonSpace, but no callbacks are being made.
 
-## Files to update
+Conclusion: the new webhook path is not working; we're entirely on the old fallback.
 
-**WhatsApp** — `supabase/functions/_shared/whatsapp-templates.ts`
-- `proposalNotification` (sent when a proposal is first emailed)
-- `proposalReminder` (daily reminder for sent/viewed proposals)
-- `proposalAgreedReminder` (daily reminder for proposals in "agreed" status awaiting payment setup)
+## Plan to fix
 
-**Email templates**
-- `supabase/functions/send-proposal-email/_templates/proposal-email.tsx` — initial proposal email
-- `supabase/functions/send-daily-reminders/_templates/reminder-email.tsx` — sent/viewed reminder
-- `supabase/functions/send-daily-reminders/_templates/agreed-reminder-email.tsx` — agreed reminder
+### 1. Confirm the root cause with LessonSpace
+- Pull one recent launch's stored `lesson_space_webhook_secret` + `lesson_space_session_id` and cross-check with LessonSpace support/docs whether inline `webhooks` on `POST /v2/spaces/launch/` are actually honoured, or whether webhooks must be registered once at the organisation/space level via a separate endpoint.
+- Confirm the exact header LessonSpace sends (`x-webhook-signature` vs `x-lessonspace-signature`) and the signing scheme, so our HMAC check matches.
 
-**Subject lines / trigger files**
-- `supabase/functions/send-daily-reminders/index.ts` — strip emojis from the two subject lines (`⏰ Complete Your Proposal...`, `📢 Reminder: Your Lesson Proposal...`)
-- `supabase/functions/send-proposal-email/index.ts` — subject already clean, no change needed
+### 2. Register webhooks at the org/space level (expected fix)
+- Add a one-time setup edge function `lessonspace-register-webhooks` that calls the LessonSpace org-level webhook registration endpoint for `session.end`, `transcription.finish`, and `recording.finish`, pointing to our three edge functions. Store the returned organisation-level `secret` in a new `app_settings` row (`lessonspace_org_webhook_secret`).
+- Update the three webhook handlers to verify against that org-level secret when present, falling back to the per-lesson secret for compatibility.
+- Stop attaching `webhooks` inline in `lesson-space-integration` launch payloads once org-level registration is in place (keep the per-launch block only if LessonSpace supports both).
 
-## Tone rules applied (same as trial notifications)
+### 3. Verify end-to-end
+- After registration, launch a real test lesson, end the session, and confirm:
+  - `lessonspace-session-webhook` logs an invocation and updates `lessons.status`.
+  - `lessonspace-transcript-webhook` logs an invocation and writes `transcription_status = 'completed'` with a non-null `transcript_size_bytes`.
+  - `lessonspace-recording-webhook` logs an invocation and populates `lesson_space_recording_url`.
+- Confirm signature verification passes (no `signature mismatch` warnings in logs).
 
-- No emojis anywhere (subjects, headings, bullets, sign-offs).
-- No hyphens, em-dashes, or en-dashes in copy. Rewrite phrases like "one-to-one", "sign-up", "Month-to-month" so they either use a space or a comma. Replace decorative dashes with commas or full stops.
-- Conversational opener ("Hi {Name}, hope you're well.") rather than "Dear" or "🎉".
-- Remove marketing bullet lists ("What's included", "Secure your spot", "Building confidence, one lesson at a time"). Fold the key point into a short paragraph instead.
-- Keep the essential info: who it's from, that a proposal is ready / awaiting review / awaiting payment setup, and the link.
-- Sign off simply, e.g. "Thanks, Joshua — Class Beyond Academy" written without a dash, e.g. "Thanks, Joshua. Class Beyond Academy." Contact phone `01438 582848` where appropriate (matching the trial templates).
-- Keep existing props/signatures and React Email component structure; only the copy and inline styles-for-decoration change (drop any leftover emoji characters in heading strings).
+### 4. Keep the fallback, tighten its role
+- Leave `hourly-lesson-processing` in place strictly as a safety net for missed webhooks, with its existing "only touch lessons ended > 3h ago" guard.
 
 ## Out of scope
-
-- No logic, routing, scheduling, or database changes.
-- No changes to the `complete-proposal-setup` admin notification emails (those are internal, not customer-facing).
-- No visual redesign of the email shell beyond removing decorative emoji glyphs from headings.
+- No backfill of historical `processing` rows — those stay on the polling path.
+- No changes to summary/insight generation; both paths already fan out to `generate-lesson-summaries`.
