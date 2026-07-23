@@ -44,10 +44,41 @@ export default function OfferView() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.storage
-        .from(CONTRACT_BUCKET)
-        .createSignedUrl(CONTRACT_PATH, 60 * 60 * 24);
-      if (!error && data?.signedUrl) setContractUrl(data.signedUrl);
+      try {
+        const { data, error } = await supabase.storage
+          .from(CONTRACT_BUCKET)
+          .createSignedUrl(CONTRACT_PATH, 60 * 60 * 24);
+        if (error) {
+          console.error('createSignedUrl error', error);
+        }
+        if (data?.signedUrl) {
+          setContractUrl(data.signedUrl);
+          return;
+        }
+      } catch (e) {
+        console.error('createSignedUrl threw', e);
+      }
+      // Fallback: direct REST call with anon key
+      try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/sign/${CONTRACT_BUCKET}/${CONTRACT_PATH}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ expiresIn: 60 * 60 * 24 }),
+        });
+        const json = await res.json();
+        if (json?.signedURL) {
+          setContractUrl(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1${json.signedURL}`);
+        } else {
+          console.error('signed url fallback failed', json);
+        }
+      } catch (e) {
+        console.error('signed url fallback threw', e);
+      }
     })();
   }, []);
 
