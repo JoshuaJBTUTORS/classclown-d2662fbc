@@ -37,12 +37,12 @@ serve(async (req) => {
     };
 
     // Only process lessons that ended at least 3 hours ago (buffer to ensure
-    // the session has truly finished on LessonSpace's side). We slice a 1-hour
-    // window so each hourly run only picks up lessons that just crossed the
-    // 3h mark — a lesson ending at 8pm is handled by the 11pm run and nothing
-    // else. Idempotency checks below still make retries safe.
+    // the session has truly finished on LessonSpace's side). We look back 24h
+    // so any lesson that was missed by a previous run (edge-function timeout,
+    // transient error) is self-healed on the next hourly run. Idempotency
+    // checks in each step ensure we do not duplicate work.
     const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-    const windowStart = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+    const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     console.log(`Processing lessons that ended between ${windowStart} and ${cutoff}`);
 
