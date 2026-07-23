@@ -37,6 +37,7 @@ interface LessonTime {
   day?: string;
   time?: string;
   duration?: number;
+  subject?: string | null;
 }
 
 interface Proposal {
@@ -479,7 +480,7 @@ const Onboarding: React.FC = () => {
                               <div><span className="text-muted-foreground">Day:</span> {lt.day || '—'}</div>
                               <div><span className="text-muted-foreground">Time:</span> {lt.time || '—'}</div>
                               <div><span className="text-muted-foreground">Duration:</span> {lt.duration ? `${lt.duration} min` : '—'}</div>
-                              <div><span className="text-muted-foreground">Subject:</span> {createdProposal.subject || '—'}</div>
+                              <div><span className="text-muted-foreground">Subject:</span> {lt.subject || createdProposal.subject || '—'}</div>
                             </li>
                           ))}
                         </ul>
@@ -525,7 +526,7 @@ const Onboarding: React.FC = () => {
                       <ul className="list-disc pl-5 space-y-1">
                         {createdProposal.lesson_times.map((lt, i) => (
                           <li key={i}>
-                            {lt.day || '—'} at {lt.time || '—'} ({lt.duration ? `${lt.duration} min` : '—'})
+                            {lt.day || '—'} at {lt.time || '—'} ({lt.duration ? `${lt.duration} min` : '—'}) — {lt.subject || createdProposal.subject || '—'}
                           </li>
                         ))}
                       </ul>
