@@ -176,7 +176,7 @@ export default function OfferView() {
 
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm" onClick={() => setContractViewed(true)}>
-              <a href={contractAsset.url} target="_blank" rel="noopener noreferrer">
+              <a href={`https://classclown.io${contractAsset.url}`} target="_blank" rel="noopener noreferrer">
                 <Download className="h-4 w-4 mr-2" /> Open / Download Contract
               </a>
             </Button>
