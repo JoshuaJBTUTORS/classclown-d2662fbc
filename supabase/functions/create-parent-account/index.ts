@@ -135,16 +135,14 @@ serve(async (req) => {
 
     console.log('Creating parent account for email:', email);
 
-    // STEP 0: Always clear any existing parent/auth account for this email before recreating.
-    // Onboarding retries must start from a clean state, so any matching auth user is deleted
-    // straight away, along with stale parent rows that would block the new insert.
+    // STEP 0: Auth-only cleanup. If an auth user already exists for this email,
+    // delete it directly and let ON DELETE CASCADE clean up profiles / parents / user_roles.
     try {
-      const existingAuthUsers: { id: string; email?: string }[] = [];
+      const normalizedEmail = String(email).trim().toLowerCase();
+      const existingAuthUserIds: string[] = [];
       let page = 1;
       const perPage = 1000;
-      const normalizedEmail = String(email).trim().toLowerCase();
 
-      // Paginate through auth users to find a match (admin API has no email filter).
       while (page <= 100) {
         const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
           page,
@@ -157,111 +155,38 @@ serve(async (req) => {
         const matches = (listData?.users || []).filter(
           (u: any) => (u.email || '').trim().toLowerCase() === normalizedEmail
         );
-        if (matches.length > 0) {
-          existingAuthUsers.push(
-            ...matches.map((match: any) => ({ id: match.id, email: match.email }))
-          );
-        }
+        existingAuthUserIds.push(...matches.map((m: any) => m.id));
         if (!listData?.users || listData.users.length < perPage) break;
         page++;
       }
 
-      const existingAuthUserIds = existingAuthUsers.map((u) => u.id);
-
-      console.log('🧹 Pre-create cleanup check:', {
+      console.log('🧹 Pre-create auth cleanup:', {
         email: normalizedEmail,
         matchingAuthUsers: existingAuthUserIds.length,
         authUserIds: existingAuthUserIds,
       });
 
-      if (existingAuthUserIds.length > 0) {
-        const { data: deletedParentsByUserId, error: deleteParentsByUserIdError } = await supabaseAdmin
-          .from('parents')
-          .delete()
-          .in('user_id', existingAuthUserIds)
-          .select('id, user_id, email');
-
-        if (deleteParentsByUserIdError) {
-          console.error('Failed to delete parent rows by auth user id:', deleteParentsByUserIdError);
-          return new Response(
-            JSON.stringify({
-              error: 'Failed to clean up existing parent account: ' + deleteParentsByUserIdError.message,
-            }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          );
-        }
-
-        console.log('✅ Deleted parent rows linked to existing auth users:', deletedParentsByUserId || []);
-      }
-
-      const { data: deletedParentsByEmail, error: deleteParentsByEmailError } = await supabaseAdmin
-        .from('parents')
-        .delete()
-        .ilike('email', normalizedEmail)
-        .select('id, user_id, email');
-
-      if (deleteParentsByEmailError) {
-        console.error('Failed to delete parent rows by email:', deleteParentsByEmailError);
-        return new Response(
-          JSON.stringify({
-            error: 'Failed to clean up existing parent account: ' + deleteParentsByEmailError.message,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      console.log('✅ Deleted parent rows matching email:', deletedParentsByEmail || []);
-
-      if (existingAuthUserIds.length > 0) {
-        const { error: unlinkProposalsError } = await supabaseAdmin
-          .from('lesson_proposals')
-          .update({ parent_id: null })
-          .in('parent_id', existingAuthUserIds);
-        if (unlinkProposalsError) {
-          console.error('Failed to unlink proposals from existing auth users:', unlinkProposalsError);
-          return new Response(
-            JSON.stringify({
-              error: 'Failed to unlink proposals from existing account: ' + unlinkProposalsError.message,
-            }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        console.log('✅ Cleared parent_id on lesson_proposals for existing auth users');
-      }
-
-      for (const existingAuthUser of existingAuthUsers) {
-        console.log('🧹 Deleting existing auth user for email:', existingAuthUser.id);
-        const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(existingAuthUser.id);
+      for (const existingId of existingAuthUserIds) {
+        const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(existingId);
         if (deleteAuthUserError) {
           console.error('Failed to delete existing auth user:', deleteAuthUserError);
           return new Response(
             JSON.stringify({
               error: 'Failed to clean up existing auth account: ' + deleteAuthUserError.message,
             }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        console.log('✅ Existing auth user deleted:', existingAuthUser.id);
+        console.log('✅ Existing auth user deleted (cascade handles the rest):', existingId);
       }
     } catch (cleanupError) {
-      console.error('Unexpected error during orphan auth cleanup:', cleanupError);
+      console.error('Unexpected error during auth cleanup:', cleanupError);
       return new Response(
         JSON.stringify({ error: 'Failed to clean up existing account before retry' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
 
     // Check if email already exists in parents table (safety net)
     const { data: existingParent, error: parentCheckError } = await supabaseAdmin

@@ -97,7 +97,9 @@ const Onboarding: React.FC = () => {
   const [pushingTicket, setPushingTicket] = useState(false);
 
   const handleAddedLessons = async () => {
+    if (pushingTicket || completed.includes(3)) return;
     setCompleted((c) => Array.from(new Set([...c, 3])));
+
     if (!createdProposal || !createdProposal.recipient_email) {
       toast.error('Missing proposal data — cannot push HubSpot ticket');
       navigate('/students');
@@ -178,6 +180,7 @@ const Onboarding: React.FC = () => {
   const selectedProposal = proposals.find((p) => p.id === selectedProposalId);
 
   const handleCreateFromProposal = async () => {
+    if (creating || completed.includes(1)) return;
     setCreateError(null);
     if (!selectedProposal || !selectedProposal.recipient_email) {
       const msg = 'Selected proposal is missing an email';
@@ -186,6 +189,7 @@ const Onboarding: React.FC = () => {
       return;
     }
     setCreating(true);
+
     try {
       const { first_name, last_name } = splitName(selectedProposal.recipient_name || '');
       const { data, error } = await supabase.functions.invoke('create-parent-account', {
@@ -428,11 +432,12 @@ const Onboarding: React.FC = () => {
                 <div className="flex gap-2">
                   <Button
                     onClick={handleCreateFromProposal}
-                    disabled={!selectedProposal || creating}
+                    disabled={!selectedProposal || creating || completed.includes(1)}
                   >
                     {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Create parent account
+                    {completed.includes(1) ? 'Parent account created' : 'Create parent account'}
                   </Button>
+
                   <Button variant="outline" onClick={loadProposals} disabled={loadingProposals || creating}>
                     Refresh list
                   </Button>
