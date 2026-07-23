@@ -526,7 +526,7 @@ const Onboarding: React.FC = () => {
                       <ul className="list-disc pl-5 space-y-1">
                         {createdProposal.lesson_times.map((lt, i) => (
                           <li key={i}>
-                            {lt.day || '—'} at {lt.time || '—'} ({lt.duration ? `${lt.duration} min` : '—'})
+                            {lt.day || '—'} at {lt.time || '—'} ({lt.duration ? `${lt.duration} min` : '—'}) — {lt.subject || createdProposal.subject || '—'}
                           </li>
                         ))}
                       </ul>
