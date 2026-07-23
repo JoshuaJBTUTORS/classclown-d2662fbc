@@ -165,8 +165,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: 'Hourly lesson processing completed',
-        stats,
-        processed_date: todayStr
+        stats
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
