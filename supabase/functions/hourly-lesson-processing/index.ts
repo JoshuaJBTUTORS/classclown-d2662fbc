@@ -315,21 +315,26 @@ async function ensureSummaries(supabaseClient: any, lessonId: string): Promise<b
       return false; // Summaries already exist
     }
 
-    // Call the generate-lesson-summaries function to generate summaries
-    const { data, error } = await supabaseClient.functions.invoke('generate-lesson-summaries', {
-      body: {
+    // Fire-and-forget: summary generation can take 60-120s per lesson. If we
+    // await sequentially inside the hourly loop we exhaust the edge-function
+    // timeout budget and later lessons never get processed. Kick it off and
+    // let it run on its own.
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    fetch(`${supabaseUrl}/functions/v1/generate-lesson-summaries`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
         action: 'generate-summaries',
-        lessonId: lessonId,
-        transcriptionId: transcription.id
-      }
-    });
+        lessonId,
+        transcriptionId: transcription.id,
+      }),
+    }).catch((err) => console.error(`Fire-and-forget summary invoke failed for ${lessonId}:`, err));
 
-    if (error) {
-      console.error('Error generating summaries:', error);
-      return false;
-    }
-
-    return data?.success || false;
+    return true;
   } catch (error) {
     console.error('Error ensuring summaries:', error);
     return false;
