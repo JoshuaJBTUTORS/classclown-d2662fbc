@@ -162,6 +162,36 @@ export default function OfferView() {
           <p>Sincerely,<br /><em>The Recruiting team — Class Beyond Academy</em></p>
         </Card>
 
+        {/* Contract */}
+        <Card className="p-8 md:p-12 space-y-4">
+          <div className="flex items-start gap-3">
+            <FileText className="h-6 w-6 text-primary shrink-0 mt-1" />
+            <div>
+              <h2 className="text-2xl font-bold text-primary">→ Self-Employed Online Tutor Agreement</h2>
+              <p className="text-muted-foreground text-sm mt-1">
+                Please read the full contract below carefully. You must review both the offer letter above and this contract before signing.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm" onClick={() => setContractViewed(true)}>
+              <a href={contractAsset.url} target="_blank" rel="noopener noreferrer">
+                <Download className="h-4 w-4 mr-2" /> Open / Download Contract
+              </a>
+            </Button>
+          </div>
+
+          <div className="border rounded-lg overflow-hidden bg-muted/20">
+            <iframe
+              src={contractAsset.url}
+              title="Self-Employed Online Tutor Agreement"
+              className="w-full h-[600px]"
+              onLoad={() => setContractViewed(true)}
+            />
+          </div>
+        </Card>
+
         {/* Signature */}
         <Card className="p-8 md:p-12 space-y-6">
           <h2 className="text-2xl font-bold text-primary">→ Acceptance</h2>
@@ -176,8 +206,41 @@ export default function OfferView() {
             <>
               <p>
                 I, <strong>{signerName || '________'}</strong>, accept the offer for the position described above.
-                By signing below, I confirm my agreement to be a self-employed contractor.
+                By signing below, I confirm my agreement to be a self-employed contractor and that I have read the attached Self-Employed Online Tutor Agreement.
               </p>
+
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="read-offer"
+                    checked={offerLetterRead}
+                    onCheckedChange={(c) => setOfferLetterRead(c === true)}
+                  />
+                  <label htmlFor="read-offer" className="text-sm cursor-pointer leading-relaxed">
+                    I confirm I have read the <strong>offer letter</strong> above.
+                  </label>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="read-contract"
+                    checked={contractRead}
+                    disabled={!contractViewed}
+                    onCheckedChange={(c) => setContractRead(c === true)}
+                  />
+                  <label
+                    htmlFor="read-contract"
+                    className={`text-sm leading-relaxed ${contractViewed ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                  >
+                    I confirm I have read the <strong>Self-Employed Online Tutor Agreement</strong>.
+                    {!contractViewed && (
+                      <span className="block text-xs text-muted-foreground mt-1">
+                        Open or scroll through the contract above to enable this.
+                      </span>
+                    )}
+                  </label>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="signer">Type your full name</Label>
                 <Input id="signer" value={signerName} onChange={(e) => setSignerName(e.target.value)} />
@@ -188,13 +251,19 @@ export default function OfferView() {
                 <Button variant="outline" size="sm" onClick={() => padRef.current?.clear()}>Clear</Button>
               </div>
               <p className="text-xs text-muted-foreground">Document Ref: {offer.document_ref}</p>
-              <Button onClick={handleSign} disabled={submitting} className="w-full" size="lg">
+              <Button
+                onClick={handleSign}
+                disabled={submitting || !offerLetterRead || !contractRead}
+                className="w-full"
+                size="lg"
+              >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign &amp; Accept Offer
               </Button>
             </>
           )}
         </Card>
+
       </div>
     </div>
   );
