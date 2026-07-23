@@ -568,7 +568,8 @@ async function callOpenAI(prompt: string, studentName: string, segmentNumber: nu
           },
           { role: 'user', content: prompt }
         ],
-        max_completion_tokens: maxTokens,
+        max_tokens: maxTokens,
+        response_format: { type: 'json_object' },
       }),
     });
 
