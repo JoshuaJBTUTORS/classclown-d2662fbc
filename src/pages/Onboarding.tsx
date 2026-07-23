@@ -37,6 +37,7 @@ interface LessonTime {
   day?: string;
   time?: string;
   duration?: number;
+  subject?: string | null;
 }
 
 interface Proposal {
