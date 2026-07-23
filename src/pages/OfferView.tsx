@@ -9,7 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, FileText, Download } from 'lucide-react';
 import SignaturePad, { type SignaturePadHandle } from '@/components/tutors/SignaturePad';
-import contractAsset from '@/assets/self-employed-tutor-agreement.pdf.asset.json';
+
+const CONTRACT_BUCKET = 'tutor-documents';
+const CONTRACT_PATH = 'self-employed-tutor-agreement.pdf';
+
 
 
 interface Offer {
