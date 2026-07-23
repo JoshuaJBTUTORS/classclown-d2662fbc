@@ -182,14 +182,6 @@ export default function OfferView() {
             </Button>
           </div>
 
-          <div className="border rounded-lg overflow-hidden bg-muted/20">
-            <iframe
-              src={contractAsset.url}
-              title="Self-Employed Online Tutor Agreement"
-              className="w-full h-[600px]"
-              onLoad={() => setContractViewed(true)}
-            />
-          </div>
         </Card>
 
         {/* Signature */}
