@@ -1,5 +1,14 @@
-## Change
-In `src/pages/OfferView.tsx`, remove the embedded `<iframe>` PDF preview from the Self-Employed Online Tutor Agreement card. Keep the card header, blurb, and "Open / Download Contract" button (which still gates the contract checkbox on click).
+## Fix contract PDF opening on Lovable preview domain
 
-## Out of scope
-- No changes to checkbox gating, signing logic, or the contract asset itself.
+The contract link uses the asset pointer's relative `url` (`/__l5e/assets-v1/...`), so it opens on whatever origin the tutor is currently browsing (e.g. the Lovable preview URL). It should always open on the production domain.
+
+### Change
+In `src/pages/OfferView.tsx`, build an absolute URL for the contract link:
+
+```ts
+const contractUrl = `https://classclown.io${contractAsset.url}`;
+```
+
+Use `contractUrl` in the `<a href=...>` for the "Open / Download Contract" button instead of `contractAsset.url`.
+
+No other logic changes — the viewed-tracking and checkbox gating stay as-is.
