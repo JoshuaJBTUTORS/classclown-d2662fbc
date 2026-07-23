@@ -33,7 +33,11 @@ export default function OfferView() {
   const [error, setError] = useState<string | null>(null);
   const [signerName, setSignerName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [contractViewed, setContractViewed] = useState(false);
+  const [offerLetterRead, setOfferLetterRead] = useState(false);
+  const [contractRead, setContractRead] = useState(false);
   const padRef = useRef<SignaturePadHandle>(null);
+
 
   useEffect(() => { load(); }, [offerId, token]);
 
