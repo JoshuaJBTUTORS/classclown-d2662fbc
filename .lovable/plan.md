@@ -1,50 +1,27 @@
 ## Goal
+On the tutor offer page (`/offer/:offerId/:token`), require the tutor to view both the offer letter and the attached Self-Employed Online Tutor Agreement before they can sign.
 
-Add two new lesson-type options to lesson proposals: **Mixed (1-to-1 & Group)** and **Large Group Session**, alongside the existing 1-to-1 Online, 1-to-1 In-Person, and Group Session.
+## Steps
 
-## Current state
+1. **Upload the contract PDF as a Lovable Asset**
+   - Upload `/mnt/user-uploads/Self_Employed_Online_Tutor_Agreement_Formatted.pdf` via `lovable-assets create` → write pointer to `src/assets/self-employed-tutor-agreement.pdf.asset.json`.
 
-`lesson_type` on `lesson_proposals` is a free-text string. Today the dropdown in both proposal editors offers only three values:
+2. **Update `src/pages/OfferView.tsx`**
+   - Add a new "Contract" card between the offer body and the acceptance card, showing:
+     - Title: "Self-Employed Online Tutor Agreement"
+     - Short blurb explaining they must read the full contract before signing
+     - A "View / Download Contract" button linking to the CDN URL (opens in new tab)
+     - An inline embedded PDF preview (`<iframe>` of the CDN URL) so they can read it in-page
+   - Track two viewed flags in state: `offerLetterViewed` (auto true once the offer page is loaded / after scrolling — simplest: default true since the letter is on the page) and `contractViewed` (set true when they click the View Contract button OR after the iframe has been visible).
+   - Add two checkboxes in the acceptance card:
+     - "I have read the offer letter above"
+     - "I have read the Self-Employed Online Tutor Agreement"
+   - The second checkbox is disabled until `contractViewed` is true (i.e. they've opened/downloaded the PDF at least once).
+   - Disable the "Sign & Accept Offer" button until both checkboxes are ticked (in addition to existing name + signature validations).
 
-- `1-to-1 Online`
-- `1-to-1 In-Person`
-- `Group Session`
-
-The proposal hero copy (`ProposalLayout.tsx` line 284) only branches on the legacy `'group'` value — every other value (including the current `Group Session`) falls through to the 1-to-1 wording, which is already slightly wrong for group and will be wrong for the new options.
-
-## Changes
-
-**1. Dropdown options — add Mixed and Large Group**
-
-Update the `<Select>` for lesson type in both files to add two new options after the existing three:
-
-- `src/pages/ProposalBuilder.tsx` (lines 195–197)
-- `src/pages/admin/EditProposal.tsx` (lines 337–339)
-
-New options:
-
-```tsx
-<SelectItem value="1-to-1 Online">1-to-1 Online</SelectItem>
-<SelectItem value="1-to-1 In-Person">1-to-1 In-Person</SelectItem>
-<SelectItem value="Group Session">Small Group Session</SelectItem>
-<SelectItem value="Large Group Session">Large Group Session</SelectItem>
-<SelectItem value="Mixed">Mixed (1-to-1 & Group)</SelectItem>
-```
-
-Keeping the stored value `Group Session` unchanged preserves every existing proposal; only its label becomes "Small Group Session" for clarity against the new "Large Group Session".
-
-**2. Proposal hero copy — support all five types**
-
-In `src/components/proposals/ProposalLayout.tsx` (lines 283–287), replace the two-branch ternary with a small helper that maps `proposal.lesson_type` to the right description:
-
-- `1-to-1 Online` / `1-to-1 In-Person` → existing 1-to-1 wording.
-- `Group Session` (small group) → existing small-group wording.
-- `Large Group Session` → "A structured large-group tuition programme aligned to your child's exam board and pace, delivered in a classroom-style setting by subject specialists we've hand-picked."
-- `Mixed` → "A blended tuition programme combining focused 1-to-1 sessions with collaborative group learning, aligned to your child's exam board and pace, delivered by subject specialists we've hand-picked."
-- Fallback (legacy `'group'` and anything unknown) → 1-to-1 wording, so nothing regresses.
+3. **No backend / DB changes** — the contract text is static and stored as a CDN asset; signature record already exists in `tutor_offer_signatures`. Optionally extend `agreement_text` / add a note that the signed contract version = the asset filename, but not required for this pass.
 
 ## Out of scope
-
-- No database migration — `lesson_type` stays a string.
-- No changes to calendar `lesson_type` filters or to `AddLessonForm`/`EditLessonForm`; those use their own separate lesson-type concept for calendar events, not proposals.
-- Pricing/session-count logic is unchanged; admins already enter those manually per proposal.
+- Storing per-tutor signed copies of the contract PDF
+- Versioning the contract
+- Emailing the signed contract back to the tutor (can add later if wanted)
