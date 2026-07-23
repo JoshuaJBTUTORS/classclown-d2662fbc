@@ -480,7 +480,7 @@ const Onboarding: React.FC = () => {
                               <div><span className="text-muted-foreground">Day:</span> {lt.day || '—'}</div>
                               <div><span className="text-muted-foreground">Time:</span> {lt.time || '—'}</div>
                               <div><span className="text-muted-foreground">Duration:</span> {lt.duration ? `${lt.duration} min` : '—'}</div>
-                              <div><span className="text-muted-foreground">Subject:</span> {createdProposal.subject || '—'}</div>
+                              <div><span className="text-muted-foreground">Subject:</span> {lt.subject || createdProposal.subject || '—'}</div>
                             </li>
                           ))}
                         </ul>
