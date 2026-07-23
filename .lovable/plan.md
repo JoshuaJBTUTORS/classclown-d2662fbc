@@ -1,21 +1,25 @@
-## Move tutor contract PDF to Supabase Storage
 
-### Why
-The contract is currently a Lovable Asset (`/__l5e/assets-v1/...`). That path only resolves on Lovable-hosted domains. When a tutor views the offer on `classclown.io` (not a connected Lovable custom domain), the PDF 404s. Supabase Storage serves the file from a stable absolute URL that works from any origin.
+## Goal
+Fix the two issues that caused the recent error:
+1. The onboarding "Create parent account" action was pressed twice, so the second run fought against the first run's freshly-created rows.
+2. `create-parent-account` currently deletes rows from the `parents` table and unlinks `lesson_proposals` during cleanup — we want it to only ever touch the auth user and let the database's cascade do the rest.
 
-### Steps
+## Changes
 
-1. **Create a public Supabase storage bucket** `tutor-documents` (private buckets require signed URLs and would need per-view generation — overkill for a contract we want linkable).
+### 1. `src/pages/Onboarding.tsx` — prevent double-submission
+- Guard `handleCreateFromProposal` so it becomes a no-op if `creating` is already true or if step 1 is already marked `completed`.
+- Disable the "Create parent account" button when either condition is true (currently only disabled while `creating`), and keep the spinner state visible.
+- Same guard on `handleAddedLessons` (step 3) so accidental double-clicks don't push two HubSpot tickets / two welcome emails.
 
-2. **Upload the PDF** `Self_Employed_Online_Tutor_Agreement_Formatted.pdf` to `tutor-documents/self-employed-tutor-agreement.pdf`. This gives a permanent public URL:
-   `https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/public/tutor-documents/self-employed-tutor-agreement.pdf`
+### 2. `supabase/functions/create-parent-account/index.ts` — auth-only cleanup
+Replace the current STEP 0 block (lines ~138–264) with a much smaller version:
+- Look up any existing auth user(s) for the email (paginated `listUsers`, same as today).
+- For each match, call `supabaseAdmin.auth.admin.deleteUser(id)` directly.
+- Do NOT delete from `parents`, do NOT ilike-match `parents.email`, do NOT null out `lesson_proposals.parent_id`.
+- Rely on the existing `ON DELETE CASCADE` FKs on `profiles`, `user_roles`, `parents.user_id`, etc. to clean themselves up when the auth user is removed.
+- Keep the "parent already exists" safety-net check that returns a friendly 400 (it will only trigger if cascade didn't clear a stale row, which shouldn't happen).
 
-3. **Update `src/pages/OfferView.tsx`:**
-   - Remove the `contractAsset` import from `@/assets/self-employed-tutor-agreement.pdf.asset.json`.
-   - Replace the `<a href={...}>` value with the Supabase public URL (as a constant at top of file).
-   - Keep the `setContractViewed(true)` click handler and gating checkbox behaviour unchanged.
-
-4. **Delete the old Lovable Asset pointer** `src/assets/self-employed-tutor-agreement.pdf.asset.json` and its CDN copy via `lovable-assets delete`.
-
-### Result
-Contract link opens correctly on `classclown.io`, `classclowncrm.com`, `jbtutors.classclowncrm.com`, the preview URL, and any future domain — no code changes needed per environment.
+### Technical notes
+- The FK `parents.user_id -> auth.users(id)` is already `ON DELETE CASCADE`, which is why deleting the auth user is sufficient.
+- The double-submit guard uses the existing `creating` state plus `completed.includes(1)` — no new state needed.
+- No database migration required.
