@@ -78,8 +78,10 @@ export default function OfferView() {
 
   const handleSign = async () => {
     if (!offer) return;
+    if (!offerLetterRead || !contractRead) { toast({ title: 'Please confirm you have read both the offer letter and the contract', variant: 'destructive' }); return; }
     if (!signerName.trim()) { toast({ title: 'Please type your full name', variant: 'destructive' }); return; }
     if (padRef.current?.isEmpty()) { toast({ title: 'Please draw your signature', variant: 'destructive' }); return; }
+
     setSubmitting(true);
     try {
       const sig = padRef.current!.toDataURL();
