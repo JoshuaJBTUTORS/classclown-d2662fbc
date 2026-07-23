@@ -9,7 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, FileText, Download } from 'lucide-react';
 import SignaturePad, { type SignaturePadHandle } from '@/components/tutors/SignaturePad';
-import contractAsset from '@/assets/self-employed-tutor-agreement.pdf.asset.json';
+
+const CONTRACT_BUCKET = 'tutor-documents';
+const CONTRACT_PATH = 'self-employed-tutor-agreement.pdf';
+
 
 
 interface Offer {
@@ -37,6 +40,16 @@ export default function OfferView() {
   const [offerLetterRead, setOfferLetterRead] = useState(false);
   const [contractRead, setContractRead] = useState(false);
   const padRef = useRef<SignaturePadHandle>(null);
+  const [contractUrl, setContractUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.storage
+        .from(CONTRACT_BUCKET)
+        .createSignedUrl(CONTRACT_PATH, 60 * 60 * 24);
+      if (!error && data?.signedUrl) setContractUrl(data.signedUrl);
+    })();
+  }, []);
 
 
   useEffect(() => { load(); }, [offerId, token]);
@@ -175,9 +188,9 @@ export default function OfferView() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm" onClick={() => setContractViewed(true)}>
-              <a href={`https://classclown.io${contractAsset.url}`} target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4 mr-2" /> Open / Download Contract
+            <Button asChild variant="outline" size="sm" disabled={!contractUrl} onClick={() => setContractViewed(true)}>
+              <a href={contractUrl ?? '#'} target="_blank" rel="noopener noreferrer">
+                <Download className="h-4 w-4 mr-2" /> {contractUrl ? 'Open / Download Contract' : 'Loading contract…'}
               </a>
             </Button>
           </div>
