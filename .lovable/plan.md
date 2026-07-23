@@ -1,34 +1,34 @@
-## New behaviour — no deletes, just link
+## Root cause: the hourly cron ran out of time before reaching every lesson
 
-Rewrite `supabase/functions/create-parent-account/index.ts` so onboarding never deletes anything. It reuses whatever already exists and links it together.
+The 1-1 A Level Maths lesson with Abdul (id `481d103a…`) is in a perfectly healthy state:
 
-### Flow (Step 1 of onboarding)
+- `lesson_space_session_id`: set
+- `lesson_space_recording_url`: set
+- `lesson_transcriptions`: `completed`, 50,828 characters of text
+- `lesson_student_summaries`: **0 rows**
+- No `processing_notes`, no `last_processing_error`
 
-1. **Look up existing Auth user by email** (`auth.admin.listUsers` paginated match).
-2. **If found**: reuse that Auth user.
-   - Call `auth.admin.updateUserById(existingId, { password: 'classbeyond123!', email_confirm: true, user_metadata: { first_name, last_name, role: 'parent' } })` so the emailed credentials always work.
-   - Do NOT delete the Auth user. Do NOT touch profiles, user_roles, parents, or students.
-3. **If not found**: `auth.admin.createUser` with the same password as today.
-4. **Parents row**:
-   - If a `parents` row already exists for that email → `UPDATE parents SET user_id = <authId>, first_name, last_name, phone, billing_address, emergency_contact_name, emergency_contact_phone WHERE id = <existing.id>` and reuse its `id`.
-   - Otherwise `INSERT` a new parents row as today. Use the resulting `parents.id` as `parentId`.
-5. **Link students by matching email** (this is the requested "link the account to the student account with matching emails"):
-   - `UPDATE students SET parent_id = <parentId> WHERE lower(email) = lower(<email>) AND (parent_id IS NULL OR parent_id <> <parentId>)`.
-   - Also cover the case where the student row is already parented to a stale parents row for the same email: additionally `UPDATE students SET parent_id = <parentId> WHERE parent_id IN (SELECT id FROM parents WHERE lower(email) = lower(<email>) AND id <> <parentId>)`.
-   - Return the count of students now linked so the UI can show it.
-6. **Remove the "email already exists" 400 short-circuit** — that block is what currently blocks reuse; it goes away.
-7. **Remove the entire pre-create cleanup / delete block** (lines ~138–188) and remove the failure-path `deleteUser` after parent insert (line ~274). No deletes anywhere in this function.
+So the transcript pipeline succeeded — only the summary generation step never fired for this lesson. Same story for `Demo Session for David Babatope`, `Trial KS3 Maths for David Babatope`, `11 Plus NVR Group`, and `1-1 Year 11 Combined Science`: all have completed transcripts and 0 summaries.
 
-### Client side
-`src/pages/Onboarding.tsx` — no change needed. It already calls the function once, guards double-clicks, and displays `linkedStudents` from the response. The message just changes from "created" to "created or linked" (handled server-side in the response `message`).
+### Why summaries are missing for these specific lessons
 
-### Result for Rebecca / Becca
-Re-running onboarding for `beckyapan@gmail.com`:
-- Finds Rebecca's existing Auth user, resets password to `classbeyond123!`.
-- Finds Rebecca's existing `parents` row, updates `user_id` to that Auth user, keeps the same `parents.id`.
-- Finds Becca (`students.email = beckyapan@gmail.com`) and links `parent_id`.
-- Nothing is deleted. Becca stays in the Clients list. History, insights, attendance, lessons — all untouched.
+`hourly-lesson-processing` walks every eligible lesson **sequentially** in a single edge-function invocation with `await new Promise(resolve => setTimeout(resolve, 2000))` between lessons and per-student OpenAI calls inside. When today's 17:00 UTC block ended (7 lessons ended within a single hourly window), the cron started processing them but hit the ~150s Supabase edge-function wall-clock limit partway through. Evidence:
 
-### Not in scope
-- No schema/migration changes.
-- No changes to trial approval, HubSpot, or the welcome email — those already run in Step 3.
+- The GCSE English Group got 4 student summaries between 20:03:42 and 20:05:39 UTC — a single run doing them one at a time.
+- Other 17:00-ended lessons never got a summary row inserted at all.
+- `Trial KS3 Maths for David Babatope` (12:45 slot) also has a completed transcript but 0 summaries — the same crowded-window problem earlier in the day.
+
+Combine that with the `todayStr is not defined` reference at the end of `hourly-lesson-processing/index.ts` (line 169) and you get: the loop is doing real work, then the response builder throws, the run is logged as failed, no retry is scheduled, and the missed lessons sit there forever because the next hourly window (`now-4h..now-3h`) no longer includes them.
+
+### What I want to change
+
+1. **Fix `todayStr` crash** in `hourly-lesson-processing` so the run returns cleanly.
+2. **Widen the reprocessing window**: instead of a strict 1-hour slice, keep picking up any lesson that ended ≥3h ago **and still has a completed transcript with 0 summaries** (idempotency checks already prevent double-work). This is what lets missed lessons self-heal on later runs.
+3. **Split summary generation off the hot cron path**: after the transcript is completed, invoke `generate-lesson-summaries` per-lesson as a fire-and-forget (like the webhook already does at `lessonspace-transcript-webhook` line 217). That way one slow OpenAI call for lesson A can't starve lesson B.
+4. **Backfill the missing ones right now** by directly invoking `generate-lesson-summaries` for the 5 lessons that already have completed transcripts and 0 summaries (A Level Maths, Y11 Combined Science, 11 Plus NVR, both David Babatope trials).
+
+### Not changing
+
+The transcript webhook + LessonSpace integration itself — it's clearly working, just the downstream summary fan-out that starves.
+
+Approve and I'll do step 4 first (immediate visible fix for today), then 1-3.

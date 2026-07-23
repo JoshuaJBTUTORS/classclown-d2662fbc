@@ -37,12 +37,12 @@ serve(async (req) => {
     };
 
     // Only process lessons that ended at least 3 hours ago (buffer to ensure
-    // the session has truly finished on LessonSpace's side). We slice a 1-hour
-    // window so each hourly run only picks up lessons that just crossed the
-    // 3h mark — a lesson ending at 8pm is handled by the 11pm run and nothing
-    // else. Idempotency checks below still make retries safe.
+    // the session has truly finished on LessonSpace's side). We look back 24h
+    // so any lesson that was missed by a previous run (edge-function timeout,
+    // transient error) is self-healed on the next hourly run. Idempotency
+    // checks in each step ensure we do not duplicate work.
     const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-    const windowStart = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+    const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     console.log(`Processing lessons that ended between ${windowStart} and ${cutoff}`);
 
@@ -165,8 +165,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: 'Hourly lesson processing completed',
-        stats,
-        processed_date: todayStr
+        stats
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -316,21 +315,26 @@ async function ensureSummaries(supabaseClient: any, lessonId: string): Promise<b
       return false; // Summaries already exist
     }
 
-    // Call the generate-lesson-summaries function to generate summaries
-    const { data, error } = await supabaseClient.functions.invoke('generate-lesson-summaries', {
-      body: {
+    // Fire-and-forget: summary generation can take 60-120s per lesson. If we
+    // await sequentially inside the hourly loop we exhaust the edge-function
+    // timeout budget and later lessons never get processed. Kick it off and
+    // let it run on its own.
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    fetch(`${supabaseUrl}/functions/v1/generate-lesson-summaries`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
         action: 'generate-summaries',
-        lessonId: lessonId,
-        transcriptionId: transcription.id
-      }
-    });
+        lessonId,
+        transcriptionId: transcription.id,
+      }),
+    }).catch((err) => console.error(`Fire-and-forget summary invoke failed for ${lessonId}:`, err));
 
-    if (error) {
-      console.error('Error generating summaries:', error);
-      return false;
-    }
-
-    return data?.success || false;
+    return true;
   } catch (error) {
     console.error('Error ensuring summaries:', error);
     return false;

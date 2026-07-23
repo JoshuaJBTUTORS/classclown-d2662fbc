@@ -548,8 +548,8 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
 }
 
 async function callOpenAI(prompt: string, studentName: string, segmentNumber: number, useRetry: boolean = false): Promise<any> {
-  // Primary: gpt-5.5. Retry on payload/size issues with gpt-5-mini.
-  const model = useRetry ? 'gpt-5-mini' : 'gpt-5.5';
+  // Primary: gpt-4o. Retry on payload/size issues with gpt-4o-mini.
+  const model = useRetry ? 'gpt-4o-mini' : 'gpt-4o';
   const maxTokens = useRetry ? 1000 : 2000;
 
   try {
@@ -568,7 +568,8 @@ async function callOpenAI(prompt: string, studentName: string, segmentNumber: nu
           },
           { role: 'user', content: prompt }
         ],
-        max_completion_tokens: maxTokens,
+        max_tokens: maxTokens,
+        response_format: { type: 'json_object' },
       }),
     });
 
