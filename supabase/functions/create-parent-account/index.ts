@@ -6,321 +6,247 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const DEFAULT_PASSWORD = 'classbeyond123!';
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('=== BACKEND AUTH DEBUG ===');
-  console.log('🔍 Incoming request headers:', {
-    authorization: req.headers.get('Authorization') ? 'EXISTS' : 'MISSING',
-    authLength: req.headers.get('Authorization')?.length || 0,
-    contentType: req.headers.get('Content-Type'),
-    userAgent: req.headers.get('User-Agent'),
-    origin: req.headers.get('Origin')
-  });
-
   try {
-    // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    
-    console.log('🔧 Environment check:', {
-      hasSupabaseUrl: !!supabaseUrl,
-      hasServiceRoleKey: !!serviceRoleKey,
-      hasAnonKey: !!anonKey
-    });
-
-    // Initialize Supabase client with service role key for admin operations
     const supabaseAdmin = createClient(supabaseUrl ?? '', serviceRoleKey ?? '');
 
-    // Get and validate authorization header
     const authHeader = req.headers.get('Authorization');
-    console.log('🔑 Authorization header details:', {
-      exists: !!authHeader,
-      startsWithBearer: authHeader?.startsWith('Bearer '),
-      length: authHeader?.length || 0
-    });
-
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ Missing or invalid authorization header');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('🏗️ Supabase admin client initialized, attempting to verify JWT token...');
-    
-    // Extract JWT token and verify using service role client
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    console.log('👤 Auth.getUser() result:', {
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      hasAuthError: !!authError,
-      authErrorMessage: authError?.message,
-      authErrorName: authError?.name,
-      authErrorStatus: authError?.status,
-      fullAuthError: authError
-    });
-
     if (authError || !user) {
-      console.error('❌ Authentication failed:', {
-        error: authError,
-        hasUser: !!user,
-        errorDetails: {
-          message: authError?.message,
-          name: authError?.name,
-          status: authError?.status,
-          code: authError?.code
-        }
-      });
       return new Response(
         JSON.stringify({ error: 'Unauthorized: ' + (authError?.message || 'No user found') }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('✅ User authenticated successfully, checking roles...');
-    
-    // Check if user has admin or owner role using service role client
     const { data: userRoles, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
 
-    console.log('🔍 Role check result:', {
-      hasRoleError: !!roleError,
-      roleError: roleError?.message,
-      userRoles: userRoles,
-      hasAdminRole: userRoles?.some(r => r.role === 'admin'),
-      hasOwnerRole: userRoles?.some(r => r.role === 'owner'),
-      isAuthorized: userRoles?.some(r => ['admin', 'owner'].includes(r.role))
-    });
-
-    if (roleError || !userRoles?.some(r => ['admin', 'owner'].includes(r.role))) {
-      console.error('❌ Role verification failed:', {
-        roleError,
-        userRoles,
-        userId: user.id
+    if (roleError || !userRoles?.some((r: any) => ['admin', 'owner'].includes(r.role))) {
+      return new Response(JSON.stringify({ error: 'Insufficient permissions' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-      return new Response(
-        JSON.stringify({ error: 'Insufficient permissions' }),
-        { 
-          status: 403, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
     }
 
-    const { 
-      first_name, 
-      last_name, 
-      email, 
-      phone, 
-      billing_address, 
-      emergency_contact_name, 
-      emergency_contact_phone 
+    const {
+      first_name,
+      last_name,
+      email,
+      phone,
+      billing_address,
+      emergency_contact_name,
+      emergency_contact_phone,
     } = await req.json();
 
-    console.log('Creating parent account for email:', email);
+    const normalizedEmail = String(email).trim().toLowerCase();
+    console.log('create-parent-account: onboarding email', normalizedEmail);
 
-    // STEP 0: Auth-only cleanup. If an auth user already exists for this email,
-    // delete it directly and let ON DELETE CASCADE clean up profiles / parents / user_roles.
-    try {
-      const normalizedEmail = String(email).trim().toLowerCase();
-      const existingAuthUserIds: string[] = [];
-      let page = 1;
-      const perPage = 1000;
-
-      while (page <= 100) {
-        const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-          page,
-          perPage,
-        });
-        if (listError) {
-          console.error('Error listing auth users for orphan check:', listError);
-          break;
-        }
-        const matches = (listData?.users || []).filter(
-          (u: any) => (u.email || '').trim().toLowerCase() === normalizedEmail
-        );
-        existingAuthUserIds.push(...matches.map((m: any) => m.id));
-        if (!listData?.users || listData.users.length < perPage) break;
-        page++;
-      }
-
-      console.log('🧹 Pre-create auth cleanup:', {
-        email: normalizedEmail,
-        matchingAuthUsers: existingAuthUserIds.length,
-        authUserIds: existingAuthUserIds,
+    // ---------- 1. Find or create the auth user (NEVER delete) ----------
+    let authUserId: string | null = null;
+    let page = 1;
+    const perPage = 1000;
+    while (page <= 100) {
+      const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage,
       });
-
-      for (const existingId of existingAuthUserIds) {
-        const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(existingId);
-        if (deleteAuthUserError) {
-          console.error('Failed to delete existing auth user:', deleteAuthUserError);
-          return new Response(
-            JSON.stringify({
-              error: 'Failed to clean up existing auth account: ' + deleteAuthUserError.message,
-            }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        console.log('✅ Existing auth user deleted (cascade handles the rest):', existingId);
+      if (listError) {
+        console.error('listUsers error:', listError);
+        break;
       }
-    } catch (cleanupError) {
-      console.error('Unexpected error during auth cleanup:', cleanupError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to clean up existing account before retry' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      const match = (listData?.users || []).find(
+        (u: any) => (u.email || '').trim().toLowerCase() === normalizedEmail
       );
+      if (match) {
+        authUserId = match.id;
+        break;
+      }
+      if (!listData?.users || listData.users.length < perPage) break;
+      page++;
     }
 
+    if (authUserId) {
+      console.log('Reusing existing auth user', authUserId, '— resetting password');
+      const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+        password: DEFAULT_PASSWORD,
+        email_confirm: true,
+        user_metadata: { first_name, last_name, role: 'parent' },
+      });
+      if (updErr) {
+        console.error('updateUserById error:', updErr);
+        return new Response(
+          JSON.stringify({ error: 'Failed to reset existing account password: ' + updErr.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: DEFAULT_PASSWORD,
+        email_confirm: true,
+        user_metadata: { first_name, last_name, role: 'parent' },
+      });
+      if (createErr || !created?.user) {
+        console.error('createUser error:', createErr);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create user account: ' + (createErr?.message || 'unknown') }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      authUserId = created.user.id;
+      console.log('Created new auth user', authUserId);
+    }
 
-    // Check if email already exists in parents table (safety net)
-    const { data: existingParent, error: parentCheckError } = await supabaseAdmin
+    // Make sure a 'parent' role row exists (handle_new_user trigger may already have inserted one).
+    await supabaseAdmin
+      .from('user_roles')
+      .upsert(
+        { user_id: authUserId, role: 'parent', is_primary: true },
+        { onConflict: 'user_id,role' }
+      );
+
+    // ---------- 2. Find or create the parents row ----------
+    const { data: existingParent, error: parentLookupErr } = await supabaseAdmin
       .from('parents')
       .select('id')
-      .eq('email', email)
+      .ilike('email', normalizedEmail)
       .maybeSingle();
 
-    if (parentCheckError) {
-      console.error('Error checking parent email:', parentCheckError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to validate parent email' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    if (parentLookupErr) {
+      console.error('parents lookup error:', parentLookupErr);
     }
 
-    if (existingParent) {
-      return new Response(
-        JSON.stringify({ error: 'A parent account with this email already exists' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    let parentId: string;
+    if (existingParent?.id) {
+      parentId = existingParent.id;
+      const { error: updParentErr } = await supabaseAdmin
+        .from('parents')
+        .update({
+          user_id: authUserId,
+          first_name,
+          last_name,
+          phone,
+          billing_address,
+          emergency_contact_name,
+          emergency_contact_phone,
+        })
+        .eq('id', parentId);
+      if (updParentErr) {
+        console.error('parents update error:', updParentErr);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update parent profile: ' + updParentErr.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('Reused parents row', parentId);
+    } else {
+      const { data: newParent, error: insParentErr } = await supabaseAdmin
+        .from('parents')
+        .insert({
+          user_id: authUserId,
+          first_name,
+          last_name,
+          email,
+          phone,
+          billing_address,
+          emergency_contact_name,
+          emergency_contact_phone,
+        })
+        .select('id')
+        .single();
+      if (insParentErr || !newParent) {
+        console.error('parents insert error:', insParentErr);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create parent profile: ' + (insParentErr?.message || 'unknown') }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      parentId = newParent.id;
+      console.log('Created parents row', parentId);
     }
 
-    // Find matching trial students with this email
-    const { data: trialStudents, error: trialError } = await supabaseAdmin
+    // ---------- 3. Link students with matching email to this parent ----------
+    // 3a. Any student whose OWN email matches
+    const { data: studentsByEmail } = await supabaseAdmin
       .from('students')
-      .select('id, first_name, last_name')
-      .eq('email', email)
-      .is('parent_id', null);
+      .select('id, parent_id')
+      .ilike('email', normalizedEmail);
 
-    if (trialError) {
-      console.error('Error finding trial students:', trialError);
-    }
-
-    // Create the auth user with admin client
-    const { data: authData, error: authCreateError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: 'classbeyond123!', // Default password - parent can change later
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        first_name,
-        last_name,
-        role: 'parent'
-      }
-    });
-
-    if (authCreateError || !authData.user) {
-      console.error('Error creating auth user:', authCreateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to create user account: ' + authCreateError?.message }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    console.log('Auth user created:', authData.user.id);
-
-    // Create parent profile
-    const { data: parentData, error: parentError } = await supabaseAdmin
+    // 3b. Any student whose current parent row shares this email (stale duplicate parents)
+    const { data: staleParents } = await supabaseAdmin
       .from('parents')
-      .insert({
-        user_id: authData.user.id,
-        first_name,
-        last_name,
-        email,
-        phone,
-        billing_address,
-        emergency_contact_name,
-        emergency_contact_phone
-      })
-      .select()
-      .single();
+      .select('id')
+      .ilike('email', normalizedEmail)
+      .neq('id', parentId);
 
-    if (parentError || !parentData) {
-      console.error('Error creating parent profile:', parentError);
-      // Clean up auth user if parent creation fails
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      return new Response(
-        JSON.stringify({ error: 'Failed to create parent profile' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    console.log('Parent profile created:', parentData.id);
-
-    // Link trial students to the new parent
-    let linkedStudents = 0;
-    if (trialStudents && trialStudents.length > 0) {
-      const { error: linkError } = await supabaseAdmin
+    let studentsViaStale: any[] = [];
+    if (staleParents && staleParents.length > 0) {
+      const staleIds = staleParents.map((p: any) => p.id);
+      const { data } = await supabaseAdmin
         .from('students')
-        .update({ parent_id: parentData.id })
-        .in('id', trialStudents.map(s => s.id));
+        .select('id, parent_id')
+        .in('parent_id', staleIds);
+      studentsViaStale = data || [];
+    }
 
-      if (linkError) {
-        console.error('Error linking trial students:', linkError);
+    const toLink = new Map<number, { id: number; parent_id: string | null }>();
+    (studentsByEmail || []).forEach((s: any) => toLink.set(s.id, s));
+    studentsViaStale.forEach((s: any) => toLink.set(s.id, s));
+
+    const idsNeedingUpdate = Array.from(toLink.values())
+      .filter((s) => s.parent_id !== parentId)
+      .map((s) => s.id);
+
+    let linkedStudents = 0;
+    if (idsNeedingUpdate.length > 0) {
+      const { error: linkErr } = await supabaseAdmin
+        .from('students')
+        .update({ parent_id: parentId })
+        .in('id', idsNeedingUpdate);
+      if (linkErr) {
+        console.error('student link error:', linkErr);
       } else {
-        linkedStudents = trialStudents.length;
-        console.log(`Linked ${linkedStudents} trial students to parent`);
+        linkedStudents = idsNeedingUpdate.length;
+        console.log(`Linked ${linkedStudents} student(s) to parent ${parentId}`);
       }
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        parent: parentData,
-        linkedStudents: linkedStudents,
-        message: linkedStudents > 0 
-          ? `Parent account created successfully and ${linkedStudents} trial student(s) linked.`
-          : 'Parent account created successfully.'
+      JSON.stringify({
+        success: true,
+        parent: { id: parentId, user_id: authUserId, email },
+        linkedStudents,
+        message:
+          linkedStudents > 0
+            ? `Parent account ready. Linked ${linkedStudents} student(s).`
+            : 'Parent account ready.',
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
-    console.error('Unexpected error in create-parent-account:', error);
-    return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    console.error('create-parent-account unexpected error:', error);
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
