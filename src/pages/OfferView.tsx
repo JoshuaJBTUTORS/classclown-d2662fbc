@@ -40,6 +40,16 @@ export default function OfferView() {
   const [offerLetterRead, setOfferLetterRead] = useState(false);
   const [contractRead, setContractRead] = useState(false);
   const padRef = useRef<SignaturePadHandle>(null);
+  const [contractUrl, setContractUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.storage
+        .from(CONTRACT_BUCKET)
+        .createSignedUrl(CONTRACT_PATH, 60 * 60 * 24);
+      if (!error && data?.signedUrl) setContractUrl(data.signedUrl);
+    })();
+  }, []);
 
 
   useEffect(() => { load(); }, [offerId, token]);
