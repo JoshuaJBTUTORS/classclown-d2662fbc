@@ -159,7 +159,7 @@ export default function OfferView() {
             <strong>Next Steps:</strong> To confirm your acceptance of this offer to provide services as a self-employed contractor,
             please sign and return this offer letter before your start date. This engagement includes a minimum expectation of <strong>{offer.min_hours_per_week} hours per week</strong>.
           </p>
-          <p>Sincerely,<br /><em>The Recruiting team — Class Beyond Academy</em></p>
+          <p>Sincerely,<br /><em>The Recruiting team, Class Beyond Academy</em></p>
         </Card>
 
         {/* Contract */}
