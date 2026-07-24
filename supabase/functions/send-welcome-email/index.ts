@@ -1,4 +1,13 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 interface LessonTime {
   day?: string;
@@ -14,39 +23,35 @@ interface Payload {
   startDateTime?: string | null;
 }
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-
 function formatStart(payload: Payload): string {
   if (payload.startDateTime) return payload.startDateTime;
   const lt = payload.lessonTimes?.[0];
   if (lt?.day && lt?.time) return `${lt.day} at ${lt.time}`;
   if (lt?.day) return lt.day;
-  return 'your first scheduled lesson time';
+  return "your first scheduled lesson time";
 }
 
 function firstName(name?: string | null): string {
-  if (!name) return 'there';
+  if (!name) return "there";
   return name.trim().split(/\s+/)[0];
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
-    if (!RESEND_API_KEY || !LOVABLE_API_KEY) {
-      throw new Error('Email service not configured');
-    }
     const payload = (await req.json()) as Payload;
     if (!payload.parentEmail) {
-      return new Response(JSON.stringify({ error: 'parentEmail is required' }), {
+      return new Response(JSON.stringify({ error: "parentEmail is required" }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const parentFirst = firstName(payload.parentName);
-    const childName = (payload.childName || '').trim() || 'your child';
+    const childName = (payload.childName || "").trim() || "your child";
     const startStr = formatStart(payload);
 
     const html = `
@@ -113,41 +118,31 @@ Kind regards,
 Hannah
 Class Beyond Academy`;
 
-    const resp = await fetch('https://connector-gateway.lovable.dev/resend/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        'X-Connection-Api-Key': RESEND_API_KEY,
-      },
-      body: JSON.stringify({
-        from: 'Hannah <hannah@classbeyondacademy.io>',
-        to: [payload.parentEmail],
-        reply_to: 'hannah@classbeyondacademy.io',
-        subject: 'Welcome to Class Beyond Academy',
-        html,
-        text,
-      }),
+    const { data, error } = await resend.emails.send({
+      from: "Hannah <hannah@classbeyondacademy.io>",
+      to: [payload.parentEmail],
+      reply_to: "hannah@classbeyondacademy.io",
+      subject: "Welcome to Class Beyond Academy",
+      html,
+      text,
     });
 
-    if (!resp.ok) {
-      const body = await resp.text();
-      console.error(`Resend error [${resp.status}]:`, body);
+    if (error) {
+      console.error("Resend error:", error);
       return new Response(
-        JSON.stringify({ error: 'Failed to send welcome email', status: resp.status, details: body }),
-        { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ error: "Failed to send welcome email", details: error }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const data = await resp.json();
     return new Response(JSON.stringify({ success: true, id: data?.id }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
-    console.error('send-welcome-email error:', e);
-    return new Response(JSON.stringify({ error: e?.message || 'Unexpected error' }), {
+    console.error("send-welcome-email error:", e);
+    return new Response(JSON.stringify({ error: e?.message || "Unexpected error" }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
