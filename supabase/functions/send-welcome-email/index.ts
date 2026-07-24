@@ -58,7 +58,7 @@ serve(async (req) => {
 <div style="font-family: Arial, Helvetica, sans-serif; color:#111; font-size:15px; line-height:1.6;">
   <p>Hello ${parentFirst},</p>
 
-  <p>I hope this message finds you well. My name is Hannah and I'll be your dedicated point of contact here at Class Beyond Academy (formerly JB Tutors) to support you and ${childName}. I'd love to arrange a quick call to properly introduce myself — when would be a convenient time for you?</p>
+  <p>I hope this message finds you well. My name is Hannah and I'll be your dedicated point of contact here at Class Beyond Academy (formerly JB Tutors) to support you and ${childName}. I'd love to arrange a quick call to properly introduce myself. When would be a convenient time for you?</p>
 
   <p>In the meantime, we've set up your account. Lessons commence on <strong>${startStr}</strong>.</p>
 
@@ -69,7 +69,7 @@ serve(async (req) => {
       Email: ${payload.parentEmail}<br/>
       Password: classbeyond123!
     </li>
-    <li>You're in — head to your calendar to join lessons.</li>
+    <li>You're in. Head to your calendar to join lessons.</li>
   </ol>
 
   <p><strong>To join a lesson:</strong></p>
@@ -82,7 +82,7 @@ serve(async (req) => {
   <p><strong>Camera &amp; microphone policy:</strong><br/>
   Before entering, you'll be prompted to review our Camera and Microphone Policy. Please read this carefully, then click "I Accept and Join My Lesson" to proceed.</p>
 
-  <p>If you have any issues logging in or joining, simply reply to this email — we're always here to help.</p>
+  <p>If you have any issues logging in or joining, simply reply to this email. We're always here to help.</p>
 
   <p>${childName}'s tutors are really looking forward to seeing them in class.</p>
 
@@ -91,7 +91,7 @@ serve(async (req) => {
 
     const text = `Hello ${parentFirst},
 
-I hope this message finds you well. My name is Hannah and I'll be your dedicated point of contact here at Class Beyond Academy (formerly JB Tutors) to support you and ${childName}. I'd love to arrange a quick call to properly introduce myself — when would be a convenient time for you?
+I hope this message finds you well. My name is Hannah and I'll be your dedicated point of contact here at Class Beyond Academy (formerly JB Tutors) to support you and ${childName}. I'd love to arrange a quick call to properly introduce myself. When would be a convenient time for you?
 
 In the meantime, we've set up your account. Lessons commence on ${startStr}.
 
@@ -100,7 +100,7 @@ Get started in 3 easy steps:
 2. Log in with your credentials:
    Email: ${payload.parentEmail}
    Password: classbeyond123!
-3. You're in — head to your calendar to join lessons.
+3. You're in. Head to your calendar to join lessons.
 
 To join a lesson:
 1. Once logged in, you'll land on your calendar.
@@ -110,7 +110,7 @@ To join a lesson:
 Camera & microphone policy:
 Before entering, you'll be prompted to review our Camera and Microphone Policy. Please read this carefully, then click "I Accept and Join My Lesson" to proceed.
 
-If you have any issues logging in or joining, simply reply to this email — we're always here to help.
+If you have any issues logging in or joining, simply reply to this email. We're always here to help.
 
 ${childName}'s tutors are really looking forward to seeing them in class.
 
