@@ -13,8 +13,12 @@ const LESSONS_GOAL = 2000;
 const GOAL_START = new Date('2026-07-25T00:00:00Z');
 const GOAL_DEADLINE = new Date('2026-12-31T23:59:59Z');
 
-// December 2026 window is no longer used — we show all currently-scheduled
-// upcoming regular lessons as progress toward the target.
+// Lessons Scheduled uses the same filter as the Admin Dashboard's
+// "Regular Lessons" metric: regular lessons whose start_time falls
+// within the target month (December 2026).
+const LESSONS_MONTH_START = new Date('2026-12-01T00:00:00Z');
+const LESSONS_MONTH_END = new Date('2026-12-31T23:59:59Z');
+
 
 
 type Status = 'achieved' | 'on-track' | 'behind' | 'not-achieved';
@@ -110,7 +114,9 @@ const Goals: React.FC = () => {
             .from('lessons')
             .select('id', { count: 'exact', head: true })
             .neq('lesson_type', 'trial')
-            .lte('start_time', GOAL_DEADLINE.toISOString()),
+            .gte('start_time', LESSONS_MONTH_START.toISOString())
+            .lte('start_time', LESSONS_MONTH_END.toISOString()),
+
 
 
         ]);
@@ -163,7 +169,8 @@ const Goals: React.FC = () => {
         />
         <GoalCard
           title="Lessons Scheduled"
-          description={`All regular lessons on the calendar through ${deadlineLabel}`}
+          description="Regular lessons scheduled in December 2026"
+
 
 
           icon={<GraduationCap className="h-5 w-5" />}
