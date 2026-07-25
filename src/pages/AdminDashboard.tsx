@@ -104,7 +104,7 @@ const AdminDashboard = () => {
         <div>
           <PageTitle title="Admin Dashboard" />
           <p className="text-muted-foreground mt-2">
-            Overview of key metrics for {getCurrentMonth()}
+            Overview of key metrics for {getSelectedMonthLabel()}
           </p>
         </div>
         <Button
