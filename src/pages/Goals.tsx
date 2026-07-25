@@ -204,6 +204,7 @@ const Goals: React.FC = () => {
         <Target className="h-3.5 w-3.5" />
         Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel}
       </div>
+    </div>
   );
 };
 
