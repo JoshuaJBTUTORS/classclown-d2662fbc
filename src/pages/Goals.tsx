@@ -48,12 +48,15 @@ interface GoalCardProps {
   current: number;
   target: number;
   loading: boolean;
+  decimals?: number;
+  remainingLabel?: (remaining: number) => string;
 }
 
-const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, target, loading }) => {
+const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, target, loading, decimals = 0, remainingLabel }) => {
   const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   const remaining = Math.max(0, target - current);
   const status = computeStatus(current, target);
+  const fmt = (n: number) => decimals > 0 ? n.toFixed(decimals) : n.toLocaleString();
 
   return (
     <Card>
@@ -68,8 +71,8 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
         <div className="flex items-end justify-between">
           <div>
             <div className="text-3xl font-bold text-primary">
-              {loading ? '—' : current.toLocaleString()}
-              <span className="text-base text-muted-foreground font-medium"> / {target.toLocaleString()}</span>
+              {loading ? '—' : fmt(current)}
+              <span className="text-base text-muted-foreground font-medium"> / {fmt(target)}</span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">{loading ? ' ' : `${pct}% of goal`}</div>
           </div>
@@ -79,7 +82,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
         </div>
         <Progress value={pct} />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{remaining.toLocaleString()} remaining</span>
+          <span>{remainingLabel ? remainingLabel(remaining) : `${fmt(remaining)} remaining`}</span>
         </div>
       </CardContent>
     </Card>
