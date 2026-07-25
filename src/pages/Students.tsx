@@ -448,7 +448,7 @@ const Students = () => {
               {(isAdmin || isOwner) && (
                 <Button variant="outline" onClick={() => navigate('/onboarding')} className="flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />
-                  Onboarding
+                  Cleo Onboarding
                 </Button>
               )}
               {(isAdmin || isOwner) && (
