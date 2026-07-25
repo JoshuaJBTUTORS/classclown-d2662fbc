@@ -208,11 +208,19 @@ const Goals: React.FC = () => {
           decimals={2}
           remainingLabel={(r) => r > 0 ? `${r.toFixed(2)} to reach target avg` : 'Target avg reached'}
         />
+        <GoalCard
+          title="Proposals Completed"
+          description={`Collective proposals completed by ${deadlineLabel}`}
+          icon={<FileCheck className="h-5 w-5" />}
+          current={proposalCount}
+          target={PROPOSALS_GOAL}
+          loading={loading}
+        />
       </div>
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
-        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel}
+        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed
       </div>
     </div>
   );
