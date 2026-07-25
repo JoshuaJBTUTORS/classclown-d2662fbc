@@ -57,6 +57,7 @@ import LessonSummaries from './pages/LessonSummaries';
 import Earnings from './pages/Earnings';
 import AdminEarnings from './pages/AdminEarnings';
 import AdminDashboard from './pages/AdminDashboard';
+import Goals from './pages/Goals';
 import TrialBookingMusa from './pages/TrialBookingMusa';
 import ReviewRoom from './pages/ReviewRoom';
 
