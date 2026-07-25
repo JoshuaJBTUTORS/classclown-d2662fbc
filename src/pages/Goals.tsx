@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Target, Calendar as CalendarIcon, GraduationCap } from 'lucide-react';
+import { Target, Calendar as CalendarIcon, GraduationCap, Users } from 'lucide-react';
 import PageTitle from '@/components/ui/PageTitle';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const TRIAL_GOAL = 1800;
 const LESSONS_GOAL = 2500;
+const AVG_GROUP_GOAL = 3;
 
 // Fixed campaign window
 const GOAL_START = new Date('2026-07-01T00:00:00Z');
@@ -47,12 +48,15 @@ interface GoalCardProps {
   current: number;
   target: number;
   loading: boolean;
+  decimals?: number;
+  remainingLabel?: (remaining: number) => string;
 }
 
-const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, target, loading }) => {
+const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, target, loading, decimals = 0, remainingLabel }) => {
   const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   const remaining = Math.max(0, target - current);
   const status = computeStatus(current, target);
+  const fmt = (n: number) => decimals > 0 ? n.toFixed(decimals) : n.toLocaleString();
 
   return (
     <Card>
@@ -67,8 +71,8 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
         <div className="flex items-end justify-between">
           <div>
             <div className="text-3xl font-bold text-primary">
-              {loading ? '—' : current.toLocaleString()}
-              <span className="text-base text-muted-foreground font-medium"> / {target.toLocaleString()}</span>
+              {loading ? '—' : fmt(current)}
+              <span className="text-base text-muted-foreground font-medium"> / {fmt(target)}</span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">{loading ? ' ' : `${pct}% of goal`}</div>
           </div>
@@ -78,7 +82,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
         </div>
         <Progress value={pct} />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{remaining.toLocaleString()} remaining</span>
+          <span>{remainingLabel ? remainingLabel(remaining) : `${fmt(remaining)} remaining`}</span>
         </div>
       </CardContent>
     </Card>
@@ -88,6 +92,8 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
 const Goals: React.FC = () => {
   const [trialCount, setTrialCount] = useState(0);
   const [lessonsCount, setLessonsCount] = useState(0);
+  const [avgGroupSize, setAvgGroupSize] = useState(0);
+  const [groupLessonCount, setGroupLessonCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const now = useMemo(() => new Date(), []);
@@ -103,7 +109,7 @@ const Goals: React.FC = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const [trialsRes, lessonsRes] = await Promise.all([
+        const [trialsRes, lessonsRes, groupRes] = await Promise.all([
           supabase
             .from('trial_bookings')
             .select('id', { count: 'exact', head: true })
@@ -115,12 +121,24 @@ const Goals: React.FC = () => {
             .neq('lesson_type', 'trial')
             .gte('start_time', currentMonthStart.toISOString())
             .lte('start_time', currentMonthEnd.toISOString()),
+          supabase
+            .from('lessons')
+            .select('id, lesson_students(student_id)')
+            .eq('is_group', true)
+            .neq('lesson_type', 'trial')
+            .gte('start_time', currentMonthStart.toISOString())
+            .lte('start_time', currentMonthEnd.toISOString()),
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
         if (lessonsRes.error) console.error('Lessons query error', lessonsRes.error);
+        if (groupRes.error) console.error('Group lessons query error', groupRes.error);
         setTrialCount(trialsRes.count ?? 0);
         setLessonsCount(lessonsRes.count ?? 0);
+        const groups = groupRes.data ?? [];
+        const totalStudents = groups.reduce((sum: number, l: any) => sum + (l.lesson_students?.length || 0), 0);
+        setGroupLessonCount(groups.length);
+        setAvgGroupSize(groups.length > 0 ? totalStudents / groups.length : 0);
       } catch (e) {
         console.error('Failed to load goals data', e);
       } finally {
@@ -153,7 +171,7 @@ const Goals: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <GoalCard
           title="Trial Lessons Booked"
           description={`Collective bookings by ${deadlineLabel}`}
@@ -170,11 +188,21 @@ const Goals: React.FC = () => {
           target={LESSONS_GOAL}
           loading={loading}
         />
+        <GoalCard
+          title="Avg Students per Group"
+          description={`Across ${groupLessonCount.toLocaleString()} group lessons in ${currentMonthLabel}`}
+          icon={<Users className="h-5 w-5" />}
+          current={avgGroupSize}
+          target={AVG_GROUP_GOAL}
+          loading={loading}
+          decimals={2}
+          remainingLabel={(r) => r > 0 ? `${r.toFixed(2)} to reach target avg` : 'Target avg reached'}
+        />
       </div>
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
-        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled in {currentMonthLabel}
+        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel}
       </div>
     </div>
   );
