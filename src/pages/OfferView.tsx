@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, FileText, Download } from 'lucide-react';
 import SignaturePad, { type SignaturePadHandle } from '@/components/tutors/SignaturePad';
 
-const CONTRACT_URL = 'https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/tutor-contract';
+const CONTRACT_URL = 'https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/sign/tutor-documents/self-employed-tutor-agreement.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZGQ4ZGI0Yi03OTZiLTQ1NTYtODU4Mi1jNjliMjg0OTMwNjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ0dXRvci1kb2N1bWVudHMvc2VsZi1lbXBsb3llZC10dXRvci1hZ3JlZW1lbnQucGRmIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NDk3MTM5MywiZXhwIjoxODE2NTA3MzkzfQ.RQ6rUCFz-sdusqu86yo0dkjLhiqersV0nstesX6ROmA';
 
 
 
