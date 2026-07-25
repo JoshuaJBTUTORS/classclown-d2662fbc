@@ -122,7 +122,7 @@ const Goals: React.FC = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const [trialsRes, lessonsRes, groupRes, proposalsRes] = await Promise.all([
+        const [trialsRes, lessonsRes, groupRes, proposalsRes, customersRes] = await Promise.all([
           supabase
             .from('trial_bookings')
             .select('id', { count: 'exact', head: true })
@@ -147,6 +147,11 @@ const Goals: React.FC = () => {
             .eq('status', 'completed')
             .gte('completed_at', GOAL_START.toISOString())
             .lte('completed_at', GOAL_DEADLINE.toISOString()),
+          supabase
+            .from('app_settings')
+            .select('value')
+            .eq('key', CUSTOMERS_SETTING_KEY)
+            .maybeSingle(),
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
@@ -160,6 +165,10 @@ const Goals: React.FC = () => {
         setGroupLessonCount(groups.length);
         setAvgGroupSize(groups.length > 0 ? totalStudents / groups.length : 0);
         setProposalCount(proposalsRes.count ?? 0);
+        const cVal = parseInt((customersRes.data as any)?.value ?? '0', 10);
+        const c = Number.isFinite(cVal) ? cVal : 0;
+        setCustomersCount(c);
+        setCustomersDraft(String(c));
       } catch (e) {
         console.error('Failed to load goals data', e);
       } finally {
