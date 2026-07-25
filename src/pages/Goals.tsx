@@ -97,11 +97,16 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
 };
 
 const Goals: React.FC = () => {
+  const { isOwner } = useAuth();
   const [trialCount, setTrialCount] = useState(0);
   const [lessonsCount, setLessonsCount] = useState(0);
   const [avgGroupSize, setAvgGroupSize] = useState(0);
   const [groupLessonCount, setGroupLessonCount] = useState(0);
   const [proposalCount, setProposalCount] = useState(0);
+  const [customersCount, setCustomersCount] = useState(0);
+  const [editingCustomers, setEditingCustomers] = useState(false);
+  const [customersDraft, setCustomersDraft] = useState('0');
+  const [savingCustomers, setSavingCustomers] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const now = useMemo(() => new Date(), []);
