@@ -1,15 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Target, Calendar as CalendarIcon, GraduationCap, Users, FileCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Target, Calendar as CalendarIcon, GraduationCap, Users, FileCheck, UserPlus, Pencil, Check, X } from 'lucide-react';
 import PageTitle from '@/components/ui/PageTitle';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 const TRIAL_GOAL = 1800;
 const LESSONS_GOAL = 2500;
 const AVG_GROUP_GOAL = 3.5;
 const PROPOSALS_GOAL = 390;
+const CUSTOMERS_GOAL = 500;
+const CUSTOMERS_SETTING_KEY = 'customers_count';
 
 // Fixed campaign window
 const GOAL_START = new Date('2026-07-01T00:00:00Z');
@@ -91,11 +97,16 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
 };
 
 const Goals: React.FC = () => {
+  const { isOwner } = useAuth();
   const [trialCount, setTrialCount] = useState(0);
   const [lessonsCount, setLessonsCount] = useState(0);
   const [avgGroupSize, setAvgGroupSize] = useState(0);
   const [groupLessonCount, setGroupLessonCount] = useState(0);
   const [proposalCount, setProposalCount] = useState(0);
+  const [customersCount, setCustomersCount] = useState(0);
+  const [editingCustomers, setEditingCustomers] = useState(false);
+  const [customersDraft, setCustomersDraft] = useState('0');
+  const [savingCustomers, setSavingCustomers] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const now = useMemo(() => new Date(), []);
@@ -111,7 +122,7 @@ const Goals: React.FC = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const [trialsRes, lessonsRes, groupRes, proposalsRes] = await Promise.all([
+        const [trialsRes, lessonsRes, groupRes, proposalsRes, customersRes] = await Promise.all([
           supabase
             .from('trial_bookings')
             .select('id', { count: 'exact', head: true })
@@ -136,6 +147,11 @@ const Goals: React.FC = () => {
             .eq('status', 'completed')
             .gte('completed_at', GOAL_START.toISOString())
             .lte('completed_at', GOAL_DEADLINE.toISOString()),
+          supabase
+            .from('app_settings')
+            .select('value')
+            .eq('key', CUSTOMERS_SETTING_KEY)
+            .maybeSingle(),
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
@@ -149,6 +165,10 @@ const Goals: React.FC = () => {
         setGroupLessonCount(groups.length);
         setAvgGroupSize(groups.length > 0 ? totalStudents / groups.length : 0);
         setProposalCount(proposalsRes.count ?? 0);
+        const cVal = parseInt((customersRes.data as any)?.value ?? '0', 10);
+        const c = Number.isFinite(cVal) ? cVal : 0;
+        setCustomersCount(c);
+        setCustomersDraft(String(c));
       } catch (e) {
         console.error('Failed to load goals data', e);
       } finally {
@@ -165,6 +185,26 @@ const Goals: React.FC = () => {
   const deadlineLabel = GOAL_DEADLINE.toLocaleDateString('en-GB', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
+
+  const saveCustomers = async () => {
+    const parsed = parseInt(customersDraft, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast({ title: 'Invalid number', description: 'Enter a non-negative integer.', variant: 'destructive' });
+      return;
+    }
+    setSavingCustomers(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key: CUSTOMERS_SETTING_KEY, value: String(parsed) }, { onConflict: 'key' });
+    setSavingCustomers(false);
+    if (error) {
+      toast({ title: 'Failed to save', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setCustomersCount(parsed);
+    setEditingCustomers(false);
+    toast({ title: 'Updated', description: 'Customer count saved.' });
+  };
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -216,11 +256,68 @@ const Goals: React.FC = () => {
           target={PROPOSALS_GOAL}
           loading={loading}
         />
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-base">Number of Customers</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Total active customers by {deadlineLabel}
+              </p>
+            </div>
+            <div className="text-muted-foreground"><UserPlus className="h-5 w-5" /></div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-end justify-between gap-2">
+              <div className="flex-1">
+                {editingCustomers ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={customersDraft}
+                      onChange={(e) => setCustomersDraft(e.target.value)}
+                      className="h-9 w-28"
+                    />
+                    <Button size="sm" onClick={saveCustomers} disabled={savingCustomers}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingCustomers(false); setCustomersDraft(String(customersCount)); }} disabled={savingCustomers}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-3xl font-bold text-primary">
+                    {loading ? '—' : customersCount.toLocaleString()}
+                    <span className="text-base text-muted-foreground font-medium"> / {CUSTOMERS_GOAL.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-1">
+                  {loading ? ' ' : `${Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100))}% of goal`}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn('text-xs font-medium px-2 py-1 rounded-full border', statusClass[computeStatus(customersCount, CUSTOMERS_GOAL)])}>
+                  {statusLabel[computeStatus(customersCount, CUSTOMERS_GOAL)]}
+                </span>
+                {isOwner && !editingCustomers && (
+                  <Button size="sm" variant="outline" onClick={() => setEditingCustomers(true)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <Progress value={Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100))} />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{Math.max(0, CUSTOMERS_GOAL - customersCount).toLocaleString()} remaining</span>
+              {!isOwner && <span className="italic">Owner-only edit</span>}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
-        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed
+        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed · {CUSTOMERS_GOAL.toLocaleString()} customers
       </div>
     </div>
   );
