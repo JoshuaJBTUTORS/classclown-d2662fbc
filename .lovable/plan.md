@@ -1,31 +1,28 @@
 ## Goal
-Add a new "Goals" page for the team showing progress against two monthly targets:
-1. **2000 lessons scheduled** for the month
-2. **1500 trial lessons booked** for the month
+Reframe the Goals page as a single fixed deadline (end of December 2026) instead of a per-month filter.
+
+## Targets
+- **1500 trial lessons booked** — collective bookings between today and 31 Dec 2026 (uses `trial_bookings.created_at` in that range).
+- **2000 lessons scheduled in December 2026** — regular lessons with `start_time` in Dec 2026.
 
 ## Changes
 
-### 1. New page `src/pages/Goals.tsx`
-- Header with page title "Team Goals" and a month selector (prev/next chevrons, same style as Admin Dashboard) defaulting to the current month.
-- Two large goal cards, each showing:
-  - Goal title and target (e.g. "2000 lessons scheduled")
-  - Current count for the selected month
-  - Progress bar (`@/components/ui/progress`) with percentage
-  - Remaining count and days left in the month
-  - Status pill: On track / Behind / Achieved (based on pace vs. day-of-month)
-- Reuses the existing month-filter pattern and Premium Teal design tokens.
+### `src/pages/Goals.tsx`
+- Remove the month selector and month-based state entirely.
+- Header shows a countdown: "X days left until 31 Dec 2026".
+- Fetch data directly via two Supabase queries (bypass `getAdminDashboardData`, which is single-month scoped):
+  - Trial goal: `trial_bookings` count where `created_at` between `GOAL_START` (constant, e.g. 2026-07-25) and 2026-12-31 23:59:59.
+  - Lessons goal: `lessons` count where `lesson_type != 'trial'` and `start_time` between 2026-12-01 and 2026-12-31 23:59:59.
+- Two goal cards:
+  - "Trial Lessons Booked" — subtitle "Collective bookings by 31 Dec 2026"; progress toward 1500.
+  - "Lessons Scheduled in December 2026" — subtitle "Regular lessons with a Dec 2026 start time"; progress toward 2000.
+- Status pill logic based on the shared deadline:
+  - Achieved when current ≥ target.
+  - Otherwise expected = target × (elapsed / total) where `elapsed = today − GOAL_START` and `total = 31 Dec 2026 − GOAL_START`; behind if current < 0.9 × expected, else on track.
+  - After the deadline: achieved or not achieved.
 
-### 2. Data fetching
-- Reuse `getAdminDashboardData({ year, month })` from `src/services/adminDashboardService.ts` — it already returns `regularLessonsCount` and `trialLessonsBooked` for a given month. No service changes needed.
-
-### 3. Routing & navigation
-- Register `/goals` in the main router (wherever `AdminDashboard` is registered) behind the same admin/owner protection as the Admin Dashboard.
-- Add a "Goals" link in the sidebar/navigation next to the Admin Dashboard entry so the team can reach it.
-
-## Technical notes
-- Targets defined as constants at the top of `Goals.tsx` (`LESSONS_GOAL = 2000`, `TRIAL_GOAL = 1500`) so they can be tuned later.
-- "On track" heuristic: expected = `target * (dayOfMonth / totalDaysInMonth)`; behind if `current < 0.9 * expected`, achieved if `current >= target`. For past months, only Achieved / Not achieved.
-- No database changes, no new edge functions.
+### Not changed
+- `src/services/adminDashboardService.ts`, routing, sidebar entry — all untouched.
 
 ## Out of scope
-- Per-tutor goals, historical trend charts, editable targets UI, notifications when goals are hit.
+- Editable targets, historical charts, per-tutor breakdown.
