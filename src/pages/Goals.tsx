@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -221,6 +221,68 @@ const Goals: React.FC = () => {
   const customersPalette = cardPalettes[4];
   const customersPct = Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100));
 
+  // Presentation mode
+  const presentRef = useRef<HTMLDivElement>(null);
+  const [presenting, setPresenting] = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
+
+  const slides = useMemo(() => ([
+    { title: 'Trial Lessons Booked', emoji: '🗓️', current: trialCount, target: TRIAL_GOAL, decimals: 0, sub: `by ${deadlineLabel}`, palette: cardPalettes[0] },
+    { title: 'Lessons Scheduled', emoji: '🎓', current: lessonsCount, target: LESSONS_GOAL, decimals: 0, sub: currentMonthLabel, palette: cardPalettes[1] },
+    { title: 'Avg Students per Group', emoji: '👯', current: avgGroupSize, target: AVG_GROUP_GOAL, decimals: 2, sub: currentMonthLabel, palette: cardPalettes[2] },
+    { title: 'Proposals Completed', emoji: '📝', current: proposalCount, target: PROPOSALS_GOAL, decimals: 0, sub: `by ${deadlineLabel}`, palette: cardPalettes[3] },
+    { title: 'Number of Customers', emoji: '🧑‍🤝‍🧑', current: customersCount, target: CUSTOMERS_GOAL, decimals: 0, sub: `by ${deadlineLabel}`, palette: cardPalettes[4] },
+  ]), [trialCount, lessonsCount, avgGroupSize, proposalCount, customersCount, deadlineLabel, currentMonthLabel]);
+
+  const startPresenting = async () => {
+    setSlideIdx(0);
+    setPresenting(true);
+    try {
+      await presentRef.current?.requestFullscreen?.();
+    } catch { /* ignore */ }
+  };
+
+  const stopPresenting = () => {
+    setPresenting(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    if (!presenting) return;
+    const t = setInterval(() => {
+      setSlideIdx((i) => (i + 1) % slides.length);
+    }, 3000);
+    return () => clearInterval(t);
+  }, [presenting, slides.length]);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      if (!document.fullscreenElement) setPresenting(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (!presenting) return;
+      if (e.key === 'Escape') stopPresenting();
+      if (e.key === 'ArrowRight') setSlideIdx((i) => (i + 1) % slides.length);
+      if (e.key === 'ArrowLeft') setSlideIdx((i) => (i - 1 + slides.length) % slides.length);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [presenting, slides.length]);
+
+  const currentSlide = slides[slideIdx];
+  const slidePct = currentSlide && currentSlide.target > 0
+    ? Math.min(100, Math.round((currentSlide.current / currentSlide.target) * 100))
+    : 0;
+  const fmt = (n: number, d: number) => d > 0 ? n.toFixed(d) : n.toLocaleString();
+
+
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
@@ -230,10 +292,19 @@ const Goals: React.FC = () => {
             Targets to hit by {deadlineLabel}
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2">
-          <span className="text-lg" aria-hidden>⏳</span>
-          <span className="text-sm font-medium text-violet-700">{daysLeft} days left</span>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={startPresenting}
+            className="rounded-full bg-gradient-to-r from-pink-400 via-violet-400 to-sky-400 text-white hover:opacity-90 border-0 shadow-md"
+          >
+            ▶ Present
+          </Button>
+          <div className="flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2">
+            <span className="text-lg" aria-hidden>⏳</span>
+            <span className="text-sm font-medium text-violet-700">{daysLeft} days left</span>
+          </div>
         </div>
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -371,8 +442,69 @@ const Goals: React.FC = () => {
         Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed · {CUSTOMERS_GOAL.toLocaleString()} customers
       </div>
 
+      <div
+        ref={presentRef}
+        className={cn(
+          'fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-pink-100 via-violet-100 to-sky-100 transition-opacity',
+          presenting ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+      >
+        {presenting && currentSlide && (
+          <>
+            <button
+              onClick={stopPresenting}
+              className="absolute top-6 right-6 text-2xl bg-white/70 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white shadow"
+              aria-label="Exit presentation"
+            >
+              ✖
+            </button>
+            <div
+              key={slideIdx}
+              className={cn(
+                'w-[80%] max-w-5xl rounded-3xl border-2 p-16 text-center shadow-2xl animate-fade-in',
+                currentSlide.palette.bg,
+                currentSlide.palette.border
+              )}
+            >
+              <div className="text-[120px] leading-none mb-6">{currentSlide.emoji}</div>
+              <h2 className="text-5xl md:text-6xl font-bold mb-4 text-slate-800">{currentSlide.title}</h2>
+              <p className="text-xl text-slate-600 mb-10">{currentSlide.sub}</p>
+              <div className={cn('text-8xl md:text-9xl font-extrabold mb-2', currentSlide.palette.accent)}>
+                {fmt(currentSlide.current, currentSlide.decimals)}
+              </div>
+              <div className="text-2xl text-slate-500 mb-8">
+                of {fmt(currentSlide.target, currentSlide.decimals)} target
+              </div>
+              <div className="h-4 w-full rounded-full bg-white/70 overflow-hidden">
+                <div
+                  className={cn('h-full rounded-full transition-all duration-700', currentSlide.palette.bar)}
+                  style={{ width: `${slidePct}%` }}
+                />
+              </div>
+              <div className="mt-3 text-lg font-medium text-slate-600">{slidePct}% of goal</div>
+            </div>
+            <div className="absolute bottom-8 flex items-center gap-2">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSlideIdx(i)}
+                  className={cn(
+                    'h-2.5 rounded-full transition-all',
+                    i === slideIdx ? 'w-8 bg-violet-500' : 'w-2.5 bg-violet-200 hover:bg-violet-300'
+                  )}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
+            <div className="absolute bottom-3 text-xs text-slate-500">
+              Auto-advancing every 3s · ← → to navigate · Esc to exit
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
+
 };
 
 export default Goals;
