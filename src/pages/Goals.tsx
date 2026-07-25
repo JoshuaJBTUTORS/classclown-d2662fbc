@@ -186,6 +186,26 @@ const Goals: React.FC = () => {
     day: 'numeric', month: 'long', year: 'numeric',
   });
 
+  const saveCustomers = async () => {
+    const parsed = parseInt(customersDraft, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast({ title: 'Invalid number', description: 'Enter a non-negative integer.', variant: 'destructive' });
+      return;
+    }
+    setSavingCustomers(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key: CUSTOMERS_SETTING_KEY, value: String(parsed) }, { onConflict: 'key' });
+    setSavingCustomers(false);
+    if (error) {
+      toast({ title: 'Failed to save', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setCustomersCount(parsed);
+    setEditingCustomers(false);
+    toast({ title: 'Updated', description: 'Customer count saved.' });
+  };
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
