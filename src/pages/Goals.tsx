@@ -114,7 +114,9 @@ const Goals: React.FC = () => {
             .from('lessons')
             .select('id', { count: 'exact', head: true })
             .neq('lesson_type', 'trial')
-            .lte('start_time', GOAL_DEADLINE.toISOString()),
+            .gte('start_time', LESSONS_MONTH_START.toISOString())
+            .lte('start_time', LESSONS_MONTH_END.toISOString()),
+
 
 
         ]);
