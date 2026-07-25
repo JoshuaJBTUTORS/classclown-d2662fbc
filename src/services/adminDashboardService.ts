@@ -8,12 +8,18 @@ export interface AdminDashboardData {
   activeCustomersCount: number;
 }
 
-export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
+export const getAdminDashboardData = async (
+  period?: { year: number; month: number }
+): Promise<AdminDashboardData> => {
   try {
-    // Get current month start and end dates
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const year = period?.year ?? now.getFullYear();
+    const month = period?.month ?? now.getMonth();
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+    // Clamp "past lessons" cutoff to monthEnd so fully past months count all lessons
+    const pastCutoff = now < monthEnd ? now : monthEnd;
 
     // Get trial lessons booked this month
     const { data: trialBookings, error: trialError } = await supabase
@@ -24,7 +30,7 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
 
     if (trialError) throw trialError;
 
-    // Get trial lesson attendance rate for this month (only past lessons)
+    // Get trial lesson attendance rate for the selected month (only past lessons)
     const { data: trialLessons, error: trialLessonsError } = await supabase
       .from('lessons')
       .select(`
@@ -37,14 +43,13 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
       .eq('lesson_type', 'trial')
       .gte('start_time', monthStart.toISOString())
       .lte('start_time', monthEnd.toISOString())
-      .lt('start_time', new Date().toISOString()); // Only past lessons
+      .lt('start_time', pastCutoff.toISOString());
 
     if (trialLessonsError) throw trialLessonsError;
 
-    // Calculate trial attendance rate: attended / total past lessons
     let attendedCount = 0;
     const totalPastTrialLessons = trialLessons?.length || 0;
-    
+
     trialLessons?.forEach(lesson => {
       if (lesson.lesson_attendance && lesson.lesson_attendance.length > 0) {
         lesson.lesson_attendance.forEach((attendance: any) => {
@@ -55,11 +60,11 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
       }
     });
 
-    const trialAttendanceRate = totalPastTrialLessons > 0 
+    const trialAttendanceRate = totalPastTrialLessons > 0
       ? Math.round((attendedCount / totalPastTrialLessons) * 100)
       : 0;
 
-    // Get regular scheduled lessons this month
+    // Get regular scheduled lessons in the selected month
     const { data: regularLessons, error: regularError } = await supabase
       .from('lessons')
       .select('id')
@@ -69,7 +74,6 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
 
     if (regularError) throw regularError;
 
-    // Get active tutors count
     const { data: tutors, error: tutorsError } = await supabase
       .from('tutors')
       .select('id')
@@ -77,7 +81,6 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
 
     if (tutorsError) throw tutorsError;
 
-    // Get active customers (students with lessons this month)
     const { data: activeStudents, error: studentsError } = await supabase
       .from('lesson_students')
       .select(`
@@ -89,7 +92,6 @@ export const getAdminDashboardData = async (): Promise<AdminDashboardData> => {
 
     if (studentsError) throw studentsError;
 
-    // Count unique students
     const uniqueStudentIds = new Set(activeStudents?.map(ls => ls.student_id) || []);
     const activeCustomersCount = uniqueStudentIds.size;
 
