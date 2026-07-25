@@ -30,6 +30,7 @@ import {
   Hand,
   ClipboardCheck,
   RefreshCw,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -166,6 +167,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: LayoutDashboard,
           label: 'Admin Dashboard',
           href: '/admin-dashboard',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: Target,
+          label: 'Goals',
+          href: '/goals',
           roles: ['admin', 'owner'],
         },
         {

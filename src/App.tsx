@@ -57,6 +57,7 @@ import LessonSummaries from './pages/LessonSummaries';
 import Earnings from './pages/Earnings';
 import AdminEarnings from './pages/AdminEarnings';
 import AdminDashboard from './pages/AdminDashboard';
+import Goals from './pages/Goals';
 import TrialBookingMusa from './pages/TrialBookingMusa';
 import ReviewRoom from './pages/ReviewRoom';
 
@@ -217,6 +218,14 @@ function App() {
                         <AdminDashboard />
                       </ProtectedRoute>
                     } 
+                  />
+                  <Route
+                    path="goals"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <Goals />
+                      </ProtectedRoute>
+                    }
                   />
                   <Route 
                     path="admin/proposals" 
