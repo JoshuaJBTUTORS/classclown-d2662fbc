@@ -162,8 +162,9 @@ const Goals: React.FC = () => {
           loading={loading}
         />
         <GoalCard
-          title="Lessons Scheduled in December 2026"
-          description="Regular lessons with a Dec 2026 start time"
+          title="Lessons Scheduled"
+          description={`Upcoming regular lessons currently on the calendar (through ${deadlineLabel})`}
+
           icon={<GraduationCap className="h-5 w-5" />}
           current={lessonsCount}
           target={LESSONS_GOAL}
