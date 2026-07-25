@@ -179,12 +179,13 @@ export default function OfferView() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm" disabled={!contractUrl} onClick={() => setContractViewed(true)}>
-              <a href={contractUrl ?? '#'} target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4 mr-2" /> {contractUrl ? 'Open / Download Contract' : 'Loading contract…'}
+            <Button asChild variant="outline" size="sm" onClick={() => setContractViewed(true)}>
+              <a href={CONTRACT_URL} target="_blank" rel="noopener noreferrer">
+                <Download className="h-4 w-4 mr-2" /> Open / Download Contract
               </a>
             </Button>
           </div>
+
 
         </Card>
 
