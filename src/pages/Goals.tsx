@@ -256,11 +256,68 @@ const Goals: React.FC = () => {
           target={PROPOSALS_GOAL}
           loading={loading}
         />
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-base">Number of Customers</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Total active customers by {deadlineLabel}
+              </p>
+            </div>
+            <div className="text-muted-foreground"><UserPlus className="h-5 w-5" /></div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-end justify-between gap-2">
+              <div className="flex-1">
+                {editingCustomers ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={customersDraft}
+                      onChange={(e) => setCustomersDraft(e.target.value)}
+                      className="h-9 w-28"
+                    />
+                    <Button size="sm" onClick={saveCustomers} disabled={savingCustomers}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingCustomers(false); setCustomersDraft(String(customersCount)); }} disabled={savingCustomers}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-3xl font-bold text-primary">
+                    {loading ? '—' : customersCount.toLocaleString()}
+                    <span className="text-base text-muted-foreground font-medium"> / {CUSTOMERS_GOAL.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-1">
+                  {loading ? ' ' : `${Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100))}% of goal`}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn('text-xs font-medium px-2 py-1 rounded-full border', statusClass[computeStatus(customersCount, CUSTOMERS_GOAL)])}>
+                  {statusLabel[computeStatus(customersCount, CUSTOMERS_GOAL)]}
+                </span>
+                {isOwner && !editingCustomers && (
+                  <Button size="sm" variant="outline" onClick={() => setEditingCustomers(true)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <Progress value={Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100))} />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{Math.max(0, CUSTOMERS_GOAL - customersCount).toLocaleString()} remaining</span>
+              {!isOwner && <span className="italic">Owner-only edit</span>}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
-        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed
+        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed · {CUSTOMERS_GOAL.toLocaleString()} customers
       </div>
     </div>
   );
