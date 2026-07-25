@@ -95,6 +95,7 @@ const Goals: React.FC = () => {
   const [lessonsCount, setLessonsCount] = useState(0);
   const [avgGroupSize, setAvgGroupSize] = useState(0);
   const [groupLessonCount, setGroupLessonCount] = useState(0);
+  const [proposalCount, setProposalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const now = useMemo(() => new Date(), []);
