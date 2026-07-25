@@ -551,7 +551,8 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                 </div>
               </CollapsibleContent>
             </Collapsible>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
