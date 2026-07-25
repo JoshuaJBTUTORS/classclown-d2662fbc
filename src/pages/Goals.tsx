@@ -6,7 +6,7 @@ import PageTitle from '@/components/ui/PageTitle';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
-const TRIAL_GOAL = 1500;
+const TRIAL_GOAL = 1800;
 const LESSONS_GOAL = 2500;
 
 // Fixed campaign window
