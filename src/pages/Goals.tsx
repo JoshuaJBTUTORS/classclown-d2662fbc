@@ -13,9 +13,9 @@ const LESSONS_GOAL = 2000;
 const GOAL_START = new Date('2026-07-25T00:00:00Z');
 const GOAL_DEADLINE = new Date('2026-12-31T23:59:59Z');
 
-// December 2026 window for scheduled lessons
-const DEC_START = new Date('2026-12-01T00:00:00Z');
-const DEC_END = new Date('2026-12-31T23:59:59Z');
+// December 2026 window is no longer used — we show all currently-scheduled
+// upcoming regular lessons as progress toward the target.
+
 
 type Status = 'achieved' | 'on-track' | 'behind' | 'not-achieved';
 
