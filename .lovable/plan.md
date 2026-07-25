@@ -1,34 +1,13 @@
 ## Goal
-Stop the "Loading contract…" hang by using a single, permanent public URL for the Self-Employed Online Tutor Agreement. No signing, no fetching, no edge function.
+Serve the Self-Employed Tutor Agreement PDF from a public URL, no signed URLs, no edge function.
 
-## Approach
-The contract PDF is the same file for every tutor — there's no reason to gate it behind signed URLs. Make it a plain public link.
+## Steps
+1. Flip `tutor-documents` bucket to public via `supabase--storage_update_bucket`. If the workspace blocks public buckets, surface the error and ask you to enable public buckets in Settings → Privacy & Security.
+2. Update `src/pages/OfferView.tsx` so the contract download button links directly to:
+   `https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/public/tutor-documents/self-employed-tutor-agreement.pdf`
+   Remove the loading state and the edge-function URL entirely — the button becomes an instant `<a href>` link that opens in a new tab, gated by the "I have viewed" checkbox as before.
+3. Delete the `tutor-contract` edge function (no longer needed) and remove its entry from `supabase/config.toml`.
 
-## Changes
-
-### 1. Make the `tutor-documents/self-employed-tutor-agreement.pdf` object publicly readable
-Add an RLS policy on `storage.objects` that allows anonymous `SELECT` for that one file (bucket stays private otherwise, so other tutor documents aren't exposed):
-
-```sql
-CREATE POLICY "Public read of tutor agreement PDF"
-ON storage.objects FOR SELECT
-TO anon, authenticated
-USING (
-  bucket_id = 'tutor-documents'
-  AND name = 'self-employed-tutor-agreement.pdf'
-);
-```
-
-The public URL is then:
-`https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/public/tutor-documents/self-employed-tutor-agreement.pdf`
-
-### 2. Simplify `src/pages/OfferView.tsx`
-- Delete the entire `useEffect` that calls `createSignedUrl` and the REST fallback.
-- Delete `contractUrl` state.
-- Hardcode the public URL as a constant and use it directly in the "Open / Download Contract" button's `href`.
-- Button is always enabled; label is always "Open / Download Contract" (no more "Loading contract…").
-- Keep the existing `contractViewed` / `contractRead` gating for the signature checkbox.
-
-## Verification
-- Open any offer link → the Open / Download Contract button is immediately clickable and opens the PDF in a new tab.
-- Try a random tutor-documents path in the browser → still 403 (bucket stays private for everything else).
+## Notes
+- Anyone with the URL can access the PDF forever. That's the accepted tradeoff.
+- No DB migration needed.
