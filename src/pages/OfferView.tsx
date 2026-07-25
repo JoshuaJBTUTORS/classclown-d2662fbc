@@ -10,8 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, FileText, Download } from 'lucide-react';
 import SignaturePad, { type SignaturePadHandle } from '@/components/tutors/SignaturePad';
 
-const CONTRACT_BUCKET = 'tutor-documents';
-const CONTRACT_PATH = 'self-employed-tutor-agreement.pdf';
+const CONTRACT_URL = 'https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/public/tutor-documents/self-employed-tutor-agreement.pdf';
 
 
 
@@ -40,47 +39,8 @@ export default function OfferView() {
   const [offerLetterRead, setOfferLetterRead] = useState(false);
   const [contractRead, setContractRead] = useState(false);
   const padRef = useRef<SignaturePadHandle>(null);
-  const [contractUrl, setContractUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data, error } = await supabase.storage
-          .from(CONTRACT_BUCKET)
-          .createSignedUrl(CONTRACT_PATH, 60 * 60 * 24);
-        if (error) {
-          console.error('createSignedUrl error', error);
-        }
-        if (data?.signedUrl) {
-          setContractUrl(data.signedUrl);
-          return;
-        }
-      } catch (e) {
-        console.error('createSignedUrl threw', e);
-      }
-      // Fallback: direct REST call with anon key
-      try {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/sign/${CONTRACT_BUCKET}/${CONTRACT_PATH}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ expiresIn: 60 * 60 * 24 }),
-        });
-        const json = await res.json();
-        if (json?.signedURL) {
-          setContractUrl(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1${json.signedURL}`);
-        } else {
-          console.error('signed url fallback failed', json);
-        }
-      } catch (e) {
-        console.error('signed url fallback threw', e);
-      }
-    })();
-  }, []);
+
 
 
   useEffect(() => { load(); }, [offerId, token]);
@@ -219,12 +179,13 @@ export default function OfferView() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm" disabled={!contractUrl} onClick={() => setContractViewed(true)}>
-              <a href={contractUrl ?? '#'} target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4 mr-2" /> {contractUrl ? 'Open / Download Contract' : 'Loading contract…'}
+            <Button asChild variant="outline" size="sm" onClick={() => setContractViewed(true)}>
+              <a href={CONTRACT_URL} target="_blank" rel="noopener noreferrer">
+                <Download className="h-4 w-4 mr-2" /> Open / Download Contract
               </a>
             </Button>
           </div>
+
 
         </Card>
 
