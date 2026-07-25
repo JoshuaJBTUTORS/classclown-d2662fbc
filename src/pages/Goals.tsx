@@ -13,9 +13,9 @@ const LESSONS_GOAL = 2000;
 const GOAL_START = new Date('2026-07-25T00:00:00Z');
 const GOAL_DEADLINE = new Date('2026-12-31T23:59:59Z');
 
-// December 2026 window for scheduled lessons
-const DEC_START = new Date('2026-12-01T00:00:00Z');
-const DEC_END = new Date('2026-12-31T23:59:59Z');
+// December 2026 window is no longer used — we show all currently-scheduled
+// upcoming regular lessons as progress toward the target.
+
 
 type Status = 'achieved' | 'on-track' | 'behind' | 'not-achieved';
 
@@ -110,8 +110,9 @@ const Goals: React.FC = () => {
             .from('lessons')
             .select('id', { count: 'exact', head: true })
             .neq('lesson_type', 'trial')
-            .gte('start_time', DEC_START.toISOString())
-            .lte('start_time', DEC_END.toISOString()),
+            .gte('start_time', new Date().toISOString())
+            .lte('start_time', GOAL_DEADLINE.toISOString()),
+
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
@@ -161,8 +162,9 @@ const Goals: React.FC = () => {
           loading={loading}
         />
         <GoalCard
-          title="Lessons Scheduled in December 2026"
-          description="Regular lessons with a Dec 2026 start time"
+          title="Lessons Scheduled"
+          description={`Upcoming regular lessons currently on the calendar (through ${deadlineLabel})`}
+
           icon={<GraduationCap className="h-5 w-5" />}
           current={lessonsCount}
           target={LESSONS_GOAL}
