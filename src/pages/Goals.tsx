@@ -169,7 +169,8 @@ const Goals: React.FC = () => {
         />
         <GoalCard
           title="Lessons Scheduled"
-          description={`All regular lessons on the calendar through ${deadlineLabel}`}
+          description="Regular lessons scheduled in December 2026"
+
 
 
           icon={<GraduationCap className="h-5 w-5" />}
