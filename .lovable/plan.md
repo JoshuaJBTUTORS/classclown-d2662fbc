@@ -1,28 +1,25 @@
-## Goal
-Reframe the Goals page as a single fixed deadline (end of December 2026) instead of a per-month filter.
+## Add "Proposals Completed" goal to Goals page
 
-## Targets
-- **1500 trial lessons booked** — collective bookings between today and 31 Dec 2026 (uses `trial_bookings.created_at` in that range).
-- **2000 lessons scheduled in December 2026** — regular lessons with `start_time` in Dec 2026.
+Add a fourth goal card to `src/pages/Goals.tsx` tracking completed proposals cumulatively from 1 July 2026 through 31 December 2026.
 
-## Changes
+### Changes to `src/pages/Goals.tsx`
 
-### `src/pages/Goals.tsx`
-- Remove the month selector and month-based state entirely.
-- Header shows a countdown: "X days left until 31 Dec 2026".
-- Fetch data directly via two Supabase queries (bypass `getAdminDashboardData`, which is single-month scoped):
-  - Trial goal: `trial_bookings` count where `created_at` between `GOAL_START` (constant, e.g. 2026-07-25) and 2026-12-31 23:59:59.
-  - Lessons goal: `lessons` count where `lesson_type != 'trial'` and `start_time` between 2026-12-01 and 2026-12-31 23:59:59.
-- Two goal cards:
-  - "Trial Lessons Booked" — subtitle "Collective bookings by 31 Dec 2026"; progress toward 1500.
-  - "Lessons Scheduled in December 2026" — subtitle "Regular lessons with a Dec 2026 start time"; progress toward 2000.
-- Status pill logic based on the shared deadline:
-  - Achieved when current ≥ target.
-  - Otherwise expected = target × (elapsed / total) where `elapsed = today − GOAL_START` and `total = 31 Dec 2026 − GOAL_START`; behind if current < 0.9 × expected, else on track.
-  - After the deadline: achieved or not achieved.
+- Add constant `PROPOSALS_GOAL = 390`.
+- Import a suitable icon (e.g. `FileCheck` from `lucide-react`).
+- Add `proposalCount` state.
+- In the data-loading `useEffect`, add a parallel query:
+  - Table: `lesson_proposals`
+  - Filter: `status = 'completed'`
+  - Date range: `completed_at` between `GOAL_START` (July 1, 2026) and `GOAL_DEADLINE` (Dec 31, 2026)
+  - Use `count: 'exact', head: true`
+- Add a fourth `GoalCard`:
+  - Title: "Proposals Completed"
+  - Description: `Collective proposals completed by ${deadlineLabel}`
+  - Icon: `FileCheck`
+  - current: `proposalCount`, target: `PROPOSALS_GOAL`
+- Update the grid — already `lg:grid-cols-3`; four cards will wrap cleanly.
+- Update the footer targets line to include "390 proposals completed".
 
-### Not changed
-- `src/services/adminDashboardService.ts`, routing, sidebar entry — all untouched.
-
-## Out of scope
-- Editable targets, historical charts, per-tutor breakdown.
+### Notes
+- Uses the existing `GOAL_START` (already July 1, 2026), so no date constants change.
+- If `completed_at` is not the intended field (e.g. should be `agreed_at` or `created_at`), confirm with user — assuming `completed_at` since goal is "proposals completed".

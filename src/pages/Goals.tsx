@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Target, Calendar as CalendarIcon, GraduationCap, Users } from 'lucide-react';
+import { Target, Calendar as CalendarIcon, GraduationCap, Users, FileCheck } from 'lucide-react';
 import PageTitle from '@/components/ui/PageTitle';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 const TRIAL_GOAL = 1800;
 const LESSONS_GOAL = 2500;
 const AVG_GROUP_GOAL = 3.5;
+const PROPOSALS_GOAL = 390;
 
 // Fixed campaign window
 const GOAL_START = new Date('2026-07-01T00:00:00Z');
@@ -94,6 +95,7 @@ const Goals: React.FC = () => {
   const [lessonsCount, setLessonsCount] = useState(0);
   const [avgGroupSize, setAvgGroupSize] = useState(0);
   const [groupLessonCount, setGroupLessonCount] = useState(0);
+  const [proposalCount, setProposalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const now = useMemo(() => new Date(), []);
@@ -109,7 +111,7 @@ const Goals: React.FC = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const [trialsRes, lessonsRes, groupRes] = await Promise.all([
+        const [trialsRes, lessonsRes, groupRes, proposalsRes] = await Promise.all([
           supabase
             .from('trial_bookings')
             .select('id', { count: 'exact', head: true })
@@ -128,17 +130,25 @@ const Goals: React.FC = () => {
             .neq('lesson_type', 'trial')
             .gte('start_time', currentMonthStart.toISOString())
             .lte('start_time', currentMonthEnd.toISOString()),
+          supabase
+            .from('lesson_proposals')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'completed')
+            .gte('completed_at', GOAL_START.toISOString())
+            .lte('completed_at', GOAL_DEADLINE.toISOString()),
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
         if (lessonsRes.error) console.error('Lessons query error', lessonsRes.error);
         if (groupRes.error) console.error('Group lessons query error', groupRes.error);
+        if (proposalsRes.error) console.error('Proposals query error', proposalsRes.error);
         setTrialCount(trialsRes.count ?? 0);
         setLessonsCount(lessonsRes.count ?? 0);
         const groups = groupRes.data ?? [];
         const totalStudents = groups.reduce((sum: number, l: any) => sum + (l.lesson_students?.length || 0), 0);
         setGroupLessonCount(groups.length);
         setAvgGroupSize(groups.length > 0 ? totalStudents / groups.length : 0);
+        setProposalCount(proposalsRes.count ?? 0);
       } catch (e) {
         console.error('Failed to load goals data', e);
       } finally {
@@ -198,11 +208,19 @@ const Goals: React.FC = () => {
           decimals={2}
           remainingLabel={(r) => r > 0 ? `${r.toFixed(2)} to reach target avg` : 'Target avg reached'}
         />
+        <GoalCard
+          title="Proposals Completed"
+          description={`Collective proposals completed by ${deadlineLabel}`}
+          icon={<FileCheck className="h-5 w-5" />}
+          current={proposalCount}
+          target={PROPOSALS_GOAL}
+          loading={loading}
+        />
       </div>
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
-        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel}
+        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed
       </div>
     </div>
   );
