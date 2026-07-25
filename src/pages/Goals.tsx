@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Target, Calendar as CalendarIcon, GraduationCap, Users, FileCheck, UserPlus, Pencil, Check, X } from 'lucide-react';
 import PageTitle from '@/components/ui/PageTitle';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -30,12 +29,22 @@ const statusLabel: Record<Status, string> = {
   'not-achieved': 'Not achieved',
 };
 
+// Pastel, non-green status pills
 const statusClass: Record<Status, string> = {
-  'achieved': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  'on-track': 'bg-teal-100 text-teal-700 border-teal-200',
+  'achieved': 'bg-violet-100 text-violet-700 border-violet-200',
+  'on-track': 'bg-sky-100 text-sky-700 border-sky-200',
   'behind': 'bg-amber-100 text-amber-700 border-amber-200',
   'not-achieved': 'bg-rose-100 text-rose-700 border-rose-200',
 };
+
+// Pastel palette rotated across cards
+const cardPalettes = [
+  { bg: 'bg-pink-50', border: 'border-pink-200', accent: 'text-pink-500', bar: 'bg-pink-400' },
+  { bg: 'bg-sky-50', border: 'border-sky-200', accent: 'text-sky-500', bar: 'bg-sky-400' },
+  { bg: 'bg-violet-50', border: 'border-violet-200', accent: 'text-violet-500', bar: 'bg-violet-400' },
+  { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'text-amber-500', bar: 'bg-amber-400' },
+  { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'text-rose-500', bar: 'bg-rose-400' },
+];
 
 function computeStatus(current: number, target: number): Status {
   if (current >= target) return 'achieved';
@@ -51,33 +60,34 @@ function computeStatus(current: number, target: number): Status {
 interface GoalCardProps {
   title: string;
   description: string;
-  icon: React.ReactNode;
+  emoji: string;
   current: number;
   target: number;
   loading: boolean;
   decimals?: number;
   remainingLabel?: (remaining: number) => string;
+  palette: typeof cardPalettes[number];
 }
 
-const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, target, loading, decimals = 0, remainingLabel }) => {
+const GoalCard: React.FC<GoalCardProps> = ({ title, description, emoji, current, target, loading, decimals = 0, remainingLabel, palette }) => {
   const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   const remaining = Math.max(0, target - current);
   const status = computeStatus(current, target);
   const fmt = (n: number) => decimals > 0 ? n.toFixed(decimals) : n.toLocaleString();
 
   return (
-    <Card>
+    <Card className={cn(palette.bg, palette.border, 'border')}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div>
           <CardTitle className="text-base">{title}</CardTitle>
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         </div>
-        <div className="text-muted-foreground">{icon}</div>
+        <div className="text-2xl leading-none" aria-hidden>{emoji}</div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-3xl font-bold text-primary">
+            <div className={cn('text-3xl font-bold', palette.accent)}>
               {loading ? '—' : fmt(current)}
               <span className="text-base text-muted-foreground font-medium"> / {fmt(target)}</span>
             </div>
@@ -87,7 +97,9 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, description, icon, current, 
             {statusLabel[status]}
           </span>
         </div>
-        <Progress value={pct} />
+        <div className="h-2 w-full rounded-full bg-white/70 overflow-hidden">
+          <div className={cn('h-full rounded-full transition-all', palette.bar)} style={{ width: `${pct}%` }} />
+        </div>
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{remainingLabel ? remainingLabel(remaining) : `${fmt(remaining)} remaining`}</span>
         </div>
@@ -206,6 +218,9 @@ const Goals: React.FC = () => {
     toast({ title: 'Updated', description: 'Customer count saved.' });
   };
 
+  const customersPalette = cardPalettes[4];
+  const customersPct = Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100));
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
@@ -215,9 +230,9 @@ const Goals: React.FC = () => {
             Targets to hit by {deadlineLabel}
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-md border bg-background px-3 py-2">
-          <Target className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">{daysLeft} days left</span>
+        <div className="flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2">
+          <span className="text-lg" aria-hidden>⏳</span>
+          <span className="text-sm font-medium text-violet-700">{daysLeft} days left</span>
         </div>
       </div>
 
@@ -225,38 +240,42 @@ const Goals: React.FC = () => {
         <GoalCard
           title="Trial Lessons Booked"
           description={`Collective bookings by ${deadlineLabel}`}
-          icon={<CalendarIcon className="h-5 w-5" />}
+          emoji="🗓️"
           current={trialCount}
           target={TRIAL_GOAL}
           loading={loading}
+          palette={cardPalettes[0]}
         />
         <GoalCard
           title="Lessons Scheduled"
           description={`Regular lessons scheduled in ${currentMonthLabel}`}
-          icon={<GraduationCap className="h-5 w-5" />}
+          emoji="🎓"
           current={lessonsCount}
           target={LESSONS_GOAL}
           loading={loading}
+          palette={cardPalettes[1]}
         />
         <GoalCard
           title="Avg Students per Group"
           description={`Across ${groupLessonCount.toLocaleString()} group lessons in ${currentMonthLabel}`}
-          icon={<Users className="h-5 w-5" />}
+          emoji="👯"
           current={avgGroupSize}
           target={AVG_GROUP_GOAL}
           loading={loading}
           decimals={2}
           remainingLabel={(r) => r > 0 ? `${r.toFixed(2)} to reach target avg` : 'Target avg reached'}
+          palette={cardPalettes[2]}
         />
         <GoalCard
           title="Proposals Completed"
           description={`Collective proposals completed by ${deadlineLabel}`}
-          icon={<FileCheck className="h-5 w-5" />}
+          emoji="📝"
           current={proposalCount}
           target={PROPOSALS_GOAL}
           loading={loading}
+          palette={cardPalettes[3]}
         />
-        <Card>
+        <Card className={cn(customersPalette.bg, customersPalette.border, 'border')}>
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <div>
               <CardTitle className="text-base">Number of Customers</CardTitle>
@@ -264,7 +283,7 @@ const Goals: React.FC = () => {
                 Total active customers by {deadlineLabel}
               </p>
             </div>
-            <div className="text-muted-foreground"><UserPlus className="h-5 w-5" /></div>
+            <div className="text-2xl leading-none" aria-hidden>🧑‍🤝‍🧑</div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-end justify-between gap-2">
@@ -279,20 +298,20 @@ const Goals: React.FC = () => {
                       className="h-9 w-28"
                     />
                     <Button size="sm" onClick={saveCustomers} disabled={savingCustomers}>
-                      <Check className="h-4 w-4" />
+                      ✅
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => { setEditingCustomers(false); setCustomersDraft(String(customersCount)); }} disabled={savingCustomers}>
-                      <X className="h-4 w-4" />
+                      ✖️
                     </Button>
                   </div>
                 ) : (
-                  <div className="text-3xl font-bold text-primary">
+                  <div className={cn('text-3xl font-bold', customersPalette.accent)}>
                     {loading ? '—' : customersCount.toLocaleString()}
                     <span className="text-base text-muted-foreground font-medium"> / {CUSTOMERS_GOAL.toLocaleString()}</span>
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground mt-1">
-                  {loading ? ' ' : `${Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100))}% of goal`}
+                  {loading ? ' ' : `${customersPct}% of goal`}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -301,12 +320,14 @@ const Goals: React.FC = () => {
                 </span>
                 {isOwner && !editingCustomers && (
                   <Button size="sm" variant="outline" onClick={() => setEditingCustomers(true)}>
-                    <Pencil className="h-3.5 w-3.5" />
+                    ✏️
                   </Button>
                 )}
               </div>
             </div>
-            <Progress value={Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100))} />
+            <div className="h-2 w-full rounded-full bg-white/70 overflow-hidden">
+              <div className={cn('h-full rounded-full transition-all', customersPalette.bar)} style={{ width: `${customersPct}%` }} />
+            </div>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{Math.max(0, CUSTOMERS_GOAL - customersCount).toLocaleString()} remaining</span>
               {!isOwner && <span className="italic">Owner-only edit</span>}
@@ -315,10 +336,10 @@ const Goals: React.FC = () => {
         </Card>
       </div>
 
-      <Card className="mt-8 border-primary/30 bg-primary/5">
+      <Card className="mt-8 border border-violet-200 bg-gradient-to-br from-pink-50 via-violet-50 to-sky-50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
+            <span className="text-2xl" aria-hidden>🎁</span>
             Team Reward
           </CardTitle>
         </CardHeader>
@@ -326,27 +347,27 @@ const Goals: React.FC = () => {
           <p>
             If we hit these goals together, every eligible team member receives:
           </p>
-          <ul className="space-y-1.5 pl-5 list-disc marker:text-primary">
-            <li><span className="font-semibold">CAD $10,000 bonus</span></li>
-            <li><span className="font-semibold">Every Friday off</span> for a set period</li>
-            <li>An <span className="font-semibold">all-expenses-paid company retreat</span></li>
+          <ul className="space-y-1.5 pl-1 list-none">
+            <li>💰 <span className="font-semibold">CAD $10,000 bonus</span></li>
+            <li>🌴 <span className="font-semibold">Every Friday off</span> for a set period</li>
+            <li>✈️ An <span className="font-semibold">all-expenses-paid company retreat</span></li>
           </ul>
           <div>
             <p className="font-semibold mb-1">To qualify, you must:</p>
-            <ul className="space-y-1.5 pl-5 list-disc marker:text-primary">
-              <li>Have been part of the team for at least 3 months</li>
-              <li>Have made a clear contribution to our growth during that time</li>
-              <li>Still be an active, official member of the team when the goals are hit and rewards are paid out</li>
+            <ul className="space-y-1.5 pl-1 list-none">
+              <li>⏱️ Have been part of the team for at least 3 months</li>
+              <li>🌱 Have made a clear contribution to our growth during that time</li>
+              <li>🤝 Still be an active, official member of the team when the goals are hit and rewards are paid out</li>
             </ul>
           </div>
           <p className="text-xs text-muted-foreground italic">
-            Let's get it done together.
+            Let's get it done together. 💪
           </p>
         </CardContent>
       </Card>
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
-        <Target className="h-3.5 w-3.5" />
+        <span aria-hidden>🎯</span>
         Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed · {CUSTOMERS_GOAL.toLocaleString()} customers
       </div>
 
