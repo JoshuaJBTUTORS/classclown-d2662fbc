@@ -219,6 +219,14 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route
+                    path="goals"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <Goals />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route 
                     path="admin/proposals" 
                     element={
