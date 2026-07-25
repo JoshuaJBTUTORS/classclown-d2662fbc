@@ -931,6 +931,9 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
 
     console.log(`Generated ${summaries.length} summaries for lesson ${lessonId}`);
 
+    const combined = [...summaries, ...missedSummaries];
+
+
     return new Response(
       JSON.stringify({
         success: true,
