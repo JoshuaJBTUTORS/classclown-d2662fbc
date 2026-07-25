@@ -14,7 +14,7 @@ const TRIAL_GOAL = 1800;
 const LESSONS_GOAL = 2500;
 const AVG_GROUP_GOAL = 3.5;
 const PROPOSALS_GOAL = 390;
-const CUSTOMERS_GOAL = 500;
+const CUSTOMERS_GOAL = 400;
 const CUSTOMERS_SETTING_KEY = 'customers_count';
 
 // Fixed campaign window
