@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, Calendar, GraduationCap, TrendingUp } from 'lucide-react';
+import { RefreshCw, Calendar, GraduationCap, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAdminDashboardData, AdminDashboardData } from '@/services/adminDashboardService';
 import PageTitle from '@/components/ui/PageTitle';
 import { UserPasswordReset } from '@/components/admin/UserPasswordReset';
@@ -13,16 +13,23 @@ const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
   const { toast } = useToast();
 
-  const loadDashboardData = async (showToast = false) => {
+  const loadDashboardData = async (showToast = false, monthDate = selectedMonth) => {
     const loading = showToast ? setIsRefreshing : setIsLoading;
-    
+
     try {
       loading(true);
-      const data = await getAdminDashboardData();
+      const data = await getAdminDashboardData({
+        year: monthDate.getFullYear(),
+        month: monthDate.getMonth(),
+      });
       setDashboardData(data);
-      
+
       if (showToast) {
         toast({
           title: "Dashboard Updated",
@@ -42,18 +49,32 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    loadDashboardData(false, selectedMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth]);
 
   const handleRefresh = () => {
     loadDashboardData(true);
   };
 
-  const getCurrentMonth = () => {
-    return new Date().toLocaleDateString('en-US', { 
-      month: 'long', 
-      year: 'numeric' 
+  const getSelectedMonthLabel = () => {
+    return selectedMonth.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
     });
+  };
+
+  const now = new Date();
+  const isCurrentMonth =
+    selectedMonth.getFullYear() === now.getFullYear() &&
+    selectedMonth.getMonth() === now.getMonth();
+
+  const goPrevMonth = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1));
+  };
+  const goNextMonth = () => {
+    if (isCurrentMonth) return;
+    setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1));
   };
 
   if (isLoading) {
@@ -83,19 +104,38 @@ const AdminDashboard = () => {
         <div>
           <PageTitle title="Admin Dashboard" />
           <p className="text-muted-foreground mt-2">
-            Overview of key metrics for {getCurrentMonth()}
+            Overview of key metrics for {getSelectedMonthLabel()}
           </p>
         </div>
-        <Button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-md border bg-background p-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrevMonth}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium min-w-[130px] text-center">
+              {getSelectedMonthLabel()}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={goNextMonth}
+              disabled={isCurrentMonth}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
