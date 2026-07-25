@@ -26,6 +26,7 @@ interface StudentSummary {
   engagement_score: number | null;
   confidence_score: number | null;
   participation_time_percentage: number | null;
+  attendance_status?: string | null;
   confidence_indicators: any;
   created_at: string;
   updated_at: string;
