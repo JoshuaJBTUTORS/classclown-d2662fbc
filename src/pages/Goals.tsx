@@ -442,8 +442,69 @@ const Goals: React.FC = () => {
         Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed · {CUSTOMERS_GOAL.toLocaleString()} customers
       </div>
 
+      <div
+        ref={presentRef}
+        className={cn(
+          'fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-pink-100 via-violet-100 to-sky-100 transition-opacity',
+          presenting ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+      >
+        {presenting && currentSlide && (
+          <>
+            <button
+              onClick={stopPresenting}
+              className="absolute top-6 right-6 text-2xl bg-white/70 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white shadow"
+              aria-label="Exit presentation"
+            >
+              ✖
+            </button>
+            <div
+              key={slideIdx}
+              className={cn(
+                'w-[80%] max-w-5xl rounded-3xl border-2 p-16 text-center shadow-2xl animate-fade-in',
+                currentSlide.palette.bg,
+                currentSlide.palette.border
+              )}
+            >
+              <div className="text-[120px] leading-none mb-6">{currentSlide.emoji}</div>
+              <h2 className="text-5xl md:text-6xl font-bold mb-4 text-slate-800">{currentSlide.title}</h2>
+              <p className="text-xl text-slate-600 mb-10">{currentSlide.sub}</p>
+              <div className={cn('text-8xl md:text-9xl font-extrabold mb-2', currentSlide.palette.accent)}>
+                {fmt(currentSlide.current, currentSlide.decimals)}
+              </div>
+              <div className="text-2xl text-slate-500 mb-8">
+                of {fmt(currentSlide.target, currentSlide.decimals)} target
+              </div>
+              <div className="h-4 w-full rounded-full bg-white/70 overflow-hidden">
+                <div
+                  className={cn('h-full rounded-full transition-all duration-700', currentSlide.palette.bar)}
+                  style={{ width: `${slidePct}%` }}
+                />
+              </div>
+              <div className="mt-3 text-lg font-medium text-slate-600">{slidePct}% of goal</div>
+            </div>
+            <div className="absolute bottom-8 flex items-center gap-2">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSlideIdx(i)}
+                  className={cn(
+                    'h-2.5 rounded-full transition-all',
+                    i === slideIdx ? 'w-8 bg-violet-500' : 'w-2.5 bg-violet-200 hover:bg-violet-300'
+                  )}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
+            <div className="absolute bottom-3 text-xs text-slate-500">
+              Auto-advancing every 3s · ← → to navigate · Esc to exit
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
+
 };
 
 export default Goals;
