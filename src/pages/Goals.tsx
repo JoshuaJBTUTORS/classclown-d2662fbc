@@ -171,7 +171,7 @@ const Goals: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <GoalCard
           title="Trial Lessons Booked"
           description={`Collective bookings by ${deadlineLabel}`}
@@ -188,13 +188,22 @@ const Goals: React.FC = () => {
           target={LESSONS_GOAL}
           loading={loading}
         />
+        <GoalCard
+          title="Avg Students per Group"
+          description={`Across ${groupLessonCount.toLocaleString()} group lessons in ${currentMonthLabel}`}
+          icon={<Users className="h-5 w-5" />}
+          current={avgGroupSize}
+          target={AVG_GROUP_GOAL}
+          loading={loading}
+          decimals={2}
+          remainingLabel={(r) => r > 0 ? `${r.toFixed(2)} to reach target avg` : 'Target avg reached'}
+        />
       </div>
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
-        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled in {currentMonthLabel}
+        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel}
       </div>
-    </div>
   );
 };
 
