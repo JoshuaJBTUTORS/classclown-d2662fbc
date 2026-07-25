@@ -859,7 +859,57 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
     );
   }
 
-  const students = lesson.lesson_students.map((ls: any) => ls.student);
+  const allStudents = lesson.lesson_students.map((ls: any) => ls.student);
+
+  // Fetch attendance and short-circuit absent/excused students so we don't
+  // waste OpenAI calls or misreport engagement.
+  const { data: attendanceRows } = await supabase
+    .from('lesson_attendance')
+    .select('student_id, attendance_status')
+    .eq('lesson_id', lessonId);
+
+  const attendanceMap = new Map<number, string>();
+  (attendanceRows || []).forEach((r: any) => attendanceMap.set(r.student_id, r.attendance_status));
+
+  const missedStatuses = new Set(['absent', 'excused']);
+  const students = [] as any[];
+  const missedSummaries: any[] = [];
+
+  for (const s of allStudents) {
+    const status = attendanceMap.get(s.id);
+    if (status && missedStatuses.has(status)) {
+      const stub = {
+        lesson_id: lessonId,
+        student_id: s.id,
+        transcription_id: transcriptionId,
+        topics_covered: [],
+        student_contributions: '',
+        what_went_well: '',
+        areas_for_improvement: '',
+        engagement_level: null,
+        engagement_score: null,
+        confidence_score: null,
+        participation_time_percentage: null,
+        confidence_indicators: {},
+        ai_summary: status === 'excused'
+          ? 'Marked as excused absence.'
+          : 'Student did not attend this lesson.',
+        attendance_status: status,
+      };
+      const { data: saved, error: saveErr } = await supabase
+        .from('lesson_student_summaries')
+        .upsert(stub, { onConflict: 'lesson_id,student_id,transcription_id', ignoreDuplicates: false })
+        .select()
+        .single();
+      if (saveErr) {
+        console.error(`Error saving did-not-attend summary for student ${s.id}:`, saveErr);
+      } else {
+        missedSummaries.push(saved);
+      }
+    } else {
+      students.push(s);
+    }
+  }
   
   // Validate transcript size and determine processing strategy
   const validation = validateTranscriptSize(transcriptionText, lesson.title);
