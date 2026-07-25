@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Target, Calendar as CalendarIcon, GraduationCap } from 'lucide-react';
@@ -90,9 +90,9 @@ const Goals: React.FC = () => {
   const [lessonsCount, setLessonsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const now = new Date();
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const now = useMemo(() => new Date(), []);
+  const currentMonthStart = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now]);
+  const currentMonthEnd = useMemo(() => new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999), [now]);
   const currentMonthLabel = now.toLocaleDateString('en-GB', {
     month: 'long', year: 'numeric',
   });
