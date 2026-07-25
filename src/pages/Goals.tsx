@@ -111,7 +111,7 @@ const Goals: React.FC = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const [trialsRes, lessonsRes, groupRes] = await Promise.all([
+        const [trialsRes, lessonsRes, groupRes, proposalsRes] = await Promise.all([
           supabase
             .from('trial_bookings')
             .select('id', { count: 'exact', head: true })
@@ -130,17 +130,25 @@ const Goals: React.FC = () => {
             .neq('lesson_type', 'trial')
             .gte('start_time', currentMonthStart.toISOString())
             .lte('start_time', currentMonthEnd.toISOString()),
+          supabase
+            .from('lesson_proposals')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'completed')
+            .gte('completed_at', GOAL_START.toISOString())
+            .lte('completed_at', GOAL_DEADLINE.toISOString()),
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
         if (lessonsRes.error) console.error('Lessons query error', lessonsRes.error);
         if (groupRes.error) console.error('Group lessons query error', groupRes.error);
+        if (proposalsRes.error) console.error('Proposals query error', proposalsRes.error);
         setTrialCount(trialsRes.count ?? 0);
         setLessonsCount(lessonsRes.count ?? 0);
         const groups = groupRes.data ?? [];
         const totalStudents = groups.reduce((sum: number, l: any) => sum + (l.lesson_students?.length || 0), 0);
         setGroupLessonCount(groups.length);
         setAvgGroupSize(groups.length > 0 ? totalStudents / groups.length : 0);
+        setProposalCount(proposalsRes.count ?? 0);
       } catch (e) {
         console.error('Failed to load goals data', e);
       } finally {
