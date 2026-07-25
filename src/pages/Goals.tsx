@@ -110,8 +110,9 @@ const Goals: React.FC = () => {
             .from('lessons')
             .select('id', { count: 'exact', head: true })
             .neq('lesson_type', 'trial')
-            .gte('start_time', DEC_START.toISOString())
-            .lte('start_time', DEC_END.toISOString()),
+            .gte('start_time', new Date().toISOString())
+            .lte('start_time', GOAL_DEADLINE.toISOString()),
+
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
