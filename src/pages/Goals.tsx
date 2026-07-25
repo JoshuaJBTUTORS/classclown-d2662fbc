@@ -1,15 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Target, Calendar as CalendarIcon, GraduationCap, Users, FileCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Target, Calendar as CalendarIcon, GraduationCap, Users, FileCheck, UserPlus, Pencil, Check, X } from 'lucide-react';
 import PageTitle from '@/components/ui/PageTitle';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 const TRIAL_GOAL = 1800;
 const LESSONS_GOAL = 2500;
 const AVG_GROUP_GOAL = 3.5;
 const PROPOSALS_GOAL = 390;
+const CUSTOMERS_GOAL = 500;
+const CUSTOMERS_SETTING_KEY = 'customers_count';
 
 // Fixed campaign window
 const GOAL_START = new Date('2026-07-01T00:00:00Z');
