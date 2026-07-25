@@ -110,8 +110,8 @@ const Goals: React.FC = () => {
             .from('lessons')
             .select('id', { count: 'exact', head: true })
             .neq('lesson_type', 'trial')
-            .gte('start_time', new Date().toISOString())
             .lte('start_time', GOAL_DEADLINE.toISOString()),
+
 
         ]);
         if (cancelled) return;
@@ -163,7 +163,8 @@ const Goals: React.FC = () => {
         />
         <GoalCard
           title="Lessons Scheduled"
-          description={`Upcoming regular lessons currently on the calendar (through ${deadlineLabel})`}
+          description={`All regular lessons on the calendar through ${deadlineLabel}`}
+
 
           icon={<GraduationCap className="h-5 w-5" />}
           current={lessonsCount}
