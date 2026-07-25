@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 const TRIAL_GOAL = 1800;
 const LESSONS_GOAL = 2500;
-const AVG_GROUP_GOAL = 3;
+const AVG_GROUP_GOAL = 3.5;
 
 // Fixed campaign window
 const GOAL_START = new Date('2026-07-01T00:00:00Z');
