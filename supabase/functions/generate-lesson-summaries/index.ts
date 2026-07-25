@@ -937,7 +937,7 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
     return new Response(
       JSON.stringify({
         success: true,
-        summaries,
+        summaries: combined,
         processing_info: {
           strategy: validation.isValid ? 'standard' : 'chunked',
           transcript_size: validation.size,
