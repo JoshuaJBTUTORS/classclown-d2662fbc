@@ -10,8 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, FileText, Download } from 'lucide-react';
 import SignaturePad, { type SignaturePadHandle } from '@/components/tutors/SignaturePad';
 
-const CONTRACT_BUCKET = 'tutor-documents';
-const CONTRACT_PATH = 'self-employed-tutor-agreement.pdf';
+const CONTRACT_URL = 'https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/public/tutor-documents/self-employed-tutor-agreement.pdf';
 
 
 
