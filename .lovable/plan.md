@@ -1,13 +1,21 @@
 ## Goal
-Serve the Self-Employed Tutor Agreement PDF from a public URL, no signed URLs, no edge function.
+Add a month/year filter to the Admin Dashboard so the three metric cards (Trial Lessons Booked, Trial Attendance Rate, Regular Lessons) can be viewed for any past or current month.
 
-## Steps
-1. Flip `tutor-documents` bucket to public via `supabase--storage_update_bucket`. If the workspace blocks public buckets, surface the error and ask you to enable public buckets in Settings → Privacy & Security.
-2. Update `src/pages/OfferView.tsx` so the contract download button links directly to:
-   `https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/public/tutor-documents/self-employed-tutor-agreement.pdf`
-   Remove the loading state and the edge-function URL entirely — the button becomes an instant `<a href>` link that opens in a new tab, gated by the "I have viewed" checkbox as before.
-3. Delete the `tutor-contract` edge function (no longer needed) and remove its entry from `supabase/config.toml`.
+## Changes
 
-## Notes
-- Anyone with the URL can access the PDF forever. That's the accepted tradeoff.
-- No DB migration needed.
+### 1. `src/services/adminDashboardService.ts`
+- Update `getAdminDashboardData` to accept an optional `{ year, month }` argument.
+- Use those values to compute `monthStart` / `monthEnd` instead of always using the current month.
+- Keep the "only past lessons" clamp for trial attendance rate so future dates in the selected month don't distort the percentage; for a fully past month, all lessons count.
+
+### 2. `src/pages/AdminDashboard.tsx`
+- Add state `selectedMonth` (Date, defaults to current month).
+- Add a compact month selector in the header row next to the Refresh button:
+  - Prev month button (chevron left)
+  - Label showing "Month YYYY"
+  - Next month button (chevron right), disabled when selected month ≥ current month
+- Pass `{ year, month }` into `getAdminDashboardData` and re-fetch whenever `selectedMonth` changes.
+- Update the subtitle to reflect the selected month instead of always "current month".
+
+## Out of scope
+- No changes to `UserPasswordReset`, `VoiceMinutesManager`, or `StripeMetricsCard` — the filter only drives the three lesson metric cards.
