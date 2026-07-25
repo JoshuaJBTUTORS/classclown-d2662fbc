@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Target, Calendar as CalendarIcon, GraduationCap } from 'lucide-react';
@@ -12,14 +12,6 @@ const LESSONS_GOAL = 2000;
 // Fixed campaign window
 const GOAL_START = new Date('2026-07-25T00:00:00Z');
 const GOAL_DEADLINE = new Date('2026-12-31T23:59:59Z');
-
-// Lessons Scheduled uses the same filter as the Admin Dashboard's
-// "Regular Lessons" metric: regular lessons whose start_time falls
-// within the target month (December 2026).
-const LESSONS_MONTH_START = new Date('2026-12-01T00:00:00Z');
-const LESSONS_MONTH_END = new Date('2026-12-31T23:59:59Z');
-
-
 
 type Status = 'achieved' | 'on-track' | 'behind' | 'not-achieved';
 
@@ -98,6 +90,13 @@ const Goals: React.FC = () => {
   const [lessonsCount, setLessonsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const now = useMemo(() => new Date(), []);
+  const currentMonthStart = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now]);
+  const currentMonthEnd = useMemo(() => new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999), [now]);
+  const currentMonthLabel = now.toLocaleDateString('en-GB', {
+    month: 'long', year: 'numeric',
+  });
+
   useEffect(() => {
     let cancelled = false;
 
@@ -114,11 +113,8 @@ const Goals: React.FC = () => {
             .from('lessons')
             .select('id', { count: 'exact', head: true })
             .neq('lesson_type', 'trial')
-            .gte('start_time', LESSONS_MONTH_START.toISOString())
-            .lte('start_time', LESSONS_MONTH_END.toISOString()),
-
-
-
+            .gte('start_time', currentMonthStart.toISOString())
+            .lte('start_time', currentMonthEnd.toISOString()),
         ]);
         if (cancelled) return;
         if (trialsRes.error) console.error('Trials query error', trialsRes.error);
@@ -134,9 +130,8 @@ const Goals: React.FC = () => {
 
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [currentMonthStart, currentMonthEnd]);
 
-  const now = new Date();
   const msPerDay = 1000 * 60 * 60 * 24;
   const daysLeft = Math.max(0, Math.ceil((GOAL_DEADLINE.getTime() - now.getTime()) / msPerDay));
   const deadlineLabel = GOAL_DEADLINE.toLocaleDateString('en-GB', {
@@ -169,10 +164,7 @@ const Goals: React.FC = () => {
         />
         <GoalCard
           title="Lessons Scheduled"
-          description="Regular lessons scheduled in December 2026"
-
-
-
+          description={`Regular lessons scheduled in ${currentMonthLabel}`}
           icon={<GraduationCap className="h-5 w-5" />}
           current={lessonsCount}
           target={LESSONS_GOAL}
@@ -182,7 +174,7 @@ const Goals: React.FC = () => {
 
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
-        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled in December 2026
+        Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled in {currentMonthLabel}
       </div>
     </div>
   );
