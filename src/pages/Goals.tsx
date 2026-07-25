@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const TRIAL_GOAL = 1500;
-const LESSONS_GOAL = 2000;
+const LESSONS_GOAL = 2500;
 
 // Fixed campaign window
 const GOAL_START = new Date('2026-07-25T00:00:00Z');
