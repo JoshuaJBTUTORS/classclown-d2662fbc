@@ -10,7 +10,7 @@ const TRIAL_GOAL = 1500;
 const LESSONS_GOAL = 2500;
 
 // Fixed campaign window
-const GOAL_START = new Date('2026-07-25T00:00:00Z');
+const GOAL_START = new Date('2026-07-01T00:00:00Z');
 const GOAL_DEADLINE = new Date('2026-12-31T23:59:59Z');
 
 type Status = 'achieved' | 'on-track' | 'behind' | 'not-achieved';
