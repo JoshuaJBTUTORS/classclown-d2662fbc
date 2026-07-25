@@ -2847,6 +2847,7 @@ export type Database = {
         Row: {
           ai_summary: string | null
           areas_for_improvement: string | null
+          attendance_status: string | null
           confidence_indicators: Json | null
           confidence_score: number | null
           created_at: string
@@ -2866,6 +2867,7 @@ export type Database = {
         Insert: {
           ai_summary?: string | null
           areas_for_improvement?: string | null
+          attendance_status?: string | null
           confidence_indicators?: Json | null
           confidence_score?: number | null
           created_at?: string
@@ -2885,6 +2887,7 @@ export type Database = {
         Update: {
           ai_summary?: string | null
           areas_for_improvement?: string | null
+          attendance_status?: string | null
           confidence_indicators?: Json | null
           confidence_score?: number | null
           created_at?: string
