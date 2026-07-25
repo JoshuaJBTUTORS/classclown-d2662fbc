@@ -315,10 +315,41 @@ const Goals: React.FC = () => {
         </Card>
       </div>
 
+      <Card className="mt-8 border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            Team Reward
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <p>
+            If we hit these goals together, every eligible team member receives:
+          </p>
+          <ul className="space-y-1.5 pl-5 list-disc marker:text-primary">
+            <li><span className="font-semibold">CAD $10,000 bonus</span></li>
+            <li><span className="font-semibold">Every Friday off</span> for a set period</li>
+            <li>An <span className="font-semibold">all-expenses-paid company retreat</span></li>
+          </ul>
+          <div>
+            <p className="font-semibold mb-1">To qualify, you must:</p>
+            <ul className="space-y-1.5 pl-5 list-disc marker:text-primary">
+              <li>Have been part of the team for at least 3 months</li>
+              <li>Have made a clear contribution to our growth during that time</li>
+              <li>Still be an active, official member of the team when the goals are hit and rewards are paid out</li>
+            </ul>
+          </div>
+          <p className="text-xs text-muted-foreground italic">
+            Let's get it done together.
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="mt-8 text-xs text-muted-foreground flex items-center gap-2">
         <Target className="h-3.5 w-3.5" />
         Targets: {TRIAL_GOAL.toLocaleString()} trial bookings · {LESSONS_GOAL.toLocaleString()} lessons scheduled · avg {AVG_GROUP_GOAL} students per group in {currentMonthLabel} · {PROPOSALS_GOAL.toLocaleString()} proposals completed · {CUSTOMERS_GOAL.toLocaleString()} customers
       </div>
+
     </div>
   );
 };
