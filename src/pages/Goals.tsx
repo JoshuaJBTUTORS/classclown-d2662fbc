@@ -292,10 +292,19 @@ const Goals: React.FC = () => {
             Targets to hit by {deadlineLabel}
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2">
-          <span className="text-lg" aria-hidden>⏳</span>
-          <span className="text-sm font-medium text-violet-700">{daysLeft} days left</span>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={startPresenting}
+            className="rounded-full bg-gradient-to-r from-pink-400 via-violet-400 to-sky-400 text-white hover:opacity-90 border-0 shadow-md"
+          >
+            ▶ Present
+          </Button>
+          <div className="flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2">
+            <span className="text-lg" aria-hidden>⏳</span>
+            <span className="text-sm font-medium text-violet-700">{daysLeft} days left</span>
+          </div>
         </div>
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
