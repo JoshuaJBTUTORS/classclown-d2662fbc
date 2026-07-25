@@ -13,8 +13,12 @@ const LESSONS_GOAL = 2000;
 const GOAL_START = new Date('2026-07-25T00:00:00Z');
 const GOAL_DEADLINE = new Date('2026-12-31T23:59:59Z');
 
-// December 2026 window is no longer used — we show all currently-scheduled
-// upcoming regular lessons as progress toward the target.
+// Lessons Scheduled uses the same filter as the Admin Dashboard's
+// "Regular Lessons" metric: regular lessons whose start_time falls
+// within the target month (December 2026).
+const LESSONS_MONTH_START = new Date('2026-12-01T00:00:00Z');
+const LESSONS_MONTH_END = new Date('2026-12-31T23:59:59Z');
+
 
 
 type Status = 'achieved' | 'on-track' | 'behind' | 'not-achieved';
