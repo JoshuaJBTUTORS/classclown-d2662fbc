@@ -221,6 +221,68 @@ const Goals: React.FC = () => {
   const customersPalette = cardPalettes[4];
   const customersPct = Math.min(100, Math.round((customersCount / CUSTOMERS_GOAL) * 100));
 
+  // Presentation mode
+  const presentRef = useRef<HTMLDivElement>(null);
+  const [presenting, setPresenting] = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
+
+  const slides = useMemo(() => ([
+    { title: 'Trial Lessons Booked', emoji: '🗓️', current: trialCount, target: TRIAL_GOAL, decimals: 0, sub: `by ${deadlineLabel}`, palette: cardPalettes[0] },
+    { title: 'Lessons Scheduled', emoji: '🎓', current: lessonsCount, target: LESSONS_GOAL, decimals: 0, sub: currentMonthLabel, palette: cardPalettes[1] },
+    { title: 'Avg Students per Group', emoji: '👯', current: avgGroupSize, target: AVG_GROUP_GOAL, decimals: 2, sub: currentMonthLabel, palette: cardPalettes[2] },
+    { title: 'Proposals Completed', emoji: '📝', current: proposalCount, target: PROPOSALS_GOAL, decimals: 0, sub: `by ${deadlineLabel}`, palette: cardPalettes[3] },
+    { title: 'Number of Customers', emoji: '🧑‍🤝‍🧑', current: customersCount, target: CUSTOMERS_GOAL, decimals: 0, sub: `by ${deadlineLabel}`, palette: cardPalettes[4] },
+  ]), [trialCount, lessonsCount, avgGroupSize, proposalCount, customersCount, deadlineLabel, currentMonthLabel]);
+
+  const startPresenting = async () => {
+    setSlideIdx(0);
+    setPresenting(true);
+    try {
+      await presentRef.current?.requestFullscreen?.();
+    } catch { /* ignore */ }
+  };
+
+  const stopPresenting = () => {
+    setPresenting(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    if (!presenting) return;
+    const t = setInterval(() => {
+      setSlideIdx((i) => (i + 1) % slides.length);
+    }, 3000);
+    return () => clearInterval(t);
+  }, [presenting, slides.length]);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      if (!document.fullscreenElement) setPresenting(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (!presenting) return;
+      if (e.key === 'Escape') stopPresenting();
+      if (e.key === 'ArrowRight') setSlideIdx((i) => (i + 1) % slides.length);
+      if (e.key === 'ArrowLeft') setSlideIdx((i) => (i - 1 + slides.length) % slides.length);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [presenting, slides.length]);
+
+  const currentSlide = slides[slideIdx];
+  const slidePct = currentSlide && currentSlide.target > 0
+    ? Math.min(100, Math.round((currentSlide.current / currentSlide.target) * 100))
+    : 0;
+  const fmt = (n: number, d: number) => d > 0 ? n.toFixed(d) : n.toLocaleString();
+
+
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
