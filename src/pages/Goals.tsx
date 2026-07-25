@@ -110,8 +110,8 @@ const Goals: React.FC = () => {
             .from('lessons')
             .select('id', { count: 'exact', head: true })
             .neq('lesson_type', 'trial')
-            .gte('start_time', new Date().toISOString())
             .lte('start_time', GOAL_DEADLINE.toISOString()),
+
 
         ]);
         if (cancelled) return;
