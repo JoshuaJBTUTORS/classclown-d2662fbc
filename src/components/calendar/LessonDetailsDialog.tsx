@@ -333,6 +333,20 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             </DialogTitle>
           </DialogHeader>
 
+          {(isAdmin || isOwner) && lesson && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                onClick={openAssessmentDialog}
+              >
+                <ClipboardCheck className="h-4 w-4 mr-2" />
+                Assessment Week
+              </Button>
+            </div>
+          )}
+
           {isLoading ? <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div> : lesson ? <div className="space-y-6">
