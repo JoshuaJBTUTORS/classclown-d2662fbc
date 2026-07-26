@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     const roleSet = new Set((roles ?? []).map((r) => r.role));
     const { data: assessment, error: aErr } = await admin
       .from("ai_assessments")
-      .select("id, created_by")
+      .select("id, created_by, title")
       .eq("id", assessment_id)
       .maybeSingle();
     if (aErr || !assessment) {
