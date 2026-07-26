@@ -60,11 +60,12 @@ async function rewriteBatch(batch: Question[]): Promise<Array<{ id: string; ques
                     id: { type: "string" },
                     question_text: { type: "string" },
                     correct_answer: { type: "string" },
-                    marking_scheme: {
-                      type: ["object", "array", "string", "null"],
+                    marking_scheme_json: {
+                      type: "string",
+                      description: "JSON-encoded string of the marking scheme (object/array/string). Use \"null\" if none.",
                     },
                   },
-                  required: ["id", "question_text", "correct_answer", "marking_scheme"],
+                  required: ["id", "question_text", "correct_answer", "marking_scheme_json"],
                 },
               },
             },
