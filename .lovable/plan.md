@@ -1,23 +1,24 @@
-## What I found
+## Goal
+When "Assessment Week" is clicked, pre-generate participant URLs for the tutor and every enrolled student pointing at the shared assessment room, so joining works immediately for everyone with no fallback/error screen.
 
-- The lesson row did update to the shared assessment room:
-  - `lesson_space_room_id`: `2670b244-b11f-4be3-8336-32bb2ce558e9`
-  - `lesson_space_space_id`: `2670b244-b11f-4be3-8336-32bb2ce558e9`
-  - `video_conference_link`: shared assessment room URL
-- The join page does **not** use those fields directly. `/video-room/:lessonId` loads a pre-generated `lesson_participant_urls.launch_url`.
-- Those participant URLs still point to the old LessonSpace room, so pressing Join Lesson/Host Room can still open the original room even though the lesson fields were updated.
+## Change
 
-## Plan
+In `src/components/calendar/LessonDetailsDialog.tsx` (`handleAssignAssessmentWeek`), after updating the lesson row and deleting old `lesson_participant_urls`:
 
-1. Update the Assessment Week action in the lesson details dialog so it also clears existing rows in `lesson_participant_urls` for that lesson after switching the lesson to the assessment room.
-2. Update `useParticipantUrl` so if no pre-generated URL exists, it calls the existing `lesson-space-integration` `join-space` action to generate a fresh Launch URL for the lesson’s current `lesson_space_space_id`.
-3. Adjust the teacher/admin join flow as needed so hosts are not blocked by a missing old participant URL after Assessment Week changes.
-4. Verify against the affected lesson that:
-   - Old participant URLs no longer force the old room.
-   - Joining after Assessment Week uses the shared assessment LessonSpace room.
+1. Fetch enrolled students via `lesson_students` (join `students(id, first_name, last_name)`).
+2. Fetch the newly assigned tutor's name (already have from `assessmentTutors` state).
+3. Insert fresh rows into `lesson_participant_urls` for:
+   - The tutor: `participant_id = tutor.id`, `participant_type = 'tutor'`, `launch_url = ASSESSMENT_ROOM_URL`.
+   - Each student: `participant_id = student.id.toString()`, `participant_type = 'student'`, `launch_url = ASSESSMENT_ROOM_URL`.
+4. Keep the existing lesson-row update and toast/refresh flow.
 
-## Technical notes
+The shared room URL is a plain `/space/<uuid>` link that works for all participants — no per-user Launch API call needed.
 
-- This avoids changing the database schema.
-- The issue is stale cached/persisted participant launch URLs, not the lesson room fields themselves.
-- Existing future LessonSpace transcript handling should continue to use the updated `lesson_space_room_id`.
+## Why this fixes the screenshot
+
+`useParticipantUrl` already short-circuits when `lesson_space_room_id === ASSESSMENT_ROOM_ID`, but any code path that reads `lesson_participant_urls` directly (or the edge function's dynamic fallback when a student isn't matched) fails after we delete rows. Inserting the shared URL for every participant means every path finds a valid pre-generated URL.
+
+## Out of scope
+
+- No changes to the edge function.
+- No changes to how non-assessment lessons generate URLs.
