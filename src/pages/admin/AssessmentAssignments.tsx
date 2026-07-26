@@ -295,6 +295,20 @@ const AssessmentAssignments = () => {
               <Edit className="h-4 w-4 mr-1" />
               Edit
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRefreshConfirmId(assessment.id)}
+              disabled={refreshMutation.isPending && refreshMutation.variables === assessment.id}
+              title="Regenerate all questions as variants"
+            >
+              {refreshMutation.isPending && refreshMutation.variables === assessment.id ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1" />
+              )}
+              Refresh
+            </Button>
             <Button 
               variant="ghost" 
               size="sm"
