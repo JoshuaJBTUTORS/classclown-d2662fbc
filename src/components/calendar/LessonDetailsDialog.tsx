@@ -106,6 +106,52 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .eq('lesson_id', lesson.id);
       if (participantUrlError) throw participantUrlError;
 
+      // Pre-generate participant URLs pointing at the shared assessment room
+      const tutor = assessmentTutors.find(t => t.id === selectedAssessmentTutor);
+      const tutorName = tutor
+        ? `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim() || 'Tutor'
+        : 'Tutor';
+
+      const { data: enrolled, error: enrolledError } = await supabase
+        .from('lesson_students')
+        .select('student:students(id, first_name, last_name)')
+        .eq('lesson_id', lesson.id);
+      if (enrolledError) throw enrolledError;
+
+      const rows: Array<{
+        lesson_id: string;
+        participant_id: string;
+        participant_type: 'tutor' | 'student';
+        participant_name: string;
+        launch_url: string;
+      }> = [
+        {
+          lesson_id: lesson.id,
+          participant_id: selectedAssessmentTutor,
+          participant_type: 'tutor',
+          participant_name: tutorName,
+          launch_url: ASSESSMENT_ROOM_URL,
+        },
+      ];
+
+      for (const row of enrolled || []) {
+        const s: any = (row as any).student;
+        if (!s?.id) continue;
+        const name = `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Student';
+        rows.push({
+          lesson_id: lesson.id,
+          participant_id: String(s.id),
+          participant_type: 'student',
+          participant_name: name,
+          launch_url: ASSESSMENT_ROOM_URL,
+        });
+      }
+
+      const { error: insertUrlError } = await supabase
+        .from('lesson_participant_urls')
+        .insert(rows);
+      if (insertUrlError) throw insertUrlError;
+
       toast.success('Assessment week assigned');
       setIsAssessmentDialogOpen(false);
       onLessonUpdated?.();
