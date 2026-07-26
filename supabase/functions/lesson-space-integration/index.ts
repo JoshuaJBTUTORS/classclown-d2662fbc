@@ -59,8 +59,12 @@ interface UpdateLessonRequest {
 
 interface JoinSpaceRequest {
   lessonId: string;
-  studentId: number;
-  studentName: string;
+  studentId?: number;
+  studentName?: string;
+  participantId?: string;
+  participantName?: string;
+  participantType?: 'tutor' | 'student';
+  forceRefresh?: boolean;
 }
 
 serve(async (req) => {
@@ -415,35 +419,48 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 
 async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
   try {
-    console.log("Getting pre-generated student URL...", { 
+    const participantType = data.participantType === 'tutor' ? 'tutor' : 'student';
+    const participantId = data.participantId || data.studentId?.toString();
+    const participantName = data.participantName || data.studentName || (participantType === 'tutor' ? 'Tutor' : 'Student');
+
+    if (!participantId) {
+      throw new Error('Participant ID is required');
+    }
+
+    console.log("Getting pre-generated LessonSpace URL...", { 
       lessonId: data.lessonId, 
-      studentId: data.studentId, 
-      studentName: data.studentName 
+      participantId,
+      participantType,
+      participantName,
+      forceRefresh: data.forceRefresh === true,
     });
 
     // First try to get the pre-generated URL from database
-    const { data: participantUrl, error: urlError } = await supabase
-      .from("lesson_participant_urls")
-      .select("launch_url")
-      .eq("lesson_id", data.lessonId)
-      .eq("participant_id", data.studentId.toString())
-      .eq("participant_type", "student")
-      .single();
+    if (data.forceRefresh !== true) {
+      const { data: participantUrl, error: urlError } = await supabase
+        .from("lesson_participant_urls")
+        .select("launch_url")
+        .eq("lesson_id", data.lessonId)
+        .eq("participant_id", participantId)
+        .eq("participant_type", participantType)
+        .single();
 
-    if (!urlError && participantUrl) {
-      console.log("✅ Found pre-generated student URL in database");
-      return new Response(
-        JSON.stringify({
-          success: true,
-          studentUrl: participantUrl.launch_url,
-          transcriptionEnabled: true,
-          message: "Using pre-generated authenticated URL with transcription enabled"
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (!urlError && participantUrl) {
+        console.log("✅ Found pre-generated LessonSpace URL in database");
+        return new Response(
+          JSON.stringify({
+            success: true,
+            studentUrl: participantUrl.launch_url,
+            launchUrl: participantUrl.launch_url,
+            transcriptionEnabled: true,
+            message: "Using pre-generated authenticated URL with transcription enabled"
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
-    console.log("⚠️ No pre-generated URL found, falling back to dynamic generation");
+    console.log("⚠️ No valid pre-generated URL found, falling back to dynamic generation");
 
     // Fallback: Generate URL dynamically (for students added after room creation)
     const lessonSpaceApiKey = Deno.env.get('LESSONSPACE_API_KEY');
@@ -473,13 +490,13 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       transcribe: true,
       record_av: true,
       user: {
-        id: `student_${data.studentId}`,
-        name: data.studentName,
-        role: "student",
-        leader: false,
+        id: `${participantType}_${participantId}`,
+        name: participantName,
+        role: participantType === 'tutor' ? "teacher" : "student",
+        leader: participantType === 'tutor',
         custom_jwt_parameters: {
           meta: {
-            displayName: data.studentName
+            displayName: participantName
           }
         }
       },
@@ -524,9 +541,9 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       .from("lesson_participant_urls")
       .upsert({
         lesson_id: data.lessonId,
-        participant_id: data.studentId.toString(),
-        participant_type: 'student',
-        participant_name: data.studentName,
+        participant_id: participantId,
+        participant_type: participantType,
+        participant_name: participantName,
         launch_url: spaceData.client_url
       }, { 
         onConflict: 'lesson_id,participant_id,participant_type',
@@ -543,6 +560,7 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
       JSON.stringify({
         success: true,
         studentUrl: spaceData.client_url,
+        launchUrl: spaceData.client_url,
         transcriptionEnabled: spaceData.room_settings?.transcribe || true,
         message: "Generated new authenticated URL with transcription enabled"
       }),

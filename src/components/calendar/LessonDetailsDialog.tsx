@@ -99,6 +99,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         })
         .eq('id', lesson.id);
       if (error) throw error;
+
+      const { error: participantUrlError } = await supabase
+        .from('lesson_participant_urls')
+        .delete()
+        .eq('lesson_id', lesson.id);
+      if (participantUrlError) throw participantUrlError;
+
       toast.success('Assessment week assigned');
       setIsAssessmentDialogOpen(false);
       onLessonUpdated?.();

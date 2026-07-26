@@ -8,6 +8,25 @@ interface ParticipantUrl {
   participant_name: string;
 }
 
+const getDisplayName = (firstName?: string | null, lastName?: string | null, fallback = 'Participant') => {
+  const name = `${firstName || ''} ${lastName || ''}`.trim();
+  return name || fallback;
+};
+
+const launchUrlMatchesRoom = (launchUrl: string, roomId?: string | null) => {
+  if (!roomId) return true;
+
+  try {
+    const parsed = new URL(launchUrl);
+    const launchRoom = parsed.searchParams.get('room');
+    if (launchRoom) return launchRoom === roomId;
+  } catch {
+    // Some LessonSpace URLs are plain share links rather than Launch API URLs.
+  }
+
+  return launchUrl.includes(`/space/${roomId}`);
+};
+
 export const useParticipantUrl = (lessonId: string) => {
   const [participantUrl, setParticipantUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,26 +55,40 @@ export const useParticipantUrl = (lessonId: string) => {
       try {
         let participantId: string | null = null;
         let participantType: 'tutor' | 'student' = 'student';
+        let participantName = 'Participant';
+
+        const { data: lessonData, error: lessonError } = await supabase
+          .from('lessons')
+          .select('lesson_space_room_id, lesson_space_space_id')
+          .eq('id', lessonId)
+          .single();
+
+        if (lessonError || !lessonData) {
+          throw new Error('Lesson not found');
+        }
 
         if (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') {
           // Get tutor ID - admin/owner roles are treated as tutors for video room access
           const { data: tutorData, error: tutorError } = await supabase
             .from('tutors')
-            .select('id')
+            .select('id, first_name, last_name')
             .eq('email', user.email)
             .single();
 
-          if (tutorError || !tutorData) {
+          if ((tutorError || !tutorData) && userRole === 'tutor') {
             throw new Error('Tutor not found');
           }
 
-          participantId = tutorData.id;
+          participantId = tutorData?.id || user.id;
+          participantName = tutorData
+            ? getDisplayName(tutorData.first_name, tutorData.last_name, user.email || 'Tutor')
+            : user.email || 'Tutor';
           participantType = 'tutor';
         } else {
           // Get student ID
           const { data: studentData, error: studentError } = await supabase
             .from('students')
-            .select('id')
+            .select('id, first_name, last_name')
             .eq('email', user.email)
             .single();
 
@@ -76,6 +109,8 @@ export const useParticipantUrl = (lessonId: string) => {
               .from('students')
               .select(`
                 id,
+                first_name,
+                last_name,
                 lesson_students!inner(lesson_id)
               `)
               .eq('parent_id', parentData.id)
@@ -88,8 +123,10 @@ export const useParticipantUrl = (lessonId: string) => {
             }
 
             participantId = studentThroughParent.id.toString();
+            participantName = getDisplayName(studentThroughParent.first_name, studentThroughParent.last_name, 'Student');
           } else {
             participantId = studentData.id.toString();
+            participantName = getDisplayName(studentData.first_name, studentData.last_name, 'Student');
           }
         }
 
@@ -106,14 +143,51 @@ export const useParticipantUrl = (lessonId: string) => {
           .eq('participant_type', participantType)
           .single();
 
-        if (urlError || !urlData) {
-          throw new Error('No pre-generated URL found for this participant');
+        const hasMatchingUrl = urlData?.launch_url && launchUrlMatchesRoom(urlData.launch_url, lessonData.lesson_space_room_id);
+
+        if (!urlError && hasMatchingUrl) {
+          // Cache the URL for future use
+          const cacheKey = `${lessonId}_${user.id}_${userRole}`;
+          urlCacheRef.current[cacheKey] = urlData.launch_url;
+          setParticipantUrl(urlData.launch_url);
+          hasLoadedRef.current = true;
+          return;
         }
 
-        // Cache the URL for future use
+        if (urlData?.launch_url && !hasMatchingUrl) {
+          await supabase
+            .from('lesson_participant_urls')
+            .delete()
+            .eq('lesson_id', lessonId)
+            .eq('participant_id', participantId)
+            .eq('participant_type', participantType);
+        }
+
+        const { data: generatedUrl, error: generateError } = await supabase.functions.invoke('lesson-space-integration', {
+          body: {
+            action: 'join-space',
+            lessonId,
+            participantId,
+            participantType,
+            participantName,
+            studentId: participantType === 'student' ? Number(participantId) : undefined,
+            studentName: participantType === 'student' ? participantName : undefined,
+            forceRefresh: Boolean(urlData?.launch_url && !hasMatchingUrl),
+          },
+        });
+
+        if (generateError || !generatedUrl?.success) {
+          throw new Error(generatedUrl?.error || generateError?.message || 'No video room URL found for this participant');
+        }
+
+        const launchUrl = generatedUrl.launchUrl || generatedUrl.studentUrl;
+        if (!launchUrl) {
+          throw new Error('No video room URL returned for this participant');
+        }
+
         const cacheKey = `${lessonId}_${user.id}_${userRole}`;
-        urlCacheRef.current[cacheKey] = urlData.launch_url;
-        setParticipantUrl(urlData.launch_url);
+        urlCacheRef.current[cacheKey] = launchUrl;
+        setParticipantUrl(launchUrl);
         hasLoadedRef.current = true;
       } catch (err) {
         console.error('Error fetching participant URL:', err);
