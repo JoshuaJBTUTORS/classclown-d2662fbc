@@ -27,6 +27,9 @@ const launchUrlMatchesRoom = (launchUrl: string, roomId?: string | null) => {
   return launchUrl.includes(`/space/${roomId}`);
 };
 
+const ASSESSMENT_ROOM_ID = '2670b244-b11f-4be3-8336-32bb2ce558e9';
+const ASSESSMENT_ROOM_URL = `https://www.thelessonspace.com/space/${ASSESSMENT_ROOM_ID}`;
+
 export const useParticipantUrl = (lessonId: string) => {
   const [participantUrl, setParticipantUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +68,14 @@ export const useParticipantUrl = (lessonId: string) => {
 
         if (lessonError || !lessonData) {
           throw new Error('Lesson not found');
+        }
+
+        if (lessonData.lesson_space_room_id === ASSESSMENT_ROOM_ID || lessonData.lesson_space_space_id === ASSESSMENT_ROOM_ID) {
+          const cacheKey = `${lessonId}_${user.id}_${userRole}`;
+          urlCacheRef.current[cacheKey] = ASSESSMENT_ROOM_URL;
+          setParticipantUrl(ASSESSMENT_ROOM_URL);
+          hasLoadedRef.current = true;
+          return;
         }
 
         if (userRole === 'tutor' || userRole === 'admin' || userRole === 'owner') {
