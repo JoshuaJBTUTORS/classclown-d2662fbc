@@ -644,6 +644,43 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       additional_resources_url: (homeworkStatus.homework as any).additional_resources_url || undefined,
       additional_resources_type: (homeworkStatus.homework as any).additional_resources_type || undefined,
     } : undefined} />}
+
+      <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              Assign Assessment Week
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select the tutor who will run this assessment. The lesson will be reassigned and the video link swapped to the shared assessment room. Time conflicts will be ignored.
+            </p>
+            <Select value={selectedAssessmentTutor} onValueChange={setSelectedAssessmentTutor}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a tutor" />
+              </SelectTrigger>
+              <SelectContent>
+                {assessmentTutors.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.first_name} {t.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssignAssessmentWeek} disabled={!selectedAssessmentTutor || isAssigningAssessment}>
+                {isAssigningAssessment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>;
 };
 export default LessonDetailsDialog;
