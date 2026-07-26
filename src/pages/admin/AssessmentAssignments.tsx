@@ -629,6 +629,37 @@ const AssessmentAssignments = () => {
         open={!!previewAssessmentId}
         onOpenChange={(open) => !open && setPreviewAssessmentId(null)}
       />
+
+      {/* Refresh Confirmation Dialog */}
+      <AlertDialog open={!!refreshConfirmId} onOpenChange={(open) => !open && !refreshMutation.isPending && setRefreshConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refresh assessment questions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will regenerate every question as a similar variant (names, numbers and minor wording change; structure, marks and difficulty stay the same). All previous student answers and submissions for this assessment will be permanently deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={refreshMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (refreshConfirmId) refreshMutation.mutate(refreshConfirmId);
+              }}
+              disabled={refreshMutation.isPending}
+            >
+              {refreshMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Refreshing...
+                </>
+              ) : (
+                'Refresh questions'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
