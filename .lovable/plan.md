@@ -1,46 +1,34 @@
-## Goal
+# Assessment Week button on lesson dialog
 
-On `/assessment-assignments`, each assessment card gets a **Refresh** button. Clicking it sends the assessment's existing questions to OpenAI (called directly, not via Lovable AI Gateway) which returns near-identical variants — swap names, numeric values, small wording tweaks — while keeping question_type, marks, difficulty, topic, and structure identical. Correct answers and mark schemes are recomputed to match the new values. Refresh overwrites existing questions in place and deletes all previous student answers/sessions for that assessment.
+Add a new action inside the lesson details popup (opened from the calendar) that converts the lesson into an "assessment week" lesson: reassigned to a chosen tutor, using a shared LessonSpace room.
 
 ## UX
 
-- New **Refresh** button on each card in `renderAssessmentCard` (`src/pages/admin/AssessmentAssignments.tsx`), next to Preview/Edit.
-- Click → confirm dialog: "This will regenerate all questions with new variants and permanently delete all previous student answers for this assessment. Continue?"
-- Confirm → button spinner, invoke edge function, toast on success/error, invalidate `all-assessments` and `assessment-questions` queries.
+In `src/components/calendar/LessonDetailsDialog.tsx`, add an amber "Assessment Week" button near the top of the dialog (in the header area next to the title/badges), visible to admin/owner only.
 
-## Backend: new edge function `refresh-assessment`
+Flow when clicked:
+1. Opens a small sub-dialog "Assign Assessment Week".
+2. Shows a searchable select of active tutors (loaded from `tutors` joined with `profiles` for names, same pattern used elsewhere in the app).
+3. Admin picks a tutor → clicks "Confirm".
+4. A confirmation line reminds them time conflicts will be ignored.
+5. On confirm: update the lesson, close both dialogs, toast success, call `onLessonUpdated()` so the calendar refreshes.
 
-Calls OpenAI directly using the existing `OPENAI_API_KEY` secret. Model: **`gpt-4o`** (strong reasoning, reliable strict JSON, existing project pattern). Uses `response_format: { type: "json_schema", strict: true }` so the answer/mark-scheme shape is guaranteed.
+## Data changes
 
-Input: `{ assessment_id: string }` (auth required; admin/owner/tutor/creator only — mirror `useAssessmentPermissions.canEdit`).
+Single `UPDATE` on `public.lessons` for the current `lesson.id`:
+- `tutor_id` = selected tutor id (no conflict/availability checks)
+- `lesson_space_room_url` = `https://www.thelessonspace.com/space/2670b244-b11f-4be3-8336-32bb2ce558e9`
+- `lesson_space_space_id` = `2670b244-b11f-4be3-8336-32bb2ce558e9`
+- `lesson_space_room_id` = `2670b244-b11f-4be3-8336-32bb2ce558e9`
+- `video_conference_link` = same URL, `video_conference_provider` = `lessonspace`
 
-Steps:
-1. Verify JWT, load caller roles, enforce edit permission.
-2. Load assessment + all `assessment_questions` ordered by `question_number`.
-3. Process in batches of 5 questions. For each batch, POST to `https://api.openai.com/v1/chat/completions` with a system prompt: "You rewrite exam questions as equivalent variants. Keep question_type, marks_available, difficulty, topic, and structural style identical. Change only surface details (names, numeric values, dates, minor wording). Recompute correct_answer and mark_scheme so they are fully consistent with the new values. For multiple choice, keep option count identical and update options + correct option." Provide the original questions as JSON; require strict JSON output matching a schema of `{ questions: [{ id, question_text, correct_answer, mark_scheme, options? }] }`.
-4. After all batches succeed, run updates + cleanup with service-role client:
-   - `UPDATE assessment_questions` per returned id with new `question_text`, `correct_answer`, `mark_scheme`, and `options` where present.
-   - `DELETE FROM student_responses WHERE session_id IN (SELECT id FROM assessment_sessions WHERE assessment_id = $1)`
-   - `DELETE FROM assessment_sessions WHERE assessment_id = $1`
-   - `DELETE FROM marking_jobs WHERE assessment_id = $1`
-   - `UPDATE assessment_assignments SET status='assigned', submitted_at=NULL, reviewed_at=NULL, reviewed_by=NULL WHERE assessment_id = $1`
-5. Return `{ success: true, updated: N }`.
+No changes to students, homework, attendance, or recurrence rules.
 
-If any batch fails, abort before deletes — original questions and student data stay intact. Surface OpenAI 429/insufficient_quota errors clearly for UI toast.
+## Recurring lessons
 
-## Frontend wiring
-
-- `refreshMutation` in `AssessmentAssignments.tsx` invoking `supabase.functions.invoke('refresh-assessment', { body: { assessment_id } })`.
-- AlertDialog for confirmation.
-- Button disabled + spinner while pending; toast success/error.
+The dialog receives a single `lessonId` (the parent row for recurring series). The update targets that row, so for a recurring series every instance will inherit the new tutor and room — matching how other edits from this dialog behave today. No per-instance override.
 
 ## Files touched
 
-- `supabase/functions/refresh-assessment/index.ts` (new)
-- `src/pages/admin/AssessmentAssignments.tsx` (button, confirm dialog, mutation)
-
-## Out of scope
-
-- No schema changes.
-- No changes to assessment creation, preview dialog, or take flow.
-- Options field only updated when the existing row has options.
+- `src/components/calendar/LessonDetailsDialog.tsx` — new button, sub-dialog, tutor list query, update mutation.
+- No new edge functions, no schema migration, no other files.
