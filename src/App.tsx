@@ -13,7 +13,7 @@ import { DomainRouteGuard } from '@/components/routing/DomainRouteGuard';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 
-import InteractiveSignup from './pages/InteractiveSignup';
+
 import Index from './pages/Index';
 import Calendar from './pages/Calendar';
 import Students from './pages/Students';
@@ -104,7 +104,7 @@ function App() {
                 {/* Public routes */}
                 <Route path="/landing" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/interactive-signup" element={<InteractiveSignup />} />
+                
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
                 

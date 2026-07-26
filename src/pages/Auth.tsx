@@ -197,18 +197,6 @@ const Auth = () => {
                     </Button>
                   </div>
                   
-                  <div className="text-center pt-4 border-t">
-                    <p className="text-sm text-gray-600">
-                      New to Class Beyond?{' '}
-                      <button
-                        type="button"
-                        onClick={() => navigate('/interactive-signup')}
-                        className="text-primary font-medium hover:underline"
-                      >
-                        Sign up now
-                      </button>
-                    </p>
-                  </div>
                 </form>
               </CardContent>
             </Card>
