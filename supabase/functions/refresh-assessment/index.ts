@@ -85,7 +85,20 @@ async function rewriteBatch(batch: Question[]): Promise<Array<{ id: string; ques
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("OpenAI returned empty content");
   const parsed = JSON.parse(content);
-  return parsed.questions;
+  return (parsed.questions ?? []).map((q: any) => {
+    let ms: unknown = null;
+    try {
+      ms = q.marking_scheme_json ? JSON.parse(q.marking_scheme_json) : null;
+    } catch {
+      ms = q.marking_scheme_json ?? null;
+    }
+    return {
+      id: q.id,
+      question_text: q.question_text,
+      correct_answer: q.correct_answer,
+      marking_scheme: ms,
+    };
+  });
 }
 
 Deno.serve(async (req) => {
