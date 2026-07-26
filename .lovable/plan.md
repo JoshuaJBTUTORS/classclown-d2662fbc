@@ -1,34 +1,30 @@
-# Assessment Week button on lesson dialog
+## Problem
 
-Add a new action inside the lesson details popup (opened from the calendar) that converts the lesson into an "assessment week" lesson: reassigned to a chosen tutor, using a shared LessonSpace room.
+The Assessment Week action currently updates only `video_conference_link` and `lesson_space_room_url` on the lesson. Students and parents don't use those fields — `VideoConferenceLink.tsx` builds their join URL from `lesson_space_room_id`:
 
-## UX
+```
+https://www.thelessonspace.com/space/${lessonSpaceRoomId}
+```
 
-In `src/components/calendar/LessonDetailsDialog.tsx`, add an amber "Assessment Week" button near the top of the dialog (in the header area next to the title/badges), visible to admin/owner only.
+Result: tutors/admins land in the shared assessment room, but students/parents still open the original room.
 
-Flow when clicked:
-1. Opens a small sub-dialog "Assign Assessment Week".
-2. Shows a searchable select of active tutors (loaded from `tutors` joined with `profiles` for names, same pattern used elsewhere in the app).
-3. Admin picks a tutor → clicks "Confirm".
-4. A confirmation line reminds them time conflicts will be ignored.
-5. On confirm: update the lesson, close both dialogs, toast success, call `onLessonUpdated()` so the calendar refreshes.
+## Fix
 
-## Data changes
+In `src/components/calendar/LessonDetailsDialog.tsx`, extend the Assessment Week update so every field students/parents/tutors read points at the shared assessment room.
 
-Single `UPDATE` on `public.lessons` for the current `lesson.id`:
-- `tutor_id` = selected tutor id (no conflict/availability checks)
-- `lesson_space_room_url` = `https://www.thelessonspace.com/space/2670b244-b11f-4be3-8336-32bb2ce558e9`
-- `lesson_space_space_id` = `2670b244-b11f-4be3-8336-32bb2ce558e9`
-- `lesson_space_room_id` = `2670b244-b11f-4be3-8336-32bb2ce558e9`
-- `video_conference_link` = same URL, `video_conference_provider` = `lessonspace`
+Shared assessment room details:
+- URL: `https://www.thelessonspace.com/space/2670b244-b11f-4be3-8336-32bb2ce558e9`
+- Room ID: `2670b244-b11f-4be3-8336-32bb2ce558e9`
 
-No changes to students, homework, attendance, or recurrence rules.
+Update the `lessons` row with:
+- `tutor_id` → selected tutor
+- `video_conference_link` → assessment URL
+- `lesson_space_room_url` → assessment URL
+- `lesson_space_room_id` → `2670b244-b11f-4be3-8336-32bb2ce558e9` (new)
+- `lesson_space_space_id` → `2670b244-b11f-4be3-8336-32bb2ce558e9` (new, so the teacher-side room resolver also lands in the assessment room)
 
-## Recurring lessons
+No schema changes, no backup column, no revert button (per user's choice). Original room ID for that lesson is not preserved.
 
-The dialog receives a single `lessonId` (the parent row for recurring series). The update targets that row, so for a recurring series every instance will inherit the new tutor and room — matching how other edits from this dialog behave today. No per-instance override.
+## Verify
 
-## Files touched
-
-- `src/components/calendar/LessonDetailsDialog.tsx` — new button, sub-dialog, tutor list query, update mutation.
-- No new edge functions, no schema migration, no other files.
+After change: an admin runs Assessment Week on a test lesson, then loads the same lesson as a student/parent and confirms the "Join" button opens the shared assessment room URL.
