@@ -163,12 +163,15 @@ Deno.serve(async (req) => {
 
     // Apply updates
     for (const u of updates) {
+      const original = questions.find((q) => q.id === u.id);
+      const safeMarkingScheme =
+        u.marking_scheme ?? (original?.marking_scheme as unknown) ?? {};
       const { error: uErr } = await admin
         .from("assessment_questions")
         .update({
           question_text: u.question_text,
           correct_answer: u.correct_answer,
-          marking_scheme: u.marking_scheme,
+          marking_scheme: safeMarkingScheme,
           updated_at: new Date().toISOString(),
         })
         .eq("id", u.id)
