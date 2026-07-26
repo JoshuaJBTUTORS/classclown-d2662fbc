@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     const roleSet = new Set((roles ?? []).map((r) => r.role));
     const { data: assessment, error: aErr } = await admin
       .from("ai_assessments")
-      .select("id, created_by")
+      .select("id, created_by, title")
       .eq("id", assessment_id)
       .maybeSingle();
     if (aErr || !assessment) {
@@ -160,6 +160,25 @@ Deno.serve(async (req) => {
         .eq("id", u.id)
         .eq("assessment_id", assessment_id);
       if (uErr) throw uErr;
+    }
+
+    // Rename assessment title: swap any other term (winter/autumn/spring/fall) to "Summer".
+    // Case-insensitive; preserves surrounding text. If none present, appends " (Summer Term)".
+    const originalTitle = (assessment.title ?? "").trim();
+    let newTitle = originalTitle;
+    const termRegex = /\b(winter|autumn|spring|fall)\b/i;
+    if (termRegex.test(newTitle)) {
+      newTitle = newTitle.replace(/\b(winter|autumn|spring|fall)\b/gi, (m) =>
+        m[0] === m[0].toUpperCase() ? "Summer" : "summer"
+      );
+    } else if (!/\bsummer\b/i.test(newTitle)) {
+      newTitle = newTitle ? `${newTitle} (Summer Term)` : "Summer Term Assessment";
+    }
+    if (newTitle !== originalTitle) {
+      await admin
+        .from("ai_assessments")
+        .update({ title: newTitle, updated_at: new Date().toISOString() })
+        .eq("id", assessment_id);
     }
 
     // Cleanup student data
