@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play, Send } from 'lucide-react';
+import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play, Send, ClipboardCheck } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +58,59 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     homework: null
   });
   const [isProcessed, setIsProcessed] = useState(false);
+  const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
+  const [assessmentTutors, setAssessmentTutors] = useState<any[]>([]);
+  const [selectedAssessmentTutor, setSelectedAssessmentTutor] = useState<string>('');
+  const [isAssigningAssessment, setIsAssigningAssessment] = useState(false);
+
+  const ASSESSMENT_ROOM_URL = 'https://www.thelessonspace.com/space/2670b244-b11f-4be3-8336-32bb2ce558e9';
+  const ASSESSMENT_ROOM_ID = '2670b244-b11f-4be3-8336-32bb2ce558e9';
+
+  const openAssessmentDialog = async () => {
+    setSelectedAssessmentTutor('');
+    setIsAssessmentDialogOpen(true);
+    try {
+      const { data, error } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name')
+        .eq('status', 'active')
+        .order('first_name');
+      if (error) throw error;
+      setAssessmentTutors(data || []);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to load tutors');
+    }
+  };
+
+  const handleAssignAssessmentWeek = async () => {
+    if (!lesson?.id || !selectedAssessmentTutor) return;
+    setIsAssigningAssessment(true);
+    try {
+      const { error } = await supabase
+        .from('lessons')
+        .update({
+          tutor_id: selectedAssessmentTutor,
+          lesson_space_room_url: ASSESSMENT_ROOM_URL,
+          lesson_space_room_id: ASSESSMENT_ROOM_ID,
+          lesson_space_space_id: ASSESSMENT_ROOM_ID,
+          video_conference_link: ASSESSMENT_ROOM_URL,
+          video_conference_provider: 'lessonspace',
+        })
+        .eq('id', lesson.id);
+      if (error) throw error;
+      toast.success('Assessment week assigned');
+      setIsAssessmentDialogOpen(false);
+      onLessonUpdated?.();
+      onClose();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || 'Failed to assign assessment week');
+    } finally {
+      setIsAssigningAssessment(false);
+    }
+  };
+
   const navigate = useNavigate();
   const {
     userRole,
@@ -278,6 +332,20 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </Badge>}
             </DialogTitle>
           </DialogHeader>
+
+          {(isAdmin || isOwner) && lesson && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                onClick={openAssessmentDialog}
+              >
+                <ClipboardCheck className="h-4 w-4 mr-2" />
+                Assessment Week
+              </Button>
+            </div>
+          )}
 
           {isLoading ? <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -576,6 +644,43 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       additional_resources_url: (homeworkStatus.homework as any).additional_resources_url || undefined,
       additional_resources_type: (homeworkStatus.homework as any).additional_resources_type || undefined,
     } : undefined} />}
+
+      <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              Assign Assessment Week
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select the tutor who will run this assessment. The lesson will be reassigned and the video link swapped to the shared assessment room. Time conflicts will be ignored.
+            </p>
+            <Select value={selectedAssessmentTutor} onValueChange={setSelectedAssessmentTutor}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a tutor" />
+              </SelectTrigger>
+              <SelectContent>
+                {assessmentTutors.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.first_name} {t.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssignAssessmentWeek} disabled={!selectedAssessmentTutor || isAssigningAssessment}>
+                {isAssigningAssessment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>;
 };
 export default LessonDetailsDialog;
