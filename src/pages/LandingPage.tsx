@@ -14,10 +14,6 @@ const LandingPage = () => {
     navigate('/auth');
   };
 
-  const handleNewMember = () => {
-    navigate('/interactive-signup');
-  };
-
   return (
     <>
       <DomainSEO 
@@ -58,38 +54,23 @@ const LandingPage = () => {
                   <Sparkles className="h-7 w-7 text-primary" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Start Your Learning Journey
+                  Welcome Back
                 </h2>
                 <p className="text-muted-foreground">
-                  Sign up for free access to our Learning Hub or sign in to continue
+                  Sign in to continue to your account
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex justify-center">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                >
-                  <Button
-                    onClick={handleNewMember}
-                    size="lg"
-                    className="w-full py-6 text-base font-semibold shadow-[var(--shadow-glow)]"
-                  >
-                    <BookOpen className="h-5 w-5 mr-2" />
-                    Sign Up Free
-                    <ChevronRight className="h-5 w-5 ml-2" />
-                  </Button>
-                </motion.div>
-
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  className="w-full max-w-xs"
                 >
                   <Button
                     onClick={handleExistingMember}
                     size="lg"
-                    variant="outline"
-                    className="w-full py-6 text-base font-semibold"
+                    className="w-full py-6 text-base font-semibold shadow-[var(--shadow-glow)]"
                   >
                     <Users className="h-5 w-5 mr-2" />
                     Sign In

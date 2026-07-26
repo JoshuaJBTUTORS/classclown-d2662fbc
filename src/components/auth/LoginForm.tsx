@@ -111,16 +111,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         {isLoading ? 'Signing in...' : 'Sign In'}
       </Button>
 
-      <p className="text-sm text-muted-foreground text-center">
-        Don't have an account?{' '}
-        <button
-          type="button"
-          className="text-primary hover:underline"
-          onClick={() => window.location.href = '/interactive-signup'}
-        >
-          Sign up here
-        </button>
-      </p>
     </form>
   );
 };
