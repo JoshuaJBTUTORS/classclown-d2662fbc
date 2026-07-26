@@ -60,11 +60,12 @@ async function rewriteBatch(batch: Question[]): Promise<Array<{ id: string; ques
                     id: { type: "string" },
                     question_text: { type: "string" },
                     correct_answer: { type: "string" },
-                    marking_scheme: {
-                      type: ["object", "array", "string", "null"],
+                    marking_scheme_json: {
+                      type: "string",
+                      description: "JSON-encoded string of the marking scheme (object/array/string). Use \"null\" if none.",
                     },
                   },
-                  required: ["id", "question_text", "correct_answer", "marking_scheme"],
+                  required: ["id", "question_text", "correct_answer", "marking_scheme_json"],
                 },
               },
             },
@@ -84,7 +85,20 @@ async function rewriteBatch(batch: Question[]): Promise<Array<{ id: string; ques
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("OpenAI returned empty content");
   const parsed = JSON.parse(content);
-  return parsed.questions;
+  return (parsed.questions ?? []).map((q: any) => {
+    let ms: unknown = null;
+    try {
+      ms = q.marking_scheme_json ? JSON.parse(q.marking_scheme_json) : null;
+    } catch {
+      ms = q.marking_scheme_json ?? null;
+    }
+    return {
+      id: q.id,
+      question_text: q.question_text,
+      correct_answer: q.correct_answer,
+      marking_scheme: ms,
+    };
+  });
 }
 
 Deno.serve(async (req) => {
