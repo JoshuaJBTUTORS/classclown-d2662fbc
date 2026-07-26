@@ -48,8 +48,20 @@ import {
   ChevronDown,
   Edit,
   BookOpen,
-  MoreVertical
+  MoreVertical,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -72,6 +84,7 @@ const AssessmentAssignments = () => {
   const [notes, setNotes] = useState('');
   const [activeTab, setActiveTab] = useState('assessments');
   const [previewAssessmentId, setPreviewAssessmentId] = useState<string | null>(null);
+  const [refreshConfirmId, setRefreshConfirmId] = useState<string | null>(null);
 
   // Fetch all assignments
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
@@ -142,6 +155,29 @@ const AssessmentAssignments = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete assessment');
+    },
+  });
+
+  // Refresh assessment mutation - regenerates all questions as variants via OpenAI
+  const refreshMutation = useMutation({
+    mutationFn: async (assessmentId: string) => {
+      const { data, error } = await supabase.functions.invoke('refresh-assessment', {
+        body: { assessment_id: assessmentId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['all-assessments'] });
+      queryClient.invalidateQueries({ queryKey: ['all-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-questions'] });
+      toast.success(`Refreshed ${data?.updated ?? ''} questions and cleared previous answers`);
+      setRefreshConfirmId(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to refresh assessment');
+      setRefreshConfirmId(null);
     },
   });
 
@@ -258,6 +294,20 @@ const AssessmentAssignments = () => {
             >
               <Edit className="h-4 w-4 mr-1" />
               Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRefreshConfirmId(assessment.id)}
+              disabled={refreshMutation.isPending && refreshMutation.variables === assessment.id}
+              title="Regenerate all questions as variants"
+            >
+              {refreshMutation.isPending && refreshMutation.variables === assessment.id ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1" />
+              )}
+              Refresh
             </Button>
             <Button 
               variant="ghost" 
@@ -579,6 +629,37 @@ const AssessmentAssignments = () => {
         open={!!previewAssessmentId}
         onOpenChange={(open) => !open && setPreviewAssessmentId(null)}
       />
+
+      {/* Refresh Confirmation Dialog */}
+      <AlertDialog open={!!refreshConfirmId} onOpenChange={(open) => !open && !refreshMutation.isPending && setRefreshConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refresh assessment questions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will regenerate every question as a similar variant (names, numbers and minor wording change; structure, marks and difficulty stay the same). All previous student answers and submissions for this assessment will be permanently deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={refreshMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (refreshConfirmId) refreshMutation.mutate(refreshConfirmId);
+              }}
+              disabled={refreshMutation.isPending}
+            >
+              {refreshMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Refreshing...
+                </>
+              ) : (
+                'Refresh questions'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

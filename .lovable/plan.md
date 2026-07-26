@@ -1,39 +1,46 @@
-# Handle non-attendance in lesson summaries
+## Goal
 
-Right now, when a student doesn't join a lesson, the AI still runs engagement analysis on the transcript and reports "Low engagement" — misleading parents and admins, and wasting compute. We'll treat non-attendance as a first-class state.
+On `/assessment-assignments`, each assessment card gets a **Refresh** button. Clicking it sends the assessment's existing questions to OpenAI (called directly, not via Lovable AI Gateway) which returns near-identical variants — swap names, numeric values, small wording tweaks — while keeping question_type, marks, difficulty, topic, and structure identical. Correct answers and mark schemes are recomputed to match the new values. Refresh overwrites existing questions in place and deletes all previous student answers/sessions for that assessment.
 
-## Behaviour changes
+## UX
 
-1. **Skip engagement computation for absent students.** In `generate-lesson-summaries` (and the per-student segment paths), before analysing a student, look up `lesson_attendance.attendance_status` for that `(lesson_id, student_id)`.
-   - If status is `absent`, `excused`, or (attendance row exists but student is not `attended`/`late`) → skip the OpenAI calls entirely.
-   - Write a lightweight row into `lesson_student_summaries` with:
-     - `engagement_level = null`, `engagement_score = null`, `confidence_score = null`, `participation_time_percentage = null`
-     - `topics_covered = []`
-     - `ai_summary = "Student did not attend this lesson."` (or "Marked as excused absence.")
-     - a new flag we can key off (see below).
+- New **Refresh** button on each card in `renderAssessmentCard` (`src/pages/admin/AssessmentAssignments.tsx`), next to Preview/Edit.
+- Click → confirm dialog: "This will regenerate all questions with new variants and permanently delete all previous student answers for this assessment. Continue?"
+- Confirm → button spinner, invoke edge function, toast on success/error, invalidate `all-assessments` and `assessment-questions` queries.
 
-2. **New "did not attend" flag** on `lesson_student_summaries`:
-   - Add column `attendance_status text` (nullable) synced from `lesson_attendance` at generation time.
-   - `student_lesson_insights` already has `attendance_status` and `is_meaningful`; the existing trigger `sync_insight_attendance` will keep them aligned.
+## Backend: new edge function `refresh-assessment`
 
-3. **UI: "Did Not Attend" tag** in the summaries list (`src/components/calendar/StudentLessonSummary.tsx` and any student row in `src/pages/LessonSummaries.tsx`):
-   - When `attendance_status` is `absent`/`excused` OR summary is empty and attendance says missed, render a neutral badge (e.g. amber "Did not attend" / grey "Excused absence") *instead of* the engagement/confidence badges and the numeric scorecards.
-   - Hide the engagement/confidence/participation blocks for those rows so nothing reads as "Low engagement".
+Calls OpenAI directly using the existing `OPENAI_API_KEY` secret. Model: **`gpt-4o`** (strong reasoning, reliable strict JSON, existing project pattern). Uses `response_format: { type: "json_schema", strict: true }` so the answer/mark-scheme shape is guaranteed.
 
-4. **Backfill existing rows** (one-off SQL): for every `lesson_student_summaries` row where the matching `lesson_attendance` is `absent`/`excused`, null out `engagement_score`, `confidence_score`, `participation_time_percentage`, `engagement_level`, and set `ai_summary = 'Student did not attend this lesson.'` plus `attendance_status`.
+Input: `{ assessment_id: string }` (auth required; admin/owner/tutor/creator only — mirror `useAssessmentPermissions.canEdit`).
 
-## Technical details
+Steps:
+1. Verify JWT, load caller roles, enforce edit permission.
+2. Load assessment + all `assessment_questions` ordered by `question_number`.
+3. Process in batches of 5 questions. For each batch, POST to `https://api.openai.com/v1/chat/completions` with a system prompt: "You rewrite exam questions as equivalent variants. Keep question_type, marks_available, difficulty, topic, and structural style identical. Change only surface details (names, numeric values, dates, minor wording). Recompute correct_answer and mark_scheme so they are fully consistent with the new values. For multiple choice, keep option count identical and update options + correct option." Provide the original questions as JSON; require strict JSON output matching a schema of `{ questions: [{ id, question_text, correct_answer, mark_scheme, options? }] }`.
+4. After all batches succeed, run updates + cleanup with service-role client:
+   - `UPDATE assessment_questions` per returned id with new `question_text`, `correct_answer`, `mark_scheme`, and `options` where present.
+   - `DELETE FROM student_responses WHERE session_id IN (SELECT id FROM assessment_sessions WHERE assessment_id = $1)`
+   - `DELETE FROM assessment_sessions WHERE assessment_id = $1`
+   - `DELETE FROM marking_jobs WHERE assessment_id = $1`
+   - `UPDATE assessment_assignments SET status='assigned', submitted_at=NULL, reviewed_at=NULL, reviewed_by=NULL WHERE assessment_id = $1`
+5. Return `{ success: true, updated: N }`.
 
-- **Migration**: `ALTER TABLE public.lesson_student_summaries ADD COLUMN attendance_status text;` (plus grants already exist).
-- **Edge function `generate-lesson-summaries`**:
-  - At the top of the per-student loop (both the segmented aggregator around line ~452 and the single-shot path around line ~951), fetch attendance for the lesson once, map by `student_id`, and short-circuit as described.
-  - When writing summary rows (upserts around lines ~511 and ~999), always include `attendance_status`.
-- **Frontend**:
-  - `StudentLessonSummary.tsx`: add a `didNotAttend` derived flag (`attendance_status === 'absent' || 'excused'`). Replace engagement badges/cards with a single status badge and short message.
-  - `LessonSummaries.tsx`: same treatment on the list rows; ensure filtering/sorting by engagement ignores did-not-attend rows.
-- No changes to attendance capture flow — we're only consuming existing `lesson_attendance` data.
+If any batch fails, abort before deletes — original questions and student data stay intact. Surface OpenAI 429/insufficient_quota errors clearly for UI toast.
+
+## Frontend wiring
+
+- `refreshMutation` in `AssessmentAssignments.tsx` invoking `supabase.functions.invoke('refresh-assessment', { body: { assessment_id } })`.
+- AlertDialog for confirmation.
+- Button disabled + spinner while pending; toast success/error.
+
+## Files touched
+
+- `supabase/functions/refresh-assessment/index.ts` (new)
+- `src/pages/admin/AssessmentAssignments.tsx` (button, confirm dialog, mutation)
 
 ## Out of scope
 
-- Changing how attendance is marked.
-- Any re-run of past OpenAI analyses for attended students.
+- No schema changes.
+- No changes to assessment creation, preview dialog, or take flow.
+- Options field only updated when the existing row has options.
