@@ -158,6 +158,29 @@ const AssessmentAssignments = () => {
     },
   });
 
+  // Refresh assessment mutation - regenerates all questions as variants via OpenAI
+  const refreshMutation = useMutation({
+    mutationFn: async (assessmentId: string) => {
+      const { data, error } = await supabase.functions.invoke('refresh-assessment', {
+        body: { assessment_id: assessmentId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['all-assessments'] });
+      queryClient.invalidateQueries({ queryKey: ['all-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-questions'] });
+      toast.success(`Refreshed ${data?.updated ?? ''} questions and cleared previous answers`);
+      setRefreshConfirmId(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to refresh assessment');
+      setRefreshConfirmId(null);
+    },
+  });
+
   // Review mutation
   const reviewMutation = useMutation({
     mutationFn: (assignmentId: string) => assessmentAssignmentService.markAsReviewed(assignmentId),
