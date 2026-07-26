@@ -58,6 +58,59 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     homework: null
   });
   const [isProcessed, setIsProcessed] = useState(false);
+  const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
+  const [assessmentTutors, setAssessmentTutors] = useState<any[]>([]);
+  const [selectedAssessmentTutor, setSelectedAssessmentTutor] = useState<string>('');
+  const [isAssigningAssessment, setIsAssigningAssessment] = useState(false);
+
+  const ASSESSMENT_ROOM_URL = 'https://www.thelessonspace.com/space/2670b244-b11f-4be3-8336-32bb2ce558e9';
+  const ASSESSMENT_ROOM_ID = '2670b244-b11f-4be3-8336-32bb2ce558e9';
+
+  const openAssessmentDialog = async () => {
+    setSelectedAssessmentTutor('');
+    setIsAssessmentDialogOpen(true);
+    try {
+      const { data, error } = await supabase
+        .from('tutors')
+        .select('id, first_name, last_name')
+        .eq('status', 'active')
+        .order('first_name');
+      if (error) throw error;
+      setAssessmentTutors(data || []);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to load tutors');
+    }
+  };
+
+  const handleAssignAssessmentWeek = async () => {
+    if (!lesson?.id || !selectedAssessmentTutor) return;
+    setIsAssigningAssessment(true);
+    try {
+      const { error } = await supabase
+        .from('lessons')
+        .update({
+          tutor_id: selectedAssessmentTutor,
+          lesson_space_room_url: ASSESSMENT_ROOM_URL,
+          lesson_space_room_id: ASSESSMENT_ROOM_ID,
+          lesson_space_space_id: ASSESSMENT_ROOM_ID,
+          video_conference_link: ASSESSMENT_ROOM_URL,
+          video_conference_provider: 'lessonspace',
+        })
+        .eq('id', lesson.id);
+      if (error) throw error;
+      toast.success('Assessment week assigned');
+      setIsAssessmentDialogOpen(false);
+      onLessonUpdated?.();
+      onClose();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || 'Failed to assign assessment week');
+    } finally {
+      setIsAssigningAssessment(false);
+    }
+  };
+
   const navigate = useNavigate();
   const {
     userRole,
