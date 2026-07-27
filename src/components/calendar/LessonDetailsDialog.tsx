@@ -776,30 +776,66 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Select the tutor who will run this assessment. The lesson will be reassigned and the video link swapped to the shared assessment room. Time conflicts will be ignored.
+              Reassign the lesson to the assessment tutor, swap the video link to the shared assessment room, and assign an assessment to every enrolled student. Time conflicts are ignored.
             </p>
-            <Select value={selectedAssessmentTutor} onValueChange={setSelectedAssessmentTutor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a tutor" />
-              </SelectTrigger>
-              <SelectContent>
-                {assessmentTutors.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.first_name} {t.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Tutor</label>
+              <Select value={selectedAssessmentTutor} onValueChange={setSelectedAssessmentTutor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tutor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assessmentTutors.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.first_name} {t.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Assessment</label>
+              <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an assessment" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {assessmentsList.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      <div className="flex flex-col">
+                        <span>{a.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {[a.subject, a.exam_board, a.year].filter(Boolean).join(' • ')}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Due date (optional)</label>
+              <input
+                type="date"
+                value={assessmentDueDate}
+                onChange={(e) => setAssessmentDueDate(e.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              />
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
                 Cancel
               </Button>
-              <Button onClick={handleAssignAssessmentWeek} disabled={!selectedAssessmentTutor || isAssigningAssessment}>
+              <Button
+                onClick={handleAssignAssessmentWeek}
+                disabled={!selectedAssessmentTutor || !selectedAssessmentId || isAssigningAssessment}
+              >
                 {isAssigningAssessment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Confirm
               </Button>
             </div>
           </div>
+
         </DialogContent>
       </Dialog>
     </>;
