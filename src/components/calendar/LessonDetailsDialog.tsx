@@ -62,29 +62,49 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [assessmentTutors, setAssessmentTutors] = useState<any[]>([]);
   const [selectedAssessmentTutor, setSelectedAssessmentTutor] = useState<string>('');
   const [isAssigningAssessment, setIsAssigningAssessment] = useState(false);
+  const [assessmentsList, setAssessmentsList] = useState<any[]>([]);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('');
+  const [assessmentDueDate, setAssessmentDueDate] = useState<string>('');
 
   const ASSESSMENT_ROOM_URL = 'https://www.thelessonspace.com/space/2670b244-b11f-4be3-8336-32bb2ce558e9';
   const ASSESSMENT_ROOM_ID = '2670b244-b11f-4be3-8336-32bb2ce558e9';
 
   const openAssessmentDialog = async () => {
     setSelectedAssessmentTutor('');
+    setSelectedAssessmentId('');
+    // Default due date to lesson end date (yyyy-mm-dd)
+    try {
+      const d = lesson?.end_time ? new Date(lesson.end_time) : new Date();
+      setAssessmentDueDate(d.toISOString().slice(0, 10));
+    } catch {
+      setAssessmentDueDate('');
+    }
     setIsAssessmentDialogOpen(true);
     try {
-      const { data, error } = await supabase
-        .from('tutors')
-        .select('id, first_name, last_name')
-        .eq('status', 'active')
-        .order('first_name');
-      if (error) throw error;
-      setAssessmentTutors(data || []);
+      const [tutorsRes, assessmentsRes] = await Promise.all([
+        supabase
+          .from('tutors')
+          .select('id, first_name, last_name')
+          .eq('status', 'active')
+          .order('first_name'),
+        supabase
+          .from('ai_assessments')
+          .select('id, title, subject, exam_board, year')
+          .eq('status', 'published')
+          .order('title'),
+      ]);
+      if (tutorsRes.error) throw tutorsRes.error;
+      if (assessmentsRes.error) throw assessmentsRes.error;
+      setAssessmentTutors(tutorsRes.data || []);
+      setAssessmentsList(assessmentsRes.data || []);
     } catch (e) {
       console.error(e);
-      toast.error('Failed to load tutors');
+      toast.error('Failed to load tutors or assessments');
     }
   };
 
   const handleAssignAssessmentWeek = async () => {
-    if (!lesson?.id || !selectedAssessmentTutor) return;
+    if (!lesson?.id || !selectedAssessmentTutor || !selectedAssessmentId) return;
     setIsAssigningAssessment(true);
     try {
       const { error } = await supabase
@@ -114,7 +134,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       const { data: enrolled, error: enrolledError } = await supabase
         .from('lesson_students')
-        .select('student:students(id, first_name, last_name)')
+        .select('student:students(id, user_id, first_name, last_name)')
         .eq('lesson_id', lesson.id);
       if (enrolledError) throw enrolledError;
 
@@ -152,7 +172,55 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .insert(rows);
       if (insertUrlError) throw insertUrlError;
 
-      toast.success('Assessment week assigned');
+      // Assign the selected assessment to every enrolled student that has a user account
+      const studentList = (enrolled || [])
+        .map((r: any) => r.student)
+        .filter((s: any) => s?.id);
+      const withAccount = studentList.filter((s: any) => !!s.user_id);
+      const skipped = studentList.length - withAccount.length;
+
+      let assignedCount = 0;
+      if (withAccount.length > 0) {
+        const { data: authData } = await supabase.auth.getUser();
+        const assignedBy = authData?.user?.id;
+        const dueDateIso = assessmentDueDate ? new Date(assessmentDueDate).toISOString() : null;
+
+        // Avoid duplicate rows for students already assigned this assessment
+        const userIds = withAccount.map((s: any) => s.user_id);
+        const { data: existing } = await supabase
+          .from('assessment_assignments')
+          .select('assigned_to')
+          .eq('assessment_id', selectedAssessmentId)
+          .in('assigned_to', userIds);
+        const existingIds = new Set((existing || []).map((r: any) => r.assigned_to));
+
+        const toInsert = withAccount
+          .filter((s: any) => !existingIds.has(s.user_id))
+          .map((s: any) => ({
+            assessment_id: selectedAssessmentId,
+            assigned_to: s.user_id,
+            assigned_by: assignedBy,
+            due_date: dueDateIso,
+            status: 'assigned' as const,
+            notes: `Assigned via Assessment Week for ${lesson.title || 'lesson'}`,
+          }));
+
+        if (toInsert.length > 0) {
+          const { error: assignError } = await supabase
+            .from('assessment_assignments')
+            .insert(toInsert);
+          if (assignError) throw assignError;
+        }
+        assignedCount = toInsert.length;
+      }
+
+      toast.success(
+        `Assessment week assigned — sent to ${assignedCount} of ${studentList.length} student${studentList.length === 1 ? '' : 's'}`
+      );
+      if (skipped > 0) {
+        toast.message(`${skipped} student${skipped === 1 ? '' : 's'} skipped (no linked account)`);
+      }
+
       setIsAssessmentDialogOpen(false);
       onLessonUpdated?.();
       onClose();
@@ -708,30 +776,66 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Select the tutor who will run this assessment. The lesson will be reassigned and the video link swapped to the shared assessment room. Time conflicts will be ignored.
+              Reassign the lesson to the assessment tutor, swap the video link to the shared assessment room, and assign an assessment to every enrolled student. Time conflicts are ignored.
             </p>
-            <Select value={selectedAssessmentTutor} onValueChange={setSelectedAssessmentTutor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a tutor" />
-              </SelectTrigger>
-              <SelectContent>
-                {assessmentTutors.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.first_name} {t.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Tutor</label>
+              <Select value={selectedAssessmentTutor} onValueChange={setSelectedAssessmentTutor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tutor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assessmentTutors.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.first_name} {t.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Assessment</label>
+              <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an assessment" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {assessmentsList.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      <div className="flex flex-col">
+                        <span>{a.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {[a.subject, a.exam_board, a.year].filter(Boolean).join(' • ')}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Due date (optional)</label>
+              <input
+                type="date"
+                value={assessmentDueDate}
+                onChange={(e) => setAssessmentDueDate(e.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              />
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
                 Cancel
               </Button>
-              <Button onClick={handleAssignAssessmentWeek} disabled={!selectedAssessmentTutor || isAssigningAssessment}>
+              <Button
+                onClick={handleAssignAssessmentWeek}
+                disabled={!selectedAssessmentTutor || !selectedAssessmentId || isAssigningAssessment}
+              >
                 {isAssigningAssessment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Confirm
               </Button>
             </div>
           </div>
+
         </DialogContent>
       </Dialog>
     </>;
