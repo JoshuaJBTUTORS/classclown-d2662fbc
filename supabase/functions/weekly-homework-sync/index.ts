@@ -80,6 +80,22 @@ function pickMostCommon<T extends string | null>(values: T[]): T | null {
   return (best ?? null) as T | null;
 }
 
+// Hard filter: exclude Non-Verbal Reasoning (NVR) from HeyCleo sync.
+// Tolerates variants like "NVR", "Non-Verbal Reasoning", "nonverbal reasoning".
+// Verbal Reasoning (VR) and other 11+ subjects are NOT filtered.
+function isNvrSubject(...values: (string | null | undefined)[]): boolean {
+  for (const raw of values) {
+    if (!raw) continue;
+    const s = String(raw).toLowerCase().replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
+    if (!s) continue;
+    if (/(^|[^a-z])nvr([^a-z]|$)/.test(s)) return true;
+    if (s.includes("non verbal reasoning")) return true;
+    if (s.includes("nonverbal reasoning")) return true;
+  }
+  return false;
+}
+
+
 async function postWithRetry(url: string, headers: Record<string, string>, body: string) {
   const maxAttempts = 3;
   let lastStatus = 0;
@@ -227,6 +243,13 @@ serve(async (req) => {
       const subject: string = (brief.subject || row.lessons?.subject || "").trim();
       if (!subject) return;
 
+      // Hard filter: exclude NVR entirely.
+      if (isNvrSubject(subject, brief.subject, row.lessons?.subject)) {
+        console.log("[weekly-homework-sync] Skipping NVR row", { studentId: row.student_id, subject });
+        return;
+      }
+
+
       const topics: string[] = Array.isArray(brief.topics) ? brief.topics.filter(Boolean) : [];
       const year: string | null = brief.year_group || null;
       const difficultyRaw = Number(brief.difficulty_tag);
@@ -310,6 +333,22 @@ serve(async (req) => {
         difficulty_tag: a.difficulty,
         lesson_count: a.lesson_count,
       }));
+
+      const totalLessons = subjects.reduce((n, s) => n + s.lesson_count, 0);
+      if (subjects.length === 0 || totalLessons === 0) {
+        console.log("[weekly-homework-sync] Skipping student — no eligible lessons after filters", { studentId });
+        skipped += 1;
+        try {
+          await service.from("notifications").insert({
+            type: "heycleo_weekly_homework_sync",
+            subject: `${weekStartIso} · skipped: no_eligible_lessons`,
+            email: student.email || `student-${student.id}`,
+            status: "skipped",
+          });
+        } catch (_) { /* best-effort */ }
+        continue;
+      }
+
 
       const syncId = await sha256Hex(`${studentId}|${weekStartIso}`);
       const parent_email = student.parent_id ? parentEmailMap.get(student.parent_id) ?? null : null;
