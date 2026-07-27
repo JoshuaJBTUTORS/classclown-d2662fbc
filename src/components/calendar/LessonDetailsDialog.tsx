@@ -134,7 +134,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       const { data: enrolled, error: enrolledError } = await supabase
         .from('lesson_students')
-        .select('student:students(id, first_name, last_name)')
+        .select('student:students(id, user_id, first_name, last_name)')
         .eq('lesson_id', lesson.id);
       if (enrolledError) throw enrolledError;
 
@@ -172,7 +172,55 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .insert(rows);
       if (insertUrlError) throw insertUrlError;
 
-      toast.success('Assessment week assigned');
+      // Assign the selected assessment to every enrolled student that has a user account
+      const studentList = (enrolled || [])
+        .map((r: any) => r.student)
+        .filter((s: any) => s?.id);
+      const withAccount = studentList.filter((s: any) => !!s.user_id);
+      const skipped = studentList.length - withAccount.length;
+
+      let assignedCount = 0;
+      if (withAccount.length > 0) {
+        const { data: authData } = await supabase.auth.getUser();
+        const assignedBy = authData?.user?.id;
+        const dueDateIso = assessmentDueDate ? new Date(assessmentDueDate).toISOString() : null;
+
+        // Avoid duplicate rows for students already assigned this assessment
+        const userIds = withAccount.map((s: any) => s.user_id);
+        const { data: existing } = await supabase
+          .from('assessment_assignments')
+          .select('assigned_to')
+          .eq('assessment_id', selectedAssessmentId)
+          .in('assigned_to', userIds);
+        const existingIds = new Set((existing || []).map((r: any) => r.assigned_to));
+
+        const toInsert = withAccount
+          .filter((s: any) => !existingIds.has(s.user_id))
+          .map((s: any) => ({
+            assessment_id: selectedAssessmentId,
+            assigned_to: s.user_id,
+            assigned_by: assignedBy,
+            due_date: dueDateIso,
+            status: 'assigned' as const,
+            notes: `Assigned via Assessment Week for ${lesson.title || 'lesson'}`,
+          }));
+
+        if (toInsert.length > 0) {
+          const { error: assignError } = await supabase
+            .from('assessment_assignments')
+            .insert(toInsert);
+          if (assignError) throw assignError;
+        }
+        assignedCount = toInsert.length;
+      }
+
+      toast.success(
+        `Assessment week assigned — sent to ${assignedCount} of ${studentList.length} student${studentList.length === 1 ? '' : 's'}`
+      );
+      if (skipped > 0) {
+        toast.message(`${skipped} student${skipped === 1 ? '' : 's'} skipped (no linked account)`);
+      }
+
       setIsAssessmentDialogOpen(false);
       onLessonUpdated?.();
       onClose();
