@@ -229,8 +229,8 @@ serve(async (req) => {
         }
       }
 
-      // Send email to parent if they exist and have an email
-      if (student.parent && student.parent.email) {
+      // Parent email notifications temporarily disabled (kept in code, disconnected)
+      if (false && student.parent && student.parent.email) {
         console.log(`Preparing email for parent: ${student.parent.first_name} ${student.parent.last_name}`);
         
         const parentHtml = await renderAsync(
@@ -254,7 +254,6 @@ serve(async (req) => {
 
         emailPromises.push(parentEmailPromise);
 
-        // Create notification record for parent
         if (student.parent.user_id) {
           const parentNotificationPromise = supabase
             .from('notifications')
@@ -268,6 +267,8 @@ serve(async (req) => {
 
           notificationPromises.push(parentNotificationPromise);
         }
+      } else if (student.parent && student.parent.email) {
+        console.log(`Parent email skipped (disabled) for ${student.parent.email}`);
       }
     }
 
@@ -306,8 +307,8 @@ serve(async (req) => {
         whatsappPromises.push(whatsappPromise);
       }
 
-      // Send WhatsApp to parent if they have a phone number
-      if (student.parent && (student.parent.phone || student.parent.whatsapp_number)) {
+      // Parent WhatsApp notifications temporarily disabled (kept in code, disconnected)
+      if (false && student.parent && (student.parent.phone || student.parent.whatsapp_number)) {
         const phoneNumber = student.parent.whatsapp_number || student.parent.phone;
         const whatsappText = WhatsAppTemplates.homeworkNotification(
           `${student.parent.first_name} ${student.parent.last_name}`,
@@ -321,6 +322,8 @@ serve(async (req) => {
           text: whatsappText
         });
         whatsappPromises.push(whatsappPromise);
+      } else if (student.parent && (student.parent.phone || student.parent.whatsapp_number)) {
+        console.log(`Parent WhatsApp skipped (disabled) for ${student.parent.first_name}`);
       }
     }
 
