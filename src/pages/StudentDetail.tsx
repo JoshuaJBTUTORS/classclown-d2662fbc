@@ -6,9 +6,18 @@ import PageTitle from '@/components/ui/PageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, BookOpen, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useStudentWeeklyTopics } from '@/hooks/useStudentWeeklyTopics';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+const toIsoDate = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 const formatRange = (start: Date, end: Date) => {
   const s = start.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -32,9 +41,41 @@ const StudentDetail: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentName, setStudentName] = useState<string>('Student');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { userRole } = useAuth();
+  const canSync = userRole === 'owner' || userRole === 'admin';
 
   const { groups, missedCount, cancelledCount, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek } =
     useStudentWeeklyTopics(studentId);
+
+  const handleSync = async () => {
+    if (!studentId) return;
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('weekly-homework-sync', {
+        body: {
+          week_start: toIsoDate(weekStart),
+          student_ids: [Number(studentId)],
+        },
+      });
+      if (error) throw error;
+      const sent = (data as any)?.sent ?? 0;
+      const failed = (data as any)?.failed ?? 0;
+      const skipped = (data as any)?.skipped ?? 0;
+      if (sent > 0) {
+        toast.success(`HeyCleo sync sent for ${studentName}`);
+      } else if (failed > 0) {
+        toast.error(`HeyCleo sync failed (${failed})`);
+      } else {
+        toast(`No homework briefs to sync this week (skipped ${skipped})`);
+      }
+    } catch (err: any) {
+      console.error('Weekly homework sync failed', err);
+      toast.error(err?.message || 'Failed to sync weekly homework');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (!studentId) return;
@@ -103,6 +144,16 @@ const StudentDetail: React.FC = () => {
                   <Button variant="secondary" size="sm" onClick={goThisWeek}>
                     This week
                   </Button>
+                  {canSync && (
+                    <Button size="sm" onClick={handleSync} disabled={isSyncing}>
+                      {isSyncing ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      Sync to HeyCleo
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -14,69 +14,14 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Loader2, GraduationCap, Search, Send } from 'lucide-react';
+import { Loader2, GraduationCap, Search } from 'lucide-react';
 import { useStudentData } from '@/hooks/useStudentData';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-// Monday 00:00 of London week containing d.
-function londonMondayOf(d: Date): Date {
-  const london = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/London' }));
-  const day = london.getDay();
-  const diffToMonday = (day + 6) % 7;
-  london.setHours(0, 0, 0, 0);
-  london.setDate(london.getDate() - diffToMonday);
-  return london;
-}
-function toIsoDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
 
 const StudentsList: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { students, isLoading } = useStudentData();
-  const { userRole } = useAuth();
-  const canSync = userRole === 'owner' || userRole === 'admin';
-  const [syncWeek, setSyncWeek] = useState<'previous' | 'current'>('previous');
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleSync = async () => {
-    setIsSyncing(true);
-    try {
-      const thisMonday = londonMondayOf(new Date());
-      const target = new Date(thisMonday);
-      if (syncWeek === 'previous') target.setDate(target.getDate() - 7);
-      const week_start = toIsoDate(target);
-
-      const { data, error } = await supabase.functions.invoke('weekly-homework-sync', {
-        body: { week_start },
-      });
-      if (error) throw error;
-      const sent = (data as any)?.sent ?? 0;
-      const failed = (data as any)?.failed ?? 0;
-      const skipped = (data as any)?.skipped ?? 0;
-      toast.success(`HeyCleo sync — sent ${sent}, failed ${failed}, skipped ${skipped}`);
-    } catch (err: any) {
-      console.error('Weekly homework sync failed', err);
-      toast.error(err?.message || 'Failed to sync weekly homework');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const q = searchQuery.trim().toLowerCase();
   const filteredStudents = q
@@ -90,6 +35,7 @@ const StudentsList: React.FC = () => {
         );
       })
     : students;
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,37 +56,14 @@ const StudentsList: React.FC = () => {
                   <GraduationCap className="h-5 w-5" />
                   All Students {students.length > 0 && `(${filteredStudents.length}/${students.length})`}
                 </CardTitle>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  {canSync && (
-                    <div className="flex items-center gap-2">
-                      <Select value={syncWeek} onValueChange={(v) => setSyncWeek(v as any)}>
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="previous">Previous week</SelectItem>
-                          <SelectItem value="current">This week</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button size="sm" onClick={handleSync} disabled={isSyncing}>
-                        {isSyncing ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Send className="h-4 w-4 mr-2" />
-                        )}
-                        Sync to HeyCleo
-                      </Button>
-                    </div>
-                  )}
-                  <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search students..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search students..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
               </CardHeader>
               <CardContent>
