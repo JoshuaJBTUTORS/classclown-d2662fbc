@@ -123,7 +123,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const sharedSecret = Deno.env.get("HEYCLEO_CROSS_PLATFORM_SECRET") ?? "";
-    const receiverUrl = Deno.env.get("HEYCLEO_WEEKLY_HOMEWORK_URL") ?? "";
+    const receiverUrl = Deno.env.get("HEYCLEO_WEEKLY_HOMEWORK_URL")
+      ?? "https://vfhftrmneaizgdvngfwe.supabase.co/functions/v1/receive-weekly-homework-from-crm";
 
     if (!supabaseUrl || !serviceKey) {
       return new Response(
@@ -137,12 +138,7 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (!receiverUrl) {
-      return new Response(
-        JSON.stringify({ success: false, error: "HEYCLEO_WEEKLY_HOMEWORK_URL not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+
 
     const service = createClient(supabaseUrl, serviceKey);
 
