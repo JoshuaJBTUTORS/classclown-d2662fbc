@@ -71,23 +71,40 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
   const openAssessmentDialog = async () => {
     setSelectedAssessmentTutor('');
+    setSelectedAssessmentId('');
+    // Default due date to lesson end date (yyyy-mm-dd)
+    try {
+      const d = lesson?.end_time ? new Date(lesson.end_time) : new Date();
+      setAssessmentDueDate(d.toISOString().slice(0, 10));
+    } catch {
+      setAssessmentDueDate('');
+    }
     setIsAssessmentDialogOpen(true);
     try {
-      const { data, error } = await supabase
-        .from('tutors')
-        .select('id, first_name, last_name')
-        .eq('status', 'active')
-        .order('first_name');
-      if (error) throw error;
-      setAssessmentTutors(data || []);
+      const [tutorsRes, assessmentsRes] = await Promise.all([
+        supabase
+          .from('tutors')
+          .select('id, first_name, last_name')
+          .eq('status', 'active')
+          .order('first_name'),
+        supabase
+          .from('ai_assessments')
+          .select('id, title, subject, exam_board, year')
+          .eq('status', 'published')
+          .order('title'),
+      ]);
+      if (tutorsRes.error) throw tutorsRes.error;
+      if (assessmentsRes.error) throw assessmentsRes.error;
+      setAssessmentTutors(tutorsRes.data || []);
+      setAssessmentsList(assessmentsRes.data || []);
     } catch (e) {
       console.error(e);
-      toast.error('Failed to load tutors');
+      toast.error('Failed to load tutors or assessments');
     }
   };
 
   const handleAssignAssessmentWeek = async () => {
-    if (!lesson?.id || !selectedAssessmentTutor) return;
+    if (!lesson?.id || !selectedAssessmentTutor || !selectedAssessmentId) return;
     setIsAssigningAssessment(true);
     try {
       const { error } = await supabase
