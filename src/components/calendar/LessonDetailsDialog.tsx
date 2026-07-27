@@ -800,38 +800,58 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Assessment</label>
-              <Input
-                placeholder="Search assessments..."
-                value={assessmentSearch}
-                onChange={(e) => setAssessmentSearch(e.target.value)}
-                className="mb-1.5"
-              />
-              <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an assessment" />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {assessmentsList
-                    .filter((a) => {
-                      const q = assessmentSearch.trim().toLowerCase();
-                      if (!q) return true;
-                      return [a.title, a.subject, a.exam_board, a.year]
-                        .filter(Boolean)
-                        .some((v: any) => String(v).toLowerCase().includes(q));
-                    })
-                    .map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        <div className="flex flex-col">
-                          <span>{a.title}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {[a.subject, a.exam_board, a.year].filter(Boolean).join(' • ')}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <Popover open={assessmentPopoverOpen} onOpenChange={setAssessmentPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={assessmentPopoverOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {(() => {
+                      const sel = assessmentsList.find((a) => a.id === selectedAssessmentId);
+                      return sel ? sel.title : 'Select an assessment';
+                    })()}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search assessments..." />
+                    <CommandList className="max-h-72">
+                      <CommandEmpty>No assessments found.</CommandEmpty>
+                      <CommandGroup>
+                        {assessmentsList.map((a) => {
+                          const subtitle = [a.subject, a.exam_board, a.year].filter(Boolean).join(' • ');
+                          const value = [a.title, a.subject, a.exam_board, a.year].filter(Boolean).join(' ');
+                          return (
+                            <CommandItem
+                              key={a.id}
+                              value={value}
+                              onSelect={() => {
+                                setSelectedAssessmentId(a.id);
+                                setAssessmentPopoverOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${selectedAssessmentId === a.id ? 'opacity-100' : 'opacity-0'}`}
+                              />
+                              <div className="flex flex-col">
+                                <span>{a.title}</span>
+                                {subtitle && (
+                                  <span className="text-xs text-muted-foreground">{subtitle}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
+
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Due date (optional)</label>
