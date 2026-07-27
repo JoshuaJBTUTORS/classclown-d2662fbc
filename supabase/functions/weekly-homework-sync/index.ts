@@ -334,6 +334,22 @@ serve(async (req) => {
         lesson_count: a.lesson_count,
       }));
 
+      const totalLessons = subjects.reduce((n, s) => n + s.lesson_count, 0);
+      if (subjects.length === 0 || totalLessons === 0) {
+        console.log("[weekly-homework-sync] Skipping student — no eligible lessons after filters", { studentId });
+        skipped += 1;
+        try {
+          await service.from("notifications").insert({
+            type: "heycleo_weekly_homework_sync",
+            subject: `${weekStartIso} · skipped: no_eligible_lessons`,
+            email: student.email || `student-${student.id}`,
+            status: "skipped",
+          });
+        } catch (_) { /* best-effort */ }
+        continue;
+      }
+
+
       const syncId = await sha256Hex(`${studentId}|${weekStartIso}`);
       const parent_email = student.parent_id ? parentEmailMap.get(student.parent_id) ?? null : null;
 
