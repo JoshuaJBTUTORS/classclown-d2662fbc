@@ -307,8 +307,8 @@ serve(async (req) => {
         whatsappPromises.push(whatsappPromise);
       }
 
-      // Send WhatsApp to parent if they have a phone number
-      if (student.parent && (student.parent.phone || student.parent.whatsapp_number)) {
+      // Parent WhatsApp notifications temporarily disabled (kept in code, disconnected)
+      if (false && student.parent && (student.parent.phone || student.parent.whatsapp_number)) {
         const phoneNumber = student.parent.whatsapp_number || student.parent.phone;
         const whatsappText = WhatsAppTemplates.homeworkNotification(
           `${student.parent.first_name} ${student.parent.last_name}`,
@@ -322,6 +322,8 @@ serve(async (req) => {
           text: whatsappText
         });
         whatsappPromises.push(whatsappPromise);
+      } else if (student.parent && (student.parent.phone || student.parent.whatsapp_number)) {
+        console.log(`Parent WhatsApp skipped (disabled) for ${student.parent.first_name}`);
       }
     }
 
