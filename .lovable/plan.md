@@ -1,20 +1,18 @@
-## Hard filters for HeyCleo weekly sync
+## Goal
+Silence the per-lesson HeyCleo homework sync so that when a tutor completes a lesson and assigns homework, nothing is pushed to HeyCleo. Emails/WhatsApp to parents/students continue as normal, and the weekly `weekly-homework-sync` flow is untouched.
 
-Apply in `supabase/functions/weekly-homework-sync/index.ts` so both the manual button and any future cron use the same rules.
+## Change
 
-### 1. Exclude NVR (Non-Verbal Reasoning)
-During aggregation, skip any summary whose subject matches NVR (case-insensitive, tolerant of variants: `NVR`, `non-verbal reasoning`, `non verbal reasoning`, `nonverbal reasoning`). Check both `homework_brief.subject` and `lessons.subject` — if either matches, drop the row. Verbal Reasoning (VR) and other 11+ subjects are still synced.
+In `supabase/functions/send-homework-notification/index.ts`:
 
-### 2. Require at least one attended lesson
-The current attendance filter drops individual no-show rows, but make the "nothing to send" case explicit:
-- After aggregation + NVR filter, if a student has zero subjects / zero surviving lessons, skip them and count as `skipped` with reason `no_eligible_lessons`.
-- Do not POST to HeyCleo for that student.
+- Short-circuit the HeyCleo block around lines 357–397: skip the eligibility check and the `sendHomeworkToHeyCleo(...)` call entirely, and log `HeyCleo sync disabled (per-lesson sync silenced)`.
+- Leave `heyCleoResult = { success: false, error: 'disabled' }` so the existing response shape (`heyCleoSync: false`) stays the same and no downstream callers break.
+- Leave the `sendHomeworkToHeyCleo` helper and email-collection code in place but unused, so re-enabling later is a one-line change.
 
-### 3. Logging + response
-- Log skipped students with reason (`only_nvr`, `no_attended_lessons`).
-- Include the skip reason on the per-student `notifications` row already written.
+## Not changed
+- Lesson completion flow, homework creation, email/WhatsApp notifications.
+- `weekly-homework-sync` (the manual "Sync to HeyCleo" button on the student page keeps working).
+- HeyCleo SSO and other integrations.
 
-### Files touched
-- `supabase/functions/weekly-homework-sync/index.ts` (filter + skip accounting only)
-
-No schema changes, no receiver changes, no new secrets.
+## Verify
+Redeploy `send-homework-notification` and confirm in edge function logs that the next homework assignment logs `HeyCleo sync disabled` and no POST goes to `receive-homework-from-crm`.
