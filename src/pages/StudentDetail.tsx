@@ -6,9 +6,18 @@ import PageTitle from '@/components/ui/PageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, BookOpen, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useStudentWeeklyTopics } from '@/hooks/useStudentWeeklyTopics';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+const toIsoDate = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 const formatRange = (start: Date, end: Date) => {
   const s = start.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
