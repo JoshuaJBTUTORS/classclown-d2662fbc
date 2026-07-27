@@ -177,21 +177,34 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .insert(rows);
       if (insertUrlError) throw insertUrlError;
 
-      // Assign the selected assessment to every enrolled student that has a user account
+      // Assign the selected assessment to every enrolled student — fallback to parent account
       const studentList = (enrolled || [])
         .map((r: any) => r.student)
         .filter((s: any) => s?.id);
-      const withAccount = studentList.filter((s: any) => !!s.user_id);
-      const skipped = studentList.length - withAccount.length;
+
+      const resolved = studentList
+        .map((s: any) => ({
+          student: s,
+          targetUserId: s.user_id || s.parent?.user_id || null,
+          viaParent: !s.user_id && !!s.parent?.user_id,
+        }))
+        .filter((r) => !!r.targetUserId);
+      const skipped = studentList.length - resolved.length;
+
+      // Dedupe by target user id (parents with multiple kids in group)
+      const uniqueByUser = new Map<string, typeof resolved[number]>();
+      for (const r of resolved) {
+        if (!uniqueByUser.has(r.targetUserId!)) uniqueByUser.set(r.targetUserId!, r);
+      }
+      const uniqueTargets = Array.from(uniqueByUser.values());
 
       let assignedCount = 0;
-      if (withAccount.length > 0) {
+      if (uniqueTargets.length > 0) {
         const { data: authData } = await supabase.auth.getUser();
         const assignedBy = authData?.user?.id;
         const dueDateIso = assessmentDueDate ? new Date(assessmentDueDate).toISOString() : null;
 
-        // Avoid duplicate rows for students already assigned this assessment
-        const userIds = withAccount.map((s: any) => s.user_id);
+        const userIds = uniqueTargets.map((r) => r.targetUserId as string);
         const { data: existing } = await supabase
           .from('assessment_assignments')
           .select('assigned_to')
@@ -199,15 +212,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
           .in('assigned_to', userIds);
         const existingIds = new Set((existing || []).map((r: any) => r.assigned_to));
 
-        const toInsert = withAccount
-          .filter((s: any) => !existingIds.has(s.user_id))
-          .map((s: any) => ({
+        const toInsert = uniqueTargets
+          .filter((r) => !existingIds.has(r.targetUserId as string))
+          .map((r) => ({
             assessment_id: selectedAssessmentId,
-            assigned_to: s.user_id,
+            assigned_to: r.targetUserId as string,
             assigned_by: assignedBy,
             due_date: dueDateIso,
             status: 'assigned' as const,
-            notes: `Assigned via Assessment Week for ${lesson.title || 'lesson'}`,
+            notes: `Assigned via Assessment Week for ${lesson.title || 'lesson'}${r.viaParent ? ' (sent to parent account)' : ''}`,
           }));
 
         if (toInsert.length > 0) {
@@ -220,11 +233,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       }
 
       toast.success(
-        `Assessment week assigned — sent to ${assignedCount} of ${studentList.length} student${studentList.length === 1 ? '' : 's'}`
+        `Assessment week assigned — sent to ${resolved.length} of ${studentList.length} student${studentList.length === 1 ? '' : 's'} (via parent where needed)`
       );
       if (skipped > 0) {
-        toast.message(`${skipped} student${skipped === 1 ? '' : 's'} skipped (no linked account)`);
+        toast.message(`${skipped} student${skipped === 1 ? '' : 's'} skipped (no student or parent account linked)`);
       }
+
 
       setIsAssessmentDialogOpen(false);
       onLessonUpdated?.();
