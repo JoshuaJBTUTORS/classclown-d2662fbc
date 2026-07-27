@@ -14,14 +14,69 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, GraduationCap, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Loader2, GraduationCap, Search, Send } from 'lucide-react';
 import { useStudentData } from '@/hooks/useStudentData';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// Monday 00:00 of London week containing d.
+function londonMondayOf(d: Date): Date {
+  const london = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/London' }));
+  const day = london.getDay();
+  const diffToMonday = (day + 6) % 7;
+  london.setHours(0, 0, 0, 0);
+  london.setDate(london.getDate() - diffToMonday);
+  return london;
+}
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 const StudentsList: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { students, isLoading } = useStudentData();
+  const { userRole } = useAuth();
+  const canSync = userRole === 'owner' || userRole === 'admin';
+  const [syncWeek, setSyncWeek] = useState<'previous' | 'current'>('previous');
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      const thisMonday = londonMondayOf(new Date());
+      const target = new Date(thisMonday);
+      if (syncWeek === 'previous') target.setDate(target.getDate() - 7);
+      const week_start = toIsoDate(target);
+
+      const { data, error } = await supabase.functions.invoke('weekly-homework-sync', {
+        body: { week_start },
+      });
+      if (error) throw error;
+      const sent = (data as any)?.sent ?? 0;
+      const failed = (data as any)?.failed ?? 0;
+      const skipped = (data as any)?.skipped ?? 0;
+      toast.success(`HeyCleo sync — sent ${sent}, failed ${failed}, skipped ${skipped}`);
+    } catch (err: any) {
+      console.error('Weekly homework sync failed', err);
+      toast.error(err?.message || 'Failed to sync weekly homework');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const q = searchQuery.trim().toLowerCase();
   const filteredStudents = q
