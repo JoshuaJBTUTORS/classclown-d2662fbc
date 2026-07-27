@@ -1,17 +1,17 @@
-Fix Assessment Week assignment so students without a linked account fall back to their parent's account.
+Clear old assessment assignments so students only see the newly assigned ones in the Assessment Center.
 
-## Root cause
-`handleAssignAssessmentWeek` in `src/components/calendar/LessonDetailsDialog.tsx` only assigns the assessment to `students.user_id`. Most students are minors and have `user_id = null`, so all 4 got skipped even though their parents have accounts.
+## What to do
 
-## Changes — `src/components/calendar/LessonDetailsDialog.tsx`
-- Update the enrolled-students query to also pull the parent's user_id:
-  `student:students(id, user_id, first_name, last_name, parent:parents(user_id))`
-- For each enrolled student, resolve `targetUserId = student.user_id ?? student.parent?.user_id ?? null`.
-- Split into:
-  - `resolved` = students with any `targetUserId` (student or parent).
-  - `skipped` = students where neither exists.
-- Dedupe by `targetUserId` (a parent with multiple kids in the group only gets one row per assessment).
-- Keep the existing "already assigned" check against `assessment_assignments`.
-- Update toast copy to `"Assessment week assigned — sent to X of Y students (via parent where needed)"` and only show the skipped toast when `skipped > 0`.
+One-off data cleanup via the insert tool (SQL DELETE):
 
-No DB/schema changes.
+```sql
+DELETE FROM public.assessment_assignments
+WHERE created_at < '2026-07-27'::date;
+```
+
+This removes every assignment created on or before 26/07/2026 (anything from 27/07/2026 onward is preserved).
+
+## Notes
+- No schema or code changes — Assessment Center already lists whatever remains in `assessment_assignments` for the student/parent.
+- This is destructive and cannot be undone. Confirm the cutoff date before I run it.
+- Related rows in `assessment_sessions` / `student_responses` are keyed to `assessment_id` + `user_id`, not `assignment_id`, so past attempts/scores stay intact — only the assignment listing is cleared.
