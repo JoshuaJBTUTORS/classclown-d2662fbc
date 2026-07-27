@@ -80,6 +80,22 @@ function pickMostCommon<T extends string | null>(values: T[]): T | null {
   return (best ?? null) as T | null;
 }
 
+// Hard filter: exclude Non-Verbal Reasoning (NVR) from HeyCleo sync.
+// Tolerates variants like "NVR", "Non-Verbal Reasoning", "nonverbal reasoning".
+// Verbal Reasoning (VR) and other 11+ subjects are NOT filtered.
+function isNvrSubject(...values: (string | null | undefined)[]): boolean {
+  for (const raw of values) {
+    if (!raw) continue;
+    const s = String(raw).toLowerCase().replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
+    if (!s) continue;
+    if (/(^|[^a-z])nvr([^a-z]|$)/.test(s)) return true;
+    if (s.includes("non verbal reasoning")) return true;
+    if (s.includes("nonverbal reasoning")) return true;
+  }
+  return false;
+}
+
+
 async function postWithRetry(url: string, headers: Record<string, string>, body: string) {
   const maxAttempts = 3;
   let lastStatus = 0;
