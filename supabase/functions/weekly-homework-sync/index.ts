@@ -243,6 +243,13 @@ serve(async (req) => {
       const subject: string = (brief.subject || row.lessons?.subject || "").trim();
       if (!subject) return;
 
+      // Hard filter: exclude NVR entirely.
+      if (isNvrSubject(subject, brief.subject, row.lessons?.subject)) {
+        console.log("[weekly-homework-sync] Skipping NVR row", { studentId: row.student_id, subject });
+        return;
+      }
+
+
       const topics: string[] = Array.isArray(brief.topics) ? brief.topics.filter(Boolean) : [];
       const year: string | null = brief.year_group || null;
       const difficultyRaw = Number(brief.difficulty_tag);
