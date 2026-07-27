@@ -56,37 +56,14 @@ const StudentsList: React.FC = () => {
                   <GraduationCap className="h-5 w-5" />
                   All Students {students.length > 0 && `(${filteredStudents.length}/${students.length})`}
                 </CardTitle>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  {canSync && (
-                    <div className="flex items-center gap-2">
-                      <Select value={syncWeek} onValueChange={(v) => setSyncWeek(v as any)}>
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="previous">Previous week</SelectItem>
-                          <SelectItem value="current">This week</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button size="sm" onClick={handleSync} disabled={isSyncing}>
-                        {isSyncing ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Send className="h-4 w-4 mr-2" />
-                        )}
-                        Sync to HeyCleo
-                      </Button>
-                    </div>
-                  )}
-                  <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search students..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search students..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
               </CardHeader>
               <CardContent>
