@@ -1,10 +1,12 @@
-Add a search bar to the assessment selector in the "Assessment Week" dialog on the calendar's Lesson Details.
+Replace the assessment `Select` in the Assessment Week dialog with a searchable combobox so the search bar is clearly visible.
 
 ## Changes
 - `src/components/calendar/LessonDetailsDialog.tsx`
-  - Add `assessmentSearch` state (string).
-  - Above the assessment `<Select>` in the Assessment Week dialog, render a small `<Input>` with placeholder "Search assessments..." bound to `assessmentSearch`.
-  - Filter `assessmentsList` by title (case-insensitive) when rendering the `SelectItem` list.
-  - Reset `assessmentSearch` when the dialog opens/closes.
+  - Remove the current `Input` + `Select` combo for the Assessment field.
+  - Replace with a shadcn Combobox pattern: `Popover` + `PopoverTrigger` (Button showing selected assessment title or "Select an assessment") + `PopoverContent` containing `Command`, `CommandInput` (placeholder "Search assessments..."), `CommandEmpty`, and `CommandGroup`/`CommandItem` list.
+  - Each `CommandItem` shows title + subject/exam board/year subtitle; selecting one sets `selectedAssessmentId` and closes the popover.
+  - Command's built-in filter handles searching by title/subject/board/year via the item `value`.
+  - Add imports: `Popover, PopoverContent, PopoverTrigger`, `Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList`, `ChevronsUpDown` icon.
+  - Keep existing tutor Select and due date input unchanged.
 
 No backend or business-logic changes.
