@@ -139,7 +139,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
       const { data: enrolled, error: enrolledError } = await supabase
         .from('lesson_students')
-        .select('student:students(id, user_id, first_name, last_name)')
+        .select('student:students(id, user_id, first_name, last_name, parent:parents(user_id))')
         .eq('lesson_id', lesson.id);
       if (enrolledError) throw enrolledError;
 
