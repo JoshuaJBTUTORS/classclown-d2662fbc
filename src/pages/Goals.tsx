@@ -419,7 +419,7 @@ const Goals: React.FC = () => {
             If we hit these goals together, every eligible team member receives:
           </p>
           <ul className="space-y-1.5 pl-1 list-none">
-            <li>💰 <span className="font-semibold">CAD $10,000 bonus</span></li>
+            <li>💰 <span className="font-semibold">CAD $40,000 bonus pool</span></li>
             <li>🌴 <span className="font-semibold">Every Friday off</span> for a set period</li>
             <li>✈️ An <span className="font-semibold">all-expenses-paid company retreat</span></li>
           </ul>
