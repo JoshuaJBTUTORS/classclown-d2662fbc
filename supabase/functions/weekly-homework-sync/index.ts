@@ -124,7 +124,8 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const sharedSecret = Deno.env.get("HEYCLEO_CROSS_PLATFORM_SECRET") ?? "";
     const receiverUrl = Deno.env.get("HEYCLEO_WEEKLY_HOMEWORK_URL")
-      ?? "https://vfhftrmneaizgdvngfwe.supabase.co/functions/v1/receive-weekly-homework-from-crm";
+      ?? "https://vfhftrmneaizgdvngfwe.supabase.co/functions/v1/weekly-homework-receiver";
+
 
     if (!supabaseUrl || !serviceKey) {
       return new Response(
