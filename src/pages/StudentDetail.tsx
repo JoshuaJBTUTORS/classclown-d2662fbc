@@ -144,6 +144,16 @@ const StudentDetail: React.FC = () => {
                   <Button variant="secondary" size="sm" onClick={goThisWeek}>
                     This week
                   </Button>
+                  {canSync && (
+                    <Button size="sm" onClick={handleSync} disabled={isSyncing}>
+                      {isSyncing ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      Sync to HeyCleo
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
