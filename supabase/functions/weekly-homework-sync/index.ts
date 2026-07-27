@@ -331,11 +331,15 @@ serve(async (req) => {
 
       const contactEmail = student.email || parent_email || `student-${student.id}`;
 
+      const payloadForLog = { ...payload, secret: "***" };
+      console.log("[weekly-homework-sync] Payload", { studentId, contactEmail, payload: payloadForLog });
+
       if (body.dry_run) {
         console.log("[weekly-homework-sync] DRY RUN", { studentId, subjects: subjects.length, sync_id: syncId });
         skipped += 1;
         continue;
       }
+
 
       const result = await postWithRetry(
         receiverUrl,
