@@ -41,9 +41,41 @@ const StudentDetail: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentName, setStudentName] = useState<string>('Student');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { userRole } = useAuth();
+  const canSync = userRole === 'owner' || userRole === 'admin';
 
   const { groups, missedCount, cancelledCount, isLoading, weekStart, weekEnd, goPrev, goNext, goThisWeek } =
     useStudentWeeklyTopics(studentId);
+
+  const handleSync = async () => {
+    if (!studentId) return;
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('weekly-homework-sync', {
+        body: {
+          week_start: toIsoDate(weekStart),
+          student_ids: [Number(studentId)],
+        },
+      });
+      if (error) throw error;
+      const sent = (data as any)?.sent ?? 0;
+      const failed = (data as any)?.failed ?? 0;
+      const skipped = (data as any)?.skipped ?? 0;
+      if (sent > 0) {
+        toast.success(`HeyCleo sync sent for ${studentName}`);
+      } else if (failed > 0) {
+        toast.error(`HeyCleo sync failed (${failed})`);
+      } else {
+        toast(`No homework briefs to sync this week (skipped ${skipped})`);
+      }
+    } catch (err: any) {
+      console.error('Weekly homework sync failed', err);
+      toast.error(err?.message || 'Failed to sync weekly homework');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (!studentId) return;
