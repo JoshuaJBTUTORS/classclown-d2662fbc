@@ -354,47 +354,9 @@ serve(async (req) => {
 
     console.log(`Email sending complete: ${successCount} successful, ${failureCount} failed`);
 
-    // Send homework to HeyCleo (non-blocking - for GCSE, Year 11, and KS3 lessons)
-    let heyCleoResult = { success: false, error: 'Not attempted' };
-    const tutorEmail = homeworkData.lessons.tutors?.email;
-    
-    // Check if this lesson is eligible for HeyCleo sync (GCSE, Year 11, or KS3)
-    const lessonTitle = (homeworkData.lessons.title || '').toLowerCase();
-    const lessonSubject = (homeworkData.lessons.subject || '').toLowerCase();
-    // Check if any student has the exception parent (castrolbecky2002@yahoo.com)
-    const hasExceptionParent = homeworkData.lessons.lesson_students?.some(
-      (ls: any) => ls.student?.parent?.email?.toLowerCase() === 'castrolbecky2002@yahoo.com'
-    ) || false;
-    
-    const isHeyCleoEligible = 
-      lessonTitle.includes('gcse') || 
-      lessonTitle.includes('year 11') ||
-      lessonTitle.includes('ks3') ||
-      lessonSubject.includes('gcse') || 
-      lessonSubject.includes('year 11') ||
-      lessonSubject.includes('ks3') ||
-      hasExceptionParent;
-
-    if (!isHeyCleoEligible) {
-      console.log(`HeyCleo sync skipped: Not an eligible lesson (title: "${homeworkData.lessons.title}", subject: "${homeworkData.lessons.subject}")`);
-    } else if (tutorEmail && heyCleoEmails.length > 0) {
-      console.log(`HeyCleo sync: Eligible lesson detected, sending to ${heyCleoEmails.length} emails: ${heyCleoEmails.join(', ')}`);
-      heyCleoResult = await sendHomeworkToHeyCleo(
-        tutorEmail,
-        heyCleoEmails,
-        {
-          title: homeworkData.title,
-          description: homeworkData.description,
-          attachmentUrl: homeworkData.attachment_url,
-          additionalResourcesUrl: homeworkData.additional_resources_url,
-          dueDate: homeworkData.due_date,
-          subject: homeworkData.lessons.subject,
-        }
-      );
-      console.log(`HeyCleo sync: ${heyCleoResult.success ? 'success' : 'failed'} - ${heyCleoResult.error || 'OK'}`);
-    } else {
-      console.log(`HeyCleo sync skipped: tutorEmail=${!!tutorEmail}, heyCleoEmails=${heyCleoEmails.length} (no student or parent emails found)`);
-    }
+    // Per-lesson HeyCleo sync is disabled. Weekly aggregate sync handles this now.
+    const heyCleoResult = { success: false, error: 'disabled' };
+    console.log('HeyCleo sync disabled (per-lesson sync silenced)');
 
     return new Response(
       JSON.stringify({ 
