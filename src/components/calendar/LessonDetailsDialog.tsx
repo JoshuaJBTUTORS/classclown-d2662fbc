@@ -795,24 +795,39 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Assessment</label>
+              <Input
+                placeholder="Search assessments..."
+                value={assessmentSearch}
+                onChange={(e) => setAssessmentSearch(e.target.value)}
+                className="mb-1.5"
+              />
               <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select an assessment" />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
-                  {assessmentsList.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      <div className="flex flex-col">
-                        <span>{a.title}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {[a.subject, a.exam_board, a.year].filter(Boolean).join(' • ')}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {assessmentsList
+                    .filter((a) => {
+                      const q = assessmentSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return [a.title, a.subject, a.exam_board, a.year]
+                        .filter(Boolean)
+                        .some((v: any) => String(v).toLowerCase().includes(q));
+                    })
+                    .map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        <div className="flex flex-col">
+                          <span>{a.title}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {[a.subject, a.exam_board, a.year].filter(Boolean).join(' • ')}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Due date (optional)</label>
               <input
