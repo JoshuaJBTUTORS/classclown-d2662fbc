@@ -90,7 +90,7 @@ export default function SentOffers() {
     return c;
   }, [offers]);
 
-  const offerUrl = (o: OfferRow) => `${window.location.origin}/offer/${o.id}/${o.access_token}`;
+  const offerUrl = (o: OfferRow) => `https://classclowncrm.com/offer/${o.id}/${o.access_token}`;
 
   const copyLink = async (o: OfferRow) => {
     await navigator.clipboard.writeText(offerUrl(o));
