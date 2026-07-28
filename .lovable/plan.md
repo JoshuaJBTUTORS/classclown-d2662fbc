@@ -1,15 +1,13 @@
-## Fix
-In `src/pages/admin/SentOffers.tsx` (line 93), the offer URL uses `window.location.origin`, which resolves to the Lovable preview domain when viewed there.
+## Goal
 
-Change:
-```ts
-const offerUrl = (o: OfferRow) => `${window.location.origin}/offer/${o.id}/${o.access_token}`;
-```
-to:
-```ts
-const offerUrl = (o: OfferRow) => `https://classclowncrm.com/offer/${o.id}/${o.access_token}`;
-```
+Give tutors a fallback way to access the Self-Employed Online Tutor Agreement in case the "Open / Download Contract" popup is blocked or the new tab fails to open.
 
-This makes both the "Copy link" and "Open link" (external icon) actions always point to the production domain, matching the URL that's already sent in the tutor offer email.
+## Change
 
-No other changes required.
+In `src/pages/OfferView.tsx`, inside the contract card (around lines 181–187), alongside the existing **Open / Download Contract** button:
+
+1. Show the contract URL in a read-only input field so it's visible and selectable.
+2. Add a **Copy link** button next to it that copies `CONTRACT_URL` to the clipboard via `navigator.clipboard.writeText`, with a toast confirmation ("Contract link copied").
+3. Clicking **Copy link** also marks the contract as viewed (`setContractViewed(true)`) so the "I have read the contract" checkbox becomes enabled — matching the current behavior of the Open button, since users using the copy path won't trigger the target=_blank click.
+
+No other logic, styling system, or signing flow changes.
