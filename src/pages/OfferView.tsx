@@ -186,6 +186,31 @@ export default function OfferView() {
             </Button>
           </div>
 
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">
+              If the button above doesn't open, copy this link and paste it into your browser:
+            </Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input readOnly value={CONTRACT_URL} onFocus={(e) => e.currentTarget.select()} className="text-xs font-mono" />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(CONTRACT_URL);
+                    setContractViewed(true);
+                    toast({ title: 'Contract link copied' });
+                  } catch {
+                    toast({ title: 'Could not copy link', description: 'Please select and copy the link manually.', variant: 'destructive' });
+                  }
+                }}
+              >
+                Copy link
+              </Button>
+            </div>
+          </div>
+
 
         </Card>
 
