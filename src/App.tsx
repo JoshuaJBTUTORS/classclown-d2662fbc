@@ -80,6 +80,7 @@ import AssessmentCenter from './pages/AssessmentCenter';
 import AssessmentTake from './pages/AssessmentTake';
 import AssessmentAssignments from './pages/admin/AssessmentAssignments';
 import Unauthorized from './pages/Unauthorized';
+import AgentCleo from './pages/AgentCleo';
 
 // Component to monitor app version
 const AppVersionMonitor = () => {
@@ -121,6 +122,7 @@ function App() {
                 <Route path="/offer/:offerId/:token" element={<OfferView />} />
                 <Route path="/o/:offerId/:token" element={<OfferView />} />
                 <Route path="/update-card" element={<UpdateCardDetails />} />
+                <Route path="/agent-cleo" element={<ProtectedRoute><AgentCleo /></ProtectedRoute>} />
                 
                 {/* Main App Layout - all main application routes - Restricted on heycleo.io */}
                 <Route
