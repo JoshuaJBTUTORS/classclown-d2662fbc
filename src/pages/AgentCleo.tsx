@@ -1,30 +1,39 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2 } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Msg {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  toolStatus?: string | null;
 }
 
 const SUGGESTIONS = [
   { title: 'Summarise this week', subtitle: 'lessons, attendance and homework' },
   { title: 'Find at-risk students', subtitle: 'low engagement or missed lessons' },
-  { title: 'Draft a parent update', subtitle: 'friendly progress email' },
+  { title: 'How many trial lessons this month?', subtitle: 'booked, attended, no-shows' },
   { title: 'Which proposals are pending?', subtitle: 'sent but not yet signed' },
 ];
+
+const TOOL_LABELS: Record<string, string> = {
+  list_schema: 'Reading schema…',
+  describe_table: 'Inspecting table…',
+  sample_rows: 'Sampling rows…',
+  run_sql: 'Running query…',
+};
+
+const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo`;
 
 const AgentCleo: React.FC = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
-
+  useEffect(() => { textareaRef.current?.focus(); }, []);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
@@ -36,21 +45,84 @@ const AgentCleo: React.FC = () => {
     el.style.height = Math.min(el.scrollHeight, 220) + 'px';
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim();
-    if (!text) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), role: 'user', content: text },
-      {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content:
-          "I'm not wired up to the CRM yet — this is just the interface. Once the backend is connected, I'll be able to answer that.",
-      },
-    ]);
+    if (!text || loading) return;
+
+    const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: text };
+    const assistantId = crypto.randomUUID();
+    const assistantMsg: Msg = { id: assistantId, role: 'assistant', content: '', toolStatus: null };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setInput('');
+    setLoading(true);
     requestAnimationFrame(autoresize);
+
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error('Not signed in');
+
+      const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+
+      const resp = await fetch(FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        const errText = await resp.text();
+        throw new Error(errText || `HTTP ${resp.status}`);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split('\n\n');
+        buf = parts.pop() ?? '';
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith('data:')) continue;
+          const data = line.slice(5).trim();
+          if (!data) continue;
+          let ev: any;
+          try { ev = JSON.parse(data); } catch { continue; }
+
+          if (ev.type === 'text') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId ? { ...m, content: m.content + ev.delta, toolStatus: null } : m,
+            ));
+          } else if (ev.type === 'tool') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId ? { ...m, toolStatus: TOOL_LABELS[ev.name] ?? `Using ${ev.name}…` } : m,
+            ));
+          } else if (ev.type === 'error') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId ? { ...m, content: `⚠️ ${ev.error}`, toolStatus: null } : m,
+            ));
+          } else if (ev.type === 'done') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId ? { ...m, toolStatus: null } : m,
+            ));
+          }
+        }
+      }
+    } catch (e) {
+      setMessages((prev) => prev.map((m) =>
+        m.id === assistantId ? { ...m, content: `⚠️ ${(e as Error).message}`, toolStatus: null } : m,
+      ));
+    } finally {
+      setLoading(false);
+      textareaRef.current?.focus();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -72,46 +144,28 @@ const AgentCleo: React.FC = () => {
     <div className="fixed inset-0 z-50 flex bg-[#212121] text-[#ececec] antialiased">
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-0'
-        } shrink-0 overflow-hidden bg-[#171717] transition-all duration-200 ease-out flex flex-col`}
+        className={`${sidebarOpen ? 'w-64' : 'w-0'} shrink-0 overflow-hidden bg-[#171717] transition-all duration-200 ease-out flex flex-col`}
       >
         <div className="flex items-center justify-between px-3 py-3">
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            aria-label="Close sidebar"
-          >
+          <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close sidebar">
             <Menu className="w-5 h-5" />
           </button>
-          <button
-            onClick={newChat}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            aria-label="New chat"
-          >
+          <button onClick={newChat} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="New chat">
             <Plus className="w-5 h-5" />
           </button>
         </div>
 
         <div className="px-2">
-          <button
-            onClick={newChat}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors"
-          >
+          <button onClick={newChat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors">
             <Sparkles className="w-4 h-4" />
             New chat
           </button>
         </div>
 
-        <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#8e8ea0] uppercase tracking-wider">
-          Recent
-        </div>
+        <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#8e8ea0] uppercase tracking-wider">Recent</div>
         <nav className="flex-1 px-2 overflow-y-auto space-y-0.5">
           {['Weekly overview', 'Trial follow-ups', 'Tutor payroll July'].map((label) => (
-            <div
-              key={label}
-              className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 cursor-pointer"
-            >
+            <div key={label} className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
               <MessageSquare className="w-4 h-4 text-[#8e8ea0] shrink-0" />
               <span className="text-sm truncate flex-1">{label}</span>
               <Trash2 className="w-3.5 h-3.5 text-[#8e8ea0] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -121,9 +175,7 @@ const AgentCleo: React.FC = () => {
 
         <div className="p-3 border-t border-white/5">
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold">
-              C
-            </div>
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold">C</div>
             <div className="text-sm font-medium">Agent Cleo</div>
           </div>
         </div>
@@ -131,43 +183,28 @@ const AgentCleo: React.FC = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
         <header className="flex items-center gap-2 px-3 h-14 shrink-0">
           {!sidebarOpen && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-              aria-label="Open sidebar"
-            >
+            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Open sidebar">
               <Menu className="w-5 h-5" />
             </button>
           )}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/10 cursor-default">
             <span className="font-semibold">Agent Cleo</span>
-            <span className="text-[#8e8ea0] text-sm">CRM</span>
+            <span className="text-[#8e8ea0] text-sm">CRM · read-only</span>
           </div>
         </header>
 
-        {/* Messages / Empty state */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {!hasMessages ? (
             <div className="h-full flex flex-col items-center justify-center px-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/40 text-2xl font-semibold">
-                C
-              </div>
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/40 text-2xl font-semibold">C</div>
               <h1 className="text-3xl font-semibold mb-2">How can I help today?</h1>
               <p className="text-[#8e8ea0] mb-10">Ask me anything about the CRM.</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.title}
-                    onClick={() => {
-                      setInput(s.title);
-                      textareaRef.current?.focus();
-                    }}
-                    className="text-left p-4 rounded-2xl border border-white/10 hover:bg-white/5 transition-colors"
-                  >
+                  <button key={s.title} onClick={() => { setInput(s.title); textareaRef.current?.focus(); }} className="text-left p-4 rounded-2xl border border-white/10 hover:bg-white/5 transition-colors">
                     <div className="font-medium mb-0.5">{s.title}</div>
                     <div className="text-sm text-[#8e8ea0]">{s.subtitle}</div>
                   </button>
@@ -179,17 +216,25 @@ const AgentCleo: React.FC = () => {
               {messages.map((m) =>
                 m.role === 'user' ? (
                   <div key={m.id} className="flex justify-end">
-                    <div className="max-w-[85%] bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">
-                      {m.content}
-                    </div>
+                    <div className="max-w-[85%] bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">{m.content}</div>
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">
-                      C
-                    </div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
                     <div className="flex-1 pt-1 whitespace-pre-wrap leading-relaxed">
                       {m.content}
+                      {m.toolStatus && (
+                        <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#8e8ea0] bg-white/5 rounded-full px-3 py-1.5">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          {m.toolStatus}
+                        </div>
+                      )}
+                      {!m.content && !m.toolStatus && loading && (
+                        <div className="inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Thinking…
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -198,17 +243,13 @@ const AgentCleo: React.FC = () => {
           )}
         </div>
 
-        {/* Composer */}
         <div className="px-4 pb-4">
           <div className="max-w-3xl mx-auto">
             <div className="relative flex items-end bg-[#2f2f2f] rounded-3xl border border-white/5 shadow-lg">
               <textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  autoresize();
-                }}
+                onChange={(e) => { setInput(e.target.value); autoresize(); }}
                 onKeyDown={handleKeyDown}
                 rows={1}
                 placeholder="Message Agent Cleo"
@@ -216,16 +257,14 @@ const AgentCleo: React.FC = () => {
               />
               <button
                 onClick={handleSend}
-                disabled={!input.trim()}
+                disabled={!input.trim() || loading}
                 className="absolute right-2.5 bottom-2.5 w-9 h-9 rounded-full bg-white text-black flex items-center justify-center disabled:bg-white/20 disabled:text-white/40 transition-colors"
                 aria-label="Send"
               >
-                <ArrowUp className="w-5 h-5" />
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
               </button>
             </div>
-            <p className="text-center text-xs text-[#8e8ea0] mt-2">
-              Agent Cleo can make mistakes. Verify important info.
-            </p>
+            <p className="text-center text-xs text-[#8e8ea0] mt-2">Agent Cleo has read-only access to the CRM database.</p>
           </div>
         </div>
       </div>

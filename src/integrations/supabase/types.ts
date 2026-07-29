@@ -5564,6 +5564,7 @@ export type Database = {
     }
     Functions: {
       advance_school_progress_cycle: { Args: never; Returns: undefined }
+      agent_cleo_exec: { Args: { sql: string }; Returns: Json }
       calculate_course_completion:
         | {
             Args: { course_id_param: string; student_id_param: number }
