@@ -61,7 +61,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     homework: null
   });
   const [isProcessed, setIsProcessed] = useState(false);
+  const [isTranscriptProposalOpen, setIsTranscriptProposalOpen] = useState(false);
   const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
+
   const [assessmentTutors, setAssessmentTutors] = useState<any[]>([]);
   const [selectedAssessmentTutor, setSelectedAssessmentTutor] = useState<string>('');
   const [isAssigningAssessment, setIsAssigningAssessment] = useState(false);
