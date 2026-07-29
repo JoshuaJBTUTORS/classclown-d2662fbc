@@ -51,6 +51,9 @@ enable_confirmations = false
 [functions.stripe-webhooks]
 verify_jwt = false
 
+[functions.agent-cleo]
+verify_jwt = true
+
 [functions.agora-integration]
 verify_jwt = true
 
