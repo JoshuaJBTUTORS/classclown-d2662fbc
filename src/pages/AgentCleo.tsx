@@ -277,6 +277,12 @@ const AgentCleo: React.FC = () => {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, toolStatus: TOOL_LABELS[ev.name] ?? `Using ${ev.name}…` } : m,
             ));
+          } else if (ev.type === 'proposal') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, proposal: ev.proposal as LessonProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
+                : m,
+            ));
           } else if (ev.type === 'error') {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, content: `⚠️ ${ev.error}`, toolStatus: null } : m,
