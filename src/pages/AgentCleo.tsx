@@ -1,6 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
+  <ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+    components={{
+      h1: ({ node, ...p }) => <h1 className="text-lg font-semibold mt-4 mb-2" {...p} />,
+      h2: ({ node, ...p }) => <h2 className="text-base font-semibold mt-4 mb-2" {...p} />,
+      h3: ({ node, ...p }) => <h3 className="text-base font-semibold mt-3 mb-1.5" {...p} />,
+      h4: ({ node, ...p }) => <h4 className="text-sm font-semibold mt-3 mb-1" {...p} />,
+      p: ({ node, ...p }) => <p className="my-2 leading-relaxed" {...p} />,
+      ul: ({ node, ...p }) => <ul className="list-disc pl-5 my-2 space-y-1" {...p} />,
+      ol: ({ node, ...p }) => <ol className="list-decimal pl-5 my-2 space-y-1" {...p} />,
+      li: ({ node, ...p }) => <li className="leading-relaxed" {...p} />,
+      strong: ({ node, ...p }) => <strong className="font-semibold text-white" {...p} />,
+      em: ({ node, ...p }) => <em className="italic" {...p} />,
+      a: ({ node, ...p }) => <a className="text-teal-400 underline hover:text-teal-300" target="_blank" rel="noreferrer" {...p} />,
+      code: ({ node, className, children, ...p }: any) => {
+        const inline = !className;
+        return inline
+          ? <code className="bg-white/10 rounded px-1 py-0.5 text-[0.85em]" {...p}>{children}</code>
+          : <code className={className} {...p}>{children}</code>;
+      },
+      pre: ({ node, ...p }) => <pre className="bg-black/40 rounded-lg p-3 my-2 overflow-x-auto text-sm" {...p} />,
+      blockquote: ({ node, ...p }) => <blockquote className="border-l-2 border-white/20 pl-3 my-2 text-[#c5c5d2]" {...p} />,
+      hr: () => <hr className="my-4 border-white/10" />,
+      table: ({ node, ...p }) => <div className="my-2 overflow-x-auto"><table className="min-w-full text-sm border-collapse" {...p} /></div>,
+      th: ({ node, ...p }) => <th className="border border-white/15 px-2 py-1 text-left font-semibold" {...p} />,
+      td: ({ node, ...p }) => <td className="border border-white/15 px-2 py-1" {...p} />,
+    }}
+  >
+    {children}
+  </ReactMarkdown>
+);
+
 
 interface Msg {
   id: string;
