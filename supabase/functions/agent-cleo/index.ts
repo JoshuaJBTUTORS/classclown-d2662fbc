@@ -91,7 +91,12 @@ const tools = [
 ];
 
 async function execSql(sql: string): Promise<unknown> {
-  const { data, error } = await service.rpc("agent_cleo_exec", { sql });
+  const normalizedSql = sql
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/;\s*$/, "");
+
+  const { data, error } = await service.rpc("agent_cleo_exec", { sql: normalizedSql });
   if (error) throw new Error(error.message);
   return data;
 }
@@ -100,13 +105,16 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
   try {
     if (name === "list_schema") {
       const rows = await execSql(`
-        SELECT c.relname AS name,
-               CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'm' THEN 'matview' END AS kind,
-               c.reltuples::bigint AS estimated_rows
-        FROM pg_class c
-        JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE n.nspname = 'public' AND c.relkind IN ('r','v','m')
-        ORDER BY c.relname
+        SELECT table_name AS name,
+               CASE table_type
+                 WHEN 'BASE TABLE' THEN 'table'
+                 WHEN 'VIEW' THEN 'view'
+                 ELSE lower(table_type)
+               END AS kind
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_type IN ('BASE TABLE', 'VIEW')
+        ORDER BY table_name
       `);
       return JSON.stringify({ ok: true, rows });
     }
@@ -286,6 +294,8 @@ Deno.serve(async (req) => {
                 const parsedResult = JSON.parse(result);
                 if (parsedResult?.ok === false) {
                   send({ type: "error", error: `${call.name} failed: ${parsedResult.error}` });
+                  controller.close();
+                  return;
                 }
               } catch {
                 // Tool output is still forwarded to the model below.
