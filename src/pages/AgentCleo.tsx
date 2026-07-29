@@ -311,6 +311,45 @@ const AgentCleo: React.FC = () => {
     }
   };
 
+  const setProposalState = (msgId: string, state: ProposalState, message?: string | null) => {
+    setMessages((prev) => prev.map((m) =>
+      m.id === msgId ? { ...m, proposalState: state, proposalMessage: message ?? null } : m,
+    ));
+  };
+
+  const confirmProposal = async (msg: Msg) => {
+    if (!msg.proposal) return;
+    setProposalState(msg.id, 'confirming', null);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error('Not signed in');
+
+      const resp = await fetch(CREATE_LESSON_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ proposal: msg.proposal }),
+      });
+      const result = await resp.json().catch(() => ({}));
+      if (!resp.ok || result?.error) throw new Error(result?.error || `HTTP ${resp.status}`);
+
+      const count = result.created_count ?? 1;
+      setProposalState(
+        msg.id,
+        'created',
+        count > 1
+          ? `Created — ${count} lessons added to the calendar.`
+          : 'Created — the lesson is on the calendar.',
+      );
+    } catch (e) {
+      setProposalState(msg.id, 'error', `Could not create: ${(e as Error).message}`);
+    }
+  };
+
+  const cancelProposal = (msg: Msg) => {
+    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was created.');
+  };
+
   const newChat = () => {
     setMessages([]);
     setInput('');
