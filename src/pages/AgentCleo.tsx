@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2 } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -38,11 +38,30 @@ const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
 );
 
 
+export interface LessonProposal {
+  title: string;
+  subject: string;
+  description: string | null;
+  tutor_id: string;
+  tutor_name: string;
+  student_ids: number[];
+  student_names: string[];
+  start_time: string;
+  end_time: string;
+  is_group: boolean;
+  recurring: { interval: string; occurrences: number } | null;
+}
+
+type ProposalState = 'pending' | 'confirming' | 'created' | 'cancelled' | 'error';
+
 interface Msg {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   toolStatus?: string | null;
+  proposal?: LessonProposal | null;
+  proposalState?: ProposalState;
+  proposalMessage?: string | null;
 }
 
 const SUGGESTIONS = [
@@ -57,9 +76,127 @@ const TOOL_LABELS: Record<string, string> = {
   describe_table: 'Inspecting table…',
   sample_rows: 'Sampling rows…',
   run_sql: 'Running query…',
+  propose_lesson: 'Preparing lesson…',
+};
+
+const fmtLondon = (iso: string) =>
+  new Date(iso).toLocaleString('en-GB', {
+    timeZone: 'Europe/London',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const fmtTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString('en-GB', {
+    timeZone: 'Europe/London',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const LessonProposalCard: React.FC<{
+  proposal: LessonProposal;
+  state: ProposalState;
+  message?: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ proposal, state, message, onConfirm, onCancel }) => {
+  const locked = state !== 'pending' && state !== 'error';
+  const mins = Math.round(
+    (new Date(proposal.end_time).getTime() - new Date(proposal.start_time).getTime()) / 60000,
+  );
+
+  return (
+    <div className="mt-3 rounded-2xl border border-white/10 bg-[#2a2a2a] overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+        <CalendarPlus className="w-4 h-4 text-teal-400" />
+        <span className="font-medium text-sm">Create lesson — needs your approval</span>
+      </div>
+
+      <dl className="px-4 py-3 text-sm space-y-2">
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-[#8e8ea0]">Title</dt>
+          <dd className="font-medium">{proposal.title}</dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-[#8e8ea0]">Subject</dt>
+          <dd>{proposal.subject}</dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-[#8e8ea0]">Tutor</dt>
+          <dd>{proposal.tutor_name}</dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-[#8e8ea0]">Student{proposal.student_names.length > 1 ? 's' : ''}</dt>
+          <dd>{proposal.student_names.join(', ')}</dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-[#8e8ea0]">When</dt>
+          <dd>
+            {fmtLondon(proposal.start_time)} – {fmtTime(proposal.end_time)}{' '}
+            <span className="text-[#8e8ea0]">({mins} min, UK time)</span>
+          </dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-[#8e8ea0]">Type</dt>
+          <dd>{proposal.is_group ? 'Group lesson' : '1-1 lesson'}</dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-[#8e8ea0]">Repeats</dt>
+          <dd>
+            {proposal.recurring
+              ? `${proposal.recurring.interval} × ${proposal.recurring.occurrences} occurrences`
+              : 'One-off'}
+          </dd>
+        </div>
+        {proposal.description && (
+          <div className="flex gap-3">
+            <dt className="w-28 shrink-0 text-[#8e8ea0]">Notes</dt>
+            <dd className="text-[#c5c5d2]">{proposal.description}</dd>
+          </div>
+        )}
+      </dl>
+
+      {message && (
+        <div
+          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
+        >
+          {message}
+        </div>
+      )}
+
+      {!locked && (
+        <div className="px-4 pb-4 flex gap-2">
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-black text-sm font-medium transition-colors"
+          >
+            Confirm and create
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5 text-sm transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {state === 'confirming' && (
+        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Creating…
+        </div>
+      )}
+    </div>
+  );
 };
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo`;
+const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
 
 const AgentCleo: React.FC = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -140,6 +277,12 @@ const AgentCleo: React.FC = () => {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, toolStatus: TOOL_LABELS[ev.name] ?? `Using ${ev.name}…` } : m,
             ));
+          } else if (ev.type === 'proposal') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, proposal: ev.proposal as LessonProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
+                : m,
+            ));
           } else if (ev.type === 'error') {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, content: `⚠️ ${ev.error}`, toolStatus: null } : m,
@@ -166,6 +309,45 @@ const AgentCleo: React.FC = () => {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const setProposalState = (msgId: string, state: ProposalState, message?: string | null) => {
+    setMessages((prev) => prev.map((m) =>
+      m.id === msgId ? { ...m, proposalState: state, proposalMessage: message ?? null } : m,
+    ));
+  };
+
+  const confirmProposal = async (msg: Msg) => {
+    if (!msg.proposal) return;
+    setProposalState(msg.id, 'confirming', null);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error('Not signed in');
+
+      const resp = await fetch(CREATE_LESSON_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ proposal: msg.proposal }),
+      });
+      const result = await resp.json().catch(() => ({}));
+      if (!resp.ok || result?.error) throw new Error(result?.error || `HTTP ${resp.status}`);
+
+      const count = result.created_count ?? 1;
+      setProposalState(
+        msg.id,
+        'created',
+        count > 1
+          ? `Created — ${count} lessons added to the calendar.`
+          : 'Created — the lesson is on the calendar.',
+      );
+    } catch (e) {
+      setProposalState(msg.id, 'error', `Could not create: ${(e as Error).message}`);
+    }
+  };
+
+  const cancelProposal = (msg: Msg) => {
+    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was created.');
   };
 
   const newChat = () => {
@@ -259,6 +441,15 @@ const AgentCleo: React.FC = () => {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
                     <div className="flex-1 pt-1 leading-relaxed">
                       {m.content && <MarkdownMessage>{m.content}</MarkdownMessage>}
+                      {m.proposal && (
+                        <LessonProposalCard
+                          proposal={m.proposal}
+                          state={m.proposalState ?? 'pending'}
+                          message={m.proposalMessage}
+                          onConfirm={() => confirmProposal(m)}
+                          onCancel={() => cancelProposal(m)}
+                        />
+                      )}
                       {m.toolStatus && (
 
                         <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#8e8ea0] bg-white/5 rounded-full px-3 py-1.5">

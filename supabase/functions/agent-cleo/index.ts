@@ -19,9 +19,9 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 
 const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-const SYSTEM_PROMPT = `You are Agent Cleo, a read-only analyst for the Class Beyond CRM (a tutoring business).
+const SYSTEM_PROMPT = `You are Agent Cleo, an analyst for the Class Beyond CRM (a tutoring business).
 
-You have full read-only access to the Postgres database via tools. You cannot write, update, or delete anything — attempts will error at the database level.
+You have full read-only access to the Postgres database via tools. Your ONLY write capability is proposing a new lesson with \`propose_lesson\`, which never writes by itself — it shows the user a confirmation card that they must approve.
 
 WORKFLOW:
 1. When asked something, first call \`list_schema\` to see what tables exist.
@@ -30,12 +30,20 @@ WORKFLOW:
 4. Then compose SELECT queries with \`run_sql\` to answer the question.
 
 RULES:
-- Never claim to have changed data — you can't.
+- Never claim to have changed data — the only way anything is created is the user pressing Confirm on a proposal card.
 - Do not call database functions directly. Read tables and views only.
 - Prefer joining across tables over multiple round-trips.
 - Use LIMIT sensibly. Results are capped at 500 rows regardless.
 - All lesson times are stored in UTC; the business timezone is Europe/London.
-- Be concise and factual in your final answer. Show numbers, dates, and names directly.`;
+- Be concise and factual in your final answer. Show numbers, dates, and names directly.
+
+CREATING LESSONS:
+- Before calling \`propose_lesson\` you MUST resolve real IDs by querying the database: \`tutors\` for tutor_id (uuid) and \`students\` for student_ids (integers). Never invent or guess an ID.
+- If anything is missing or ambiguous (no tutor named, two students with a matching name, no date or time given, unclear subject or duration), ASK the user a short clarifying question instead of proposing. Do not fill gaps with assumptions.
+- Times you provide must be ISO 8601 UTC. The user speaks in Europe/London time, so convert (British Summer Time is UTC+1 roughly late March to late October, otherwise UTC+0).
+- If no duration is stated, ask; do not assume.
+- Use the recurring option only when the user asks for a repeating series, and state clearly how many occurrences will be created.
+- After calling \`propose_lesson\`, reply with ONE short sentence asking the user to review and press Confirm. Do not say the lesson exists.`;
 
 const tools = [
   {
@@ -84,6 +92,43 @@ const tools = [
         type: "object",
         properties: { sql: { type: "string", description: "A single SELECT or WITH statement" } },
         required: ["sql"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "propose_lesson",
+      description:
+        "Propose a new lesson (one-off or recurring). This does NOT create anything — it shows the user a confirmation card which they must approve. Resolve real tutor_id and student_ids from the database first, and ask the user for any missing detail instead of guessing.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Lesson title, e.g. '1-1 GCSE Maths'" },
+          subject: { type: "string", description: "Full descriptive subject, e.g. 'GCSE Maths'" },
+          description: { type: "string", description: "Optional notes" },
+          tutor_id: { type: "string", description: "UUID from public.tutors" },
+          student_ids: {
+            type: "array",
+            items: { type: "integer" },
+            description: "Integer IDs from public.students",
+          },
+          start_time: { type: "string", description: "ISO 8601 UTC start, e.g. 2026-08-04T16:00:00Z" },
+          end_time: { type: "string", description: "ISO 8601 UTC end" },
+          is_group: { type: "boolean", description: "Group lesson. Defaults to true when more than one student." },
+          recurring: {
+            type: "object",
+            description: "Omit for a one-off lesson.",
+            properties: {
+              interval: { type: "string", enum: ["daily", "weekly", "biweekly", "monthly"] },
+              occurrences: { type: "integer", minimum: 2, maximum: 52 },
+            },
+            required: ["interval", "occurrences"],
+            additionalProperties: false,
+          },
+        },
+        required: ["title", "subject", "tutor_id", "student_ids", "start_time", "end_time"],
         additionalProperties: false,
       },
     },
@@ -164,6 +209,85 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
     console.error(`Agent Cleo tool failed: ${name}`, { args, error: message });
     return JSON.stringify({ ok: false, tool: name, error: message });
   }
+}
+
+/**
+ * Validate a proposed lesson and enrich it with human-readable names.
+ * Performs NO writes — the user must approve the card before anything is created.
+ */
+async function buildLessonProposal(args: Record<string, any>) {
+  const problems: string[] = [];
+
+  const title = typeof args.title === "string" ? args.title.trim() : "";
+  const subject = typeof args.subject === "string" ? args.subject.trim() : "";
+  if (!title) problems.push("title is required");
+  if (!subject) problems.push("subject is required");
+
+  const tutorId = typeof args.tutor_id === "string" ? args.tutor_id : "";
+  if (!/^[0-9a-f-]{36}$/i.test(tutorId)) problems.push("tutor_id must be a uuid from public.tutors");
+
+  const studentIds: number[] = Array.isArray(args.student_ids)
+    ? args.student_ids.map((s: unknown) => Number(s)).filter((n: number) => Number.isInteger(n))
+    : [];
+  if (studentIds.length === 0) problems.push("student_ids must contain at least one integer student id");
+
+  const start = new Date(args.start_time);
+  const end = new Date(args.end_time);
+  if (isNaN(start.getTime())) problems.push("start_time must be ISO 8601 UTC");
+  if (isNaN(end.getTime())) problems.push("end_time must be ISO 8601 UTC");
+  if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end <= start) {
+    problems.push("end_time must be after start_time");
+  }
+
+  let recurring: { interval: string; occurrences: number } | null = null;
+  if (args.recurring) {
+    const interval = String(args.recurring.interval ?? "").toLowerCase();
+    const occurrences = Number(args.recurring.occurrences);
+    if (!["daily", "weekly", "biweekly", "monthly"].includes(interval)) {
+      problems.push("recurring.interval must be daily, weekly, biweekly or monthly");
+    }
+    if (!Number.isInteger(occurrences) || occurrences < 2 || occurrences > 52) {
+      problems.push("recurring.occurrences must be an integer between 2 and 52");
+    }
+    if (!problems.length) recurring = { interval, occurrences };
+  }
+
+  if (problems.length) return { ok: false as const, error: problems.join("; ") };
+
+  const { data: tutor } = await service
+    .from("tutors")
+    .select("id, first_name, last_name")
+    .eq("id", tutorId)
+    .maybeSingle();
+  if (!tutor) {
+    return { ok: false as const, error: `No tutor found with id ${tutorId}. Look the tutor up in public.tutors first.` };
+  }
+
+  const { data: students } = await service
+    .from("students")
+    .select("id, first_name, last_name")
+    .in("id", studentIds);
+  const found = students ?? [];
+  const missing = studentIds.filter((id) => !found.some((s) => s.id === id));
+  if (missing.length) {
+    return { ok: false as const, error: `No student found with id ${missing.join(", ")}. Look students up in public.students first.` };
+  }
+
+  const proposal = {
+    title,
+    subject,
+    description: typeof args.description === "string" ? args.description.trim() : null,
+    tutor_id: tutorId,
+    tutor_name: `${tutor.first_name ?? ""} ${tutor.last_name ?? ""}`.trim(),
+    student_ids: studentIds,
+    student_names: found.map((s) => `${s.first_name ?? ""} ${s.last_name ?? ""}`.trim()),
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    is_group: typeof args.is_group === "boolean" ? args.is_group : studentIds.length > 1,
+    recurring,
+  };
+
+  return { ok: true as const, proposal };
 }
 
 Deno.serve(async (req) => {
@@ -289,6 +413,30 @@ Deno.serve(async (req) => {
               send({ type: "tool", name: call.name });
               let parsedArgs: Record<string, unknown> = {};
               try { parsedArgs = JSON.parse(call.args || "{}"); } catch {}
+
+              if (call.name === "propose_lesson") {
+                const built = await buildLessonProposal(parsedArgs as Record<string, any>);
+                if (built.ok) {
+                  send({ type: "proposal", proposal: built.proposal });
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({
+                      ok: true,
+                      status: "awaiting_user_confirmation",
+                      note: "A confirmation card has been shown to the user. Nothing has been created. Reply with one short sentence asking them to review and press Confirm.",
+                    }),
+                  });
+                } else {
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({ ok: false, error: built.error }),
+                  });
+                }
+                continue;
+              }
+
               const result = await runTool(call.name!, parsedArgs);
               try {
                 const parsedResult = JSON.parse(result);
