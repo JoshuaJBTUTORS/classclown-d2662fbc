@@ -43,7 +43,19 @@ CREATING LESSONS:
 - Times you provide must be ISO 8601 UTC. The user speaks in Europe/London time, so convert (British Summer Time is UTC+1 roughly late March to late October, otherwise UTC+0).
 - If no duration is stated, ask; do not assume.
 - Use the recurring option only when the user asks for a repeating series, and state clearly how many occurrences will be created.
-- After calling \`propose_lesson\`, reply with ONE short sentence asking the user to review and press Confirm. Do not say the lesson exists.`;
+- After calling \`propose_lesson\`, reply with ONE short sentence asking the user to review and press Confirm. Do not say the lesson exists.
+
+WHEN A TOOL FAILS (failure recovery protocol):
+- A tool error is NEVER the end of the task. You will always receive the error text back as the tool result — read it, work out what was wrong, and try a different approach.
+- Never surface a raw database error to the user. The user should see an answer or a plain-English explanation, not Postgres output.
+- Never re-send an identical failing query. Change something meaningful each time: different columns, different function, simpler query, or fewer joins.
+- If you are unsure why it failed, call \`describe_table\` (and if needed \`sample_rows\`) to check your assumptions about columns, types and value formats before writing SQL again.
+- Give up on one approach after about 3 attempts and either try a fundamentally different route, or tell the user clearly what you could not retrieve and why.
+- Break big queries down: if a large joined query keeps failing or times out, run smaller queries and combine the results yourself.
+
+KNOWN DATABASE LIMITS:
+- The \`pg_trgm\` and \`fuzzystrmatch\` extensions are NOT installed. \`similarity()\`, the \`%\` operator, \`word_similarity\`, \`levenshtein\` and \`soundex\` do not exist. For fuzzy name matching use plain SQL: \`ILIKE '%name%'\`, \`lower()\`, \`split_part\`, or matching on first/last name separately.
+- Do not call custom database functions. Read tables and views only.`;
 
 const tools = [
   {
@@ -207,8 +219,44 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
   } catch (e) {
     const message = (e as Error).message;
     console.error(`Agent Cleo tool failed: ${name}`, { args, error: message });
-    return JSON.stringify({ ok: false, tool: name, error: message });
+    return JSON.stringify({
+      ok: false,
+      tool: name,
+      error: message,
+      recoverable: true,
+      hint: recoveryHint(message),
+    });
   }
+}
+
+/** Turn a raw Postgres error into an actionable next step for the model. */
+function recoveryHint(message: string): string {
+  const m = message.toLowerCase();
+  if (/function .* does not exist/.test(m)) {
+    return "That function or extension is not available in this database (pg_trgm/fuzzystrmatch are not installed). Rewrite using plain SQL — ILIKE '%text%', lower(), split_part — instead of similarity()/%/levenshtein/soundex.";
+  }
+  if (/column .* does not exist/.test(m)) {
+    return "Wrong column name. Call describe_table on the relevant table and use the exact column names it returns.";
+  }
+  if (/relation .* does not exist/.test(m)) {
+    return "Wrong table name. Call list_schema to see the real table names, then retry.";
+  }
+  if (/operator does not exist|cannot be matched|invalid input syntax|cannot cast/.test(m)) {
+    return "Type mismatch. Check the column types with describe_table and add an explicit cast (e.g. ::text, ::date, ::uuid).";
+  }
+  if (/syntax error/.test(m)) {
+    return "Rewrite the query — check quoting, commas and CTE structure. Simplify it if needed.";
+  }
+  if (/timeout|canceling statement|statement timeout/.test(m)) {
+    return "The query was too heavy. Narrow the date range, drop joins, or add a tighter LIMIT and retry.";
+  }
+  if (/only accepts select/.test(m)) {
+    return "Only SELECT/WITH queries are allowed. Rewrite as a read-only SELECT.";
+  }
+  if (/permission denied/.test(m)) {
+    return "That object is not readable. Pick a different table or view that exposes the same data.";
+  }
+  return "Read the error, change your approach, and try a different query. Do not repeat the same one.";
 }
 
 /**
@@ -328,25 +376,38 @@ Deno.serve(async (req) => {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
         try {
-          for (let step = 0; step < 20; step++) {
-            const resp = await fetch(OPENAI_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
-              },
-              body: JSON.stringify({
-                model: MODEL,
-                messages,
-                tools,
-                stream: true,
-                reasoning_effort: "none",
-              }),
-            });
+          let totalFailures = 0;
+          let consecutiveFailures = 0;
+          let lastFailedTool: string | null = null;
 
-            if (!resp.ok || !resp.body) {
-              const errText = await resp.text();
-              send({ type: "error", error: `OpenAI ${resp.status}: ${errText}` });
+          for (let step = 0; step < 20; step++) {
+            // Call OpenAI with backoff on transient failures (429 / 5xx).
+            let resp: Response | null = null;
+            for (let attempt = 0; attempt < 4; attempt++) {
+              resp = await fetch(OPENAI_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${OPENAI_API_KEY}`,
+                },
+                body: JSON.stringify({
+                  model: MODEL,
+                  messages,
+                  tools,
+                  stream: true,
+                  reasoning_effort: "none",
+                }),
+              });
+              const retryable = resp.status === 429 || resp.status >= 500;
+              if (resp.ok && resp.body) break;
+              if (!retryable || attempt === 3) break;
+              send({ type: "tool_error", tool: "model", error: `OpenAI ${resp.status}, retrying` });
+              await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+            }
+
+            if (!resp || !resp.ok || !resp.body) {
+              const errText = resp ? await resp.text() : "no response";
+              send({ type: "error", error: `OpenAI ${resp?.status ?? 0}: ${errText}` });
               controller.close();
               return;
             }
@@ -438,21 +499,51 @@ Deno.serve(async (req) => {
               }
 
               const result = await runTool(call.name!, parsedArgs);
+              let failed = false;
+              let failMessage = "";
               try {
                 const parsedResult = JSON.parse(result);
                 if (parsedResult?.ok === false) {
-                  send({ type: "error", error: `${call.name} failed: ${parsedResult.error}` });
-                  controller.close();
-                  return;
+                  failed = true;
+                  failMessage = String(parsedResult.error ?? "unknown error");
                 }
               } catch {
-                // Tool output is still forwarded to the model below.
+                // Non-JSON tool output is still forwarded to the model below.
               }
+
+              // Failures are recoverable: hand the error back to the model and keep going.
               messages.push({
                 role: "tool",
                 tool_call_id: call.id!,
                 content: result.length > 60000 ? result.slice(0, 60000) + "…[truncated]" : result,
               });
+
+              if (failed) {
+                totalFailures++;
+                consecutiveFailures = lastFailedTool === call.name ? consecutiveFailures + 1 : 1;
+                lastFailedTool = call.name ?? null;
+                send({ type: "tool_error", tool: call.name, error: failMessage });
+
+                if (consecutiveFailures >= 3) {
+                  messages.push({
+                    role: "system",
+                    content:
+                      `\`${call.name}\` has now failed ${consecutiveFailures} times in a row. Stop retrying this shape of query. Either verify your assumptions with describe_table/sample_rows, take a fundamentally different approach, or give the user a plain-English explanation of what you could not retrieve.`,
+                  });
+                  consecutiveFailures = 0;
+                }
+
+                if (totalFailures >= 6) {
+                  messages.push({
+                    role: "system",
+                    content:
+                      "Too many tool failures this turn. Do not call any more tools. Reply now with a short plain-English answer using whatever you did manage to gather, and say clearly what you could not retrieve.",
+                  });
+                }
+              } else {
+                consecutiveFailures = 0;
+                lastFailedTool = null;
+              }
             }
 
             if (finishReason && finishReason !== "tool_calls") {
@@ -461,7 +552,7 @@ Deno.serve(async (req) => {
               return;
             }
           }
-          send({ type: "error", error: "Max tool steps reached" });
+          send({ type: "error", error: "I couldn't finish that within the allowed number of steps. Try narrowing the question." });
           controller.close();
         } catch (e) {
           send({ type: "error", error: (e as Error).message });
