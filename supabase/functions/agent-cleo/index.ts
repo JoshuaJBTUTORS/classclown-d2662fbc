@@ -205,6 +205,7 @@ Deno.serve(async (req) => {
                 messages,
                 tools,
                 stream: true,
+                reasoning_effort: "none",
               }),
             });
 
