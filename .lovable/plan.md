@@ -1,52 +1,31 @@
-# Agent Cleo — Phase 1: Truly agentic read-only lesson access
+## Diagnosis (verified)
 
-Wire `/agent-cleo` to a real backend that talks directly to OpenAI (`gpt-5.6`, not via Lovable AI Gateway). The agent walks the database itself — no hardcoded table lists — and is hard-limited to read-only.
+The edge function is reaching the database fine — grants on `agent_cleo_exec` and per-table `SELECT` grants for `agent_cleo_readonly` are in place. The real problem is that:
 
-## Secret
+- `agent_cleo_readonly` has `rolbypassrls = false`.
+- Every relevant `public` table has RLS policies scoped to `authenticated` / `anon` / `has_role(auth.uid(), …)`.
+- When the function `SET ROLE`s to `agent_cleo_readonly`, there is no `auth.uid()` and the role is neither `authenticated` nor `anon`, so **every policy filters to zero rows**.
 
-Reuse the existing `OPENAI_API_KEY` already in the project. No new secret.
+Agent Cleo runs its queries, gets back empty arrays for `lessons`, `students`, etc., and narrates that as "the database tool returned a permissions/configuration error."
 
-## Backend
+## Fix
 
-New edge function: `supabase/functions/agent-cleo/index.ts`
-- Auth: verify caller JWT, confirm `admin` or `owner` role via `has_role`. Reject otherwise.
-- Streams `POST https://api.openai.com/v1/chat/completions` with `model: "gpt-5.6"`, `stream: true`, tool loop until final assistant turn. SSE forwarded to the browser.
-- System prompt: "You are Agent Cleo, a read-only analyst for the Class Beyond CRM. Discover the schema yourself using the tools below, then answer. Never claim to modify data — you cannot."
+One-line database change:
 
-### Tools exposed to the model (all read-only)
+```sql
+ALTER ROLE agent_cleo_readonly BYPASSRLS;
+```
 
-The agent decides which to call and in what order — that's what makes it agentic.
+This preserves the security model that already matters:
+- The role still has **no INSERT/UPDATE/DELETE** — writes are impossible at the database level.
+- The role still has **no SELECT** on the sensitive tables we explicitly revoked (`user_roles`, `invitations`, `password_reset_tokens`, `google_oauth_states`).
+- The edge function still gates callers to `admin` / `owner` before any tool runs.
 
-1. `list_schema` — returns every table + view in `public` (name, kind, row-count estimate). No arguments.
-2. `describe_table` — args `{ table: string }`. Returns columns (name, type, nullable), primary key, and foreign keys. Lets the agent traverse relationships.
-3. `sample_rows` — args `{ table: string, limit?: number ≤ 20 }`. Returns a small sample so the agent understands shape/values.
-4. `run_sql` — args `{ sql: string }`. Executes arbitrary SELECT.
+The only thing that changes: for tables Agent Cleo is already granted `SELECT` on, it will now actually see the rows instead of an RLS-filtered empty set — which is the intended behaviour for an admin-only read-only analyst.
 
-### Read-only enforcement (hard, not prompt-based)
+## Steps
 
-The safety boundary is the DB role, not string parsing:
-- Create a Postgres role `agent_cleo_readonly` with `GRANT USAGE ON SCHEMA public` and `GRANT SELECT ON ALL TABLES IN SCHEMA public` (plus `ALTER DEFAULT PRIVILEGES` for future tables). No INSERT/UPDATE/DELETE/DDL. Excluded from sensitive tables (`user_roles`, `auth.*`, secrets-bearing tables — final exclusion list confirmed during build after reading current schema).
-- A SECURITY DEFINER function `public.agent_cleo_exec(sql text)` runs the query under this role via `SET LOCAL ROLE agent_cleo_readonly`, wraps in a read-only transaction (`SET TRANSACTION READ ONLY`), applies `statement_timeout = 15s`, and caps results (`LIMIT 500` injected if absent).
-- Function is `EXECUTE`-granted only to `service_role`; the edge function invokes it via the service-role client. Any write attempt errors at the database, not in JS.
-- Same function backs all four tools (schema queries are just SELECTs against `information_schema` / `pg_catalog`).
+1. Run migration: `ALTER ROLE agent_cleo_readonly BYPASSRLS;`
+2. Ask the user to retry the same "this week's lessons" prompt in `/agent-cleo` and confirm real data comes back.
 
-## Frontend
-
-Update `src/pages/AgentCleo.tsx`:
-- Replace mock send with streamed call to the `agent-cleo` edge function via `supabase.functions.invoke` (SSE reader).
-- Render streamed assistant tokens into the active message bubble.
-- Show a small status chip while a tool call is running (e.g. "Reading schema…", "Running query…") derived from tool-call deltas.
-- In-memory conversation only for this phase.
-- Preserve existing dark ChatGPT-style UI and "C" avatar.
-
-## Out of scope (later phases)
-
-- Persisting chat history / multi-thread sidebar wiring.
-- Any write tools.
-- Storage, edge function invocation, or non-`public` schemas.
-
-## Technical notes
-
-- Model id sent to OpenAI: `gpt-5.6` exactly. If OpenAI rejects it, we surface the error verbatim.
-- OpenAI streaming SSE forwarded directly; frontend parses `choices[].delta.content` and `tool_calls` deltas.
-- Browser never sees the OpenAI key and never talks to the DB directly.
+No edge-function code changes needed.
