@@ -108,7 +108,7 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
         WHERE n.nspname = 'public' AND c.relkind IN ('r','v','m')
         ORDER BY c.relname
       `);
-      return JSON.stringify(rows);
+      return JSON.stringify({ ok: true, rows });
     }
     if (name === "describe_table") {
       const table = String(args.table).replace(/[^a-zA-Z0-9_]/g, "");
@@ -136,23 +136,25 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
         WHERE tc.constraint_type = 'PRIMARY KEY'
           AND tc.table_schema = 'public' AND tc.table_name = '${table}'
       `);
-      return JSON.stringify({ columns: cols, primary_key: pk, foreign_keys: fks });
+      return JSON.stringify({ ok: true, columns: cols, primary_key: pk, foreign_keys: fks });
     }
     if (name === "sample_rows") {
       const table = String(args.table).replace(/[^a-zA-Z0-9_]/g, "");
       const limit = Math.min(Number(args.limit ?? 5), 20);
       const rows = await execSql(`SELECT * FROM public."${table}" LIMIT ${limit}`);
-      return JSON.stringify(rows);
+      return JSON.stringify({ ok: true, rows });
     }
     if (name === "run_sql") {
       let sql = String(args.sql).trim().replace(/;+\s*$/, "");
       if (!/\blimit\s+\d+/i.test(sql)) sql = `SELECT * FROM (${sql}) _sub LIMIT 500`;
       const rows = await execSql(sql);
-      return JSON.stringify(rows);
+      return JSON.stringify({ ok: true, rows });
     }
-    return JSON.stringify({ error: `Unknown tool: ${name}` });
+    return JSON.stringify({ ok: false, error: `Unknown tool: ${name}` });
   } catch (e) {
-    return JSON.stringify({ error: (e as Error).message });
+    const message = (e as Error).message;
+    console.error(`Agent Cleo tool failed: ${name}`, { args, error: message });
+    return JSON.stringify({ ok: false, tool: name, error: message });
   }
 }
 
@@ -280,6 +282,14 @@ Deno.serve(async (req) => {
               let parsedArgs: Record<string, unknown> = {};
               try { parsedArgs = JSON.parse(call.args || "{}"); } catch {}
               const result = await runTool(call.name!, parsedArgs);
+              try {
+                const parsedResult = JSON.parse(result);
+                if (parsedResult?.ok === false) {
+                  send({ type: "error", error: `${call.name} failed: ${parsedResult.error}` });
+                }
+              } catch {
+                // Tool output is still forwarded to the model below.
+              }
               messages.push({
                 role: "tool",
                 tool_call_id: call.id!,
