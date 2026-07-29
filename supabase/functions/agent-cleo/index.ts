@@ -96,6 +96,43 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "propose_lesson",
+      description:
+        "Propose a new lesson (one-off or recurring). This does NOT create anything — it shows the user a confirmation card which they must approve. Resolve real tutor_id and student_ids from the database first, and ask the user for any missing detail instead of guessing.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Lesson title, e.g. '1-1 GCSE Maths'" },
+          subject: { type: "string", description: "Full descriptive subject, e.g. 'GCSE Maths'" },
+          description: { type: "string", description: "Optional notes" },
+          tutor_id: { type: "string", description: "UUID from public.tutors" },
+          student_ids: {
+            type: "array",
+            items: { type: "integer" },
+            description: "Integer IDs from public.students",
+          },
+          start_time: { type: "string", description: "ISO 8601 UTC start, e.g. 2026-08-04T16:00:00Z" },
+          end_time: { type: "string", description: "ISO 8601 UTC end" },
+          is_group: { type: "boolean", description: "Group lesson. Defaults to true when more than one student." },
+          recurring: {
+            type: "object",
+            description: "Omit for a one-off lesson.",
+            properties: {
+              interval: { type: "string", enum: ["daily", "weekly", "biweekly", "monthly"] },
+              occurrences: { type: "integer", minimum: 2, maximum: 52 },
+            },
+            required: ["interval", "occurrences"],
+            additionalProperties: false,
+          },
+        },
+        required: ["title", "subject", "tutor_id", "student_ids", "start_time", "end_time"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function execSql(sql: string): Promise<unknown> {
