@@ -43,7 +43,19 @@ CREATING LESSONS:
 - Times you provide must be ISO 8601 UTC. The user speaks in Europe/London time, so convert (British Summer Time is UTC+1 roughly late March to late October, otherwise UTC+0).
 - If no duration is stated, ask; do not assume.
 - Use the recurring option only when the user asks for a repeating series, and state clearly how many occurrences will be created.
-- After calling \`propose_lesson\`, reply with ONE short sentence asking the user to review and press Confirm. Do not say the lesson exists.`;
+- After calling \`propose_lesson\`, reply with ONE short sentence asking the user to review and press Confirm. Do not say the lesson exists.
+
+WHEN A TOOL FAILS (failure recovery protocol):
+- A tool error is NEVER the end of the task. You will always receive the error text back as the tool result — read it, work out what was wrong, and try a different approach.
+- Never surface a raw database error to the user. The user should see an answer or a plain-English explanation, not Postgres output.
+- Never re-send an identical failing query. Change something meaningful each time: different columns, different function, simpler query, or fewer joins.
+- If you are unsure why it failed, call \`describe_table\` (and if needed \`sample_rows\`) to check your assumptions about columns, types and value formats before writing SQL again.
+- Give up on one approach after about 3 attempts and either try a fundamentally different route, or tell the user clearly what you could not retrieve and why.
+- Break big queries down: if a large joined query keeps failing or times out, run smaller queries and combine the results yourself.
+
+KNOWN DATABASE LIMITS:
+- The \`pg_trgm\` and \`fuzzystrmatch\` extensions are NOT installed. \`similarity()\`, the \`%\` operator, \`word_similarity\`, \`levenshtein\` and \`soundex\` do not exist. For fuzzy name matching use plain SQL: \`ILIKE '%name%'\`, \`lower()\`, \`split_part\`, or matching on first/last name separately.
+- Do not call custom database functions. Read tables and views only.`;
 
 const tools = [
   {
