@@ -61,9 +61,9 @@ function subjectTokens(subject: string): string[] {
   return uniq.length ? uniq.slice(-2) : [String(subject || "").toLowerCase()].filter(Boolean);
 }
 
-function tokenClause(column: string, tokens: string[]): string {
+function tokenClause(column: string, tokens: string[], join: "or" | "and" = "or"): string {
   if (!tokens.length) return "true";
-  return "(" + tokens.map((t) => `${column} ilike '%${esc(t)}%'`).join(" or ") + ")";
+  return "(" + tokens.map((t) => `${column} ilike '%${esc(t)}%'`).join(` ${join} `) + ")";
 }
 
 async function runSql(sql: string): Promise<any[]> {
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     for (const row of rows) {
       const tokens = subjectTokens(row.subject);
       const endTime = addMinutes(row.time!, row.duration);
-      const subjClause = tokenClause("s.name", tokens);
+      const subjClause = tokenClause("s.name", tokens, "and");
 
       // 1. Tutors who teach this subject and are free at the proposed slot.
       let availableTutors: any[] = [];
