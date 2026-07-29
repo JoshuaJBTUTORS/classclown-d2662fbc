@@ -72,6 +72,7 @@ CRITICAL RULES:
 - For each field you fill, include the verbatim quote from the transcript it came from and its [MM:SS] timestamp.
 - Days must be full English weekday names ("Monday"). Times must be 24-hour "HH:MM" strings. Duration is in minutes (default 60 when a one hour session is described).
 - price_per_lesson is the per-lesson price in GBP for the term recommended. contract_term must be one of month_to_month, 3_months, 12_months.
+- lesson_times must NEVER be empty when a weekly pattern was agreed. Build one row PER WEEKLY SESSION from whatever was said: if the number of lessons per week and a preferred time were agreed but exact weekdays were not named, still emit that many rows using the agreed time and your best-guess weekdays (spread across the week, avoiding any days the parent ruled out) and mark those rows confidence "low" so the admin corrects them.
 - lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").`;
 
 const schema = {
