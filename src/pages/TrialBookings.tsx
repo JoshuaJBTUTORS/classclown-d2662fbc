@@ -44,8 +44,10 @@ import {
   Phone,
   Mail,
   UserPlus,
-  Sparkles
+  Sparkles,
+  BellRing
 } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
