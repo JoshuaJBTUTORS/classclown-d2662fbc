@@ -152,8 +152,8 @@ const AgentCleo: React.FC = () => {
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {!hasMessages ? (
             <div className="h-full flex flex-col items-center justify-center px-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/40">
-                <Sparkles className="w-7 h-7" />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/40 text-2xl font-semibold">
+                C
               </div>
               <h1 className="text-3xl font-semibold mb-2">How can I help today?</h1>
               <p className="text-[#8e8ea0] mb-10">Ask me anything about the CRM.</p>
