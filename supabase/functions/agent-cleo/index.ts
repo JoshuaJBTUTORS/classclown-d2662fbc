@@ -376,25 +376,38 @@ Deno.serve(async (req) => {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
         try {
-          for (let step = 0; step < 20; step++) {
-            const resp = await fetch(OPENAI_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
-              },
-              body: JSON.stringify({
-                model: MODEL,
-                messages,
-                tools,
-                stream: true,
-                reasoning_effort: "none",
-              }),
-            });
+          let totalFailures = 0;
+          let consecutiveFailures = 0;
+          let lastFailedTool: string | null = null;
 
-            if (!resp.ok || !resp.body) {
-              const errText = await resp.text();
-              send({ type: "error", error: `OpenAI ${resp.status}: ${errText}` });
+          for (let step = 0; step < 20; step++) {
+            // Call OpenAI with backoff on transient failures (429 / 5xx).
+            let resp: Response | null = null;
+            for (let attempt = 0; attempt < 4; attempt++) {
+              resp = await fetch(OPENAI_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${OPENAI_API_KEY}`,
+                },
+                body: JSON.stringify({
+                  model: MODEL,
+                  messages,
+                  tools,
+                  stream: true,
+                  reasoning_effort: "none",
+                }),
+              });
+              const retryable = resp.status === 429 || resp.status >= 500;
+              if (resp.ok && resp.body) break;
+              if (!retryable || attempt === 3) break;
+              send({ type: "tool_error", tool: "model", error: `OpenAI ${resp.status}, retrying` });
+              await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+            }
+
+            if (!resp || !resp.ok || !resp.body) {
+              const errText = resp ? await resp.text() : "no response";
+              send({ type: "error", error: `OpenAI ${resp?.status ?? 0}: ${errText}` });
               controller.close();
               return;
             }
