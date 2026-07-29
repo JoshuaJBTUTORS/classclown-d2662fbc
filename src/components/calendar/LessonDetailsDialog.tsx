@@ -743,6 +743,29 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Draft Proposal from Transcript */}
+      {isTranscriptProposalOpen && lesson && (
+        <TranscriptProposalDialog
+          isOpen={isTranscriptProposalOpen}
+          onClose={() => setIsTranscriptProposalOpen(false)}
+          lessonId={lesson.id}
+          lessonSubject={lesson.subject}
+          lessonType={lesson.lesson_type}
+          fallbackPrefill={buildFallbackPrefill()}
+          onUseDraft={(prefill) => {
+            setIsTranscriptProposalOpen(false);
+            onClose();
+            navigate('/admin/proposals/create', { state: { proposalPrefill: prefill } });
+          }}
+          onSkip={() => {
+            setIsTranscriptProposalOpen(false);
+            onClose();
+            navigate('/admin/proposals/create', { state: { proposalPrefill: buildFallbackPrefill() } });
+          }}
+        />
+      )}
+
+
       {/* Delete Lesson Dialog */}
       {canDeleteLesson && lesson && <DeleteLessonDialog isOpen={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)} onConfirm={handleDeleteLesson} lessonTitle={lesson.title} isRecurring={lesson.is_recurring} isRecurringInstance={lesson.is_recurring_instance} lessonId={lesson.id} isLoading={isDeleting} />}
 
