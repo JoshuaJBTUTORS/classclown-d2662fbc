@@ -456,6 +456,22 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   // Filter out null student records to prevent crashes
   const validStudents = lesson?.lesson_students?.filter(enrollment => enrollment && enrollment.student && enrollment.student.id) || [];
 
+  const buildFallbackPrefill = (): ProposalPrefill => {
+    const student = validStudents[0]?.student;
+    return {
+      recipientName: student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() : '',
+      recipientEmail: student?.email || '',
+      recipientPhone: student?.phone || '',
+      lessonType: '',
+      subject: lesson?.subject || '',
+      pricePerLesson: 45,
+      paymentCycle: '',
+      contractTerm: 'month_to_month',
+      lessonTimes: [],
+    };
+  };
+
+
   // Use instance-specific times for recurring instances, otherwise use lesson dates
   const displayStartTime = instanceStart || lesson?.start_time;
   const displayEndTime = instanceEnd || lesson?.end_time;
