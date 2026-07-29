@@ -44,8 +44,10 @@ import {
   Phone,
   Mail,
   UserPlus,
-  Sparkles
+  Sparkles,
+  BellRing
 } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -90,6 +92,44 @@ const TrialBookings = () => {
   const [reviewRoomGroup, setReviewRoomGroup] = useState<TrialBooking[] | null>(null);
   const [tutors, setTutors] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  const resendConfirmation = async (booking: TrialBooking) => {
+    setResendingId(booking.id);
+    try {
+      let subjectName = 'your trial lesson';
+      if (booking.subject_id) {
+        const { data: subj } = await supabase
+          .from('subjects')
+          .select('name')
+          .eq('id', booking.subject_id)
+          .maybeSingle();
+        if (subj?.name) subjectName = subj.name;
+      }
+
+      const { error } = await supabase.functions.invoke('send-trial-booking-confirmation', {
+        body: {
+          parentName: booking.parent_name,
+          childName: booking.child_name,
+          email: booking.email,
+          phone: booking.phone,
+          subject: subjectName,
+          preferredDate: booking.preferred_date || '',
+          preferredTime: booking.preferred_time || booking.lesson_time || '',
+          message: booking.message,
+          bookingType: booking.booking_source === 'review_room' ? 'review_room' : undefined,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Confirmation resent to ${booking.parent_name}`);
+    } catch (err: any) {
+      console.error('Failed to resend confirmation:', err);
+      toast.error(`Failed to resend confirmation: ${err.message || 'Unknown error'}`);
+    } finally {
+      setResendingId(null);
+    }
+  };
+
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -494,6 +534,16 @@ const TrialBookings = () => {
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => resendConfirmation(head)}
+                                    disabled={resendingId === head.id}
+                                    className="text-blue-600 hover:text-blue-800"
+                                    title="Resend confirmation email"
+                                  >
+                                    <BellRing className="h-4 w-4" />
+                                  </Button>
                                   {pendingCount > 0 && (
                                     <>
                                       <Button
@@ -583,6 +633,16 @@ const TrialBookings = () => {
                                 onClick={() => viewBookingDetails(booking)}
                               >
                                 <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => resendConfirmation(booking)}
+                                disabled={resendingId === booking.id}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="Resend confirmation email"
+                              >
+                                <BellRing className="h-4 w-4" />
                               </Button>
                               {booking.status === 'pending' && (
                                 <>
