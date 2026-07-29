@@ -634,6 +634,16 @@ const TrialBookings = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => resendConfirmation(booking)}
+                                disabled={resendingId === booking.id}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="Resend confirmation email"
+                              >
+                                <BellRing className="h-4 w-4" />
+                              </Button>
                               {booking.status === 'pending' && (
                                 <>
                                   <Button
