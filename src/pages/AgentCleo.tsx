@@ -185,8 +185,8 @@ const AgentCleo: React.FC = () => {
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0">
-                      <Sparkles className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">
+                      C
                     </div>
                     <div className="flex-1 pt-1 whitespace-pre-wrap leading-relaxed">
                       {m.content}
