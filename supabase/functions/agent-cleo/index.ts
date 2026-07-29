@@ -219,8 +219,44 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
   } catch (e) {
     const message = (e as Error).message;
     console.error(`Agent Cleo tool failed: ${name}`, { args, error: message });
-    return JSON.stringify({ ok: false, tool: name, error: message });
+    return JSON.stringify({
+      ok: false,
+      tool: name,
+      error: message,
+      recoverable: true,
+      hint: recoveryHint(message),
+    });
   }
+}
+
+/** Turn a raw Postgres error into an actionable next step for the model. */
+function recoveryHint(message: string): string {
+  const m = message.toLowerCase();
+  if (/function .* does not exist/.test(m)) {
+    return "That function or extension is not available in this database (pg_trgm/fuzzystrmatch are not installed). Rewrite using plain SQL — ILIKE '%text%', lower(), split_part — instead of similarity()/%/levenshtein/soundex.";
+  }
+  if (/column .* does not exist/.test(m)) {
+    return "Wrong column name. Call describe_table on the relevant table and use the exact column names it returns.";
+  }
+  if (/relation .* does not exist/.test(m)) {
+    return "Wrong table name. Call list_schema to see the real table names, then retry.";
+  }
+  if (/operator does not exist|cannot be matched|invalid input syntax|cannot cast/.test(m)) {
+    return "Type mismatch. Check the column types with describe_table and add an explicit cast (e.g. ::text, ::date, ::uuid).";
+  }
+  if (/syntax error/.test(m)) {
+    return "Rewrite the query — check quoting, commas and CTE structure. Simplify it if needed.";
+  }
+  if (/timeout|canceling statement|statement timeout/.test(m)) {
+    return "The query was too heavy. Narrow the date range, drop joins, or add a tighter LIMIT and retry.";
+  }
+  if (/only accepts select/.test(m)) {
+    return "Only SELECT/WITH queries are allowed. Rewrite as a read-only SELECT.";
+  }
+  if (/permission denied/.test(m)) {
+    return "That object is not readable. Pick a different table or view that exposes the same data.";
+  }
+  return "Read the error, change your approach, and try a different query. Do not repeat the same one.";
 }
 
 /**
