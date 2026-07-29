@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
 
     const { data: lesson, error: lessonError } = await supabase
       .from("lessons")
-      .select("id, title, subject, lesson_type, scheduled_date, start_time, end_time, lesson_space_session_id, tutor_id")
+      .select("id, title, subject, lesson_type, start_time, end_time, lesson_space_session_id, tutor_id")
       .eq("id", lessonId)
       .maybeSingle();
 
@@ -364,7 +364,7 @@ Deno.serve(async (req) => {
       lesson_title: lesson.title,
       subject: lesson.subject,
       lesson_type: lesson.lesson_type,
-      date: lesson.scheduled_date,
+      date: lesson.start_time,
       start_time: lesson.start_time,
       students,
     };
