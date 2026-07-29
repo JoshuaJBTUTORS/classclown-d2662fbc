@@ -80,6 +80,7 @@ import AssessmentCenter from './pages/AssessmentCenter';
 import AssessmentTake from './pages/AssessmentTake';
 import AssessmentAssignments from './pages/admin/AssessmentAssignments';
 import Unauthorized from './pages/Unauthorized';
+import AgentCleo from './pages/AgentCleo';
 
 // Component to monitor app version
 const AppVersionMonitor = () => {
