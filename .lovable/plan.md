@@ -1,23 +1,15 @@
-## Plan
+## Problem
+Agent Cleo replies contain Markdown (`###`, `**bold**`, `-` lists), but `src/pages/AgentCleo.tsx` renders assistant content as raw text inside a `whitespace-pre-wrap` div. Users see the literal `###` and `**` characters instead of formatted headings, bold, and bullet lists.
 
-1. **Replace the broken role-switching RPC**
-   - Update `public.agent_cleo_exec(sql text)` so it no longer calls `set_config('role', ...)` inside a `SECURITY DEFINER` function, which Postgres blocks with `cannot set parameter "role" within security-definer function`.
-   - Keep the function strictly read-only by continuing to allow only queries beginning with `SELECT` or `WITH`, applying a statement timeout, and wrapping results as JSON.
+## Fix
+Render assistant messages as Markdown in `src/pages/AgentCleo.tsx`:
 
-2. **Preserve admin-only access at the edge function layer**
-   - Keep `/agent-cleo` restricted to users with `admin` or `owner` roles before any database tool runs.
-   - Continue using the service client only after that role check succeeds.
+1. Add `react-markdown` + `remark-gfm` (GFM for tables/strikethrough/task lists).
+2. Create a small `<MarkdownMessage>` component that wraps `ReactMarkdown` with `remarkPlugins={[remarkGfm]}` and Tailwind `prose prose-invert` classes tuned for the dark chat surface (tight spacing, no oversized headings, list/code styling that matches the ChatGPT-style bubble).
+3. Replace the current assistant `<div className="... whitespace-pre-wrap">{m.content}</div>` with `<MarkdownMessage>{m.content}</MarkdownMessage>`. Keep user messages as plain `whitespace-pre-wrap` text (they never contain markdown from us).
+4. Preserve current streaming behavior — `ReactMarkdown` re-renders on each delta, which is fine at this message length. Keep the `⚠️` error path as plain text (already just a short string).
 
-3. **Tighten query safety**
-   - Add stronger SQL guards to reject write/admin commands even if they are embedded in a `WITH` query or multi-statement string.
-   - Cap output with the existing 500-row limit.
+No changes to the edge function, tool logic, or system prompt. This is a UI-only rendering fix.
 
-4. **Deploy and test Agent Cleo**
-   - Deploy the `agent-cleo` edge function if its tool logic needs any matching changes.
-   - Test `list_schema` through the edge function, then test a simple lesson read query to confirm Agent Cleo can inspect lessons again.
-
-## Technical details
-
-- Confirmed current root cause: the live `public.agent_cleo_exec` function calls `set_config('role', 'agent_cleo_readonly', true)`, and Postgres does not allow changing `role` inside a security-definer function.
-- The fix is a database migration that removes the internal role switch from the RPC rather than trying to grant more permissions.
-- Since this function executes as its owner, the safety boundary becomes: admin/owner-only edge access, SQL command validation, timeout, and SELECT/WITH-only execution.
+## Technical notes
+- Tailwind `@tailwindcss/typography` may not be installed; if not, style headings/lists directly via `ReactMarkdown` `components` overrides (h1–h3 → `text-base font-semibold mt-3`, `ul` → `list-disc pl-5 space-y-1`, `strong` → `font-semibold`, `code` → `bg-white/10 rounded px-1`). I'll use the component-override approach to avoid adding a Tailwind plugin.
