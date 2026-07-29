@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, Trash2, BookOpen } from 'lucide-react';
+import OptimiseProposalPanel from '@/components/proposals/OptimiseProposalPanel';
+
 
 const lessonTimeSchema = z.object({
   day: z.string().min(1, 'Day is required'),
@@ -145,11 +147,21 @@ export default function ProposalBuilder() {
     <div className="container max-w-4xl py-8">
       <Card>
         <CardHeader>
-          <CardTitle>Create Lesson Proposal</CardTitle>
-          <CardDescription>
-            Create a personalized lesson proposal to send to parents/students
-          </CardDescription>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Create Lesson Proposal</CardTitle>
+              <CardDescription>
+                Create a personalized lesson proposal to send to parents/students
+              </CardDescription>
+            </div>
+          </div>
+          <OptimiseProposalPanel
+            lessonTimes={lessonTimes}
+            lessonType={form.watch('lessonType')}
+            studentContext={form.watch('recipientName')}
+          />
         </CardHeader>
+
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

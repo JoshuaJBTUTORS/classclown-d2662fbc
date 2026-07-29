@@ -204,3 +204,6 @@ verify_jwt = false
 enabled = true
 port = 54328
 inspector_port = 54329
+
+[functions.agent-cleo-optimise-proposal]
+verify_jwt = true
