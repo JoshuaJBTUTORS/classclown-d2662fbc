@@ -21,6 +21,8 @@ import HomeworkCompletionCheckDialog from '@/components/homework/HomeworkComplet
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
+import TranscriptProposalDialog, { ProposalPrefill } from './TranscriptProposalDialog';
+
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
 interface LessonDetailsDialogProps {
   lessonId: string | null;
