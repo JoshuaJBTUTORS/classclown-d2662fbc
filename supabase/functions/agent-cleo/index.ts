@@ -413,6 +413,30 @@ Deno.serve(async (req) => {
               send({ type: "tool", name: call.name });
               let parsedArgs: Record<string, unknown> = {};
               try { parsedArgs = JSON.parse(call.args || "{}"); } catch {}
+
+              if (call.name === "propose_lesson") {
+                const built = await buildLessonProposal(parsedArgs as Record<string, any>);
+                if (built.ok) {
+                  send({ type: "proposal", proposal: built.proposal });
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({
+                      ok: true,
+                      status: "awaiting_user_confirmation",
+                      note: "A confirmation card has been shown to the user. Nothing has been created. Reply with one short sentence asking them to review and press Confirm.",
+                    }),
+                  });
+                } else {
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({ ok: false, error: built.error }),
+                  });
+                }
+                continue;
+              }
+
               const result = await runTool(call.name!, parsedArgs);
               try {
                 const parsedResult = JSON.parse(result);
