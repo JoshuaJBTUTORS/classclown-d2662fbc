@@ -1,25 +1,22 @@
-## Problem
-`public.agent_cleo_exec` rejects queries whose first token isn't literally `SELECT` or `WITH` followed by whitespace. The model routinely emits valid read-only SQL that this check misclassifies:
+## Plan: make Agent Cleo database lookup work reliably
 
-- Trailing `;` — hits the semicolon guard, but often the model retries and the first regex fails too on wrapped forms.
-- Queries wrapped in parentheses (`(SELECT ... UNION SELECT ...)`) — first char is `(`, not `s`/`w`.
-- Leading `EXPLAIN` / `EXPLAIN ANALYZE` (read-only variants) — starts with `explain`.
-- Leading whitespace/newlines after `WITH` when the SQL is pretty-printed (currently OK because `\s` matches, but combined with a trailing `;` it still errors).
+I checked the live Agent Cleo path and found the read-only database RPC exists, but it currently has no visible routine privileges from the database metadata, and direct read-query access gets `permission denied for function agent_cleo_exec`. The edge function also hides exact tool errors behind the generic “database lookup is failing” message.
 
-We also can't see the offending SQL — the error message doesn't include it, so debugging is guesswork.
+### What I will change
 
-## Fix
-Update `public.agent_cleo_exec(sql text)` via a new migration so it:
+1. **Repair database access for the Edge Function**
+   - Add a small migration to grant execution of `public.agent_cleo_exec(text)` to the correct server role used by the `agent-cleo` edge function.
+   - Keep the RPC read-only guard in place so Agent Cleo can read CRM data but cannot write, update, delete, or call sensitive/internal schemas.
 
-1. **Normalizes input**: strip a single trailing `;` and surrounding whitespace before validation.
-2. **Accepts read-only entry points**: allow the first significant token to be `SELECT`, `WITH`, `TABLE`, `VALUES`, or `EXPLAIN` (only when the explained statement itself starts with `SELECT`/`WITH`/`TABLE`/`VALUES` and does not contain the `ANALYZE` keyword, which would execute the plan). Also allow a leading `(` (parenthesized SELECT / set-op query).
-3. **Keeps every existing safety guard**: single-statement (no interior `;`), no comments, no data-modifying keywords, no schema/catalog access, no function calls — unchanged.
-4. **Improves the error message**: include the first ~80 characters of the offending SQL in the `RAISE EXCEPTION` messages so the edge function logs show what the model actually sent. Safe because Agent Cleo is admin-only.
+2. **Make Agent Cleo show the real database error during failures**
+   - Update `supabase/functions/agent-cleo/index.ts` so tool failures are logged and surfaced more clearly to the assistant response instead of collapsing into “database lookup is failing.”
+   - This will make future errors actionable instead of vague.
 
-No changes to grants, roles, or the edge function — only the validation logic inside the RPC.
+3. **Deploy and test the edge function**
+   - Deploy `agent-cleo` after code changes.
+   - Test the `/agent-cleo` function using the same kind of question from the screenshot: “any KS3 maths groups on Thursday?”
+   - Confirm the tool can list schema, inspect lesson-related tables, and query lessons.
 
-## Technical notes
-- New regex for the entry check (after stripping trailing `;`): `^\(*\s*(select|with|table|values|explain)\b`.
-- For `EXPLAIN`, add a follow-up check: the remainder after `EXPLAIN [(...)]` must itself match the read-only entry regex, and the whole statement must not match `\banalyze\b` inside the `EXPLAIN (...)` options.
-- Semicolon guard becomes: reject only if a `;` remains after stripping the single trailing one (prevents statement chaining while allowing "SELECT 1;").
-- Error text example: `agent_cleo_exec only accepts SELECT / WITH / TABLE / VALUES / EXPLAIN queries (got: "DELETE FROM ...")`.
+4. **Report verified outcome**
+   - If the authenticated preview token is available, I’ll verify the full admin/owner path end-to-end.
+   - If auth is not available to the test tool, I’ll still verify the database function permission and edge function deploy, and mark the browser-auth path separately as unverified.
