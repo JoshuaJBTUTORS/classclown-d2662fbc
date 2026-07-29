@@ -257,9 +257,10 @@ const AgentCleo: React.FC = () => {
                 ) : (
                   <div key={m.id} className="flex gap-4">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
-                    <div className="flex-1 pt-1 whitespace-pre-wrap leading-relaxed">
-                      {m.content}
+                    <div className="flex-1 pt-1 leading-relaxed">
+                      {m.content && <MarkdownMessage>{m.content}</MarkdownMessage>}
                       {m.toolStatus && (
+
                         <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#8e8ea0] bg-white/5 rounded-full px-3 py-1.5">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           {m.toolStatus}
