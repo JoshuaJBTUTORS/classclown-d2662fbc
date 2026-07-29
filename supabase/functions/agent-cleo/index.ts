@@ -499,21 +499,51 @@ Deno.serve(async (req) => {
               }
 
               const result = await runTool(call.name!, parsedArgs);
+              let failed = false;
+              let failMessage = "";
               try {
                 const parsedResult = JSON.parse(result);
                 if (parsedResult?.ok === false) {
-                  send({ type: "error", error: `${call.name} failed: ${parsedResult.error}` });
-                  controller.close();
-                  return;
+                  failed = true;
+                  failMessage = String(parsedResult.error ?? "unknown error");
                 }
               } catch {
-                // Tool output is still forwarded to the model below.
+                // Non-JSON tool output is still forwarded to the model below.
               }
+
+              // Failures are recoverable: hand the error back to the model and keep going.
               messages.push({
                 role: "tool",
                 tool_call_id: call.id!,
                 content: result.length > 60000 ? result.slice(0, 60000) + "…[truncated]" : result,
               });
+
+              if (failed) {
+                totalFailures++;
+                consecutiveFailures = lastFailedTool === call.name ? consecutiveFailures + 1 : 1;
+                lastFailedTool = call.name ?? null;
+                send({ type: "tool_error", tool: call.name, error: failMessage });
+
+                if (consecutiveFailures >= 3) {
+                  messages.push({
+                    role: "system",
+                    content:
+                      `\`${call.name}\` has now failed ${consecutiveFailures} times in a row. Stop retrying this shape of query. Either verify your assumptions with describe_table/sample_rows, take a fundamentally different approach, or give the user a plain-English explanation of what you could not retrieve.`,
+                  });
+                  consecutiveFailures = 0;
+                }
+
+                if (totalFailures >= 6) {
+                  messages.push({
+                    role: "system",
+                    content:
+                      "Too many tool failures this turn. Do not call any more tools. Reply now with a short plain-English answer using whatever you did manage to gather, and say clearly what you could not retrieve.",
+                  });
+                }
+              } else {
+                consecutiveFailures = 0;
+                lastFailedTool = null;
+              }
             }
 
             if (finishReason && finishReason !== "tool_calls") {
@@ -522,7 +552,7 @@ Deno.serve(async (req) => {
               return;
             }
           }
-          send({ type: "error", error: "Max tool steps reached" });
+          send({ type: "error", error: "I couldn't finish that within the allowed number of steps. Try narrowing the question." });
           controller.close();
         } catch (e) {
           send({ type: "error", error: (e as Error).message });
