@@ -145,11 +145,21 @@ export default function ProposalBuilder() {
     <div className="container max-w-4xl py-8">
       <Card>
         <CardHeader>
-          <CardTitle>Create Lesson Proposal</CardTitle>
-          <CardDescription>
-            Create a personalized lesson proposal to send to parents/students
-          </CardDescription>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Create Lesson Proposal</CardTitle>
+              <CardDescription>
+                Create a personalized lesson proposal to send to parents/students
+              </CardDescription>
+            </div>
+          </div>
+          <OptimiseProposalPanel
+            lessonTimes={lessonTimes}
+            lessonType={form.watch('lessonType')}
+            studentContext={form.watch('recipientName')}
+          />
         </CardHeader>
+
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
