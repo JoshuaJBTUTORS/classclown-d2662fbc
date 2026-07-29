@@ -353,7 +353,7 @@ Deno.serve(async (req) => {
     // Booking context (students on the lesson)
     const { data: participants } = await supabase
       .from("lesson_students")
-      .select("students(first_name, last_name, email, phone, year_group)")
+      .select("students(first_name, last_name, email, phone, grade)")
       .eq("lesson_id", lessonId);
 
     const students = (participants || [])
