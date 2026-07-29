@@ -237,11 +237,59 @@ Deno.serve(async (req) => {
       return json({ error: (e as Error).message }, 500);
     }
 
+    // ---- create LessonSpace rooms (non-fatal) ----
+    let roomsCreated = 0;
+    let roomsFailed = 0;
+    for (const lessonId of createdIds) {
+      try {
+        const { data: roomData, error: roomError } = await service.functions.invoke(
+          "lesson-space-integration",
+          { body: { action: "create-room", lessonId } },
+        );
+        if (!roomError && roomData?.success) {
+          roomsCreated++;
+        } else {
+          roomsFailed++;
+          const msg = roomError?.message ?? roomData?.error ?? "Unknown room creation error";
+          console.error(`Room creation failed for ${lessonId}: ${msg}`);
+          await service.from("failed_room_creations").upsert(
+            {
+              lesson_id: lessonId,
+              error_message: String(msg).slice(0, 500),
+              error_code: roomError?.status ?? roomData?.external_status ?? null,
+              attempt_count: 1,
+              last_attempt_at: new Date().toISOString(),
+              resolved: false,
+            },
+            { onConflict: "lesson_id" },
+          );
+        }
+      } catch (roomEx) {
+        roomsFailed++;
+        console.error(`Room creation exception for ${lessonId}`, roomEx);
+        await service.from("failed_room_creations").upsert(
+          {
+            lesson_id: lessonId,
+            error_message: (roomEx as Error).message?.slice(0, 500) ?? "Exception",
+            error_code: null,
+            attempt_count: 1,
+            last_attempt_at: new Date().toISOString(),
+            resolved: false,
+          },
+          { onConflict: "lesson_id" },
+        );
+      }
+      // Respect LessonSpace rate limit (~4 req/sec)
+      await new Promise((r) => setTimeout(r, 250));
+    }
+
     return json({
       ok: true,
       lesson_id: parent.id,
       created_count: createdIds.length,
       lesson_ids: createdIds,
+      rooms_created: roomsCreated,
+      rooms_failed: roomsFailed,
       tutor: `${tutor.first_name} ${tutor.last_name}`.trim(),
       students: (students ?? []).map((s) => `${s.first_name} ${s.last_name}`.trim()),
     });
