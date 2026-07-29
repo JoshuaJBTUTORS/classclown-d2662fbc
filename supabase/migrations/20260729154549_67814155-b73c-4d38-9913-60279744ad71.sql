@@ -1,0 +1,1 @@
+ALTER ROLE agent_cleo_readonly BYPASSRLS;
