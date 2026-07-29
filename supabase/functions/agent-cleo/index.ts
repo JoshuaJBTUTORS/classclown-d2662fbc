@@ -1,5 +1,5 @@
 // Agent Cleo — read-only CRM analyst backed by OpenAI (direct, not Lovable Gateway).
-// Tools are backed by the DB role `agent_cleo_readonly` via public.agent_cleo_exec.
+// Tools are backed by the guarded public.agent_cleo_exec RPC.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -21,7 +21,7 @@ const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const SYSTEM_PROMPT = `You are Agent Cleo, a read-only analyst for the Class Beyond CRM (a tutoring business).
 
-You have full read-only access to the entire Postgres database via tools. You cannot write, update, or delete anything — attempts will error at the database level.
+You have full read-only access to the Postgres database via tools. You cannot write, update, or delete anything — attempts will error at the database level.
 
 WORKFLOW:
 1. When asked something, first call \`list_schema\` to see what tables exist.
@@ -31,6 +31,7 @@ WORKFLOW:
 
 RULES:
 - Never claim to have changed data — you can't.
+- Do not call database functions directly. Read tables and views only.
 - Prefer joining across tables over multiple round-trips.
 - Use LIMIT sensibly. Results are capped at 500 rows regardless.
 - All lesson times are stored in UTC; the business timezone is Europe/London.

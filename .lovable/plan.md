@@ -1,31 +1,23 @@
-## Diagnosis (verified)
+## Plan
 
-The edge function is reaching the database fine — grants on `agent_cleo_exec` and per-table `SELECT` grants for `agent_cleo_readonly` are in place. The real problem is that:
+1. **Replace the broken role-switching RPC**
+   - Update `public.agent_cleo_exec(sql text)` so it no longer calls `set_config('role', ...)` inside a `SECURITY DEFINER` function, which Postgres blocks with `cannot set parameter "role" within security-definer function`.
+   - Keep the function strictly read-only by continuing to allow only queries beginning with `SELECT` or `WITH`, applying a statement timeout, and wrapping results as JSON.
 
-- `agent_cleo_readonly` has `rolbypassrls = false`.
-- Every relevant `public` table has RLS policies scoped to `authenticated` / `anon` / `has_role(auth.uid(), …)`.
-- When the function `SET ROLE`s to `agent_cleo_readonly`, there is no `auth.uid()` and the role is neither `authenticated` nor `anon`, so **every policy filters to zero rows**.
+2. **Preserve admin-only access at the edge function layer**
+   - Keep `/agent-cleo` restricted to users with `admin` or `owner` roles before any database tool runs.
+   - Continue using the service client only after that role check succeeds.
 
-Agent Cleo runs its queries, gets back empty arrays for `lessons`, `students`, etc., and narrates that as "the database tool returned a permissions/configuration error."
+3. **Tighten query safety**
+   - Add stronger SQL guards to reject write/admin commands even if they are embedded in a `WITH` query or multi-statement string.
+   - Cap output with the existing 500-row limit.
 
-## Fix
+4. **Deploy and test Agent Cleo**
+   - Deploy the `agent-cleo` edge function if its tool logic needs any matching changes.
+   - Test `list_schema` through the edge function, then test a simple lesson read query to confirm Agent Cleo can inspect lessons again.
 
-One-line database change:
+## Technical details
 
-```sql
-ALTER ROLE agent_cleo_readonly BYPASSRLS;
-```
-
-This preserves the security model that already matters:
-- The role still has **no INSERT/UPDATE/DELETE** — writes are impossible at the database level.
-- The role still has **no SELECT** on the sensitive tables we explicitly revoked (`user_roles`, `invitations`, `password_reset_tokens`, `google_oauth_states`).
-- The edge function still gates callers to `admin` / `owner` before any tool runs.
-
-The only thing that changes: for tables Agent Cleo is already granted `SELECT` on, it will now actually see the rows instead of an RLS-filtered empty set — which is the intended behaviour for an admin-only read-only analyst.
-
-## Steps
-
-1. Run migration: `ALTER ROLE agent_cleo_readonly BYPASSRLS;`
-2. Ask the user to retry the same "this week's lessons" prompt in `/agent-cleo` and confirm real data comes back.
-
-No edge-function code changes needed.
+- Confirmed current root cause: the live `public.agent_cleo_exec` function calls `set_config('role', 'agent_cleo_readonly', true)`, and Postgres does not allow changing `role` inside a security-definer function.
+- The fix is a database migration that removes the internal role switch from the RPC rather than trying to grant more permissions.
+- Since this function executes as its owner, the safety boundary becomes: admin/owner-only edge access, SQL command validation, timeout, and SELECT/WITH-only execution.
