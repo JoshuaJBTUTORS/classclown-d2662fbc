@@ -211,6 +211,85 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
   }
 }
 
+/**
+ * Validate a proposed lesson and enrich it with human-readable names.
+ * Performs NO writes — the user must approve the card before anything is created.
+ */
+async function buildLessonProposal(args: Record<string, any>) {
+  const problems: string[] = [];
+
+  const title = typeof args.title === "string" ? args.title.trim() : "";
+  const subject = typeof args.subject === "string" ? args.subject.trim() : "";
+  if (!title) problems.push("title is required");
+  if (!subject) problems.push("subject is required");
+
+  const tutorId = typeof args.tutor_id === "string" ? args.tutor_id : "";
+  if (!/^[0-9a-f-]{36}$/i.test(tutorId)) problems.push("tutor_id must be a uuid from public.tutors");
+
+  const studentIds: number[] = Array.isArray(args.student_ids)
+    ? args.student_ids.map((s: unknown) => Number(s)).filter((n: number) => Number.isInteger(n))
+    : [];
+  if (studentIds.length === 0) problems.push("student_ids must contain at least one integer student id");
+
+  const start = new Date(args.start_time);
+  const end = new Date(args.end_time);
+  if (isNaN(start.getTime())) problems.push("start_time must be ISO 8601 UTC");
+  if (isNaN(end.getTime())) problems.push("end_time must be ISO 8601 UTC");
+  if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end <= start) {
+    problems.push("end_time must be after start_time");
+  }
+
+  let recurring: { interval: string; occurrences: number } | null = null;
+  if (args.recurring) {
+    const interval = String(args.recurring.interval ?? "").toLowerCase();
+    const occurrences = Number(args.recurring.occurrences);
+    if (!["daily", "weekly", "biweekly", "monthly"].includes(interval)) {
+      problems.push("recurring.interval must be daily, weekly, biweekly or monthly");
+    }
+    if (!Number.isInteger(occurrences) || occurrences < 2 || occurrences > 52) {
+      problems.push("recurring.occurrences must be an integer between 2 and 52");
+    }
+    if (!problems.length) recurring = { interval, occurrences };
+  }
+
+  if (problems.length) return { ok: false as const, error: problems.join("; ") };
+
+  const { data: tutor } = await service
+    .from("tutors")
+    .select("id, first_name, last_name")
+    .eq("id", tutorId)
+    .maybeSingle();
+  if (!tutor) {
+    return { ok: false as const, error: `No tutor found with id ${tutorId}. Look the tutor up in public.tutors first.` };
+  }
+
+  const { data: students } = await service
+    .from("students")
+    .select("id, first_name, last_name")
+    .in("id", studentIds);
+  const found = students ?? [];
+  const missing = studentIds.filter((id) => !found.some((s) => s.id === id));
+  if (missing.length) {
+    return { ok: false as const, error: `No student found with id ${missing.join(", ")}. Look students up in public.students first.` };
+  }
+
+  const proposal = {
+    title,
+    subject,
+    description: typeof args.description === "string" ? args.description.trim() : null,
+    tutor_id: tutorId,
+    tutor_name: `${tutor.first_name ?? ""} ${tutor.last_name ?? ""}`.trim(),
+    student_ids: studentIds,
+    student_names: found.map((s) => `${s.first_name ?? ""} ${s.last_name ?? ""}`.trim()),
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    is_group: typeof args.is_group === "boolean" ? args.is_group : studentIds.length > 1,
+    recurring,
+  };
+
+  return { ok: true as const, proposal };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
