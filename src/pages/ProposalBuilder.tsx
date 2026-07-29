@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, Trash2, BookOpen } from 'lucide-react';
+import OptimiseProposalPanel from '@/components/proposals/OptimiseProposalPanel';
+
 
 const lessonTimeSchema = z.object({
   day: z.string().min(1, 'Day is required'),
