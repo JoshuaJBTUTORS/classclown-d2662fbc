@@ -1,51 +1,34 @@
 ## What exists today (verified)
 
-`src/components/calendar/LessonDetailsDialog.tsx` line 724 renders a **Send Proposal** button, shown only when `lesson.lesson_type === 'demo'` and the user can edit lessons. It builds a query string with `name`, `email`, `phone`, `subject` from the first student and navigates to `/admin/proposals/create`.
+`src/pages/ProposalBuilder.tsx` holds the proposal form. Its `lessonTimes` state (line 67) is an array of `{ day, time, duration, subject }` rows, editable in the form and submitted at line 115. The page header is a single `CardTitle` "Create Lesson Proposal" (line 148) with no action buttons beside it.
 
-`src/pages/ProposalBuilder.tsx` reads exactly those four query params into its form defaults. Everything else — lesson type, price per lesson, payment cycle, contract term, and the entire `lessonTimes` array (day, time, duration, subject per session) — starts blank and is typed in manually.
-
-The transcript for the trial I examined contains every one of those missing fields, spoken aloud in the discovery conversation.
+Two Cleo edge functions already exist: `agent-cleo` (read-only SQL agent) and `agent-cleo-create-lesson`. There is no availability/optimisation function.
 
 ## Plan
 
-### 1. Extend the calendar's Send Proposal button
+### 1. Button in the builder header
 
-Keep the same button and the same destination. Changes:
+Add an **Optimise with Cleo Agent** button to the right of the "Create Lesson Proposal" title. It is enabled only when at least one lesson-time row has a day, a time and a subject. Clicking it sends the current rows (plus lesson type and the recipient's student context) for analysis and opens a results panel below the header.
 
-- Show it for `lesson_type === 'demo'` **and** `'trial'` — the discovery conversation happens on trials too.
-- Before navigating, check whether the lesson has a transcript. If it does, the button opens a small prep step instead of jumping straight to the blank form; if it does not, it behaves exactly as it does now.
+Suggestions only — nothing in the form is changed automatically. The admin reads the findings and edits rows by hand if they agree.
 
-### 2. Prep step: extract from the transcript
+### 2. What the optimiser checks
 
-Clicking Send Proposal on a lesson with a transcript opens a dialog inside the calendar that runs extraction and shows the result for review. It carries the booking context the calendar already has (lesson id, student, subject, tutor, date) plus everything pulled from the transcript:
+For each proposed row (day + time + subject + duration):
 
-- recipient name, email, phone, student name, year group
-- subjects, with exam board per subject where stated
-- lesson format (1:1 or group) and lessons per week
-- preferred days and times, blocked days, any rotation pattern
-- contract term discussed and price per lesson quoted
-- notes: commitments made, open questions, objections
+- **Tutor availability** — is there at least one tutor who teaches that subject and is free at that recurring weekday/time slot? Reports the count and names a couple of candidates, or flags the slot as uncovered.
+- **Existing group sessions** — is there already a running group for that subject at or near that slot with room to take another student? This is the highest-value finding, so matches are shown first with the group's current size and tutor.
+- **Slot popularity / capacity** — how much coverage that weekday/hour generally has versus neighbouring slots, so a thin slot can be nudged to a better-served one (e.g. "Tuesday 19:00 has 1 free Maths tutor; Wednesday 19:00 has 5, and an existing group of 3").
 
-Each field shows the value next to the verbatim transcript quote it came from, with the timestamp. Low-confidence or missing fields are flagged amber. Booking data from the calendar wins over transcript data on conflict for the fields the booking already knows (student name, subject, tutor), since that is the confirmed record.
+Each finding is tagged green (good as proposed), amber (workable but better options exist) or red (no coverage found), with a one-line reason and the concrete alternative slot where one exists.
 
-### 3. Prefill the builder
+### 3. Results panel
 
-**Use for proposal** navigates to `/admin/proposals/create` as today, but passes the reviewed draft through router state rather than a query string, so the full `lessonTimes` array survives. `ProposalBuilder` reads that state when present and falls back to the existing query-param behaviour when absent — no regression for any other entry point.
-
-Prefilled: recipient details, lesson type, subject, price per lesson, payment cycle, contract term, and one `lessonTimes` row per weekly session with day, time, duration and subject. The admin still reviews and presses send; nothing is created automatically.
-
-For the example trial that means the builder opens with 3-month term, £24 per lesson, and two weekly weekday 19:00 rows — Maths, plus the rotating second subject.
-
-### 4. Handle the messy parts
-
-- Speaker labels are unreliable (the account manager's whole segment is attributed to the tutor), so the prompt infers roles from content, never from names.
-- One LessonSpace `session_id` is attached to many lesson rows, so a transcript can contain other sessions. The prompt is told to extract only the discovery conversation matching this booking's student, and to say so when it cannot find one.
-- Diarization garbles spelled-out emails and names, so those default to low confidence and are always flagged for manual confirmation.
-- Quoted prices are checked against the standard rate card in the review dialog, so a misheard figure is caught before it reaches a client.
+Renders under the header as a compact list, one block per proposed lesson row, each showing the status tag, the reason, and any suggested alternative day/time or joinable group. A "Re-run" control repeats the check after the admin edits rows, and dismissing the panel leaves the form untouched.
 
 ## Technical notes
 
-- New edge function `draft-proposal-from-transcript`: takes a lesson id, reads `lesson_transcriptions`, flattens the segment JSON into speaker-labelled text with timestamps, calls the model with a JSON-schema response format, returns the structured draft. Read-only, no writes.
-- Model: `google/gemini-3.6-flash` via the Lovable AI Gateway; a transcript of this size fits one call, with chunk-and-merge for longer ones.
-- Frontend: new review dialog component under `src/components/calendar/`, wired into the existing button in `LessonDetailsDialog.tsx`; `ProposalBuilder.tsx` gains router-state prefill alongside its current query-param defaults.
-- No schema change. No change to `create-lesson-proposal` or the send flow.
+- New edge function `agent-cleo-optimise-proposal`: accepts `{ lessonTimes, lessonType, studentContext }`. It runs its own read-only queries against `lessons` (future instances, `is_group`, subject, tutor, day-of-week/time), tutor availability and tutor–subject data, aggregates per proposed slot, then passes the aggregate plus the proposal to the model for ranking and wording. Read-only; no writes anywhere.
+- Model: `openai/gpt-5.5` on the Lovable AI Gateway Responses API, streamed per the gateway contract (the aggregation is deterministic SQL; the model only ranks and phrases the suggestions).
+- Frontend: new `src/components/proposals/OptimiseProposalPanel.tsx` for the button and results; `ProposalBuilder.tsx` mounts it in the card header and passes the live `lessonTimes` state. No change to the submit path, the proposal schema, or the transcript-prefill flow.
+- No database schema changes.
