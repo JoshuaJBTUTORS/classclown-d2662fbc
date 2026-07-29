@@ -11,7 +11,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
-const MODEL = "google/gemini-3-flash";
+const MODEL = "google/gemini-2.5-flash";
 const MAX_CHARS = 120_000;
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -84,21 +84,171 @@ const schema = {
       type: "object",
       additionalProperties: false,
       properties: {
-        recipient_name: { $ref: "#/$defs/field" },
-        recipient_email: { $ref: "#/$defs/field" },
-        recipient_phone: { $ref: "#/$defs/field" },
-        student_name: { $ref: "#/$defs/field" },
-        year_group: { $ref: "#/$defs/field" },
-        subjects: { $ref: "#/$defs/field" },
-        exam_boards: { $ref: "#/$defs/field" },
-        lesson_type: { $ref: "#/$defs/field" },
-        lessons_per_week: { $ref: "#/$defs/field" },
-        preferred_times: { $ref: "#/$defs/field" },
-        blocked_days: { $ref: "#/$defs/field" },
-        rotation_pattern: { $ref: "#/$defs/field" },
-        contract_term: { $ref: "#/$defs/field" },
-        price_per_lesson: { $ref: "#/$defs/field" },
-        payment_cycle: { $ref: "#/$defs/field" },
+        recipient_name: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        recipient_email: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        recipient_phone: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        student_name: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        year_group: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        subjects: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        exam_boards: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        lesson_type: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        lessons_per_week: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        preferred_times: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        blocked_days: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        rotation_pattern: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        contract_term: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        price_per_lesson: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        payment_cycle: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
       },
       required: [
         "recipient_name",
@@ -150,19 +300,6 @@ const schema = {
     },
   },
   required: ["found_discovery", "summary", "fields", "lesson_times", "notes"],
-  $defs: {
-    field: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        value: { type: ["string", "null"] },
-        quote: { type: ["string", "null"] },
-        timestamp: { type: ["string", "null"] },
-        confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
-      },
-      required: ["value", "quote", "timestamp", "confidence"],
-    },
-  },
 };
 
 Deno.serve(async (req) => {
