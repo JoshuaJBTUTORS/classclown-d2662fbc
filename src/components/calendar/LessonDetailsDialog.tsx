@@ -720,28 +720,18 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       </Button>
                     )}
 
-                    {/* Send Proposal Button - Only for demo lessons, admin/owner only */}
-                    {lesson.lesson_type === 'demo' && canEditLesson && (
+                    {/* Send Proposal Button - demo & trial lessons, admin/owner only */}
+                    {(lesson.lesson_type === 'demo' || lesson.lesson_type === 'trial') && canEditLesson && (
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          const student = validStudents[0]?.student;
-                          const params = new URLSearchParams();
-                          if (student) {
-                            params.set('name', `${student.first_name} ${student.last_name}`.trim());
-                            if (student.email) params.set('email', student.email);
-                            if (student.phone) params.set('phone', student.phone);
-                          }
-                          if (lesson.subject) params.set('subject', lesson.subject);
-                          onClose();
-                          navigate(`/admin/proposals/create?${params.toString()}`);
-                        }}
+                        onClick={() => setIsTranscriptProposalOpen(true)}
                         className="flex items-center gap-2"
                       >
                         <Send className="h-4 w-4" />
                         Send Proposal
                       </Button>
                     )}
+
                   
                 </div>
               </div>
