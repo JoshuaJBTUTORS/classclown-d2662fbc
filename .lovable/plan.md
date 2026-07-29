@@ -1,28 +1,40 @@
-## Plan: fix Agent Cleo schema lookup properly
+## Plan: fix the actual `list_schema` validator bug
 
-The current failure happens inside Agent Cleo’s `list_schema` tool before it reaches lesson queries. The tool sends a multiline `pg_class`/`pg_namespace` query, and the database validator rejects it even though it is intended to be read-only.
+I verified the live database function and reproduced the matcher issue directly in Postgres:
 
-### What I will change
+```text
+current regex with \b: false
+fixed regex with ($|[^a-z_]): true
+```
 
-1. **Stop `list_schema` from using the fragile catalog query**
-   - Replace the current `pg_class` schema discovery query with a simpler `information_schema.tables` query.
-   - Keep it read-only and limited to the `public` schema.
-   - Return table/view names and table type so the model can continue deciding which tables to inspect.
+So the function is still rejecting valid `SELECT ...` queries because Postgres is not treating `\b` as the word boundary intended in this regex.
 
-2. **Normalize SQL before sending it to the RPC**
-   - In `agent-cleo`, trim and collapse tool-generated SQL into a clean single statement before calling `public.agent_cleo_exec`.
-   - This avoids validator issues caused by leading newlines/indentation in internally generated queries.
+### Changes to make
 
-3. **Keep security intact**
-   - Do not add write access.
-   - Do not expose service-role keys to the frontend.
-   - Keep Agent Cleo restricted to admin/owner users and read-only database access.
+1. **Patch `public.agent_cleo_exec`**
+   - Replace the fragile start-of-query regex:
+     ```text
+     ^\(*\s*(select|with|table|values|explain)\b
+     ```
+   - With a Postgres-safe boundary:
+     ```text
+     ^\(*\s*(select|with|table|values|explain)($|[^a-z_])
+     ```
+   - Apply the same fix to the EXPLAIN body validator.
 
-4. **Improve failure handling**
-   - If a tool fails, stop the tool loop cleanly instead of letting the model repeatedly retry the same broken tool.
-   - Keep the visible error specific enough to debug.
+2. **Keep all read-only security guards**
+   - Keep blocking write/admin keywords.
+   - Keep blocking internal schemas and sensitive catalog tables.
+   - Keep function-call restrictions.
+   - Keep Agent Cleo read-only.
 
-5. **Deploy and verify**
-   - Deploy the updated `agent-cleo` edge function.
-   - Verify the schema path no longer errors by checking recent function/network output.
-   - If an authenticated admin/owner browser token is not available in this environment, I’ll mark full in-browser admin-path verification separately rather than claiming it is verified.
+3. **Verify with the exact failing query**
+   - Run the `information_schema.tables` query through `public.agent_cleo_exec` after the migration.
+   - Confirm it returns schema rows instead of the `only accepts SELECT / WITH...` error.
+
+4. **Redeploy Agent Cleo if needed**
+   - The edge function source was already updated, but I’ll redeploy `agent-cleo` after the DB patch so the live function and DB helper are aligned.
+
+5. **Final check**
+   - Check fresh `agent-cleo` logs for the old `list_schema` failure.
+   - If authenticated preview testing is available, call `/agent-cleo` with the user’s session and verify a lesson question works.
