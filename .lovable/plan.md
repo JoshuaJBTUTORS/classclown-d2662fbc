@@ -1,15 +1,25 @@
 ## Problem
-Agent Cleo replies contain Markdown (`###`, `**bold**`, `-` lists), but `src/pages/AgentCleo.tsx` renders assistant content as raw text inside a `whitespace-pre-wrap` div. Users see the literal `###` and `**` characters instead of formatted headings, bold, and bullet lists.
+`public.agent_cleo_exec` rejects queries whose first token isn't literally `SELECT` or `WITH` followed by whitespace. The model routinely emits valid read-only SQL that this check misclassifies:
+
+- Trailing `;` — hits the semicolon guard, but often the model retries and the first regex fails too on wrapped forms.
+- Queries wrapped in parentheses (`(SELECT ... UNION SELECT ...)`) — first char is `(`, not `s`/`w`.
+- Leading `EXPLAIN` / `EXPLAIN ANALYZE` (read-only variants) — starts with `explain`.
+- Leading whitespace/newlines after `WITH` when the SQL is pretty-printed (currently OK because `\s` matches, but combined with a trailing `;` it still errors).
+
+We also can't see the offending SQL — the error message doesn't include it, so debugging is guesswork.
 
 ## Fix
-Render assistant messages as Markdown in `src/pages/AgentCleo.tsx`:
+Update `public.agent_cleo_exec(sql text)` via a new migration so it:
 
-1. Add `react-markdown` + `remark-gfm` (GFM for tables/strikethrough/task lists).
-2. Create a small `<MarkdownMessage>` component that wraps `ReactMarkdown` with `remarkPlugins={[remarkGfm]}` and Tailwind `prose prose-invert` classes tuned for the dark chat surface (tight spacing, no oversized headings, list/code styling that matches the ChatGPT-style bubble).
-3. Replace the current assistant `<div className="... whitespace-pre-wrap">{m.content}</div>` with `<MarkdownMessage>{m.content}</MarkdownMessage>`. Keep user messages as plain `whitespace-pre-wrap` text (they never contain markdown from us).
-4. Preserve current streaming behavior — `ReactMarkdown` re-renders on each delta, which is fine at this message length. Keep the `⚠️` error path as plain text (already just a short string).
+1. **Normalizes input**: strip a single trailing `;` and surrounding whitespace before validation.
+2. **Accepts read-only entry points**: allow the first significant token to be `SELECT`, `WITH`, `TABLE`, `VALUES`, or `EXPLAIN` (only when the explained statement itself starts with `SELECT`/`WITH`/`TABLE`/`VALUES` and does not contain the `ANALYZE` keyword, which would execute the plan). Also allow a leading `(` (parenthesized SELECT / set-op query).
+3. **Keeps every existing safety guard**: single-statement (no interior `;`), no comments, no data-modifying keywords, no schema/catalog access, no function calls — unchanged.
+4. **Improves the error message**: include the first ~80 characters of the offending SQL in the `RAISE EXCEPTION` messages so the edge function logs show what the model actually sent. Safe because Agent Cleo is admin-only.
 
-No changes to the edge function, tool logic, or system prompt. This is a UI-only rendering fix.
+No changes to grants, roles, or the edge function — only the validation logic inside the RPC.
 
 ## Technical notes
-- Tailwind `@tailwindcss/typography` may not be installed; if not, style headings/lists directly via `ReactMarkdown` `components` overrides (h1–h3 → `text-base font-semibold mt-3`, `ul` → `list-disc pl-5 space-y-1`, `strong` → `font-semibold`, `code` → `bg-white/10 rounded px-1`). I'll use the component-override approach to avoid adding a Tailwind plugin.
+- New regex for the entry check (after stripping trailing `;`): `^\(*\s*(select|with|table|values|explain)\b`.
+- For `EXPLAIN`, add a follow-up check: the remainder after `EXPLAIN [(...)]` must itself match the read-only entry regex, and the whole statement must not match `\banalyze\b` inside the `EXPLAIN (...)` options.
+- Semicolon guard becomes: reject only if a `;` remains after stripping the single trailing one (prevents statement chaining while allowing "SELECT 1;").
+- Error text example: `agent_cleo_exec only accepts SELECT / WITH / TABLE / VALUES / EXPLAIN queries (got: "DELETE FROM ...")`.
