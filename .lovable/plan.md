@@ -1,53 +1,51 @@
-## Problem (verified)
+## What exists today (verified)
 
-In `supabase/functions/agent-cleo/index.ts`, after a tool runs, any failure result immediately kills the whole run:
+`src/components/calendar/LessonDetailsDialog.tsx` line 724 renders a **Send Proposal** button, shown only when `lesson.lesson_type === 'demo'` and the user can edit lessons. It builds a query string with `name`, `email`, `phone`, `subject` from the first student and navigates to `/admin/proposals/create`.
 
-```
-if (parsedResult?.ok === false) {
-  send({ type: "error", error: `${call.name} failed: ${parsedResult.error}` });
-  controller.close();   // stream ends, model never sees the error
-  return;
-}
-```
+`src/pages/ProposalBuilder.tsx` reads exactly those four query params into its form defaults. Everything else — lesson type, price per lesson, payment cycle, contract term, and the entire `lessonTimes` array (day, time, duration, subject per session) — starts blank and is typed in manually.
 
-So the model never gets the error back, can't rewrite the query, and the user just sees a red line like `run_sql failed: function similarity(text, text) does not exist`. Two other hard stops behave the same way: an OpenAI non-200 response, and `Max tool steps reached`.
+The transcript for the trial I examined contains every one of those missing fields, spoken aloud in the discovery conversation.
 
-Separately, that specific failure is real: I checked `pg_extension` and neither `pg_trgm` nor `fuzzystrmatch` is installed, so `similarity()` / `%` fuzzy matching genuinely doesn't exist in this database — Cleo keeps reaching for it because nothing tells it not to.
+## Plan
 
-## The fix
+### 1. Extend the calendar's Send Proposal button
 
-**1. Feed tool errors back to the model instead of ending the run**
+Keep the same button and the same destination. Changes:
 
-Replace the abort with: push the error JSON into `messages` as the tool result, emit a soft `tool_error` event (rendered as a small amber "retrying…" note, not a fatal red error), and continue the loop. The model then sees the exact Postgres message and can fix its own SQL.
+- Show it for `lesson_type === 'demo'` **and** `'trial'` — the discovery conversation happens on trials too.
+- Before navigating, check whether the lesson has a transcript. If it does, the button opens a small prep step instead of jumping straight to the blank form; if it does not, it behaves exactly as it does now.
 
-Track failures per turn: keep a counter of consecutive failures for the same tool. After 3 consecutive failures, inject a system nudge telling the model to stop retrying the same shape and either try a fundamentally different approach or explain to the user what it couldn't do. After 6 total tool failures in a turn, stop the loop but still let the model produce a final text answer explaining the limitation, rather than dropping a raw error.
+### 2. Prep step: extract from the transcript
 
-**2. Attach recovery hints to known error classes**
+Clicking Send Proposal on a lesson with a transcript opens a dialog inside the calendar that runs extraction and shows the result for review. It carries the booking context the calendar already has (lesson id, student, subject, tutor, date) plus everything pulled from the transcript:
 
-In `runTool`'s catch block, map common Postgres errors to an actionable hint returned alongside the error, e.g.:
-- `function X does not exist` → "That function/extension is not available in this database. Use plain SQL — e.g. `ILIKE '%name%'`, `lower()`, or `split_part` — instead of trigram/fuzzy functions."
-- `column ... does not exist` / `relation ... does not exist` → "Call `describe_table` on the table first and use exact column names."
-- `syntax error at or near` → "Rewrite the query; check quoting and CTE structure."
-- timeouts / statement cancelled → "Narrow the date range or add a tighter LIMIT and try again."
+- recipient name, email, phone, student name, year group
+- subjects, with exam board per subject where stated
+- lesson format (1:1 or group) and lessons per week
+- preferred days and times, blocked days, any rotation pattern
+- contract term discussed and price per lesson quoted
+- notes: commitments made, open questions, objections
 
-**3. Add a failure-recovery protocol to the system prompt**
+Each field shows the value next to the verbatim transcript quote it came from, with the timestamp. Low-confidence or missing fields are flagged amber. Booking data from the calendar wins over transcript data on conflict for the fields the booking already knows (student name, subject, tutor), since that is the confirmed record.
 
-New section telling Cleo explicitly: tool errors are recoverable, never surface a raw error to the user; read the message, change approach, retry at most 3 times per problem, escalate through describe_table/sample_rows to check assumptions; never repeat an identical failing query. Plus a hard note: `pg_trgm`/`similarity()`/`%` and `fuzzystrmatch` are not installed — use `ILIKE`, `lower()`, or `soundex`-free plain SQL for name matching.
+### 3. Prefill the builder
 
-**4. Make the OpenAI call itself resilient**
+**Use for proposal** navigates to `/admin/proposals/create` as today, but passes the reviewed draft through router state rather than a query string, so the full `lessonTimes` array survives. `ProposalBuilder` reads that state when present and falls back to the existing query-param behaviour when absent — no regression for any other entry point.
 
-Retry a 429 or 5xx from OpenAI up to 3 times with exponential backoff (1s/2s/4s) before surfacing an error. Non-retryable statuses (400/401/403) still surface immediately with the message.
+Prefilled: recipient details, lesson type, subject, price per lesson, payment cycle, contract term, and one `lessonTimes` row per weekly session with day, time, duration and subject. The admin still reviews and presses send; nothing is created automatically.
 
-**5. UI: distinguish recoverable from fatal**
+For the example trial that means the builder opens with 3-month term, £24 per lesson, and two weekly weekday 19:00 rows — Maths, plus the rotating second subject.
 
-In `src/pages/AgentCleo.tsx`, handle the new `tool_error` event as an inline muted "⚠ retrying a different way" chip inside the tool activity area, keeping the fatal red banner only for the terminal `error` event.
+### 4. Handle the messy parts
+
+- Speaker labels are unreliable (the account manager's whole segment is attributed to the tutor), so the prompt infers roles from content, never from names.
+- One LessonSpace `session_id` is attached to many lesson rows, so a transcript can contain other sessions. The prompt is told to extract only the discovery conversation matching this booking's student, and to say so when it cannot find one.
+- Diarization garbles spelled-out emails and names, so those default to low confidence and are always flagged for manual confirmation.
+- Quoted prices are checked against the standard rate card in the review dialog, so a misheard figure is caught before it reaches a client.
 
 ## Technical notes
 
-- Files touched: `supabase/functions/agent-cleo/index.ts`, `src/pages/AgentCleo.tsx`. No database migration required.
-- The existing 20-step loop cap stays; the failure counters sit inside it.
-- No change to write behaviour — lesson creation still requires the user to press Confirm.
-
-## Optional (not included unless you want it)
-
-Installing `pg_trgm` would give Cleo real fuzzy name search (helpful for "find the student called Aziah/Azia"). That's a database extension change and a separate decision — say the word and I'll add it.
+- New edge function `draft-proposal-from-transcript`: takes a lesson id, reads `lesson_transcriptions`, flattens the segment JSON into speaker-labelled text with timestamps, calls the model with a JSON-schema response format, returns the structured draft. Read-only, no writes.
+- Model: `google/gemini-3.6-flash` via the Lovable AI Gateway; a transcript of this size fits one call, with chunk-and-merge for longer ones.
+- Frontend: new review dialog component under `src/components/calendar/`, wired into the existing button in `LessonDetailsDialog.tsx`; `ProposalBuilder.tsx` gains router-state prefill alongside its current query-param defaults.
+- No schema change. No change to `create-lesson-proposal` or the send flow.

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -44,27 +44,46 @@ type ProposalFormData = z.infer<typeof proposalSchema>;
 
 export default function ProposalBuilder() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>([
-    { day: '', time: '', duration: 60, subject: '' },
-  ]);
+
+  const prefill = (location.state as any)?.proposalPrefill as
+    | {
+        recipientName?: string;
+        recipientEmail?: string;
+        recipientPhone?: string;
+        lessonType?: string;
+        subject?: string;
+        pricePerLesson?: number;
+        paymentCycle?: string;
+        contractTerm?: 'month_to_month' | '3_months' | '12_months';
+        lessonTimes?: Array<{ day: string; time: string; duration: number; subject: string }>;
+      }
+    | undefined;
+
+  const prefilledTimes = prefill?.lessonTimes?.length ? prefill.lessonTimes : null;
+
+  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>(
+    prefilledTimes ?? [{ day: '', time: '', duration: 60, subject: '' }]
+  );
 
   const form = useForm<ProposalFormData>({
     resolver: zodResolver(proposalSchema),
     defaultValues: {
-      recipientName: searchParams.get('name') || '',
-      recipientEmail: searchParams.get('email') || '',
-      recipientPhone: searchParams.get('phone') || '',
-      lessonType: '',
-      subject: searchParams.get('subject') || '',
-      pricePerLesson: 45,
-      paymentCycle: '',
-      contractTerm: 'month_to_month',
+      recipientName: prefill?.recipientName || searchParams.get('name') || '',
+      recipientEmail: prefill?.recipientEmail || searchParams.get('email') || '',
+      recipientPhone: prefill?.recipientPhone || searchParams.get('phone') || '',
+      lessonType: prefill?.lessonType || '',
+      subject: prefill?.subject || searchParams.get('subject') || '',
+      pricePerLesson: prefill?.pricePerLesson ?? 45,
+      paymentCycle: prefill?.paymentCycle || '',
+      contractTerm: prefill?.contractTerm || 'month_to_month',
       dailyHomeworkOptIn: false,
-      lessonTimes: [],
+      lessonTimes: prefilledTimes ?? [],
     },
   });
+
 
   const addLessonTime = () => {
     const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '' }];

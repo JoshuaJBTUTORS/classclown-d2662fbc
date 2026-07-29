@@ -21,6 +21,8 @@ import HomeworkCompletionCheckDialog from '@/components/homework/HomeworkComplet
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
+import TranscriptProposalDialog, { ProposalPrefill } from './TranscriptProposalDialog';
+
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
 interface LessonDetailsDialogProps {
   lessonId: string | null;
@@ -61,7 +63,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     homework: null
   });
   const [isProcessed, setIsProcessed] = useState(false);
+  const [isTranscriptProposalOpen, setIsTranscriptProposalOpen] = useState(false);
   const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
+
   const [assessmentTutors, setAssessmentTutors] = useState<any[]>([]);
   const [selectedAssessmentTutor, setSelectedAssessmentTutor] = useState<string>('');
   const [isAssigningAssessment, setIsAssigningAssessment] = useState(false);
@@ -454,6 +458,22 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   // Filter out null student records to prevent crashes
   const validStudents = lesson?.lesson_students?.filter(enrollment => enrollment && enrollment.student && enrollment.student.id) || [];
 
+  const buildFallbackPrefill = (): ProposalPrefill => {
+    const student = validStudents[0]?.student;
+    return {
+      recipientName: student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() : '',
+      recipientEmail: student?.email || '',
+      recipientPhone: student?.phone || '',
+      lessonType: '',
+      subject: lesson?.subject || '',
+      pricePerLesson: 45,
+      paymentCycle: '',
+      contractTerm: 'month_to_month',
+      lessonTimes: [],
+    };
+  };
+
+
   // Use instance-specific times for recurring instances, otherwise use lesson dates
   const displayStartTime = instanceStart || lesson?.start_time;
   const displayEndTime = instanceEnd || lesson?.end_time;
@@ -720,28 +740,18 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       </Button>
                     )}
 
-                    {/* Send Proposal Button - Only for demo lessons, admin/owner only */}
-                    {lesson.lesson_type === 'demo' && canEditLesson && (
+                    {/* Send Proposal Button - demo & trial lessons, admin/owner only */}
+                    {(lesson.lesson_type === 'demo' || lesson.lesson_type === 'trial') && canEditLesson && (
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          const student = validStudents[0]?.student;
-                          const params = new URLSearchParams();
-                          if (student) {
-                            params.set('name', `${student.first_name} ${student.last_name}`.trim());
-                            if (student.email) params.set('email', student.email);
-                            if (student.phone) params.set('phone', student.phone);
-                          }
-                          if (lesson.subject) params.set('subject', lesson.subject);
-                          onClose();
-                          navigate(`/admin/proposals/create?${params.toString()}`);
-                        }}
+                        onClick={() => setIsTranscriptProposalOpen(true)}
                         className="flex items-center gap-2"
                       >
                         <Send className="h-4 w-4" />
                         Send Proposal
                       </Button>
                     )}
+
                   
                 </div>
               </div>
@@ -750,6 +760,29 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             </div>}
         </DialogContent>
       </Dialog>
+
+      {/* Draft Proposal from Transcript */}
+      {isTranscriptProposalOpen && lesson && (
+        <TranscriptProposalDialog
+          isOpen={isTranscriptProposalOpen}
+          onClose={() => setIsTranscriptProposalOpen(false)}
+          lessonId={lesson.id}
+          lessonSubject={lesson.subject}
+          lessonType={lesson.lesson_type}
+          fallbackPrefill={buildFallbackPrefill()}
+          onUseDraft={(prefill) => {
+            setIsTranscriptProposalOpen(false);
+            onClose();
+            navigate('/admin/proposals/create', { state: { proposalPrefill: prefill } });
+          }}
+          onSkip={() => {
+            setIsTranscriptProposalOpen(false);
+            onClose();
+            navigate('/admin/proposals/create', { state: { proposalPrefill: buildFallbackPrefill() } });
+          }}
+        />
+      )}
+
 
       {/* Delete Lesson Dialog */}
       {canDeleteLesson && lesson && <DeleteLessonDialog isOpen={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)} onConfirm={handleDeleteLesson} lessonTitle={lesson.title} isRecurring={lesson.is_recurring} isRecurringInstance={lesson.is_recurring_instance} lessonId={lesson.id} isLoading={isDeleting} />}
