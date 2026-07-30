@@ -1,8 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {
+  updateSingleRecurringInstance,
+  updateAllFutureLessons,
+} from '@/services/recurringLessonEditService';
+
 
 const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
   <ReactMarkdown
