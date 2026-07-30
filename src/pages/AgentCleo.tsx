@@ -87,15 +87,21 @@ export interface LessonEditProposal {
 
 type ProposalState = 'pending' | 'confirming' | 'created' | 'cancelled' | 'error';
 
+interface ProposalEntry {
+  id: string;
+  kind: 'create' | 'edit';
+  data: LessonProposal | LessonEditProposal;
+  state: ProposalState;
+  message?: string | null;
+}
+
 interface Msg {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   toolStatus?: string | null;
-  proposal?: LessonProposal | null;
-  editProposal?: LessonEditProposal | null;
-  proposalState?: ProposalState;
-  proposalMessage?: string | null;
+  proposals?: ProposalEntry[];
+  batchMessage?: string | null;
 }
 
 
@@ -414,16 +420,17 @@ const AgentCleo: React.FC = () => {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, toolStatus: TOOL_LABELS[ev.name] ?? `Using ${ev.name}…` } : m,
             ));
-          } else if (ev.type === 'proposal') {
+          } else if (ev.type === 'proposal' || ev.type === 'edit_proposal') {
+            const entry: ProposalEntry = {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              kind: ev.type === 'proposal' ? 'create' : 'edit',
+              data: ev.proposal,
+              state: 'pending',
+              message: null,
+            };
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId
-                ? { ...m, proposal: ev.proposal as LessonProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
-                : m,
-            ));
-          } else if (ev.type === 'edit_proposal') {
-            setMessages((prev) => prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, editProposal: ev.proposal as LessonEditProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
+                ? { ...m, proposals: [...(m.proposals ?? []), entry], toolStatus: null }
                 : m,
             ));
           } else if (ev.type === 'tool_error') {
@@ -461,15 +468,22 @@ const AgentCleo: React.FC = () => {
     }
   };
 
-  const setProposalState = (msgId: string, state: ProposalState, message?: string | null) => {
+  const setEntryState = (msgId: string, entryId: string, state: ProposalState, message?: string | null) => {
     setMessages((prev) => prev.map((m) =>
-      m.id === msgId ? { ...m, proposalState: state, proposalMessage: message ?? null } : m,
+      m.id === msgId
+        ? {
+            ...m,
+            proposals: (m.proposals ?? []).map((p) =>
+              p.id === entryId ? { ...p, state, message: message ?? null } : p,
+            ),
+          }
+        : m,
     ));
   };
 
-  const confirmProposal = async (msg: Msg) => {
-    if (!msg.proposal) return;
-    setProposalState(msg.id, 'confirming', null);
+  const applyCreate = async (msgId: string, entry: ProposalEntry) => {
+    const proposal = entry.data as LessonProposal;
+    setEntryState(msgId, entry.id, 'confirming', null);
     try {
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
@@ -478,30 +492,32 @@ const AgentCleo: React.FC = () => {
       const resp = await fetch(CREATE_LESSON_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ proposal: msg.proposal }),
+        body: JSON.stringify({ proposal }),
       });
       const result = await resp.json().catch(() => ({}));
       if (!resp.ok || result?.error) throw new Error(result?.error || `HTTP ${resp.status}`);
 
       const count = result.created_count ?? 1;
-      setProposalState(
-        msg.id,
+      setEntryState(
+        msgId,
+        entry.id,
         'created',
         count > 1
           ? `Created — ${count} lessons added to the calendar.`
           : 'Created — the lesson is on the calendar.',
       );
+      return true;
     } catch (e) {
-      setProposalState(msg.id, 'error', `Could not create: ${(e as Error).message}`);
+      setEntryState(msgId, entry.id, 'error', `Could not create: ${(e as Error).message}`);
+      return false;
     }
   };
 
   // Applies the approved edit through the exact same service the calendar edit form uses,
   // so LessonSpace rooms, participant links and enrollment notifications behave identically.
-  const confirmEditProposal = async (msg: Msg) => {
-    const p = msg.editProposal;
-    if (!p) return;
-    setProposalState(msg.id, 'confirming', null);
+  const applyEdit = async (msgId: string, entry: ProposalEntry) => {
+    const p = entry.data as LessonEditProposal;
+    setEntryState(msgId, entry.id, 'confirming', null);
     try {
       const { student_ids, ...lessonFields } = p.updates;
       const updateData = {
@@ -511,19 +527,49 @@ const AgentCleo: React.FC = () => {
 
       if (p.scope === 'all_future_lessons') {
         const updated = await updateAllFutureLessons(p.lesson_id, updateData, p.lesson_start_time);
-        setProposalState(msg.id, 'created', `Applied — ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
+        setEntryState(msgId, entry.id, 'created', `Applied — ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
       } else {
         await updateSingleRecurringInstance(p.lesson_id, updateData);
-        setProposalState(msg.id, 'created', 'Applied — the lesson has been updated.');
+        setEntryState(msgId, entry.id, 'created', 'Applied — the lesson has been updated.');
       }
+      return true;
     } catch (e) {
-      setProposalState(msg.id, 'error', `Could not apply: ${(e as Error).message}`);
+      setEntryState(msgId, entry.id, 'error', `Could not apply: ${(e as Error).message}`);
+      return false;
     }
   };
 
-  const cancelProposal = (msg: Msg) => {
-    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was changed.');
+  const confirmEntry = (msg: Msg, entry: ProposalEntry) =>
+    entry.kind === 'create' ? applyCreate(msg.id, entry) : applyEdit(msg.id, entry);
+
+  const cancelEntry = (msg: Msg, entry: ProposalEntry) => {
+    setEntryState(msg.id, entry.id, 'cancelled', 'Cancelled — nothing was changed.');
   };
+
+  const setBatchMessage = (msgId: string, message: string | null) => {
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, batchMessage: message } : m)));
+  };
+
+  // Sequential on purpose: parallel writes could race on the same recurring series.
+  const confirmAll = async (msg: Msg) => {
+    const pending = (msg.proposals ?? []).filter((p) => p.state === 'pending' || p.state === 'error');
+    if (!pending.length) return;
+    setBatchMessage(msg.id, `Applying ${pending.length} proposals…`);
+    let ok = 0;
+    let failed = 0;
+    for (const entry of pending) {
+      const success = await confirmEntry(msg, entry);
+      if (success) ok++; else failed++;
+    }
+    setBatchMessage(msg.id, failed ? `${ok} applied, ${failed} failed.` : `${ok} applied.`);
+  };
+
+  const cancelAll = (msg: Msg) => {
+    const pending = (msg.proposals ?? []).filter((p) => p.state === 'pending' || p.state === 'error');
+    pending.forEach((entry) => cancelEntry(msg, entry));
+    setBatchMessage(msg.id, 'Cancelled — nothing was changed.');
+  };
+
 
 
 
@@ -618,23 +664,61 @@ const AgentCleo: React.FC = () => {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
                     <div className="flex-1 pt-1 leading-relaxed">
                       {m.content && <MarkdownMessage>{m.content}</MarkdownMessage>}
-                      {m.proposal && (
-                        <LessonProposalCard
-                          proposal={m.proposal}
-                          state={m.proposalState ?? 'pending'}
-                          message={m.proposalMessage}
-                          onConfirm={() => confirmProposal(m)}
-                          onCancel={() => cancelProposal(m)}
-                        />
-                      )}
-                      {m.editProposal && (
-                        <LessonEditProposalCard
-                          proposal={m.editProposal}
-                          state={m.proposalState ?? 'pending'}
-                          message={m.proposalMessage}
-                          onConfirm={() => confirmEditProposal(m)}
-                          onCancel={() => cancelProposal(m)}
-                        />
+                      {(m.proposals?.length ?? 0) > 0 && (
+                        <div>
+                          {m.proposals!.length > 1 && (
+                            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+                              <span className="text-sm text-[#c5c5d2]">
+                                {m.proposals!.length} proposals need your approval
+                              </span>
+                              <div className="ml-auto flex gap-2">
+                                <button
+                                  onClick={() => confirmAll(m)}
+                                  disabled={!m.proposals!.some((p) => p.state === 'pending' || p.state === 'error')}
+                                  className="px-3 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-black text-sm font-medium transition-colors"
+                                >
+                                  Confirm all
+                                </button>
+                                <button
+                                  onClick={() => cancelAll(m)}
+                                  disabled={!m.proposals!.some((p) => p.state === 'pending' || p.state === 'error')}
+                                  className="px-3 py-1.5 rounded-xl border border-white/15 hover:bg-white/5 disabled:opacity-40 text-sm transition-colors"
+                                >
+                                  Cancel all
+                                </button>
+                              </div>
+                              {m.batchMessage && (
+                                <div className="w-full text-xs text-[#8e8ea0]">{m.batchMessage}</div>
+                              )}
+                            </div>
+                          )}
+                          {m.proposals!.map((entry, i) => (
+                            <div key={entry.id}>
+                              {m.proposals!.length > 1 && (
+                                <div className="mt-3 text-xs uppercase tracking-wide text-[#8e8ea0]">
+                                  Proposal {i + 1} of {m.proposals!.length}
+                                </div>
+                              )}
+                              {entry.kind === 'create' ? (
+                                <LessonProposalCard
+                                  proposal={entry.data as LessonProposal}
+                                  state={entry.state}
+                                  message={entry.message}
+                                  onConfirm={() => confirmEntry(m, entry)}
+                                  onCancel={() => cancelEntry(m, entry)}
+                                />
+                              ) : (
+                                <LessonEditProposalCard
+                                  proposal={entry.data as LessonEditProposal}
+                                  state={entry.state}
+                                  message={entry.message}
+                                  onConfirm={() => confirmEntry(m, entry)}
+                                  onCancel={() => cancelEntry(m, entry)}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
                       {m.toolStatus && (
 
