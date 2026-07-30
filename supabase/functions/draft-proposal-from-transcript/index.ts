@@ -322,8 +322,22 @@ const schema = {
             quote: { type: ["string", "null"] },
             timestamp: { type: ["string", "null"] },
             confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+            candidates: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  value: { type: ["string", "null"] },
+                  quote: { type: ["string", "null"] },
+                  timestamp: { type: ["string", "null"] },
+                  reason_rejected: { type: ["string", "null"] },
+                },
+                required: ["value", "quote", "timestamp", "reason_rejected"],
+              },
+            },
           },
-          required: ["value", "quote", "timestamp", "confidence"],
+          required: ["value", "quote", "timestamp", "confidence", "candidates"],
         },
         payment_cycle: {
           type: "object",
