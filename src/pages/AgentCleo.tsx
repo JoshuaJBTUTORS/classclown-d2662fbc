@@ -52,6 +52,34 @@ export interface LessonProposal {
   recurring: { interval: string; occurrences: number } | null;
 }
 
+export interface LessonEditChange {
+  field: string;
+  label: string;
+  before: string;
+  after: string;
+}
+
+export interface LessonEditProposal {
+  lesson_id: string;
+  lesson_title: string;
+  lesson_start_time: string;
+  is_recurring: boolean;
+  scope: 'this_lesson_only' | 'all_future_lessons';
+  affected_count: number;
+  changes: LessonEditChange[];
+  updates: {
+    title?: string;
+    description?: string;
+    subject?: string;
+    tutor_id?: string;
+    start_time?: string;
+    end_time?: string;
+    is_group?: boolean;
+    student_ids?: number[];
+  };
+  side_effects: string[];
+}
+
 type ProposalState = 'pending' | 'confirming' | 'created' | 'cancelled' | 'error';
 
 interface Msg {
@@ -60,9 +88,11 @@ interface Msg {
   content: string;
   toolStatus?: string | null;
   proposal?: LessonProposal | null;
+  editProposal?: LessonEditProposal | null;
   proposalState?: ProposalState;
   proposalMessage?: string | null;
 }
+
 
 const SUGGESTIONS = [
   { title: 'Summarise this week', subtitle: 'lessons, attendance and homework' },
