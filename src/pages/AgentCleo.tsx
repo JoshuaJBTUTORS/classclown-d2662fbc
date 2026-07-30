@@ -627,6 +627,15 @@ const AgentCleo: React.FC = () => {
                           onCancel={() => cancelProposal(m)}
                         />
                       )}
+                      {m.editProposal && (
+                        <LessonEditProposalCard
+                          proposal={m.editProposal}
+                          state={m.proposalState ?? 'pending'}
+                          message={m.proposalMessage}
+                          onConfirm={() => confirmEditProposal(m)}
+                          onCancel={() => cancelProposal(m)}
+                        />
+                      )}
                       {m.toolStatus && (
 
                         <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#8e8ea0] bg-white/5 rounded-full px-3 py-1.5">
