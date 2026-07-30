@@ -107,6 +107,8 @@ const TOOL_LABELS: Record<string, string> = {
   sample_rows: 'Sampling rows…',
   run_sql: 'Running query…',
   propose_lesson: 'Preparing lesson…',
+  propose_lesson_edit: 'Preparing lesson changes…',
+
 };
 
 const fmtLondon = (iso: string) =>
