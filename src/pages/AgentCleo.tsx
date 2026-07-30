@@ -1,8 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {
+  updateSingleRecurringInstance,
+  updateAllFutureLessons,
+} from '@/services/recurringLessonEditService';
+
 
 const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
   <ReactMarkdown
@@ -52,6 +57,34 @@ export interface LessonProposal {
   recurring: { interval: string; occurrences: number } | null;
 }
 
+export interface LessonEditChange {
+  field: string;
+  label: string;
+  before: string;
+  after: string;
+}
+
+export interface LessonEditProposal {
+  lesson_id: string;
+  lesson_title: string;
+  lesson_start_time: string;
+  is_recurring: boolean;
+  scope: 'this_lesson_only' | 'all_future_lessons';
+  affected_count: number;
+  changes: LessonEditChange[];
+  updates: {
+    title?: string;
+    description?: string;
+    subject?: string;
+    tutor_id?: string;
+    start_time?: string;
+    end_time?: string;
+    is_group?: boolean;
+    student_ids?: number[];
+  };
+  side_effects: string[];
+}
+
 type ProposalState = 'pending' | 'confirming' | 'created' | 'cancelled' | 'error';
 
 interface Msg {
@@ -60,9 +93,11 @@ interface Msg {
   content: string;
   toolStatus?: string | null;
   proposal?: LessonProposal | null;
+  editProposal?: LessonEditProposal | null;
   proposalState?: ProposalState;
   proposalMessage?: string | null;
 }
+
 
 const SUGGESTIONS = [
   { title: 'Summarise this week', subtitle: 'lessons, attendance and homework' },
@@ -77,6 +112,8 @@ const TOOL_LABELS: Record<string, string> = {
   sample_rows: 'Sampling rows…',
   run_sql: 'Running query…',
   propose_lesson: 'Preparing lesson…',
+  propose_lesson_edit: 'Preparing lesson changes…',
+
 };
 
 const fmtLondon = (iso: string) =>
@@ -195,6 +232,106 @@ const LessonProposalCard: React.FC<{
   );
 };
 
+const fmtRange = (value: string) => {
+  const [start, end] = value.split('|');
+  if (!start) return '—';
+  return end ? `${fmtLondon(start)} – ${fmtTime(end)}` : fmtLondon(start);
+};
+
+const LessonEditProposalCard: React.FC<{
+  proposal: LessonEditProposal;
+  state: ProposalState;
+  message?: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ proposal, state, message, onConfirm, onCancel }) => {
+  const locked = state !== 'pending' && state !== 'error';
+
+  return (
+    <div className="mt-3 rounded-2xl border border-white/10 bg-[#2a2a2a] overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+        <CalendarCog className="w-4 h-4 text-amber-400" />
+        <span className="font-medium text-sm">Edit lesson — needs your approval</span>
+      </div>
+
+      <div className="px-4 py-3 text-sm space-y-3">
+        <div className="text-[#c5c5d2]">
+          <span className="font-medium text-white">{proposal.lesson_title || 'Lesson'}</span>{' '}
+          <span className="text-[#8e8ea0]">· {fmtLondon(proposal.lesson_start_time)}</span>
+        </div>
+
+        <div className="rounded-xl border border-white/10 divide-y divide-white/5">
+          {proposal.changes.map((c) => (
+            <div key={c.field} className="px-3 py-2">
+              <div className="text-xs uppercase tracking-wide text-[#8e8ea0] mb-1">{c.label}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="line-through text-[#8e8ea0]">
+                  {c.field === 'time' ? fmtRange(c.before) : c.before}
+                </span>
+                <span className="text-[#8e8ea0]">→</span>
+                <span className="font-medium text-white">
+                  {c.field === 'time' ? fmtRange(c.after) : c.after}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-3">
+          <span className="w-28 shrink-0 text-[#8e8ea0]">Applies to</span>
+          <span>
+            {proposal.scope === 'all_future_lessons'
+              ? `This and all future occurrences (${proposal.affected_count} lesson${proposal.affected_count === 1 ? '' : 's'})`
+              : 'This lesson only'}
+          </span>
+        </div>
+
+        {proposal.side_effects.length > 0 && (
+          <ul className="list-disc pl-5 text-xs text-amber-300/90 space-y-1">
+            {proposal.side_effects.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {message && (
+        <div
+          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
+        >
+          {message}
+        </div>
+      )}
+
+      {!locked && (
+        <div className="px-4 pb-4 flex gap-2">
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-medium transition-colors"
+          >
+            Confirm and apply
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5 text-sm transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {state === 'confirming' && (
+        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Applying…
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo`;
 const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
 
@@ -283,7 +420,14 @@ const AgentCleo: React.FC = () => {
                 ? { ...m, proposal: ev.proposal as LessonProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
                 : m,
             ));
+          } else if (ev.type === 'edit_proposal') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, editProposal: ev.proposal as LessonEditProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
+                : m,
+            ));
           } else if (ev.type === 'tool_error') {
+
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId
                 ? { ...m, toolStatus: `⚠ ${ev.tool ?? 'Tool'} hit an error — trying a different way…` }
@@ -352,9 +496,36 @@ const AgentCleo: React.FC = () => {
     }
   };
 
-  const cancelProposal = (msg: Msg) => {
-    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was created.');
+  // Applies the approved edit through the exact same service the calendar edit form uses,
+  // so LessonSpace rooms, participant links and enrollment notifications behave identically.
+  const confirmEditProposal = async (msg: Msg) => {
+    const p = msg.editProposal;
+    if (!p) return;
+    setProposalState(msg.id, 'confirming', null);
+    try {
+      const { student_ids, ...lessonFields } = p.updates;
+      const updateData = {
+        ...lessonFields,
+        ...(student_ids ? { selectedStudents: student_ids } : {}),
+      };
+
+      if (p.scope === 'all_future_lessons') {
+        const updated = await updateAllFutureLessons(p.lesson_id, updateData, p.lesson_start_time);
+        setProposalState(msg.id, 'created', `Applied — ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
+      } else {
+        await updateSingleRecurringInstance(p.lesson_id, updateData);
+        setProposalState(msg.id, 'created', 'Applied — the lesson has been updated.');
+      }
+    } catch (e) {
+      setProposalState(msg.id, 'error', `Could not apply: ${(e as Error).message}`);
+    }
   };
+
+  const cancelProposal = (msg: Msg) => {
+    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was changed.');
+  };
+
+
 
   const newChat = () => {
     setMessages([]);
@@ -453,6 +624,15 @@ const AgentCleo: React.FC = () => {
                           state={m.proposalState ?? 'pending'}
                           message={m.proposalMessage}
                           onConfirm={() => confirmProposal(m)}
+                          onCancel={() => cancelProposal(m)}
+                        />
+                      )}
+                      {m.editProposal && (
+                        <LessonEditProposalCard
+                          proposal={m.editProposal}
+                          state={m.proposalState ?? 'pending'}
+                          message={m.proposalMessage}
+                          onConfirm={() => confirmEditProposal(m)}
                           onCancel={() => cancelProposal(m)}
                         />
                       )}

@@ -21,7 +21,7 @@ const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const SYSTEM_PROMPT = `You are Agent Cleo, an analyst for the Class Beyond CRM (a tutoring business).
 
-You have full read-only access to the Postgres database via tools. Your ONLY write capability is proposing a new lesson with \`propose_lesson\`, which never writes by itself — it shows the user a confirmation card that they must approve.
+You have full read-only access to the Postgres database via tools. Your ONLY write capabilities are proposing a new lesson with \`propose_lesson\` and proposing a change to an existing lesson with \`propose_lesson_edit\`. Neither writes by itself — each shows the user a confirmation card that they must approve.
 
 WORKFLOW:
 1. When asked something, first call \`list_schema\` to see what tables exist.
@@ -44,6 +44,17 @@ CREATING LESSONS:
 - If no duration is stated, ask; do not assume.
 - Use the recurring option only when the user asks for a repeating series, and state clearly how many occurrences will be created.
 - After calling \`propose_lesson\`, reply with ONE short sentence asking the user to review and press Confirm. Do not say the lesson exists.
+
+EDITING LESSONS:
+- Before calling \`propose_lesson_edit\` you MUST find the exact lesson by querying \`lessons\` (join \`lesson_students\`/\`students\` and \`tutors\` as needed) and use its real uuid. Never guess a lesson_id.
+- If more than one lesson matches what the user described, list the candidates with date, time, tutor and students and ask which one. Do not pick for them.
+- Only include the fields that should change. \`student_ids\` must be the FULL new list of students on the lesson, not just the ones being added.
+- Times are ISO 8601 UTC; the user speaks Europe/London time, so convert (BST is UTC+1 roughly late March to late October, otherwise UTC+0).
+- If the lesson is recurring (is_recurring or is_recurring_instance), ASK whether they mean just this occurrence or this one and all future occurrences, then set \`scope\` accordingly. Default to this_lesson_only when they only mean one date.
+- Changing the tutor regenerates the LessonSpace room and participant links; changing students sends enrollment notifications. Mention this when relevant.
+- After calling \`propose_lesson_edit\`, reply with ONE short sentence asking the user to review the changes and press Confirm. Never say the lesson has been changed.
+
+
 
 WHEN A TOOL FAILS (failure recovery protocol):
 - A tool error is NEVER the end of the task. You will always receive the error text back as the tool result — read it, work out what was wrong, and try a different approach.
@@ -145,7 +156,42 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "propose_lesson_edit",
+      description:
+        "Propose an edit to an EXISTING lesson. This does NOT change anything — it shows the user a confirmation card with a before/after diff which they must approve. Resolve the real lesson_id (and any tutor_id / student_ids) from the database first, and only include the fields that should change.",
+      parameters: {
+        type: "object",
+        properties: {
+          lesson_id: { type: "string", description: "UUID of the lesson in public.lessons" },
+          scope: {
+            type: "string",
+            enum: ["this_lesson_only", "all_future_lessons"],
+            description:
+              "For recurring lessons: change only this occurrence, or this one and all future occurrences. Ask the user which they want; defaults to this_lesson_only.",
+          },
+          title: { type: "string" },
+          description: { type: "string" },
+          subject: { type: "string", description: "Full descriptive subject, e.g. 'GCSE Maths'" },
+          tutor_id: { type: "string", description: "New tutor UUID from public.tutors" },
+          student_ids: {
+            type: "array",
+            items: { type: "integer" },
+            description: "The FULL new list of student ids for the lesson (not just additions).",
+          },
+          start_time: { type: "string", description: "New ISO 8601 UTC start" },
+          end_time: { type: "string", description: "New ISO 8601 UTC end" },
+          is_group: { type: "boolean" },
+        },
+        required: ["lesson_id"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
+
 
 async function execSql(sql: string): Promise<unknown> {
   const normalizedSql = sql
@@ -338,6 +384,208 @@ async function buildLessonProposal(args: Record<string, any>) {
   return { ok: true as const, proposal };
 }
 
+/**
+ * Validate a proposed EDIT to an existing lesson and build a before/after diff.
+ * Performs NO writes — the user must approve the card, and the client then applies
+ * the change through the same service the calendar edit form uses.
+ */
+async function buildLessonEditProposal(args: Record<string, any>) {
+  const lessonId = typeof args.lesson_id === "string" ? args.lesson_id : "";
+  if (!/^[0-9a-f-]{36}$/i.test(lessonId)) {
+    return { ok: false as const, error: "lesson_id must be a uuid from public.lessons. Look the lesson up first." };
+  }
+
+  const { data: lesson } = await service
+    .from("lessons")
+    .select(
+      "id, title, description, subject, tutor_id, start_time, end_time, is_group, is_recurring, is_recurring_instance, parent_lesson_id, instance_date, status",
+    )
+    .eq("id", lessonId)
+    .maybeSingle();
+  if (!lesson) {
+    return { ok: false as const, error: `No lesson found with id ${lessonId}. Query public.lessons to find the right one.` };
+  }
+
+  const { data: currentLinks } = await service
+    .from("lesson_students")
+    .select("student_id, students(first_name, last_name)")
+    .eq("lesson_id", lessonId);
+  const currentStudentIds = (currentLinks ?? []).map((l: any) => l.student_id);
+  const currentStudentNames = (currentLinks ?? []).map((l: any) =>
+    `${l.students?.first_name ?? ""} ${l.students?.last_name ?? ""}`.trim() || `#${l.student_id}`,
+  );
+
+  const { data: currentTutor } = lesson.tutor_id
+    ? await service.from("tutors").select("first_name, last_name").eq("id", lesson.tutor_id).maybeSingle()
+    : { data: null as any };
+  const currentTutorName = currentTutor
+    ? `${currentTutor.first_name ?? ""} ${currentTutor.last_name ?? ""}`.trim()
+    : "Unassigned";
+
+  const problems: string[] = [];
+  const changes: Array<{ field: string; label: string; before: string; after: string }> = [];
+  const updates: Record<string, unknown> = {};
+
+  const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+
+  if (typeof args.title === "string" && str(args.title) && str(args.title) !== (lesson.title ?? "")) {
+    updates.title = str(args.title);
+    changes.push({ field: "title", label: "Title", before: lesson.title ?? "—", after: str(args.title) });
+  }
+  if (typeof args.subject === "string" && str(args.subject) && str(args.subject) !== (lesson.subject ?? "")) {
+    updates.subject = str(args.subject);
+    changes.push({ field: "subject", label: "Subject", before: lesson.subject ?? "—", after: str(args.subject) });
+  }
+  if (typeof args.description === "string" && str(args.description) !== (lesson.description ?? "")) {
+    updates.description = str(args.description);
+    changes.push({
+      field: "description",
+      label: "Description",
+      before: lesson.description || "—",
+      after: str(args.description) || "—",
+    });
+  }
+
+  if (typeof args.tutor_id === "string" && args.tutor_id && args.tutor_id !== lesson.tutor_id) {
+    if (!/^[0-9a-f-]{36}$/i.test(args.tutor_id)) {
+      problems.push("tutor_id must be a uuid from public.tutors");
+    } else {
+      const { data: newTutor } = await service
+        .from("tutors")
+        .select("first_name, last_name")
+        .eq("id", args.tutor_id)
+        .maybeSingle();
+      if (!newTutor) {
+        problems.push(`No tutor found with id ${args.tutor_id}. Look the tutor up in public.tutors first.`);
+      } else {
+        updates.tutor_id = args.tutor_id;
+        changes.push({
+          field: "tutor_id",
+          label: "Tutor",
+          before: currentTutorName || "Unassigned",
+          after: `${newTutor.first_name ?? ""} ${newTutor.last_name ?? ""}`.trim(),
+        });
+      }
+    }
+  }
+
+  let newStart: Date | null = null;
+  let newEnd: Date | null = null;
+  if (args.start_time !== undefined || args.end_time !== undefined) {
+    newStart = new Date(args.start_time ?? lesson.start_time);
+    newEnd = new Date(args.end_time ?? lesson.end_time);
+    if (isNaN(newStart.getTime())) problems.push("start_time must be ISO 8601 UTC");
+    if (isNaN(newEnd.getTime())) problems.push("end_time must be ISO 8601 UTC");
+    if (newStart && newEnd && !isNaN(newStart.getTime()) && !isNaN(newEnd.getTime()) && newEnd <= newStart) {
+      problems.push("end_time must be after start_time");
+    }
+    if (!problems.length) {
+      const startChanged = newStart!.toISOString() !== new Date(lesson.start_time).toISOString();
+      const endChanged = newEnd!.toISOString() !== new Date(lesson.end_time).toISOString();
+      if (startChanged || endChanged) {
+        updates.start_time = newStart!.toISOString();
+        updates.end_time = newEnd!.toISOString();
+        changes.push({
+          field: "time",
+          label: "Date & time",
+          before: `${lesson.start_time}|${lesson.end_time}`,
+          after: `${newStart!.toISOString()}|${newEnd!.toISOString()}`,
+        });
+      }
+    }
+  }
+
+  let newStudentIds: number[] | null = null;
+  if (Array.isArray(args.student_ids)) {
+    newStudentIds = args.student_ids.map((s: unknown) => Number(s)).filter((n: number) => Number.isInteger(n));
+    if (!newStudentIds.length) {
+      problems.push("student_ids must contain at least one integer student id");
+    } else {
+      const { data: students } = await service
+        .from("students")
+        .select("id, first_name, last_name")
+        .in("id", newStudentIds);
+      const found = students ?? [];
+      const missing = newStudentIds.filter((id) => !found.some((s) => s.id === id));
+      if (missing.length) {
+        problems.push(`No student found with id ${missing.join(", ")}. Look students up in public.students first.`);
+      } else {
+        const same =
+          newStudentIds.length === currentStudentIds.length &&
+          newStudentIds.every((id) => currentStudentIds.includes(id));
+        if (!same) {
+          updates.student_ids = newStudentIds;
+          changes.push({
+            field: "students",
+            label: "Students",
+            before: currentStudentNames.join(", ") || "—",
+            after: found.map((s) => `${s.first_name ?? ""} ${s.last_name ?? ""}`.trim()).join(", "),
+          });
+        }
+      }
+    }
+  }
+
+  if (typeof args.is_group === "boolean" && args.is_group !== lesson.is_group) {
+    updates.is_group = args.is_group;
+    changes.push({
+      field: "is_group",
+      label: "Lesson type",
+      before: lesson.is_group ? "Group lesson" : "1-1 lesson",
+      after: args.is_group ? "Group lesson" : "1-1 lesson",
+    });
+  }
+
+  if (problems.length) return { ok: false as const, error: problems.join("; ") };
+  if (!changes.length) {
+    return {
+      ok: false as const,
+      error: "Nothing would change — the values given already match the lesson. Ask the user what they want changed.",
+    };
+  }
+
+  const isRecurring = Boolean(lesson.is_recurring || lesson.is_recurring_instance);
+  const scope = args.scope === "all_future_lessons" && isRecurring ? "all_future_lessons" : "this_lesson_only";
+
+  // Mirror getAffectedLessonsCount from the calendar edit service.
+  let affectedCount = 1;
+  if (scope === "all_future_lessons") {
+    const parentId = lesson.is_recurring_instance && lesson.parent_lesson_id ? lesson.parent_lesson_id : lesson.id;
+    const fromDate =
+      lesson.is_recurring_instance && lesson.parent_lesson_id
+        ? lesson.instance_date ?? new Date(lesson.start_time).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+    const { count } = await service
+      .from("lessons")
+      .select("id", { count: "exact", head: true })
+      .eq("parent_lesson_id", parentId)
+      .eq("is_recurring_instance", true)
+      .gte("instance_date", fromDate);
+    affectedCount = (count ?? 0) + (lesson.is_recurring_instance ? 0 : 1);
+  }
+
+  const sideEffects: string[] = [];
+  if (updates.tutor_id) sideEffects.push("The LessonSpace room and all participant links are regenerated.");
+  if (updates.student_ids) sideEffects.push("Enrollment notifications are sent for students added or removed.");
+
+  return {
+    ok: true as const,
+    proposal: {
+      lesson_id: lesson.id,
+      lesson_title: lesson.title,
+      lesson_start_time: lesson.start_time,
+      is_recurring: isRecurring,
+      scope,
+      affected_count: affectedCount,
+      changes,
+      updates,
+      side_effects: sideEffects,
+    },
+  };
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -497,6 +745,31 @@ Deno.serve(async (req) => {
                 }
                 continue;
               }
+
+              if (call.name === "propose_lesson_edit") {
+                const built = await buildLessonEditProposal(parsedArgs as Record<string, any>);
+                if (built.ok) {
+                  send({ type: "edit_proposal", proposal: built.proposal });
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({
+                      ok: true,
+                      status: "awaiting_user_confirmation",
+                      note: "An edit confirmation card has been shown to the user. Nothing has been changed. Reply with one short sentence asking them to review the changes and press Confirm.",
+                    }),
+                  });
+                } else {
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({ ok: false, error: built.error }),
+                  });
+                }
+                continue;
+              }
+
+
 
               const result = await runTool(call.name!, parsedArgs);
               let failed = false;
