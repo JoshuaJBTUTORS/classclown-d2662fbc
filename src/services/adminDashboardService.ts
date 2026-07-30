@@ -97,12 +97,57 @@ export const getAdminDashboardData = async (
     const uniqueStudentIds = new Set(activeStudents?.map(ls => ls.student_id) || []);
     const activeCustomersCount = uniqueStudentIds.size;
 
+    // Weekly tutoring hours (student-hours) for the CURRENT week, Mon 00:00 - Sun 23:59
+    const weekStart = new Date(now);
+    const day = (weekStart.getDay() + 6) % 7; // 0 = Monday
+    weekStart.setDate(weekStart.getDate() - day);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    const { data: weekLessons, error: weekError } = await supabase
+      .from('lessons')
+      .select(`
+        id,
+        start_time,
+        end_time,
+        status,
+        cancelled_at,
+        lesson_students ( student_id )
+      `)
+      .neq('lesson_type', 'trial')
+      .gte('start_time', weekStart.toISOString())
+      .lte('start_time', weekEnd.toISOString());
+
+    if (weekError) throw weekError;
+
+    let weeklyTutoringHours = 0;
+    let weeklyLessonCount = 0;
+
+    (weekLessons || []).forEach((lesson: any) => {
+      if (lesson.cancelled_at) return;
+      if (lesson.status === 'cancelled') return;
+
+      const students = Array.isArray(lesson.lesson_students) ? lesson.lesson_students.length : 0;
+      if (students === 0) return;
+
+      const durationHours =
+        (new Date(lesson.end_time).getTime() - new Date(lesson.start_time).getTime()) / (1000 * 60 * 60);
+      if (!isFinite(durationHours) || durationHours <= 0) return;
+
+      weeklyTutoringHours += durationHours * students;
+      weeklyLessonCount++;
+    });
+
     return {
       trialLessonsBooked: trialBookings?.length || 0,
       trialAttendanceRate,
       regularLessonsCount: regularLessons?.length || 0,
       activeTutorsCount: tutors?.length || 0,
       activeCustomersCount,
+      weeklyTutoringHours: Math.round(weeklyTutoringHours * 10) / 10,
+      weeklyLessonCount,
     };
   } catch (error) {
     console.error('Error fetching admin dashboard data:', error);
