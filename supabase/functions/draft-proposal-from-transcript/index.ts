@@ -73,7 +73,25 @@ CRITICAL RULES:
 - Days must be full English weekday names ("Monday"). Times must be 24-hour "HH:MM" strings. Duration is in minutes (default 60 when a one hour session is described).
 - price_per_lesson is the per-lesson price in GBP for the term recommended. contract_term must be one of month_to_month, 3_months, 12_months.
 - lesson_times must NEVER be empty when a weekly pattern was agreed. Build one row PER WEEKLY SESSION from whatever was said: if the number of lessons per week and a preferred time were agreed but exact weekdays were not named, still emit that many rows using the agreed time and your best-guess weekdays (spread across the week, avoiding any days the parent ruled out) and mark those rows confidence "low" so the admin corrects them.
-- lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").`;
+- lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").
+
+YEAR GROUP AND SUBJECT MAPPING (mandatory):
+- Normalise year_group to "Year N" (English school years, Year 1 to Year 13). If only an age or school stage is mentioned, infer the year and mark confidence "low".
+- Set year_band to exactly one of: early_ks2, ks2, 11_plus, ks3, gcse, a_level, using this mapping:
+  * Year 3-4 -> early_ks2
+  * Year 5-6 -> ks2 by default; use 11_plus instead when the parent mentions 11 plus, entrance exams, grammar school, independent/private school entry, VR or NVR
+  * Year 6 preparing for SATs -> ks2 (use the Sats subjects)
+  * Year 7-9 -> ks3
+  * Year 10-11 -> gcse
+  * Year 12-13 -> a_level
+- Every subject you write, in the "subjects" field and in EVERY lesson_times[].subject, must be an exact name from this canonical list, chosen for the student's year band:
+${CANONICAL_SUBJECTS.join(", ")}
+- Band prefixes: early_ks2 -> "Early KS2 ..."; ks2 -> "KS2 ..." (use "Sats Maths"/"Sats English" when SATs preparation is the stated goal); 11_plus -> "11 Plus Maths / English / VR / NVR"; ks3 -> "KS3 ..."; gcse -> "GCSE ..."; a_level -> "A-level ...".
+- Never output a bare subject like "Maths", "English" or "Science" — always the banded name (e.g. Year 10 maths becomes "GCSE Maths Highier" or "GCSE Maths Foundation", Year 7 science becomes "KS3 Science", Year 6 maths becomes "KS2 Maths").
+- For GCSE maths pick Higher or Foundation from what was said; if it was not said, default to "GCSE Maths Highier" and mark it low confidence.
+- If a requested subject has no equivalent in the list for that band (e.g. GCSE History), write the closest sensible banded name and mark it low confidence.
+- For rotating slots, join the canonical names with " / " and append " (rotating)".`;
+
 
 const schema = {
   type: "object",
