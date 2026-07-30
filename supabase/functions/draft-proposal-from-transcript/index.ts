@@ -62,6 +62,52 @@ function flatten(raw: unknown): string {
   return "";
 }
 
+// Mirrors src/constants/subjects.ts — the only subject names our system uses.
+const CANONICAL_SUBJECTS = [
+  "Early KS2 Maths", "Early KS2 English",
+  "KS2 Maths", "KS2 English",
+  "Sats Maths", "Sats English",
+  "11 Plus Maths", "11 Plus English", "11 Plus VR", "11 Plus NVR",
+  "KS3 Maths", "KS3 English", "KS3 Science", "KS3 Geography",
+  "GCSE Maths Highier", "GCSE Maths Foundation", "GCSE English",
+  "GCSE Combined Science", "GCSE Computer Science", "GCSE Geography",
+  "GCSE Business", "GCSE Economics", "GCSE Physics", "GCSE Chemistry", "GCSE Biology",
+  "Year 11 Maths Highier", "Year 11 Maths Foundation", "Year 11 English",
+  "Year 11 Combined Science", "Year 11 Physics", "Year 11 Biology", "Year 11 Chemistry",
+  "A-level Maths", "A-level Biology", "A-level Chemistry", "A-level Physics",
+  "A-level Computer Science", "A-level Geography", "A-level Business", "A-level Economics",
+];
+
+const CANONICAL_SET = new Set(CANONICAL_SUBJECTS.map((s) => s.toLowerCase()));
+
+function bandFromYearGroup(raw: unknown): string | null {
+  const text = String(raw ?? "").toLowerCase();
+  const match = text.match(/(?:year|yr|y|grade)\s*(\d{1,2})/) || text.match(/\b(\d{1,2})\b/);
+  const year = match ? Number(match[1]) : NaN;
+  if (!Number.isFinite(year)) {
+    if (text.includes("a-level") || text.includes("a level")) return "a_level";
+    if (text.includes("gcse")) return "gcse";
+    if (text.includes("ks3")) return "ks3";
+    if (text.includes("11 plus") || text.includes("11+")) return "11_plus";
+    if (text.includes("ks2") || text.includes("sats")) return "ks2";
+    return null;
+  }
+  if (year <= 2) return "early_ks2";
+  if (year <= 4) return "early_ks2";
+  if (year <= 6) return text.includes("11 plus") || text.includes("11+") ? "11_plus" : "ks2";
+  if (year <= 9) return "ks3";
+  if (year <= 11) return "gcse";
+  return "a_level";
+}
+
+function isCanonicalSubject(value: unknown): boolean {
+  const raw = String(value ?? "").trim();
+  if (!raw) return false;
+  const parts = raw.replace(/\(rotating\)/i, "").split("/").map((p) => p.trim()).filter(Boolean);
+  return parts.length > 0 && parts.every((p) => CANONICAL_SET.has(p.toLowerCase()));
+}
+
+
 const SYSTEM = `You extract the commercial details of a tutoring discovery/trial conversation so an admin can draft a proposal.
 
 CRITICAL RULES:
@@ -73,7 +119,25 @@ CRITICAL RULES:
 - Days must be full English weekday names ("Monday"). Times must be 24-hour "HH:MM" strings. Duration is in minutes (default 60 when a one hour session is described).
 - price_per_lesson is the per-lesson price in GBP for the term recommended. contract_term must be one of month_to_month, 3_months, 12_months.
 - lesson_times must NEVER be empty when a weekly pattern was agreed. Build one row PER WEEKLY SESSION from whatever was said: if the number of lessons per week and a preferred time were agreed but exact weekdays were not named, still emit that many rows using the agreed time and your best-guess weekdays (spread across the week, avoiding any days the parent ruled out) and mark those rows confidence "low" so the admin corrects them.
-- lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").`;
+- lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").
+
+YEAR GROUP AND SUBJECT MAPPING (mandatory):
+- Normalise year_group to "Year N" (English school years, Year 1 to Year 13). If only an age or school stage is mentioned, infer the year and mark confidence "low".
+- Set year_band to exactly one of: early_ks2, ks2, 11_plus, ks3, gcse, a_level, using this mapping:
+  * Year 3-4 -> early_ks2
+  * Year 5-6 -> ks2 by default; use 11_plus instead when the parent mentions 11 plus, entrance exams, grammar school, independent/private school entry, VR or NVR
+  * Year 6 preparing for SATs -> ks2 (use the Sats subjects)
+  * Year 7-9 -> ks3
+  * Year 10-11 -> gcse
+  * Year 12-13 -> a_level
+- Every subject you write, in the "subjects" field and in EVERY lesson_times[].subject, must be an exact name from this canonical list, chosen for the student's year band:
+${CANONICAL_SUBJECTS.join(", ")}
+- Band prefixes: early_ks2 -> "Early KS2 ..."; ks2 -> "KS2 ..." (use "Sats Maths"/"Sats English" when SATs preparation is the stated goal); 11_plus -> "11 Plus Maths / English / VR / NVR"; ks3 -> "KS3 ..."; gcse -> "GCSE ..."; a_level -> "A-level ...".
+- Never output a bare subject like "Maths", "English" or "Science" — always the banded name (e.g. Year 10 maths becomes "GCSE Maths Highier" or "GCSE Maths Foundation", Year 7 science becomes "KS3 Science", Year 6 maths becomes "KS2 Maths").
+- For GCSE maths pick Higher or Foundation from what was said; if it was not said, default to "GCSE Maths Highier" and mark it low confidence.
+- If a requested subject has no equivalent in the list for that band (e.g. GCSE History), write the closest sensible banded name and mark it low confidence.
+- For rotating slots, join the canonical names with " / " and append " (rotating)".`;
+
 
 const schema = {
   type: "object",
@@ -134,6 +198,20 @@ const schema = {
           additionalProperties: false,
           properties: {
             value: { type: ["string", "null"] },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
+        year_band: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: {
+              type: ["string", "null"],
+              enum: ["early_ks2", "ks2", "11_plus", "ks3", "gcse", "a_level", null],
+            },
             quote: { type: ["string", "null"] },
             timestamp: { type: ["string", "null"] },
             confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
@@ -257,6 +335,7 @@ const schema = {
         "recipient_phone",
         "student_name",
         "year_group",
+        "year_band",
         "subjects",
         "exam_boards",
         "lesson_type",
@@ -361,6 +440,9 @@ Deno.serve(async (req) => {
       .map((p: any) => p.students)
       .filter(Boolean);
 
+    const recordYearGroup = (students[0] as any)?.grade ?? null;
+    const recordBand = bandFromYearGroup(recordYearGroup);
+
     const context = {
       lesson_title: lesson.title,
       subject: lesson.subject,
@@ -368,7 +450,12 @@ Deno.serve(async (req) => {
       date: lesson.start_time,
       start_time: lesson.start_time,
       students,
+      record_year_group: recordYearGroup,
+      record_year_band: recordBand,
+      note:
+        "record_year_group / record_year_band come from the booking record and are authoritative when present. Use them to pick the banded subject names.",
     };
+
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -444,6 +531,35 @@ Deno.serve(async (req) => {
         };
       }
     }
+
+    // Booking record year group wins, and drives the band
+    if (recordYearGroup) {
+      draft.fields.year_group = {
+        value: String(recordYearGroup),
+        quote: draft.fields.year_group?.quote ?? null,
+        timestamp: draft.fields.year_group?.timestamp ?? null,
+        confidence: "high",
+      };
+    }
+    const resolvedBand = recordBand ?? draft.fields?.year_band?.value ?? bandFromYearGroup(draft.fields?.year_group?.value);
+    draft.fields.year_band = {
+      value: resolvedBand ?? null,
+      quote: draft.fields?.year_band?.quote ?? null,
+      timestamp: draft.fields?.year_band?.timestamp ?? null,
+      confidence: recordBand ? "high" : (resolvedBand ? (draft.fields?.year_band?.confidence ?? "medium") : "missing"),
+    };
+
+    // Flag any subject that is not one of our canonical names
+    if (draft.fields?.subjects?.value && !isCanonicalSubject(draft.fields.subjects.value)) {
+      draft.fields.subjects.confidence = "low";
+    }
+    if (Array.isArray(draft.lesson_times)) {
+      draft.lesson_times = draft.lesson_times.map((lt: any) =>
+        isCanonicalSubject(lt?.subject) ? lt : { ...lt, confidence: "low" }
+      );
+    }
+
+
 
     return json({ success: true, draft, context });
   } catch (e) {
