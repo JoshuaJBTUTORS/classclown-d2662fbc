@@ -118,6 +118,14 @@ CRITICAL RULES:
 - For each field you fill, include the verbatim quote from the transcript it came from and its [MM:SS] timestamp.
 - Days must be full English weekday names ("Monday"). Times must be 24-hour "HH:MM" strings. Duration is in minutes (default 60 when a one hour session is described).
 - price_per_lesson is the per-lesson price in GBP for the term recommended. contract_term must be one of month_to_month, 3_months, 12_months.
+
+PRICE RESOLUTION (mandatory when more than one number is heard):
+- The settled price is the LAST price the account manager states that the parent acknowledges or does not push back on. Later statements override earlier ones.
+- Prefer the price stated for the term/commitment that is actually being recommended (e.g. the 3 month rate when 3 months was agreed) over prices quoted for other terms.
+- Ignore prices that are framed as: the standard/list rate before a discount, a different lesson type (1-1 vs group) than the one agreed, a hypothetical ("if you did four a week it would be..."), or a competitor's price the parent mentions.
+- Only convert a monthly or weekly total into a per-lesson figure when the number of lessons is unambiguous; otherwise keep the per-lesson figure that was actually said aloud.
+- price_per_lesson.candidates must list EVERY distinct price figure heard in the call, including the one you chose, each with its verbatim quote, [MM:SS] timestamp and a one line reason_rejected explaining why it was or was not selected (write "selected" for the chosen one).
+- price_per_lesson.confidence: "high" only when the parent explicitly confirms the number; "medium" when the account manager states it last and it goes unchallenged; "low" when it was derived, inferred, or several numbers were still live at the end of the call. When there is more than one candidate, confidence may NOT be "high" unless the parent verbally confirmed the chosen figure.
 - lesson_times must NEVER be empty when a weekly pattern was agreed. Build one row PER WEEKLY SESSION from whatever was said: if the number of lessons per week and a preferred time were agreed but exact weekdays were not named, still emit that many rows using the agreed time and your best-guess weekdays (spread across the week, avoiding any days the parent ruled out) and mark those rows confidence "low" so the admin corrects them.
 - lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").
 
@@ -314,8 +322,22 @@ const schema = {
             quote: { type: ["string", "null"] },
             timestamp: { type: ["string", "null"] },
             confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+            candidates: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  value: { type: ["string", "null"] },
+                  quote: { type: ["string", "null"] },
+                  timestamp: { type: ["string", "null"] },
+                  reason_rejected: { type: ["string", "null"] },
+                },
+                required: ["value", "quote", "timestamp", "reason_rejected"],
+              },
+            },
           },
-          required: ["value", "quote", "timestamp", "confidence"],
+          required: ["value", "quote", "timestamp", "confidence", "candidates"],
         },
         payment_cycle: {
           type: "object",
@@ -557,6 +579,28 @@ Deno.serve(async (req) => {
       draft.lesson_times = draft.lesson_times.map((lt: any) =>
         isCanonicalSubject(lt?.subject) ? lt : { ...lt, confidence: "low" }
       );
+    }
+
+    // Price sanity: the chosen price must appear among the candidates the model listed
+    const priceField = draft.fields?.price_per_lesson;
+    if (priceField) {
+      const num = (v: unknown) => {
+        const m = String(v ?? "").replace(/,/g, "").match(/\d+(\.\d+)?/);
+        return m ? parseFloat(m[0]) : null;
+      };
+      const candidates = Array.isArray(priceField.candidates) ? priceField.candidates : [];
+      priceField.candidates = candidates;
+      const chosen = num(priceField.value);
+      if (chosen !== null && candidates.length > 0) {
+        const listed = candidates.some((c: any) => num(c?.value) === chosen);
+        if (!listed) priceField.confidence = "low";
+      }
+      if (candidates.length > 1 && priceField.confidence === "high") {
+        const parentConfirmed = /\b(yes|okay|ok|that works|sounds good|perfect|happy with)\b/i.test(
+          String(priceField.quote ?? ""),
+        );
+        if (!parentConfirmed) priceField.confidence = "medium";
+      }
     }
 
 

@@ -7,11 +7,19 @@ import { Loader2, AlertTriangle, Quote, Sparkles, ArrowRight } from 'lucide-reac
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export interface PriceCandidate {
+  value: string | null;
+  quote: string | null;
+  timestamp: string | null;
+  reason_rejected: string | null;
+}
+
 export interface ExtractedField {
   value: string | null;
   quote: string | null;
   timestamp: string | null;
   confidence: 'high' | 'medium' | 'low' | 'missing';
+  candidates?: PriceCandidate[];
 }
 
 export interface ExtractedLessonTime {
@@ -127,6 +135,7 @@ const TranscriptProposalDialog: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [draft, setDraft] = useState<ProposalDraft | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [priceOverride, setPriceOverride] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !lessonId) return;
@@ -136,6 +145,7 @@ const TranscriptProposalDialog: React.FC<Props> = ({
       setIsLoading(true);
       setDraft(null);
       setErrorMessage(null);
+      setPriceOverride(null);
       try {
         const { data, error } = await supabase.functions.invoke('draft-proposal-from-transcript', {
           body: { lessonId },
@@ -163,7 +173,7 @@ const TranscriptProposalDialog: React.FC<Props> = ({
   const buildPrefill = (): ProposalPrefill => {
     if (!draft) return fallbackPrefill;
     const f = draft.fields || {};
-    const price = parsePrice(f.price_per_lesson?.value ?? null);
+    const price = parsePrice(priceOverride ?? f.price_per_lesson?.value ?? null);
     return {
       recipientName: f.recipient_name?.value || fallbackPrefill.recipientName,
       recipientEmail: f.recipient_email?.value || fallbackPrefill.recipientEmail,
@@ -184,11 +194,17 @@ const TranscriptProposalDialog: React.FC<Props> = ({
     };
   };
 
-  const price = draft ? parsePrice(draft.fields?.price_per_lesson?.value ?? null) : null;
+  const priceField = draft?.fields?.price_per_lesson;
+  const selectedPriceValue = priceOverride ?? priceField?.value ?? null;
+  const price = draft ? parsePrice(selectedPriceValue) : null;
   const priceOutOfRange =
     price !== null &&
-    draft?.fields?.price_per_lesson?.value &&
+    selectedPriceValue &&
     (price < STANDARD_RATE.min || price > STANDARD_RATE.max);
+
+  const priceCandidates = (priceField?.candidates || []).filter((c) => c?.value);
+  const isSelectedCandidate = (c: PriceCandidate) =>
+    parsePrice(c.value) === parsePrice(selectedPriceValue);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -259,6 +275,8 @@ const TranscriptProposalDialog: React.FC<Props> = ({
               {FIELD_ORDER.map((key) => {
                 const field = draft.fields?.[key];
                 if (!field) return null;
+                const isPrice = key === 'price_per_lesson';
+                const displayValue = isPrice ? selectedPriceValue : field.value;
                 const flagged = field.confidence === 'low' || field.confidence === 'missing';
                 return (
                   <div
@@ -269,7 +287,7 @@ const TranscriptProposalDialog: React.FC<Props> = ({
                       <div className="min-w-0">
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">{FIELD_LABELS[key]}</p>
                         <p className="text-sm font-medium break-words">
-                          {field.value || <span className="text-muted-foreground italic">Not mentioned</span>}
+                          {displayValue || <span className="text-muted-foreground italic">Not mentioned</span>}
                         </p>
                       </div>
                       {confidenceBadge(field.confidence)}
@@ -281,6 +299,53 @@ const TranscriptProposalDialog: React.FC<Props> = ({
                           {field.timestamp ? <span className="font-mono mr-1">[{field.timestamp}]</span> : null}
                           “{field.quote}”
                         </span>
+                      </div>
+                    )}
+                    {isPrice && priceCandidates.length > 1 && (
+                      <div className="mt-3 border-t pt-2">
+                        <p className="text-xs font-semibold text-muted-foreground mb-2">
+                          Other prices mentioned in the call
+                        </p>
+                        <div className="space-y-2">
+                          {priceCandidates.map((c, i) => {
+                            const selected = isSelectedCandidate(c);
+                            return (
+                              <div
+                                key={i}
+                                className={`rounded-md border p-2 text-xs ${
+                                  selected ? 'border-primary/50 bg-primary/5' : 'bg-background'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-medium">
+                                    {c.value}
+                                    {c.timestamp ? (
+                                      <span className="font-mono text-muted-foreground ml-1">[{c.timestamp}]</span>
+                                    ) : null}
+                                  </span>
+                                  {selected ? (
+                                    <Badge variant="secondary">Using this</Badge>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 px-2 text-xs"
+                                      onClick={() => setPriceOverride(c.value)}
+                                    >
+                                      Use this price
+                                    </Button>
+                                  )}
+                                </div>
+                                {c.quote && (
+                                  <p className="mt-1 text-muted-foreground">“{c.quote}”</p>
+                                )}
+                                {c.reason_rejected && (
+                                  <p className="mt-1 text-muted-foreground italic">{c.reason_rejected}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
