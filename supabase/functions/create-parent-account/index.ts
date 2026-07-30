@@ -229,19 +229,53 @@ serve(async (req) => {
         console.log(`Linked ${linkedStudents} student(s) to parent ${parentId}`);
       }
     }
+    // ---------- 4. Activate any trial students in this family ----------
+    const { data: familyStudents } = await supabaseAdmin
+      .from('students')
+      .select('id, status')
+      .eq('parent_id', parentId);
+
+    const idsToActivate = Array.from(
+      new Set([
+        ...Array.from(toLink.keys()),
+        ...(familyStudents || []).map((s: any) => s.id),
+      ])
+    );
+
+    let activatedStudents = 0;
+    if (idsToActivate.length > 0) {
+      const { data: activatedRows, error: activateErr } = await supabaseAdmin
+        .from('students')
+        .update({ status: 'active' })
+        .in('id', idsToActivate)
+        .or('status.eq.trial,status.is.null,status.eq.')
+        .select('id');
+      if (activateErr) {
+        console.error('student activation error:', activateErr);
+      } else {
+        activatedStudents = (activatedRows || []).length;
+        console.log(`Activated ${activatedStudents} student(s) for parent ${parentId}`);
+      }
+    }
+
+    const parts: string[] = [];
+    if (linkedStudents > 0) parts.push(`Linked ${linkedStudents} student(s)`);
+    if (activatedStudents > 0) parts.push(`activated ${activatedStudents}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         parent: { id: parentId, user_id: authUserId, email },
         linkedStudents,
+        activatedStudents,
         message:
-          linkedStudents > 0
-            ? `Parent account ready. Linked ${linkedStudents} student(s).`
+          parts.length > 0
+            ? `Parent account ready. ${parts.join(', ')}.`
             : 'Parent account ready.',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   } catch (error) {
     console.error('create-parent-account unexpected error:', error);
     return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
