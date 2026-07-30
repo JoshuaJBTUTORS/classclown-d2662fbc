@@ -1,32 +1,32 @@
-## Goal
+## Problem
 
-When Agent drafts a proposal from a trial transcript, it should recognise the student's year group and output subjects using our system's naming (e.g. "11 Plus Maths", "Sats English", "KS3 Science", "GCSE Biology") instead of free text like "Maths".
+`price_per_lesson` in `draft-proposal-from-transcript` is extracted as a single value with one quote. Discovery calls usually mention several numbers (list price, group vs 1-1 price, discounted price, a price for a different term length). Nothing in the prompt tells the model which one was actually agreed, and the admin only ever sees the one quote the model happened to pick, so a wrong pick is invisible.
 
-## Mapping to teach it
+## What to build
 
-| Year group | System band | Example subjects |
-|---|---|---|
-| Year 3-4 | Early KS2 | Early KS2 Maths / English |
-| Year 5-6 (11+ prep) | 11 Plus | 11 Plus Maths, 11 Plus English, 11 Plus VR, 11 Plus NVR |
-| Year 5-6 (school support) | KS2 / Sats | KS2 Maths, KS2 English, Sats Maths, Sats English |
-| Year 7-9 | KS3 | KS3 Maths, KS3 English, KS3 Science, KS3 Geography |
-| Year 10-11 | GCSE | GCSE Maths (Higher/Foundation), GCSE English, GCSE Combined Science, GCSE Biology/Chemistry/Physics, GCSE Geography, GCSE Business, GCSE Economics, GCSE Computer Science |
-| Year 12-13 | A-level | A-level Maths, Biology, Chemistry, Physics, Computer Science, Geography, Business, Economics |
+**1. Price-resolution rules in the system prompt**
 
-Rules: Year 5/6 defaults to KS2/Sats unless the parent mentions 11 plus, entrance exams, grammar or independent school — then use the 11 Plus subjects. Year 9 is treated as KS3. Where a year group is never stated, infer it from age/school mentions and mark it low confidence.
+Add explicit rules for choosing the settled price:
+- The settled price is the LAST price the account manager states that the parent acknowledges or does not push back on — later statements override earlier ones.
+- Prefer a price stated together with the term/commitment that is actually being recommended (e.g. the 3-month rate if 3 months was agreed) over prices quoted for other terms.
+- Ignore prices that are explicitly framed as: the standard/list rate before a discount, a different lesson type (1-1 vs group) than the one agreed, a hypothetical ("if you did four a week it would be..."), or a competitor's price the parent mentions.
+- Convert monthly/weekly totals into a per-lesson figure only when the number of lessons is unambiguous; otherwise keep the per-lesson figure that was said aloud.
+- Confidence: `high` only when the parent explicitly confirms the number; `medium` when the account manager states it last and it goes unchallenged; `low` when it was derived, inferred, or several numbers stayed live at the end of the call.
 
-## Changes
+**2. Capture the rejected candidates**
 
-1. **`supabase/functions/draft-proposal-from-transcript/index.ts`**
-   - Add a canonical subject list (mirroring `src/constants/subjects.ts`) and the year-group mapping table above into the system prompt.
-   - Instruct the model to: normalise `year_group` to "Year N" form, and to write every `subjects` value and every `lesson_times[].subject` using an exact name from the canonical list, prefixed for the correct band.
-   - Add a `year_band` field to the output (ks2 / 11_plus / ks3 / gcse / a_level) with quote + confidence, so the reviewer can see what the AI assumed.
-   - Use the student's `grade` from the booking record as the authoritative year group when present (same "booking record wins" treatment already used for name/email/phone), and pass the mapping-derived band in the booking context.
-   - Post-process: if a returned subject isn't in the canonical list, keep the AI text but flag it (confidence downgraded to low) rather than silently dropping it.
+Extend the `price_per_lesson` schema object with a `candidates` array (each item: `value`, `quote`, `timestamp`, `reason_rejected`). The model must list every distinct price figure heard in the call, including the chosen one, with a one-line reason each was or was not selected. Prompt rule: whenever there is more than one candidate, `confidence` may not be `high` unless the parent verbally confirmed the chosen figure.
 
-2. **`src/components/calendar/TranscriptProposalDialog.tsx`**
-   - Show the new "Year band" row alongside "Year group" in the extracted-fields list so the admin can spot a wrong assumption (e.g. 11 Plus vs KS2) before sending.
+**3. Surface it in the review dialog**
 
-3. **Redeploy** the `draft-proposal-from-transcript` edge function.
+In `src/components/calendar/TranscriptProposalDialog.tsx`, when `price_per_lesson.candidates` has more than one entry, show a small "Other prices mentioned" list under the price field: each rejected figure with its timestamp, quote and reason, so the admin can one-click swap the price to any candidate before the draft goes to the proposal builder.
 
-No database or proposal-schema changes; subjects stay free-text strings, they are just now written in our house naming.
+**4. Server-side guard**
+
+If the model returns a chosen price that is not present in its own `candidates` list, downgrade its confidence to `low` (same pattern as the existing canonical-subject check) so the admin is prompted to verify.
+
+## Technical notes
+
+- Files: `supabase/functions/draft-proposal-from-transcript/index.ts` (prompt rules, schema, post-processing) and `src/components/calendar/TranscriptProposalDialog.tsx` (candidate list + swap action).
+- The schema is strict JSON schema, so `candidates` needs `additionalProperties: false`, all properties in `required`, and nullable rather than optional fields.
+- Redeploy the `draft-proposal-from-transcript` edge function after the change.
