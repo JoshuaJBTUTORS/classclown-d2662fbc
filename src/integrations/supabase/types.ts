@@ -2768,6 +2768,7 @@ export type Database = {
           daily_homework_opt_in: boolean | null
           discount_extended_until: string | null
           id: string
+          internal_notes: string | null
           lesson_times: Json
           lesson_type: string
           parent_id: string | null
@@ -2793,6 +2794,7 @@ export type Database = {
           daily_homework_opt_in?: boolean | null
           discount_extended_until?: string | null
           id?: string
+          internal_notes?: string | null
           lesson_times?: Json
           lesson_type: string
           parent_id?: string | null
@@ -2818,6 +2820,7 @@ export type Database = {
           daily_homework_opt_in?: boolean | null
           discount_extended_until?: string | null
           id?: string
+          internal_notes?: string | null
           lesson_times?: Json
           lesson_type?: string
           parent_id?: string | null
