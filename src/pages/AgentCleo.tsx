@@ -496,9 +496,36 @@ const AgentCleo: React.FC = () => {
     }
   };
 
-  const cancelProposal = (msg: Msg) => {
-    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was created.');
+  // Applies the approved edit through the exact same service the calendar edit form uses,
+  // so LessonSpace rooms, participant links and enrollment notifications behave identically.
+  const confirmEditProposal = async (msg: Msg) => {
+    const p = msg.editProposal;
+    if (!p) return;
+    setProposalState(msg.id, 'confirming', null);
+    try {
+      const { student_ids, ...lessonFields } = p.updates;
+      const updateData = {
+        ...lessonFields,
+        ...(student_ids ? { selectedStudents: student_ids } : {}),
+      };
+
+      if (p.scope === 'all_future_lessons') {
+        const updated = await updateAllFutureLessons(p.lesson_id, updateData, p.lesson_start_time);
+        setProposalState(msg.id, 'created', `Applied — ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
+      } else {
+        await updateSingleRecurringInstance(p.lesson_id, updateData);
+        setProposalState(msg.id, 'created', 'Applied — the lesson has been updated.');
+      }
+    } catch (e) {
+      setProposalState(msg.id, 'error', `Could not apply: ${(e as Error).message}`);
+    }
   };
+
+  const cancelProposal = (msg: Msg) => {
+    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was changed.');
+  };
+
+
 
   const newChat = () => {
     setMessages([]);
