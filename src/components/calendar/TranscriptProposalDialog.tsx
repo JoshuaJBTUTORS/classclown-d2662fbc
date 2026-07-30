@@ -173,7 +173,7 @@ const TranscriptProposalDialog: React.FC<Props> = ({
   const buildPrefill = (): ProposalPrefill => {
     if (!draft) return fallbackPrefill;
     const f = draft.fields || {};
-    const price = parsePrice(f.price_per_lesson?.value ?? null);
+    const price = parsePrice(priceOverride ?? f.price_per_lesson?.value ?? null);
     return {
       recipientName: f.recipient_name?.value || fallbackPrefill.recipientName,
       recipientEmail: f.recipient_email?.value || fallbackPrefill.recipientEmail,
