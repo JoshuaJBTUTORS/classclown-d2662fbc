@@ -194,11 +194,17 @@ const TranscriptProposalDialog: React.FC<Props> = ({
     };
   };
 
-  const price = draft ? parsePrice(draft.fields?.price_per_lesson?.value ?? null) : null;
+  const priceField = draft?.fields?.price_per_lesson;
+  const selectedPriceValue = priceOverride ?? priceField?.value ?? null;
+  const price = draft ? parsePrice(selectedPriceValue) : null;
   const priceOutOfRange =
     price !== null &&
-    draft?.fields?.price_per_lesson?.value &&
+    selectedPriceValue &&
     (price < STANDARD_RATE.min || price > STANDARD_RATE.max);
+
+  const priceCandidates = (priceField?.candidates || []).filter((c) => c?.value);
+  const isSelectedCandidate = (c: PriceCandidate) =>
+    parsePrice(c.value) === parsePrice(selectedPriceValue);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
