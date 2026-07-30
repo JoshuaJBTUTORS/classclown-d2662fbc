@@ -41,6 +41,7 @@ const TrialBookingMusaPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [uniquenessCheck, setUniquenessCheck] = useState<{
     checked: boolean;
     isUnique: boolean;
