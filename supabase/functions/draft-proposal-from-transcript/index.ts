@@ -204,6 +204,20 @@ const schema = {
           },
           required: ["value", "quote", "timestamp", "confidence"],
         },
+        year_band: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            value: {
+              type: ["string", "null"],
+              enum: ["early_ks2", "ks2", "11_plus", "ks3", "gcse", "a_level", null],
+            },
+            quote: { type: ["string", "null"] },
+            timestamp: { type: ["string", "null"] },
+            confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+          },
+          required: ["value", "quote", "timestamp", "confidence"],
+        },
         subjects: {
           type: "object",
           additionalProperties: false,
