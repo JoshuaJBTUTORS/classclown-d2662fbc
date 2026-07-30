@@ -62,6 +62,52 @@ function flatten(raw: unknown): string {
   return "";
 }
 
+// Mirrors src/constants/subjects.ts — the only subject names our system uses.
+const CANONICAL_SUBJECTS = [
+  "Early KS2 Maths", "Early KS2 English",
+  "KS2 Maths", "KS2 English",
+  "Sats Maths", "Sats English",
+  "11 Plus Maths", "11 Plus English", "11 Plus VR", "11 Plus NVR",
+  "KS3 Maths", "KS3 English", "KS3 Science", "KS3 Geography",
+  "GCSE Maths Highier", "GCSE Maths Foundation", "GCSE English",
+  "GCSE Combined Science", "GCSE Computer Science", "GCSE Geography",
+  "GCSE Business", "GCSE Economics", "GCSE Physics", "GCSE Chemistry", "GCSE Biology",
+  "Year 11 Maths Highier", "Year 11 Maths Foundation", "Year 11 English",
+  "Year 11 Combined Science", "Year 11 Physics", "Year 11 Biology", "Year 11 Chemistry",
+  "A-level Maths", "A-level Biology", "A-level Chemistry", "A-level Physics",
+  "A-level Computer Science", "A-level Geography", "A-level Business", "A-level Economics",
+];
+
+const CANONICAL_SET = new Set(CANONICAL_SUBJECTS.map((s) => s.toLowerCase()));
+
+function bandFromYearGroup(raw: unknown): string | null {
+  const text = String(raw ?? "").toLowerCase();
+  const match = text.match(/(?:year|yr|y|grade)\s*(\d{1,2})/) || text.match(/\b(\d{1,2})\b/);
+  const year = match ? Number(match[1]) : NaN;
+  if (!Number.isFinite(year)) {
+    if (text.includes("a-level") || text.includes("a level")) return "a_level";
+    if (text.includes("gcse")) return "gcse";
+    if (text.includes("ks3")) return "ks3";
+    if (text.includes("11 plus") || text.includes("11+")) return "11_plus";
+    if (text.includes("ks2") || text.includes("sats")) return "ks2";
+    return null;
+  }
+  if (year <= 2) return "early_ks2";
+  if (year <= 4) return "early_ks2";
+  if (year <= 6) return text.includes("11 plus") || text.includes("11+") ? "11_plus" : "ks2";
+  if (year <= 9) return "ks3";
+  if (year <= 11) return "gcse";
+  return "a_level";
+}
+
+function isCanonicalSubject(value: unknown): boolean {
+  const raw = String(value ?? "").trim();
+  if (!raw) return false;
+  const parts = raw.replace(/\(rotating\)/i, "").split("/").map((p) => p.trim()).filter(Boolean);
+  return parts.length > 0 && parts.every((p) => CANONICAL_SET.has(p.toLowerCase()));
+}
+
+
 const SYSTEM = `You extract the commercial details of a tutoring discovery/trial conversation so an admin can draft a proposal.
 
 CRITICAL RULES:
