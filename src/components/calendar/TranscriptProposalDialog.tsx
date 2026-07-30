@@ -145,6 +145,7 @@ const TranscriptProposalDialog: React.FC<Props> = ({
       setIsLoading(true);
       setDraft(null);
       setErrorMessage(null);
+      setPriceOverride(null);
       try {
         const { data, error } = await supabase.functions.invoke('draft-proposal-from-transcript', {
           body: { lessonId },
