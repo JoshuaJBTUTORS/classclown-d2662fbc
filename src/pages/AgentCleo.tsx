@@ -468,15 +468,22 @@ const AgentCleo: React.FC = () => {
     }
   };
 
-  const setProposalState = (msgId: string, state: ProposalState, message?: string | null) => {
+  const setEntryState = (msgId: string, entryId: string, state: ProposalState, message?: string | null) => {
     setMessages((prev) => prev.map((m) =>
-      m.id === msgId ? { ...m, proposalState: state, proposalMessage: message ?? null } : m,
+      m.id === msgId
+        ? {
+            ...m,
+            proposals: (m.proposals ?? []).map((p) =>
+              p.id === entryId ? { ...p, state, message: message ?? null } : p,
+            ),
+          }
+        : m,
     ));
   };
 
-  const confirmProposal = async (msg: Msg) => {
-    if (!msg.proposal) return;
-    setProposalState(msg.id, 'confirming', null);
+  const applyCreate = async (msgId: string, entry: ProposalEntry) => {
+    const proposal = entry.data as LessonProposal;
+    setEntryState(msgId, entry.id, 'confirming', null);
     try {
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
@@ -485,30 +492,32 @@ const AgentCleo: React.FC = () => {
       const resp = await fetch(CREATE_LESSON_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ proposal: msg.proposal }),
+        body: JSON.stringify({ proposal }),
       });
       const result = await resp.json().catch(() => ({}));
       if (!resp.ok || result?.error) throw new Error(result?.error || `HTTP ${resp.status}`);
 
       const count = result.created_count ?? 1;
-      setProposalState(
-        msg.id,
+      setEntryState(
+        msgId,
+        entry.id,
         'created',
         count > 1
           ? `Created — ${count} lessons added to the calendar.`
           : 'Created — the lesson is on the calendar.',
       );
+      return true;
     } catch (e) {
-      setProposalState(msg.id, 'error', `Could not create: ${(e as Error).message}`);
+      setEntryState(msgId, entry.id, 'error', `Could not create: ${(e as Error).message}`);
+      return false;
     }
   };
 
   // Applies the approved edit through the exact same service the calendar edit form uses,
   // so LessonSpace rooms, participant links and enrollment notifications behave identically.
-  const confirmEditProposal = async (msg: Msg) => {
-    const p = msg.editProposal;
-    if (!p) return;
-    setProposalState(msg.id, 'confirming', null);
+  const applyEdit = async (msgId: string, entry: ProposalEntry) => {
+    const p = entry.data as LessonEditProposal;
+    setEntryState(msgId, entry.id, 'confirming', null);
     try {
       const { student_ids, ...lessonFields } = p.updates;
       const updateData = {
@@ -518,19 +527,49 @@ const AgentCleo: React.FC = () => {
 
       if (p.scope === 'all_future_lessons') {
         const updated = await updateAllFutureLessons(p.lesson_id, updateData, p.lesson_start_time);
-        setProposalState(msg.id, 'created', `Applied — ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
+        setEntryState(msgId, entry.id, 'created', `Applied — ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
       } else {
         await updateSingleRecurringInstance(p.lesson_id, updateData);
-        setProposalState(msg.id, 'created', 'Applied — the lesson has been updated.');
+        setEntryState(msgId, entry.id, 'created', 'Applied — the lesson has been updated.');
       }
+      return true;
     } catch (e) {
-      setProposalState(msg.id, 'error', `Could not apply: ${(e as Error).message}`);
+      setEntryState(msgId, entry.id, 'error', `Could not apply: ${(e as Error).message}`);
+      return false;
     }
   };
 
-  const cancelProposal = (msg: Msg) => {
-    setProposalState(msg.id, 'cancelled', 'Cancelled — nothing was changed.');
+  const confirmEntry = (msg: Msg, entry: ProposalEntry) =>
+    entry.kind === 'create' ? applyCreate(msg.id, entry) : applyEdit(msg.id, entry);
+
+  const cancelEntry = (msg: Msg, entry: ProposalEntry) => {
+    setEntryState(msg.id, entry.id, 'cancelled', 'Cancelled — nothing was changed.');
   };
+
+  const setBatchMessage = (msgId: string, message: string | null) => {
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, batchMessage: message } : m)));
+  };
+
+  // Sequential on purpose: parallel writes could race on the same recurring series.
+  const confirmAll = async (msg: Msg) => {
+    const pending = (msg.proposals ?? []).filter((p) => p.state === 'pending' || p.state === 'error');
+    if (!pending.length) return;
+    setBatchMessage(msg.id, `Applying ${pending.length} proposals…`);
+    let ok = 0;
+    let failed = 0;
+    for (const entry of pending) {
+      const success = await confirmEntry(msg, entry);
+      if (success) ok++; else failed++;
+    }
+    setBatchMessage(msg.id, failed ? `${ok} applied, ${failed} failed.` : `${ok} applied.`);
+  };
+
+  const cancelAll = (msg: Msg) => {
+    const pending = (msg.proposals ?? []).filter((p) => p.state === 'pending' || p.state === 'error');
+    pending.forEach((entry) => cancelEntry(msg, entry));
+    setBatchMessage(msg.id, 'Cancelled — nothing was changed.');
+  };
+
 
 
 
