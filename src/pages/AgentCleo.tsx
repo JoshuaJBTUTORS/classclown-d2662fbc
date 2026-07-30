@@ -227,6 +227,106 @@ const LessonProposalCard: React.FC<{
   );
 };
 
+const fmtRange = (value: string) => {
+  const [start, end] = value.split('|');
+  if (!start) return '—';
+  return end ? `${fmtLondon(start)} – ${fmtTime(end)}` : fmtLondon(start);
+};
+
+const LessonEditProposalCard: React.FC<{
+  proposal: LessonEditProposal;
+  state: ProposalState;
+  message?: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ proposal, state, message, onConfirm, onCancel }) => {
+  const locked = state !== 'pending' && state !== 'error';
+
+  return (
+    <div className="mt-3 rounded-2xl border border-white/10 bg-[#2a2a2a] overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+        <CalendarCog className="w-4 h-4 text-amber-400" />
+        <span className="font-medium text-sm">Edit lesson — needs your approval</span>
+      </div>
+
+      <div className="px-4 py-3 text-sm space-y-3">
+        <div className="text-[#c5c5d2]">
+          <span className="font-medium text-white">{proposal.lesson_title || 'Lesson'}</span>{' '}
+          <span className="text-[#8e8ea0]">· {fmtLondon(proposal.lesson_start_time)}</span>
+        </div>
+
+        <div className="rounded-xl border border-white/10 divide-y divide-white/5">
+          {proposal.changes.map((c) => (
+            <div key={c.field} className="px-3 py-2">
+              <div className="text-xs uppercase tracking-wide text-[#8e8ea0] mb-1">{c.label}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="line-through text-[#8e8ea0]">
+                  {c.field === 'time' ? fmtRange(c.before) : c.before}
+                </span>
+                <span className="text-[#8e8ea0]">→</span>
+                <span className="font-medium text-white">
+                  {c.field === 'time' ? fmtRange(c.after) : c.after}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-3">
+          <span className="w-28 shrink-0 text-[#8e8ea0]">Applies to</span>
+          <span>
+            {proposal.scope === 'all_future_lessons'
+              ? `This and all future occurrences (${proposal.affected_count} lesson${proposal.affected_count === 1 ? '' : 's'})`
+              : 'This lesson only'}
+          </span>
+        </div>
+
+        {proposal.side_effects.length > 0 && (
+          <ul className="list-disc pl-5 text-xs text-amber-300/90 space-y-1">
+            {proposal.side_effects.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {message && (
+        <div
+          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
+        >
+          {message}
+        </div>
+      )}
+
+      {!locked && (
+        <div className="px-4 pb-4 flex gap-2">
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-medium transition-colors"
+          >
+            Confirm and apply
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5 text-sm transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {state === 'confirming' && (
+        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Applying…
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo`;
 const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
 
