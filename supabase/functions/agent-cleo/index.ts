@@ -145,7 +145,42 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "propose_lesson_edit",
+      description:
+        "Propose an edit to an EXISTING lesson. This does NOT change anything — it shows the user a confirmation card with a before/after diff which they must approve. Resolve the real lesson_id (and any tutor_id / student_ids) from the database first, and only include the fields that should change.",
+      parameters: {
+        type: "object",
+        properties: {
+          lesson_id: { type: "string", description: "UUID of the lesson in public.lessons" },
+          scope: {
+            type: "string",
+            enum: ["this_lesson_only", "all_future_lessons"],
+            description:
+              "For recurring lessons: change only this occurrence, or this one and all future occurrences. Ask the user which they want; defaults to this_lesson_only.",
+          },
+          title: { type: "string" },
+          description: { type: "string" },
+          subject: { type: "string", description: "Full descriptive subject, e.g. 'GCSE Maths'" },
+          tutor_id: { type: "string", description: "New tutor UUID from public.tutors" },
+          student_ids: {
+            type: "array",
+            items: { type: "integer" },
+            description: "The FULL new list of student ids for the lesson (not just additions).",
+          },
+          start_time: { type: "string", description: "New ISO 8601 UTC start" },
+          end_time: { type: "string", description: "New ISO 8601 UTC end" },
+          is_group: { type: "boolean" },
+        },
+        required: ["lesson_id"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
+
 
 async function execSql(sql: string): Promise<unknown> {
   const normalizedSql = sql
