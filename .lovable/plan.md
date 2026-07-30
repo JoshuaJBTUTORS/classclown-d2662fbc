@@ -1,25 +1,20 @@
 ## Goal
+Add an internal-only notes field when sending a lesson proposal, and surface those notes in Step 2 of Cleo Onboarding so they aren't missed.
 
-Activate the family's students at **step 1** of Cleo Onboarding — the moment the parent account is created — so they are no longer `trial` and immediately appear in the calendar's student pickers before lessons are scheduled in step 3.
+## Database
+Add a nullable `internal_notes text` column to `public.lesson_proposals` (migration). Existing grants/RLS unchanged. The column is never rendered on the public proposal page (`ProposalView` / `ProposalLayout`), so recipients never see it.
 
-## What I verified
+## Proposal Builder (`src/pages/ProposalBuilder.tsx`)
+- Add an optional `internalNotes` textarea to the form schema and layout, labelled "Internal notes (not shown to the client)".
+- Pass `internalNotes` through to the `create-lesson-proposal` edge function payload.
 
-- `public.students.status` is a text column with values: `active`, `inactive`, `trial`, empty string.
-- `public.parents` has **no** status column; its only comparable field is `account_type`, and all 286 rows are already `regular`. There is no parent-side "trial" value to change — parent trial state is effectively derived from their students.
-- `supabase/functions/create-parent-account/index.ts` already resolves the whole family at step 1: it finds or creates the `parents` row, then collects students by matching email (3a) and via stale duplicate parent rows (3b), and links them all to the new `parent_id` (lines 187-231).
-- The calendar student pickers filter to `active`/null/empty (`src/components/lessons/AddLessonForm.tsx` line 176, `src/hooks/useStudentData.ts` line 17), which is why trial students can't be added to a lesson today.
+## Edge functions
+- `create-lesson-proposal`: accept `internalNotes` and store it as `internal_notes` on insert.
+- `update-lesson-proposal`: accept and update `internal_notes` so edits from the admin proposal edit flow persist.
 
-## Plan
-
-1. In `supabase/functions/create-parent-account/index.ts`, after the existing student-linking block (~line 231), add an activation step:
-   - Take the full set of resolved student IDs — the `toLink` map plus any student already on `parent_id`, so students that were already linked also get promoted.
-   - Update every one of those rows whose `status` is `trial`, empty, or null to `status = 'active'`.
-2. Return an `activatedStudents` count in the response and fold it into the existing `message` string (e.g. "Parent account ready. Linked 2 student(s), activated 2.").
-3. Log any activation error to the function console but do **not** fail the request — parent creation must still succeed.
-4. In `src/pages/Onboarding.tsx` (`handleCreateFromProposal`), surface the returned count in the existing success toast so the admin can see the students were activated before moving to step 2.
+## Onboarding Step 2 (`src/pages/Onboarding.tsx`)
+- Add `internal_notes` to the `Proposal` interface (proposal rows are already fetched with `select('*')`, so no query change).
+- In Step 2, above the Sessions list, render a highlighted "Internal notes from the proposal" panel showing the notes. If there are none, show a muted "No internal notes on this proposal."
 
 ## Notes
-
-- Nothing changes at step 3 / `handleAddedLessons`.
-- `inactive` students are deliberately left alone — only `trial`/blank statuses are promoted.
-- No database migration is needed; this is an update to existing rows plus a small response change.
+Notes are display-only during onboarding; no editing there.
