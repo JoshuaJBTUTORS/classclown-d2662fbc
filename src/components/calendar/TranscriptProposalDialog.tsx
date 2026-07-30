@@ -52,6 +52,7 @@ const FIELD_LABELS: Record<string, string> = {
   recipient_phone: 'Recipient phone',
   student_name: 'Student',
   year_group: 'Year group',
+  year_band: 'Year band',
   subjects: 'Subjects',
   exam_boards: 'Exam boards',
   lesson_type: 'Lesson format',
