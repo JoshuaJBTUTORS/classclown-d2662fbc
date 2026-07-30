@@ -664,23 +664,61 @@ const AgentCleo: React.FC = () => {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
                     <div className="flex-1 pt-1 leading-relaxed">
                       {m.content && <MarkdownMessage>{m.content}</MarkdownMessage>}
-                      {m.proposal && (
-                        <LessonProposalCard
-                          proposal={m.proposal}
-                          state={m.proposalState ?? 'pending'}
-                          message={m.proposalMessage}
-                          onConfirm={() => confirmProposal(m)}
-                          onCancel={() => cancelProposal(m)}
-                        />
-                      )}
-                      {m.editProposal && (
-                        <LessonEditProposalCard
-                          proposal={m.editProposal}
-                          state={m.proposalState ?? 'pending'}
-                          message={m.proposalMessage}
-                          onConfirm={() => confirmEditProposal(m)}
-                          onCancel={() => cancelProposal(m)}
-                        />
+                      {(m.proposals?.length ?? 0) > 0 && (
+                        <div>
+                          {m.proposals!.length > 1 && (
+                            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+                              <span className="text-sm text-[#c5c5d2]">
+                                {m.proposals!.length} proposals need your approval
+                              </span>
+                              <div className="ml-auto flex gap-2">
+                                <button
+                                  onClick={() => confirmAll(m)}
+                                  disabled={!m.proposals!.some((p) => p.state === 'pending' || p.state === 'error')}
+                                  className="px-3 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-black text-sm font-medium transition-colors"
+                                >
+                                  Confirm all
+                                </button>
+                                <button
+                                  onClick={() => cancelAll(m)}
+                                  disabled={!m.proposals!.some((p) => p.state === 'pending' || p.state === 'error')}
+                                  className="px-3 py-1.5 rounded-xl border border-white/15 hover:bg-white/5 disabled:opacity-40 text-sm transition-colors"
+                                >
+                                  Cancel all
+                                </button>
+                              </div>
+                              {m.batchMessage && (
+                                <div className="w-full text-xs text-[#8e8ea0]">{m.batchMessage}</div>
+                              )}
+                            </div>
+                          )}
+                          {m.proposals!.map((entry, i) => (
+                            <div key={entry.id}>
+                              {m.proposals!.length > 1 && (
+                                <div className="mt-3 text-xs uppercase tracking-wide text-[#8e8ea0]">
+                                  Proposal {i + 1} of {m.proposals!.length}
+                                </div>
+                              )}
+                              {entry.kind === 'create' ? (
+                                <LessonProposalCard
+                                  proposal={entry.data as LessonProposal}
+                                  state={entry.state}
+                                  message={entry.message}
+                                  onConfirm={() => confirmEntry(m, entry)}
+                                  onCancel={() => cancelEntry(m, entry)}
+                                />
+                              ) : (
+                                <LessonEditProposalCard
+                                  proposal={entry.data as LessonEditProposal}
+                                  state={entry.state}
+                                  message={entry.message}
+                                  onConfirm={() => confirmEntry(m, entry)}
+                                  onCancel={() => cancelEntry(m, entry)}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
                       {m.toolStatus && (
 
