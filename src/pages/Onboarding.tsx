@@ -229,6 +229,10 @@ const Onboarding: React.FC = () => {
       }
 
       toast.success(data?.message || 'Parent account created (default password: classbeyond123!)');
+      if (data?.activatedStudents > 0) {
+        toast.success(`${data.activatedStudents} student(s) moved from trial to active`);
+      }
+
       setCreatedEmail(selectedProposal.recipient_email);
       setCreatedProposal(selectedProposal);
       setCreatedParentRowId(newParentRowId || null);
