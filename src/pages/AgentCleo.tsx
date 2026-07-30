@@ -420,7 +420,14 @@ const AgentCleo: React.FC = () => {
                 ? { ...m, proposal: ev.proposal as LessonProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
                 : m,
             ));
+          } else if (ev.type === 'edit_proposal') {
+            setMessages((prev) => prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, editProposal: ev.proposal as LessonEditProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
+                : m,
+            ));
           } else if (ev.type === 'tool_error') {
+
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId
                 ? { ...m, toolStatus: `⚠ ${ev.tool ?? 'Tool'} hit an error — trying a different way…` }
