@@ -87,15 +87,21 @@ export interface LessonEditProposal {
 
 type ProposalState = 'pending' | 'confirming' | 'created' | 'cancelled' | 'error';
 
+interface ProposalEntry {
+  id: string;
+  kind: 'create' | 'edit';
+  data: LessonProposal | LessonEditProposal;
+  state: ProposalState;
+  message?: string | null;
+}
+
 interface Msg {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   toolStatus?: string | null;
-  proposal?: LessonProposal | null;
-  editProposal?: LessonEditProposal | null;
-  proposalState?: ProposalState;
-  proposalMessage?: string | null;
+  proposals?: ProposalEntry[];
+  batchMessage?: string | null;
 }
 
 
