@@ -532,6 +532,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Booking record year group wins, and drives the band
+    if (recordYearGroup) {
+      draft.fields.year_group = {
+        value: String(recordYearGroup),
+        quote: draft.fields.year_group?.quote ?? null,
+        timestamp: draft.fields.year_group?.timestamp ?? null,
+        confidence: "high",
+      };
+    }
+    const resolvedBand = recordBand ?? draft.fields?.year_band?.value ?? bandFromYearGroup(draft.fields?.year_group?.value);
+    draft.fields.year_band = {
+      value: resolvedBand ?? null,
+      quote: draft.fields?.year_band?.quote ?? null,
+      timestamp: draft.fields?.year_band?.timestamp ?? null,
+      confidence: recordBand ? "high" : (resolvedBand ? (draft.fields?.year_band?.confidence ?? "medium") : "missing"),
+    };
+
+    // Flag any subject that is not one of our canonical names
+    if (draft.fields?.subjects?.value && !isCanonicalSubject(draft.fields.subjects.value)) {
+      draft.fields.subjects.confidence = "low";
+    }
+    if (Array.isArray(draft.lesson_times)) {
+      draft.lesson_times = draft.lesson_times.map((lt: any) =>
+        isCanonicalSubject(lt?.subject) ? lt : { ...lt, confidence: "low" }
+      );
+    }
+
+
+
     return json({ success: true, draft, context });
   } catch (e) {
     console.error("draft-proposal-from-transcript error", e);
