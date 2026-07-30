@@ -335,6 +335,7 @@ const schema = {
         "recipient_phone",
         "student_name",
         "year_group",
+        "year_band",
         "subjects",
         "exam_boards",
         "lesson_type",
