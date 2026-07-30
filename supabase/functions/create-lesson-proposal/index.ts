@@ -13,6 +13,7 @@ interface ProposalRequest {
   studentId?: number;
   parentId?: string;
   dailyHomeworkOptIn?: boolean;
+  internalNotes?: string | null;
   lessonType: string;
   subject: string;
   pricePerLesson: number;
@@ -111,6 +112,7 @@ const handler = async (req: Request): Promise<Response> => {
         contract_term: proposalData.contractTerm || 'month_to_month',
         lesson_times: proposalData.lessonTimes,
         daily_homework_opt_in: proposalData.dailyHomeworkOptIn || false,
+        internal_notes: proposalData.internalNotes || null,
         access_token: accessToken,
         status: 'sent',
         sent_at: new Date().toISOString(),

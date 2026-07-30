@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Trash2, BookOpen } from 'lucide-react';
 import OptimiseProposalPanel from '@/components/proposals/OptimiseProposalPanel';
 
@@ -39,6 +40,7 @@ const proposalSchema = z.object({
     required_error: 'Contract term is required',
   }),
   dailyHomeworkOptIn: z.boolean().default(false),
+  internalNotes: z.string().max(5000).optional().or(z.literal('')),
   lessonTimes: z.array(lessonTimeSchema).min(1, 'At least one lesson time is required'),
 });
 
@@ -82,6 +84,7 @@ export default function ProposalBuilder() {
       paymentCycle: prefill?.paymentCycle || '',
       contractTerm: prefill?.contractTerm || 'month_to_month',
       dailyHomeworkOptIn: false,
+      internalNotes: '',
       lessonTimes: prefilledTimes ?? [],
     },
   });
@@ -114,6 +117,7 @@ export default function ProposalBuilder() {
             ...data,
             recipientPhone: data.recipientPhone || null,
             dailyHomeworkOptIn: data.dailyHomeworkOptIn,
+            internalNotes: data.internalNotes?.trim() || null,
             lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
           },
       });
@@ -442,6 +446,28 @@ export default function ProposalBuilder() {
                   )}
                 />
               </div>
+
+              {/* Internal notes */}
+              <FormField
+                control={form.control}
+                name="internalNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Internal notes (not shown to the client)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={4}
+                        placeholder="Anything the onboarding team needs to know about this proposal..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground">
+                      These notes are shown to staff during Cleo Onboarding, never to the recipient.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="flex gap-4">
                 <Button type="button" variant="outline" onClick={() => navigate(-1)}>

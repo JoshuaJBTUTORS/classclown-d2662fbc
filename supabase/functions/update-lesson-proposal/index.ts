@@ -7,6 +7,7 @@ interface UpdateProposalRequest {
   recipientEmail: string;
   recipientPhone?: string;
   dailyHomeworkOptIn?: boolean;
+  internalNotes?: string | null;
   lessonType: string;
   subject: string;
   pricePerLesson: number;
@@ -95,6 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
       paymentCycle,
       lessonTimes,
       dailyHomeworkOptIn,
+      internalNotes,
       contractTerm,
     } = requestData;
 
@@ -141,6 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
         ...(contractTerm ? { contract_term: contractTerm } : {}),
         lesson_times: lessonTimes,
         daily_homework_opt_in: dailyHomeworkOptIn ?? false,
+        ...(internalNotes !== undefined ? { internal_notes: internalNotes || null } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', proposalId)
