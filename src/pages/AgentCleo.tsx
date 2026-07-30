@@ -420,16 +420,17 @@ const AgentCleo: React.FC = () => {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, toolStatus: TOOL_LABELS[ev.name] ?? `Using ${ev.name}…` } : m,
             ));
-          } else if (ev.type === 'proposal') {
+          } else if (ev.type === 'proposal' || ev.type === 'edit_proposal') {
+            const entry: ProposalEntry = {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              kind: ev.type === 'proposal' ? 'create' : 'edit',
+              data: ev.proposal,
+              state: 'pending',
+              message: null,
+            };
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId
-                ? { ...m, proposal: ev.proposal as LessonProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
-                : m,
-            ));
-          } else if (ev.type === 'edit_proposal') {
-            setMessages((prev) => prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, editProposal: ev.proposal as LessonEditProposal, proposalState: 'pending', proposalMessage: null, toolStatus: null }
+                ? { ...m, proposals: [...(m.proposals ?? []), entry], toolStatus: null }
                 : m,
             ));
           } else if (ev.type === 'tool_error') {
