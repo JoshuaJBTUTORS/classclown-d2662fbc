@@ -581,6 +581,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Price sanity: the chosen price must appear among the candidates the model listed
+    const priceField = draft.fields?.price_per_lesson;
+    if (priceField) {
+      const num = (v: unknown) => {
+        const m = String(v ?? "").replace(/,/g, "").match(/\d+(\.\d+)?/);
+        return m ? parseFloat(m[0]) : null;
+      };
+      const candidates = Array.isArray(priceField.candidates) ? priceField.candidates : [];
+      priceField.candidates = candidates;
+      const chosen = num(priceField.value);
+      if (chosen !== null && candidates.length > 0) {
+        const listed = candidates.some((c: any) => num(c?.value) === chosen);
+        if (!listed) priceField.confidence = "low";
+      }
+      if (candidates.length > 1 && priceField.confidence === "high") {
+        const parentConfirmed = /\b(yes|okay|ok|that works|sounds good|perfect|happy with)\b/i.test(
+          String(priceField.quote ?? ""),
+        );
+        if (!parentConfirmed) priceField.confidence = "medium";
+      }
+    }
+
 
 
     return json({ success: true, draft, context });
