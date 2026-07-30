@@ -52,6 +52,7 @@ interface Proposal {
   price_per_lesson?: number | null;
   payment_cycle?: string | null;
   contract_term?: string | null;
+  internal_notes?: string | null;
 }
 
 const splitName = (full: string) => {
@@ -478,6 +479,15 @@ const Onboarding: React.FC = () => {
                       <div><span className="text-muted-foreground">Contract term:</span> {createdProposal.contract_term || 'Month to Month'}</div>
                       <div><span className="text-muted-foreground">Price per lesson:</span> {createdProposal.price_per_lesson != null ? `£${createdProposal.price_per_lesson}` : '—'}</div>
                       <div><span className="text-muted-foreground">Payment cycle:</span> {createdProposal.payment_cycle || '—'}</div>
+                    </div>
+
+                    <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
+                      <div className="text-sm font-medium text-amber-900 mb-1">Internal notes from the proposal</div>
+                      {createdProposal.internal_notes ? (
+                        <p className="text-sm text-amber-900 whitespace-pre-wrap">{createdProposal.internal_notes}</p>
+                      ) : (
+                        <p className="text-sm text-amber-900/70">No internal notes on this proposal.</p>
+                      )}
                     </div>
 
                     <div>
