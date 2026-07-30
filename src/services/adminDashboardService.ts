@@ -6,6 +6,8 @@ export interface AdminDashboardData {
   regularLessonsCount: number;
   activeTutorsCount: number;
   activeCustomersCount: number;
+  weeklyTutoringHours: number;
+  weeklyLessonCount: number;
 }
 
 export const getAdminDashboardData = async (
