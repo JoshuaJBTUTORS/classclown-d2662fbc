@@ -135,6 +135,7 @@ const TranscriptProposalDialog: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [draft, setDraft] = useState<ProposalDraft | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [priceOverride, setPriceOverride] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !lessonId) return;
