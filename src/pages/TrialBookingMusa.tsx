@@ -240,7 +240,7 @@ const TrialBookingMusaPage: React.FC = () => {
           {currentStep < totalSteps ? <Button type="button" onClick={handleNext} className="flex items-center gap-2 bg-primary hover:bg-primary/90">
               Next
               <ArrowRight className="h-4 w-4" />
-            </Button> : <Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="flex items-center gap-2 bg-primary hover:bg-primary/90">
+            </Button> : <Button type="button" onClick={() => setShowConfirmDialog(true)} disabled={isSubmitting} className="flex items-center gap-2 bg-primary hover:bg-primary/90">
               {isSubmitting ? <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Submitting...
@@ -248,6 +248,35 @@ const TrialBookingMusaPage: React.FC = () => {
             </Button>}
         </div>
       </div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Thank you for considering Class Beyond Academy</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 text-left">
+              <span className="block">
+                We're pleased to offer you a free trial lesson. Although there is no cost to you, your tutor sets aside this time especially for your child. We kindly ask that you only book a time that you are confident you can attend, so that no tutor time goes to waste and we can continue offering free trial lessons to other families.
+              </span>
+              <span className="block">
+                Thank you for your understanding, and we look forward to welcoming you!
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                setShowConfirmDialog(false);
+                handleSubmit();
+              }}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Confirm Booking
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>;
 };
 export default TrialBookingMusaPage;
