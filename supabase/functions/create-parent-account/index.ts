@@ -230,33 +230,96 @@ serve(async (req) => {
       }
     }
     // ---------- 4. Activate any trial students in this family ----------
-    const { data: familyStudents } = await supabaseAdmin
+    // Collect every student that belongs to this family:
+    //  - matched by the parent's email (student email == parent email)
+    //  - already linked to this parent row
+    const { data: familyStudents, error: familyErr } = await supabaseAdmin
       .from('students')
-      .select('id, status')
+      .select('id, status, email')
       .eq('parent_id', parentId);
 
-    const idsToActivate = Array.from(
-      new Set([
+    if (familyErr) {
+      console.error('family students lookup error:', familyErr);
+    }
+
+    const candidateIds = Array.from(
+      new Set<number>([
         ...Array.from(toLink.keys()),
-        ...(familyStudents || []).map((s: any) => s.id),
+        ...((familyStudents || []).map((s: any) => s.id) as number[]),
       ])
     );
 
     let activatedStudents = 0;
-    if (idsToActivate.length > 0) {
-      const { data: activatedRows, error: activateErr } = await supabaseAdmin
+    let activationError: string | null = null;
+
+    if (candidateIds.length > 0) {
+      // Read current statuses explicitly (no PostgREST .or() filter on update —
+      // that silently failed before and left students on 'trial').
+      const { data: candidateRows, error: statusErr } = await supabaseAdmin
         .from('students')
-        .update({ status: 'active' })
-        .in('id', idsToActivate)
-        .or('status.eq.trial,status.is.null,status.eq.')
-        .select('id');
-      if (activateErr) {
-        console.error('student activation error:', activateErr);
+        .select('id, status')
+        .in('id', candidateIds);
+
+      if (statusErr) {
+        console.error('student status lookup error:', statusErr);
+        activationError = statusErr.message;
       } else {
-        activatedStudents = (activatedRows || []).length;
-        console.log(`Activated ${activatedStudents} student(s) for parent ${parentId}`);
+        const needsActivation = (candidateRows || [])
+          .filter((s: any) => {
+            const st = (s.status ?? '').toString().trim().toLowerCase();
+            return st === '' || st === 'trial';
+          })
+          .map((s: any) => s.id);
+
+        console.log('Students needing activation:', needsActivation);
+
+        if (needsActivation.length > 0) {
+          const { data: activatedRows, error: activateErr } = await supabaseAdmin
+            .from('students')
+            .update({ status: 'active' })
+            .in('id', needsActivation)
+            .select('id, status');
+
+          if (activateErr) {
+            console.error('student activation error:', activateErr);
+            activationError = activateErr.message;
+          } else {
+            activatedStudents = (activatedRows || []).length;
+            console.log(
+              `Activated ${activatedStudents} student(s) for parent ${parentId}`,
+              activatedRows
+            );
+
+            // Verify nothing is left on trial
+            const { data: stillTrial } = await supabaseAdmin
+              .from('students')
+              .select('id, status')
+              .in('id', needsActivation)
+              .eq('status', 'trial');
+            if (stillTrial && stillTrial.length > 0) {
+              activationError = `Failed to activate student id(s): ${stillTrial
+                .map((s: any) => s.id)
+                .join(', ')}`;
+              console.error(activationError);
+            }
+          }
+        }
       }
     }
+
+    if (activationError) {
+      return new Response(
+        JSON.stringify({
+          error: `Parent account created, but student activation failed: ${activationError}`,
+          parent: { id: parentId, user_id: authUserId, email },
+          linkedStudents,
+          activatedStudents,
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+
 
     const parts: string[] = [];
     if (linkedStudents > 0) parts.push(`Linked ${linkedStudents} student(s)`);
