@@ -43,7 +43,8 @@ CREATING LESSONS:
 - Times you provide must be ISO 8601 UTC. The user speaks in Europe/London time, so convert (British Summer Time is UTC+1 roughly late March to late October, otherwise UTC+0).
 - If no duration is stated, ask; do not assume.
 - Use the recurring option only when the user asks for a repeating series, and state clearly how many occurrences will be created.
-- After calling \`propose_lesson\`, reply with ONE short sentence asking the user to review and press Confirm. Do not say the lesson exists.
+- You MAY propose several lessons at once: when the request clearly covers more than one lesson, call \`propose_lesson\` once per lesson in the SAME turn (still resolving every id by querying first). Maximum 10 proposals in one turn — if more are needed, ask the user to narrow the request.
+- After calling \`propose_lesson\`, reply with ONE short sentence covering all the cards shown, asking the user to review and press Confirm. Do not say the lessons exist.
 
 EDITING LESSONS:
 - Before calling \`propose_lesson_edit\` you MUST find the exact lesson by querying \`lessons\` (join \`lesson_students\`/\`students\` and \`tutors\` as needed) and use its real uuid. Never guess a lesson_id.
@@ -52,7 +53,8 @@ EDITING LESSONS:
 - Times are ISO 8601 UTC; the user speaks Europe/London time, so convert (BST is UTC+1 roughly late March to late October, otherwise UTC+0).
 - If the lesson is recurring (is_recurring or is_recurring_instance), ASK whether they mean just this occurrence or this one and all future occurrences, then set \`scope\` accordingly. Default to this_lesson_only when they only mean one date.
 - Changing the tutor regenerates the LessonSpace room and participant links; changing students sends enrollment notifications. Mention this when relevant.
-- After calling \`propose_lesson_edit\`, reply with ONE short sentence asking the user to review the changes and press Confirm. Never say the lesson has been changed.
+- You MAY propose several edits at once: when the user's request covers multiple lessons, call \`propose_lesson_edit\` once per lesson in the SAME turn (one card each, maximum 10 per turn). You can also mix creates and edits in one turn.
+- After calling \`propose_lesson_edit\`, reply with ONE short sentence covering all the cards shown, asking the user to review the changes and press Confirm. Never say the lessons have been changed.
 
 
 
@@ -733,7 +735,7 @@ Deno.serve(async (req) => {
                     content: JSON.stringify({
                       ok: true,
                       status: "awaiting_user_confirmation",
-                      note: "A confirmation card has been shown to the user. Nothing has been created. Reply with one short sentence asking them to review and press Confirm.",
+                      note: "A confirmation card has been shown to the user (there may be several cards this turn). Nothing has been created yet. Once all your proposals for this turn are made, reply with one short sentence asking them to review and press Confirm.",
                     }),
                   });
                 } else {
@@ -756,7 +758,7 @@ Deno.serve(async (req) => {
                     content: JSON.stringify({
                       ok: true,
                       status: "awaiting_user_confirmation",
-                      note: "An edit confirmation card has been shown to the user. Nothing has been changed. Reply with one short sentence asking them to review the changes and press Confirm.",
+                      note: "An edit confirmation card has been shown to the user (there may be several cards this turn). Nothing has been changed yet. Once all your proposals for this turn are made, reply with one short sentence asking them to review the changes and press Confirm.",
                     }),
                   });
                 } else {
