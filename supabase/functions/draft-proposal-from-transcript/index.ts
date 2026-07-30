@@ -440,6 +440,9 @@ Deno.serve(async (req) => {
       .map((p: any) => p.students)
       .filter(Boolean);
 
+    const recordYearGroup = (students[0] as any)?.grade ?? null;
+    const recordBand = bandFromYearGroup(recordYearGroup);
+
     const context = {
       lesson_title: lesson.title,
       subject: lesson.subject,
@@ -447,7 +450,12 @@ Deno.serve(async (req) => {
       date: lesson.start_time,
       start_time: lesson.start_time,
       students,
+      record_year_group: recordYearGroup,
+      record_year_band: recordBand,
+      note:
+        "record_year_group / record_year_band come from the booking record and are authoritative when present. Use them to pick the banded subject names.",
     };
+
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
