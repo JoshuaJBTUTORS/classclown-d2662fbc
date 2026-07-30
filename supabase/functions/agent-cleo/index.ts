@@ -746,6 +746,31 @@ Deno.serve(async (req) => {
                 continue;
               }
 
+              if (call.name === "propose_lesson_edit") {
+                const built = await buildLessonEditProposal(parsedArgs as Record<string, any>);
+                if (built.ok) {
+                  send({ type: "edit_proposal", proposal: built.proposal });
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({
+                      ok: true,
+                      status: "awaiting_user_confirmation",
+                      note: "An edit confirmation card has been shown to the user. Nothing has been changed. Reply with one short sentence asking them to review the changes and press Confirm.",
+                    }),
+                  });
+                } else {
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({ ok: false, error: built.error }),
+                  });
+                }
+                continue;
+              }
+
+
+
               const result = await runTool(call.name!, parsedArgs);
               let failed = false;
               let failMessage = "";
