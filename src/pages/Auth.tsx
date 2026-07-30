@@ -101,7 +101,7 @@ const Auth = () => {
             
             <div>
               <h1 className="text-5xl font-bold text-gray-900 mb-8">
-                Welcome to Class Beyond
+                Welcome to Class Clown
               </h1>
               
               <div className="space-y-4 text-left">
