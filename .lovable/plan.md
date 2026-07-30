@@ -1,32 +1,31 @@
-## Problem
+## Goal
 
-`price_per_lesson` in `draft-proposal-from-transcript` is extracted as a single value with one quote. Discovery calls usually mention several numbers (list price, group vs 1-1 price, discounted price, a price for a different term length). Nothing in the prompt tells the model which one was actually agreed, and the admin only ever sees the one quote the model happened to pick, so a wrong pick is invisible.
+Show total weekly tutoring hours on the Admin Dashboard, counted as **student-hours**: a 1-hour 1-to-1 lesson = 1 hour, a 1-hour group lesson with 3 students = 3 hours.
 
-## What to build
+## Scope (confirmed)
 
-**1. Price-resolution rules in the system prompt**
+- Week = current week, Monday 00:00 to Sunday 23:59 (local/London), independent of the month selector.
+- Counts all non-cancelled scheduled lessons in that week, whether already taught or still upcoming.
+- Trial lessons excluded (`lesson_type <> 'trial'`).
 
-Add explicit rules for choosing the settled price:
-- The settled price is the LAST price the account manager states that the parent acknowledges or does not push back on — later statements override earlier ones.
-- Prefer a price stated together with the term/commitment that is actually being recommended (e.g. the 3-month rate if 3 months was agreed) over prices quoted for other terms.
-- Ignore prices that are explicitly framed as: the standard/list rate before a discount, a different lesson type (1-1 vs group) than the one agreed, a hypothetical ("if you did four a week it would be..."), or a competitor's price the parent mentions.
-- Convert monthly/weekly totals into a per-lesson figure only when the number of lessons is unambiguous; otherwise keep the per-lesson figure that was said aloud.
-- Confidence: `high` only when the parent explicitly confirms the number; `medium` when the account manager states it last and it goes unchallenged; `low` when it was derived, inferred, or several numbers stayed live at the end of the call.
+## Calculation
 
-**2. Capture the rejected candidates**
+For each lesson in the week:
+`lesson duration in hours (end_time - start_time) x number of enrolled students`
+Sum across all lessons, round to 1 decimal.
 
-Extend the `price_per_lesson` schema object with a `candidates` array (each item: `value`, `quote`, `timestamp`, `reason_rejected`). The model must list every distinct price figure heard in the call, including the chosen one, with a one-line reason each was or was not selected. Prompt rule: whenever there is more than one candidate, `confidence` may not be `high` unless the parent verbally confirmed the chosen figure.
+Students come from `lesson_students`. Lessons with no linked students contribute 0. Cancelled lessons (`status = 'cancelled'` or `cancelled_at` set) are skipped.
 
-**3. Surface it in the review dialog**
+## Changes
 
-In `src/components/calendar/TranscriptProposalDialog.tsx`, when `price_per_lesson.candidates` has more than one entry, show a small "Other prices mentioned" list under the price field: each rejected figure with its timestamp, quote and reason, so the admin can one-click swap the price to any candidate before the draft goes to the proposal builder.
-
-**4. Server-side guard**
-
-If the model returns a chosen price that is not present in its own `candidates` list, downgrade its confidence to `low` (same pattern as the existing canonical-subject check) so the admin is prompted to verify.
+1. `src/services/adminDashboardService.ts`
+   - Add `weeklyTutoringHours` and `weeklyLessonCount` to `AdminDashboardData`.
+   - Compute the Mon-Sun window from "now" and fetch lessons in that range with their `lesson_students` rows in one nested select, filtering out trials and cancellations, then aggregate as above.
+2. `src/pages/AdminDashboard.tsx`
+   - Add a new card, "Weekly Tutoring Hours", with a clock icon, showing e.g. `126.5h` and a subtitle like "Student-hours delivered this week (Mon-Sun), N lessons".
+   - Card sits alongside the existing metric cards in the same grid; note in the subtitle that this is always the current week.
 
 ## Technical notes
 
-- Files: `supabase/functions/draft-proposal-from-transcript/index.ts` (prompt rules, schema, post-processing) and `src/components/calendar/TranscriptProposalDialog.tsx` (candidate list + swap action).
-- The schema is strict JSON schema, so `candidates` needs `additionalProperties: false`, all properties in `required`, and nullable rather than optional fields.
-- Redeploy the `draft-proposal-from-transcript` edge function after the change.
+- No schema or migration changes; read-only query against `lessons` + `lesson_students`.
+- Uses the same Supabase client pattern as the existing dashboard fetch, so it loads with the rest of the dashboard and refreshes with the Refresh button.

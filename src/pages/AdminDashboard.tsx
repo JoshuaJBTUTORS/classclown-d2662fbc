@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, Calendar, GraduationCap, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, Calendar, GraduationCap, TrendingUp, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { getAdminDashboardData, AdminDashboardData } from '@/services/adminDashboardService';
 import PageTitle from '@/components/ui/PageTitle';
 import { UserPasswordReset } from '@/components/admin/UserPasswordReset';
@@ -192,6 +192,26 @@ const AdminDashboard = () => {
             </p>
           </CardContent>
         </Card>
+
+        {/* Weekly Tutoring Hours */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Weekly Tutoring Hours
+            </CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {dashboardData?.weeklyTutoringHours ?? 0}h
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Student-hours this week (Mon-Sun) across {dashboardData?.weeklyLessonCount ?? 0} lessons
+            </p>
+          </CardContent>
+        </Card>
+
+
 
         {/* User Password Management */}
         <UserPasswordReset />
