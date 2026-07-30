@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createTrialBooking } from '@/services/trialBookingService';
 import { checkEmailPhoneUniqueness } from '@/services/uniquenessValidationService';
 import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
 import StepIndicator from '@/components/trialBooking/StepIndicator';
 import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
 import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
