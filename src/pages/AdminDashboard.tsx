@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, Calendar, GraduationCap, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, Calendar, GraduationCap, TrendingUp, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { getAdminDashboardData, AdminDashboardData } from '@/services/adminDashboardService';
 import PageTitle from '@/components/ui/PageTitle';
 import { UserPasswordReset } from '@/components/admin/UserPasswordReset';
