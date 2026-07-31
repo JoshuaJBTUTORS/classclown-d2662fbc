@@ -456,9 +456,11 @@ const AgentCleo: React.FC = () => {
           try { ev = JSON.parse(data); } catch { continue; }
 
           if (ev.type === 'text') {
+            assistantText += ev.delta;
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, content: m.content + ev.delta, toolStatus: null } : m,
             ));
+
           } else if (ev.type === 'tool') {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, toolStatus: TOOL_LABELS[ev.name] ?? `Using ${ev.name}…` } : m,
