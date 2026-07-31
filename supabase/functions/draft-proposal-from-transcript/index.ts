@@ -374,6 +374,7 @@ const schema = {
         "student_name",
         "year_group",
         "year_band",
+        "subject_list",
         "subjects",
         "exam_boards",
         "lesson_type",
