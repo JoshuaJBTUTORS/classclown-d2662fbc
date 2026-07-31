@@ -396,10 +396,22 @@ const AgentCleo: React.FC = () => {
     const text = input.trim();
     if (!text || loading) return;
 
+    // First message in a fresh chat creates the saved thread (no empty ghost threads).
+    let currentThread = activeThreadRef.current;
+    if (!currentThread) {
+      currentThread = await createThread(text);
+      if (currentThread) {
+        activeThreadRef.current = currentThread;
+        navigate(`/agent-cleo/${currentThread}`, { replace: true });
+      }
+    }
+    if (currentThread) void saveMessage(currentThread, 'user', text);
+
     const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: text };
     const assistantId = crypto.randomUUID();
     const assistantMsg: Msg = { id: assistantId, role: 'assistant', content: '', toolStatus: null };
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
+
     setInput('');
     setLoading(true);
     requestAnimationFrame(autoresize);
