@@ -484,7 +484,7 @@ Deno.serve(async (req) => {
 
     const context = {
       lesson_title: lesson.title,
-      subject: lesson.subject,
+      booked_trial_subject: lesson.subject,
       lesson_type: lesson.lesson_type,
       date: lesson.start_time,
       start_time: lesson.start_time,
@@ -492,7 +492,7 @@ Deno.serve(async (req) => {
       record_year_group: recordYearGroup,
       record_year_band: recordBand,
       note:
-        "record_year_group / record_year_band come from the booking record and are authoritative when present. Use them to pick the banded subject names.",
+        "Contact details (parent name, email, phone) from this record are authoritative. booked_trial_subject, record_year_group and record_year_band are REFERENCE ONLY and are often wrong: the trial may have been booked under the wrong band or the student record may hold a stale year. The transcript decides the year group, the year band and the subjects. Use record_year_group only if the call never mentions the student's year, age or stage.",
     };
 
 
@@ -508,7 +508,7 @@ Deno.serve(async (req) => {
           { role: "system", content: SYSTEM },
           {
             role: "user",
-            content: `BOOKING CONTEXT (confirmed record, wins over the transcript for student name / subject):\n${JSON.stringify(context, null, 2)}\n\nTRANSCRIPT:\n${text}`,
+            content: `BOOKING CONTEXT (contact details authoritative; booked subject and year group are reference only — the transcript wins for year group and subjects):\n${JSON.stringify(context, null, 2)}\n\nTRANSCRIPT:\n${text}`,
           },
         ],
         response_format: {
