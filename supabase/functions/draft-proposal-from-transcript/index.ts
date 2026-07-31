@@ -130,15 +130,17 @@ PRICE RESOLUTION (mandatory when more than one number is heard):
 - lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").
 
 YEAR GROUP AND SUBJECT MAPPING (mandatory):
+- THE TRANSCRIPT IS THE SOURCE OF TRUTH for the student's year group and for which subjects are being bought. The booking record's year group and the subject the trial was booked under are frequently wrong (a trial booked as "KS3 Maths" for a Year 6 child, a stale year on the student record). If the call states or implies a year group, school year, age or school stage, USE THAT, even when it contradicts the booking context. Only fall back to record_year_group when the call says nothing at all about the year.
 - Normalise year_group to "Year N" (English school years, Year 1 to Year 13). If only an age or school stage is mentioned, infer the year and mark confidence "low".
-- Set year_band to exactly one of: early_ks2, ks2, 11_plus, ks3, gcse, a_level, using this mapping:
+- Set year_band to exactly one of: early_ks2, ks2, 11_plus, ks3, gcse, a_level, using this mapping applied to the RESOLVED year group (the one from the call):
   * Year 3-4 -> early_ks2
   * Year 5-6 -> ks2 by default; use 11_plus instead when the parent mentions 11 plus, entrance exams, grammar school, independent/private school entry, VR or NVR
   * Year 6 preparing for SATs -> ks2 (use the Sats subjects)
   * Year 7-9 -> ks3
   * Year 10-11 -> gcse
   * Year 12-13 -> a_level
-- Every subject you write, in the "subjects" field and in EVERY lesson_times[].subject, must be an exact name from this canonical list, chosen for the student's year band:
+- subject_list must contain EVERY subject the parent agreed to on the call, one entry per subject. Include subjects added during the call on top of the subject the trial was booked under, and EXCLUDE any subject the parent declined or only asked about. Never copy the booked trial subject into subject_list unless the call confirms it.
+- Every subject you write, in subject_list and in EVERY lesson_times[].subject, must be an exact name from this canonical list, banded to the RESOLVED year band (never the band the trial was booked under):
 ${CANONICAL_SUBJECTS.join(", ")}
 - Band prefixes: early_ks2 -> "Early KS2 ..."; ks2 -> "KS2 ..." (use "Sats Maths"/"Sats English" when SATs preparation is the stated goal); 11_plus -> "11 Plus Maths / English / VR / NVR"; ks3 -> "KS3 ..."; gcse -> "GCSE ..."; a_level -> "A-level ...".
 - Never output a bare subject like "Maths", "English" or "Science" — always the banded name (e.g. Year 10 maths becomes "GCSE Maths Highier" or "GCSE Maths Foundation", Year 7 science becomes "KS3 Science", Year 6 maths becomes "KS2 Maths").
