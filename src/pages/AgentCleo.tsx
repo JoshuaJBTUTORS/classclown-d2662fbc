@@ -410,7 +410,9 @@ const AgentCleo: React.FC = () => {
     const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: text };
     const assistantId = crypto.randomUUID();
     const assistantMsg: Msg = { id: assistantId, role: 'assistant', content: '', toolStatus: null };
+    let assistantText = '';
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
+
 
     setInput('');
     setLoading(true);
