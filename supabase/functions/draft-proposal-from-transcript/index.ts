@@ -571,31 +571,88 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Booking record year group wins, and drives the band
-    if (recordYearGroup) {
+    // The transcript wins for year group; the booking record is only a fallback
+    const transcriptYearGroup = draft.fields?.year_group?.value ?? null;
+    const transcriptBand = draft.fields?.year_band?.value ?? bandFromYearGroup(transcriptYearGroup);
+
+    if (!transcriptYearGroup && recordYearGroup) {
       draft.fields.year_group = {
         value: String(recordYearGroup),
-        quote: draft.fields.year_group?.quote ?? null,
-        timestamp: draft.fields.year_group?.timestamp ?? null,
-        confidence: "high",
+        quote: null,
+        timestamp: null,
+        confidence: "medium",
       };
     }
-    const resolvedBand = recordBand ?? draft.fields?.year_band?.value ?? bandFromYearGroup(draft.fields?.year_group?.value);
+
+    const yearsDisagree = Boolean(
+      transcriptYearGroup && recordYearGroup &&
+      String(transcriptYearGroup).replace(/\D/g, "") !== String(recordYearGroup).replace(/\D/g, "")
+    );
+    if (yearsDisagree && draft.fields?.year_group) {
+      draft.fields.year_group.confidence = "medium";
+    }
+
+    const resolvedBand = transcriptBand ?? recordBand ?? bandFromYearGroup(draft.fields?.year_group?.value);
     draft.fields.year_band = {
       value: resolvedBand ?? null,
       quote: draft.fields?.year_band?.quote ?? null,
       timestamp: draft.fields?.year_band?.timestamp ?? null,
-      confidence: recordBand ? "high" : (resolvedBand ? (draft.fields?.year_band?.confidence ?? "medium") : "missing"),
+      confidence: resolvedBand
+        ? (transcriptBand ? (yearsDisagree ? "medium" : (draft.fields?.year_band?.confidence ?? "medium")) : "medium")
+        : "missing",
     };
 
-    // Flag any subject that is not one of our canonical names
-    if (draft.fields?.subjects?.value && !isCanonicalSubject(draft.fields.subjects.value)) {
+    // Collapse the per-subject list into the single subjects field the UI edits
+    const subjectList = Array.isArray(draft.fields?.subject_list) ? draft.fields.subject_list : [];
+    const uniqueSubjects: any[] = [];
+    for (const s of subjectList) {
+      const v = String(s?.value ?? "").trim();
+      if (!v) continue;
+      if (uniqueSubjects.some((u) => u.value.toLowerCase() === v.toLowerCase())) continue;
+      uniqueSubjects.push({
+        value: v,
+        quote: s?.quote ?? null,
+        timestamp: s?.timestamp ?? null,
+        confidence: isCanonicalSubject(v) ? (s?.confidence ?? "medium") : "low",
+      });
+    }
+    draft.fields.subject_list = uniqueSubjects;
+
+    if (uniqueSubjects.length > 0) {
+      const anyLow = uniqueSubjects.some((s) => s.confidence === "low");
+      const first = uniqueSubjects[0];
+      draft.fields.subjects = {
+        value: uniqueSubjects.map((s) => s.value).join(", "),
+        quote: first.quote ?? draft.fields?.subjects?.quote ?? null,
+        timestamp: first.timestamp ?? draft.fields?.subjects?.timestamp ?? null,
+        confidence: anyLow ? "low" : (draft.fields?.subjects?.confidence ?? "medium"),
+      };
+    } else if (draft.fields?.subjects?.value && !isCanonicalSubject(draft.fields.subjects.value)) {
       draft.fields.subjects.confidence = "low";
     }
+
     if (Array.isArray(draft.lesson_times)) {
       draft.lesson_times = draft.lesson_times.map((lt: any) =>
         isCanonicalSubject(lt?.subject) ? lt : { ...lt, confidence: "low" }
       );
+    }
+
+    // Surface a trial-booking vs call conflict for the admin
+    const bookedBandLabel = String(lesson.subject ?? "");
+    if (!Array.isArray(draft.notes)) draft.notes = [];
+    if (yearsDisagree) {
+      draft.notes.unshift({
+        kind: "conflict",
+        text: `Booking record says ${recordYearGroup} but the call places the student in ${transcriptYearGroup}. The call was used for the year band and subject names.`,
+        timestamp: draft.fields?.year_group?.timestamp ?? null,
+      });
+    }
+    if (bookedBandLabel && recordBand && resolvedBand && recordBand !== resolvedBand) {
+      draft.notes.unshift({
+        kind: "conflict",
+        text: `Trial was booked as "${bookedBandLabel}" (${recordBand}) but the call places the student in ${resolvedBand}. Subjects were rebanded from the transcript.`,
+        timestamp: null,
+      });
     }
 
     // Price sanity: the chosen price must appear among the candidates the model listed
