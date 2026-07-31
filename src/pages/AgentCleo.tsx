@@ -346,17 +346,44 @@ const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cl
 const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
 
 const AgentCleo: React.FC = () => {
+  const { threadId } = useParams<{ threadId?: string }>();
+  const navigate = useNavigate();
+  const {
+    threads, loadingThreads, loadMessages, createThread, saveMessage, renameThread, deleteThread,
+  } = useAgentCleoThreads();
+
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Tracks the thread the current send belongs to, so a thread created mid-send is persisted to.
+  const activeThreadRef = useRef<string | null>(threadId ?? null);
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // Restore the conversation whenever the route thread changes (including on reload).
+  useEffect(() => {
+    let cancelled = false;
+    activeThreadRef.current = threadId ?? null;
+    if (!threadId) {
+      setMessages([]);
+      return;
+    }
+    (async () => {
+      const stored = await loadMessages(threadId);
+      if (!cancelled) {
+        setMessages(stored.map((m) => ({ id: m.id, role: m.role, content: m.content })));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [threadId, loadMessages]);
+
+
 
   const autoresize = () => {
     const el = textareaRef.current;
