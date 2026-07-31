@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
@@ -7,6 +8,9 @@ import {
   updateSingleRecurringInstance,
   updateAllFutureLessons,
 } from '@/services/recurringLessonEditService';
+import { useAgentCleoThreads } from '@/hooks/useAgentCleoThreads';
+import { AgentCleoThreadList } from '@/components/agentCleo/AgentCleoThreadList';
+
 
 
 const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
