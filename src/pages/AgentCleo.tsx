@@ -671,14 +671,16 @@ const AgentCleo: React.FC = () => {
 
         <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#8e8ea0] uppercase tracking-wider">Recent</div>
         <nav className="flex-1 px-2 overflow-y-auto space-y-0.5">
-          {['Weekly overview', 'Trial follow-ups', 'Tutor payroll July'].map((label) => (
-            <div key={label} className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
-              <MessageSquare className="w-4 h-4 text-[#8e8ea0] shrink-0" />
-              <span className="text-sm truncate flex-1">{label}</span>
-              <Trash2 className="w-3.5 h-3.5 text-[#8e8ea0] opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          ))}
+          <AgentCleoThreadList
+            threads={threads}
+            activeId={threadId}
+            loading={loadingThreads}
+            onSelect={handleSelectThread}
+            onRename={renameThread}
+            onDelete={handleDeleteThread}
+          />
         </nav>
+
 
         <div className="p-3 border-t border-white/5">
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
