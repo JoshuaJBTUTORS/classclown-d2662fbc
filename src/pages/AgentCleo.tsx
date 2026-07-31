@@ -627,10 +627,23 @@ const AgentCleo: React.FC = () => {
 
 
   const newChat = () => {
+    activeThreadRef.current = null;
     setMessages([]);
     setInput('');
+    navigate('/agent-cleo');
     textareaRef.current?.focus();
   };
+
+  const handleSelectThread = (id: string) => {
+    if (id === threadId) return;
+    navigate(`/agent-cleo/${id}`);
+  };
+
+  const handleDeleteThread = async (id: string) => {
+    await deleteThread(id);
+    if (id === threadId) newChat();
+  };
+
 
   const hasMessages = messages.length > 0;
 
