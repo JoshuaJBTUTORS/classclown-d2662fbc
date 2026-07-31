@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
@@ -7,6 +8,9 @@ import {
   updateSingleRecurringInstance,
   updateAllFutureLessons,
 } from '@/services/recurringLessonEditService';
+import { useAgentCleoThreads } from '@/hooks/useAgentCleoThreads';
+import { AgentCleoThreadList } from '@/components/agentCleo/AgentCleoThreadList';
+
 
 
 const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
@@ -342,17 +346,44 @@ const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cl
 const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
 
 const AgentCleo: React.FC = () => {
+  const { threadId } = useParams<{ threadId?: string }>();
+  const navigate = useNavigate();
+  const {
+    threads, loadingThreads, loadMessages, createThread, saveMessage, renameThread, deleteThread,
+  } = useAgentCleoThreads();
+
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Tracks the thread the current send belongs to, so a thread created mid-send is persisted to.
+  const activeThreadRef = useRef<string | null>(threadId ?? null);
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // Restore the conversation whenever the route thread changes (including on reload).
+  useEffect(() => {
+    let cancelled = false;
+    activeThreadRef.current = threadId ?? null;
+    if (!threadId) {
+      setMessages([]);
+      return;
+    }
+    (async () => {
+      const stored = await loadMessages(threadId);
+      if (!cancelled) {
+        setMessages(stored.map((m) => ({ id: m.id, role: m.role, content: m.content })));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [threadId, loadMessages]);
+
+
 
   const autoresize = () => {
     const el = textareaRef.current;
@@ -365,10 +396,24 @@ const AgentCleo: React.FC = () => {
     const text = input.trim();
     if (!text || loading) return;
 
+    // First message in a fresh chat creates the saved thread (no empty ghost threads).
+    let currentThread = activeThreadRef.current;
+    if (!currentThread) {
+      currentThread = await createThread(text);
+      if (currentThread) {
+        activeThreadRef.current = currentThread;
+        navigate(`/agent-cleo/${currentThread}`, { replace: true });
+      }
+    }
+    if (currentThread) void saveMessage(currentThread, 'user', text);
+
     const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: text };
     const assistantId = crypto.randomUUID();
     const assistantMsg: Msg = { id: assistantId, role: 'assistant', content: '', toolStatus: null };
+    let assistantText = '';
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
+
+
     setInput('');
     setLoading(true);
     requestAnimationFrame(autoresize);
@@ -413,9 +458,11 @@ const AgentCleo: React.FC = () => {
           try { ev = JSON.parse(data); } catch { continue; }
 
           if (ev.type === 'text') {
+            assistantText += ev.delta;
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, content: m.content + ev.delta, toolStatus: null } : m,
             ));
+
           } else if (ev.type === 'tool') {
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, toolStatus: TOOL_LABELS[ev.name] ?? `Using ${ev.name}…` } : m,
@@ -441,6 +488,7 @@ const AgentCleo: React.FC = () => {
                 : m,
             ));
           } else if (ev.type === 'error') {
+            assistantText = `⚠️ ${ev.error}`;
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, content: `⚠️ ${ev.error}`, toolStatus: null } : m,
             ));
@@ -452,14 +500,19 @@ const AgentCleo: React.FC = () => {
         }
       }
     } catch (e) {
+      assistantText = `⚠️ ${(e as Error).message}`;
       setMessages((prev) => prev.map((m) =>
         m.id === assistantId ? { ...m, content: `⚠️ ${(e as Error).message}`, toolStatus: null } : m,
       ));
     } finally {
+      if (currentThread && assistantText.trim()) {
+        void saveMessage(currentThread, 'assistant', assistantText);
+      }
       setLoading(false);
       textareaRef.current?.focus();
     }
   };
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -574,10 +627,23 @@ const AgentCleo: React.FC = () => {
 
 
   const newChat = () => {
+    activeThreadRef.current = null;
     setMessages([]);
     setInput('');
+    navigate('/agent-cleo');
     textareaRef.current?.focus();
   };
+
+  const handleSelectThread = (id: string) => {
+    if (id === threadId) return;
+    navigate(`/agent-cleo/${id}`);
+  };
+
+  const handleDeleteThread = async (id: string) => {
+    await deleteThread(id);
+    if (id === threadId) newChat();
+  };
+
 
   const hasMessages = messages.length > 0;
 
@@ -605,14 +671,16 @@ const AgentCleo: React.FC = () => {
 
         <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#8e8ea0] uppercase tracking-wider">Recent</div>
         <nav className="flex-1 px-2 overflow-y-auto space-y-0.5">
-          {['Weekly overview', 'Trial follow-ups', 'Tutor payroll July'].map((label) => (
-            <div key={label} className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
-              <MessageSquare className="w-4 h-4 text-[#8e8ea0] shrink-0" />
-              <span className="text-sm truncate flex-1">{label}</span>
-              <Trash2 className="w-3.5 h-3.5 text-[#8e8ea0] opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          ))}
+          <AgentCleoThreadList
+            threads={threads}
+            activeId={threadId}
+            loading={loadingThreads}
+            onSelect={handleSelectThread}
+            onRename={renameThread}
+            onDelete={handleDeleteThread}
+          />
         </nav>
+
 
         <div className="p-3 border-t border-white/5">
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
