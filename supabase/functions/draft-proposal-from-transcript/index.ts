@@ -228,6 +228,20 @@ const schema = {
           },
           required: ["value", "quote", "timestamp", "confidence"],
         },
+        subject_list: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              value: { type: "string" },
+              quote: { type: ["string", "null"] },
+              timestamp: { type: ["string", "null"] },
+              confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+            },
+            required: ["value", "quote", "timestamp", "confidence"],
+          },
+        },
         subjects: {
           type: "object",
           additionalProperties: false,
