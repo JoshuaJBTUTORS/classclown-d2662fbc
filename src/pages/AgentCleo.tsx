@@ -486,6 +486,7 @@ const AgentCleo: React.FC = () => {
                 : m,
             ));
           } else if (ev.type === 'error') {
+            assistantText = `⚠️ ${ev.error}`;
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId ? { ...m, content: `⚠️ ${ev.error}`, toolStatus: null } : m,
             ));
@@ -497,14 +498,19 @@ const AgentCleo: React.FC = () => {
         }
       }
     } catch (e) {
+      assistantText = `⚠️ ${(e as Error).message}`;
       setMessages((prev) => prev.map((m) =>
         m.id === assistantId ? { ...m, content: `⚠️ ${(e as Error).message}`, toolStatus: null } : m,
       ));
     } finally {
+      if (currentThread && assistantText.trim()) {
+        void saveMessage(currentThread, 'assistant', assistantText);
+      }
       setLoading(false);
       textareaRef.current?.focus();
     }
   };
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
