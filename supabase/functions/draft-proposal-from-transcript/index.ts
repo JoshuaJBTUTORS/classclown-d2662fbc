@@ -130,15 +130,17 @@ PRICE RESOLUTION (mandatory when more than one number is heard):
 - lesson_times must contain one row PER WEEKLY SESSION. If a subject rotates across weeks in one recurring slot, still emit one row for that slot and name the rotation in the subject (e.g. "Economics / Computer Science / Geography (rotating)").
 
 YEAR GROUP AND SUBJECT MAPPING (mandatory):
+- THE TRANSCRIPT IS THE SOURCE OF TRUTH for the student's year group and for which subjects are being bought. The booking record's year group and the subject the trial was booked under are frequently wrong (a trial booked as "KS3 Maths" for a Year 6 child, a stale year on the student record). If the call states or implies a year group, school year, age or school stage, USE THAT, even when it contradicts the booking context. Only fall back to record_year_group when the call says nothing at all about the year.
 - Normalise year_group to "Year N" (English school years, Year 1 to Year 13). If only an age or school stage is mentioned, infer the year and mark confidence "low".
-- Set year_band to exactly one of: early_ks2, ks2, 11_plus, ks3, gcse, a_level, using this mapping:
+- Set year_band to exactly one of: early_ks2, ks2, 11_plus, ks3, gcse, a_level, using this mapping applied to the RESOLVED year group (the one from the call):
   * Year 3-4 -> early_ks2
   * Year 5-6 -> ks2 by default; use 11_plus instead when the parent mentions 11 plus, entrance exams, grammar school, independent/private school entry, VR or NVR
   * Year 6 preparing for SATs -> ks2 (use the Sats subjects)
   * Year 7-9 -> ks3
   * Year 10-11 -> gcse
   * Year 12-13 -> a_level
-- Every subject you write, in the "subjects" field and in EVERY lesson_times[].subject, must be an exact name from this canonical list, chosen for the student's year band:
+- subject_list must contain EVERY subject the parent agreed to on the call, one entry per subject. Include subjects added during the call on top of the subject the trial was booked under, and EXCLUDE any subject the parent declined or only asked about. Never copy the booked trial subject into subject_list unless the call confirms it.
+- Every subject you write, in subject_list and in EVERY lesson_times[].subject, must be an exact name from this canonical list, banded to the RESOLVED year band (never the band the trial was booked under):
 ${CANONICAL_SUBJECTS.join(", ")}
 - Band prefixes: early_ks2 -> "Early KS2 ..."; ks2 -> "KS2 ..." (use "Sats Maths"/"Sats English" when SATs preparation is the stated goal); 11_plus -> "11 Plus Maths / English / VR / NVR"; ks3 -> "KS3 ..."; gcse -> "GCSE ..."; a_level -> "A-level ...".
 - Never output a bare subject like "Maths", "English" or "Science" — always the banded name (e.g. Year 10 maths becomes "GCSE Maths Highier" or "GCSE Maths Foundation", Year 7 science becomes "KS3 Science", Year 6 maths becomes "KS2 Maths").
@@ -225,6 +227,20 @@ const schema = {
             confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
           },
           required: ["value", "quote", "timestamp", "confidence"],
+        },
+        subject_list: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              value: { type: "string" },
+              quote: { type: ["string", "null"] },
+              timestamp: { type: ["string", "null"] },
+              confidence: { type: "string", enum: ["high", "medium", "low", "missing"] },
+            },
+            required: ["value", "quote", "timestamp", "confidence"],
+          },
         },
         subjects: {
           type: "object",
@@ -358,6 +374,7 @@ const schema = {
         "student_name",
         "year_group",
         "year_band",
+        "subject_list",
         "subjects",
         "exam_boards",
         "lesson_type",
@@ -467,7 +484,7 @@ Deno.serve(async (req) => {
 
     const context = {
       lesson_title: lesson.title,
-      subject: lesson.subject,
+      booked_trial_subject: lesson.subject,
       lesson_type: lesson.lesson_type,
       date: lesson.start_time,
       start_time: lesson.start_time,
@@ -475,7 +492,7 @@ Deno.serve(async (req) => {
       record_year_group: recordYearGroup,
       record_year_band: recordBand,
       note:
-        "record_year_group / record_year_band come from the booking record and are authoritative when present. Use them to pick the banded subject names.",
+        "Contact details (parent name, email, phone) from this record are authoritative. booked_trial_subject, record_year_group and record_year_band are REFERENCE ONLY and are often wrong: the trial may have been booked under the wrong band or the student record may hold a stale year. The transcript decides the year group, the year band and the subjects. Use record_year_group only if the call never mentions the student's year, age or stage.",
     };
 
 
@@ -491,7 +508,7 @@ Deno.serve(async (req) => {
           { role: "system", content: SYSTEM },
           {
             role: "user",
-            content: `BOOKING CONTEXT (confirmed record, wins over the transcript for student name / subject):\n${JSON.stringify(context, null, 2)}\n\nTRANSCRIPT:\n${text}`,
+            content: `BOOKING CONTEXT (contact details authoritative; booked subject and year group are reference only — the transcript wins for year group and subjects):\n${JSON.stringify(context, null, 2)}\n\nTRANSCRIPT:\n${text}`,
           },
         ],
         response_format: {
@@ -554,31 +571,88 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Booking record year group wins, and drives the band
-    if (recordYearGroup) {
+    // The transcript wins for year group; the booking record is only a fallback
+    const transcriptYearGroup = draft.fields?.year_group?.value ?? null;
+    const transcriptBand = draft.fields?.year_band?.value ?? bandFromYearGroup(transcriptYearGroup);
+
+    if (!transcriptYearGroup && recordYearGroup) {
       draft.fields.year_group = {
         value: String(recordYearGroup),
-        quote: draft.fields.year_group?.quote ?? null,
-        timestamp: draft.fields.year_group?.timestamp ?? null,
-        confidence: "high",
+        quote: null,
+        timestamp: null,
+        confidence: "medium",
       };
     }
-    const resolvedBand = recordBand ?? draft.fields?.year_band?.value ?? bandFromYearGroup(draft.fields?.year_group?.value);
+
+    const yearsDisagree = Boolean(
+      transcriptYearGroup && recordYearGroup &&
+      String(transcriptYearGroup).replace(/\D/g, "") !== String(recordYearGroup).replace(/\D/g, "")
+    );
+    if (yearsDisagree && draft.fields?.year_group) {
+      draft.fields.year_group.confidence = "medium";
+    }
+
+    const resolvedBand = transcriptBand ?? recordBand ?? bandFromYearGroup(draft.fields?.year_group?.value);
     draft.fields.year_band = {
       value: resolvedBand ?? null,
       quote: draft.fields?.year_band?.quote ?? null,
       timestamp: draft.fields?.year_band?.timestamp ?? null,
-      confidence: recordBand ? "high" : (resolvedBand ? (draft.fields?.year_band?.confidence ?? "medium") : "missing"),
+      confidence: resolvedBand
+        ? (transcriptBand ? (yearsDisagree ? "medium" : (draft.fields?.year_band?.confidence ?? "medium")) : "medium")
+        : "missing",
     };
 
-    // Flag any subject that is not one of our canonical names
-    if (draft.fields?.subjects?.value && !isCanonicalSubject(draft.fields.subjects.value)) {
+    // Collapse the per-subject list into the single subjects field the UI edits
+    const subjectList = Array.isArray(draft.fields?.subject_list) ? draft.fields.subject_list : [];
+    const uniqueSubjects: any[] = [];
+    for (const s of subjectList) {
+      const v = String(s?.value ?? "").trim();
+      if (!v) continue;
+      if (uniqueSubjects.some((u) => u.value.toLowerCase() === v.toLowerCase())) continue;
+      uniqueSubjects.push({
+        value: v,
+        quote: s?.quote ?? null,
+        timestamp: s?.timestamp ?? null,
+        confidence: isCanonicalSubject(v) ? (s?.confidence ?? "medium") : "low",
+      });
+    }
+    draft.fields.subject_list = uniqueSubjects;
+
+    if (uniqueSubjects.length > 0) {
+      const anyLow = uniqueSubjects.some((s) => s.confidence === "low");
+      const first = uniqueSubjects[0];
+      draft.fields.subjects = {
+        value: uniqueSubjects.map((s) => s.value).join(", "),
+        quote: first.quote ?? draft.fields?.subjects?.quote ?? null,
+        timestamp: first.timestamp ?? draft.fields?.subjects?.timestamp ?? null,
+        confidence: anyLow ? "low" : (draft.fields?.subjects?.confidence ?? "medium"),
+      };
+    } else if (draft.fields?.subjects?.value && !isCanonicalSubject(draft.fields.subjects.value)) {
       draft.fields.subjects.confidence = "low";
     }
+
     if (Array.isArray(draft.lesson_times)) {
       draft.lesson_times = draft.lesson_times.map((lt: any) =>
         isCanonicalSubject(lt?.subject) ? lt : { ...lt, confidence: "low" }
       );
+    }
+
+    // Surface a trial-booking vs call conflict for the admin
+    const bookedBandLabel = String(lesson.subject ?? "");
+    if (!Array.isArray(draft.notes)) draft.notes = [];
+    if (yearsDisagree) {
+      draft.notes.unshift({
+        kind: "conflict",
+        text: `Booking record says ${recordYearGroup} but the call places the student in ${transcriptYearGroup}. The call was used for the year band and subject names.`,
+        timestamp: draft.fields?.year_group?.timestamp ?? null,
+      });
+    }
+    if (bookedBandLabel && recordBand && resolvedBand && recordBand !== resolvedBand) {
+      draft.notes.unshift({
+        kind: "conflict",
+        text: `Trial was booked as "${bookedBandLabel}" (${recordBand}) but the call places the student in ${resolvedBand}. Subjects were rebanded from the transcript.`,
+        timestamp: null,
+      });
     }
 
     // Price sanity: the chosen price must appear among the candidates the model listed
