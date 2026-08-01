@@ -434,16 +434,23 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           {/* Pricing */}
           <Section id="pricing" eyebrow="Pricing" title="Simple, transparent pricing">
             <div className="rounded-2xl border border-border bg-card p-8">
-              <div className="flex items-baseline gap-2">
-                <span className="font-heading text-5xl font-bold text-foreground">£{weeklyTotal.toFixed(2)}</span>
-                <span className="text-muted-foreground">per week</span>
-              </div>
+              {hasMixedPricing ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="font-heading text-3xl font-bold text-foreground">Priced per lesson</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="font-heading text-5xl font-bold text-foreground">£{rowPrice(proposal.lesson_times[0] ?? {})}</span>
+                  <span className="text-muted-foreground">per lesson</span>
+                </div>
+              )}
               <p className="mt-2 text-sm text-muted-foreground">
                 {hasMixedPricing
                   ? 'Each session is priced individually (see the weekly schedule above).'
-                  : `£${rowPrice(proposal.lesson_times[0] ?? {})} per lesson.`}{' '}
+                  : `Each session is charged at £${rowPrice(proposal.lesson_times[0] ?? {})}.`}{' '}
                 Billed <span className="font-medium text-foreground">every 4 weeks in advance</span>. No sign-up fee.
               </p>
+
 
 
               {/* Contract term */}
