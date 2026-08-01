@@ -405,7 +405,21 @@ export default function ProposalBuilder() {
                           onChange={(e) => updateLessonTime(index, 'subject', e.target.value)}
                         />
                       </div>
+
+                      <div>
+                        <FormLabel>Price (£)</FormLabel>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={lessonTime.price}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            updateLessonTime(index, 'price', value === '' ? 0 : parseFloat(value) || 0);
+                          }}
+                        />
+                      </div>
                     </div>
+
 
                     {lessonTimes.length > 1 && (
                       <Button
