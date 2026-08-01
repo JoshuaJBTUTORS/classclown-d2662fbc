@@ -1,29 +1,39 @@
-## What's actually going wrong
+## Goal
 
-It isn't the chat-persistence work. The network log shows the message request going to a **relative** URL:
+When a client is onboarded (Step 3, "I have added the lessons"), find their contact in HubSpot by email or phone and set `hs_lead_status` to **Active Customer**.
 
-```text
-POST /functions/v1/agent-cleo  →  200, body = index.html
+## Approach
+
+Extend the existing `hubspot-create-payment-ticket` edge function, which already runs at exactly that moment and already searches HubSpot for the contact by email. No new function or new frontend call needed.
+
+### Contact lookup (improved)
+Current behaviour: search by email only, create the contact if not found.
+
+New behaviour:
+1. Search by `email` (exact match).
+2. If nothing found and a phone number exists, search again by `phone` — and also by `mobilephone` — using a normalised number (strip spaces/dashes, try both `07...` and `+447...` forms) so UK-formatted numbers match.
+3. If still nothing found, create the contact as today.
+
+### Status update
+After the contact is resolved, PATCH the contact with:
 ```
-
-`src/pages/AgentCleo.tsx` builds its endpoints from an env var:
-
-```ts
-const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo`;
-const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
+hs_lead_status = "Active Customer"
 ```
+This runs before the ticket creation and is independent of it: if the status update fails (for example because "Active Customer" is not a configured option on the property in this HubSpot portal), log the HubSpot status and body, show a warning toast, and still create the payment setup ticket. Onboarding is never blocked.
 
-In the built preview bundle `VITE_SUPABASE_URL` is empty, so the URL collapses to a same-origin path and Vite's SPA fallback answers with the HTML page. Because that response is `200` with a body, the code's `!resp.ok || !resp.body` guard passes, the SSE reader finds no `data:` lines, and the assistant bubble just stays empty — no visible error. (A hardcoded fallback was added for this before and has since been lost from the file.)
+The function response gains `contactId`, `leadStatusUpdated: true|false`, and `leadStatusError` so the UI can report accurately.
 
-`src/integrations/supabase/client.ts` already hardcodes the project URL, which is why every other Supabase call still works.
+### Onboarding UI
+In `src/pages/Onboarding.tsx`, after the ticket call returns, surface the outcome:
+- success: "Payment ticket created and HubSpot contact marked Active Customer"
+- partial: existing success toast plus a warning "Could not update HubSpot lead status — update manually"
 
-## Fix
+## Note on the property value
 
-1. In `src/pages/AgentCleo.tsx`, stop relying on the env var. Derive the functions base from the same constant the Supabase client uses (import/duplicate `https://sjxbxkpegcnnfjbsxazo.supabase.co`), with `import.meta.env.VITE_SUPABASE_URL` only as an optional override.
-2. Harden the streaming call so a silent failure can't happen again: after the fetch, reject any response whose `content-type` isn't `text/event-stream`, and surface the error in the chat bubble plus a toast.
-3. Apply the same base-URL fix to the create-lesson endpoint.
-4. Check the rest of `src/` for other `import.meta.env.VITE_SUPABASE_URL` usages and give them the same fallback.
+`hs_lead_status` is a dropdown. "Active Customer" must exist as an option in your HubSpot portal, and HubSpot expects the option's *internal value*, which is often uppercase/underscored (e.g. `ACTIVE_CUSTOMER`). The function will read the property's option list once via the HubSpot properties API and match "Active Customer" case-insensitively by label to get the correct internal value, so it works regardless of how the option was named internally. If no matching option exists, it logs a clear error rather than silently failing.
 
-## Verify
+## Technical details
 
-Send a message in Agent Cleo and confirm the request goes to the full `https://sjxbxkpegcnnfjbsxazo.supabase.co/functions/v1/agent-cleo` URL, streams a reply, and that the reply is saved into `agent_cleo_messages` for the current thread.
+- `supabase/functions/hubspot-create-payment-ticket/index.ts`: add `findContactByPhone`, `resolveLeadStatusValue` (properties API lookup, cached per invocation), and `setLeadStatus`; wire them into the existing flow; extend the JSON response.
+- `src/pages/Onboarding.tsx`: read the new response fields in `handleAddedLessons` and adjust toasts.
+- No database changes.
