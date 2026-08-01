@@ -37,7 +37,7 @@ interface Proposal {
   price_per_lesson: number;
   payment_cycle: string;
   contract_term?: 'month_to_month' | '3_months' | '12_months' | null;
-  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
+  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
   created_at: string;
   daily_homework_opt_in: boolean;
@@ -99,6 +99,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
   const totalMinutesPerWeek = proposal.lesson_times.reduce((sum, t) => sum + (t.duration || 0), 0);
   const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
+  const rowPrice = (t: { price?: number }) =>
+    typeof t.price === 'number' ? t.price : proposal.price_per_lesson;
+  const weeklyTotal = proposal.lesson_times.reduce((sum, t) => sum + rowPrice(t), 0);
+  const hasMixedPricing = new Set(proposal.lesson_times.map(rowPrice)).size > 1;
+
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const shortRef = `CB-${proposal.id.slice(0, 8).toUpperCase()}`;
   const signedDateStr = signedAt
@@ -367,6 +372,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                     <th className="px-5 py-3 font-semibold">Time</th>
                     <th className="px-5 py-3 font-semibold">Duration</th>
                     <th className="px-5 py-3 font-semibold">Subject</th>
+                    <th className="px-5 py-3 font-semibold text-right">Price</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -376,10 +382,20 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                       <td className="px-5 py-4">{t.time}</td>
                       <td className="px-5 py-4 text-muted-foreground">{t.duration} min</td>
                       <td className="px-5 py-4">{t.subject || proposal.subject}</td>
+                      <td className="px-5 py-4 text-right font-semibold">£{rowPrice(t)}</td>
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t border-border bg-muted/40">
+                    <td className="px-5 py-3 text-xs uppercase tracking-wider text-muted-foreground" colSpan={4}>
+                      Total per week
+                    </td>
+                    <td className="px-5 py-3 text-right font-semibold">£{weeklyTotal.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
               </table>
+
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               Lesson type: <span className="font-medium text-foreground">{proposal.lesson_type}</span>
@@ -427,12 +443,16 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           <Section id="pricing" eyebrow="Pricing" title="Simple, transparent pricing">
             <div className="rounded-2xl border border-border bg-card p-8">
               <div className="flex items-baseline gap-2">
-                <span className="font-heading text-5xl font-bold text-foreground">£{proposal.price_per_lesson}</span>
-                <span className="text-muted-foreground">per lesson</span>
+                <span className="font-heading text-5xl font-bold text-foreground">£{weeklyTotal.toFixed(2)}</span>
+                <span className="text-muted-foreground">per week</span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
+                {hasMixedPricing
+                  ? 'Each session is priced individually (see the weekly schedule above).'
+                  : `£${rowPrice(proposal.lesson_times[0] ?? {})} per lesson.`}{' '}
                 Billed <span className="font-medium text-foreground">every 4 weeks in advance</span>. No sign-up fee.
               </p>
+
 
               {/* Contract term */}
               {(() => {

@@ -14,7 +14,7 @@ interface Proposal {
   subject: string;
   price_per_lesson: number;
   payment_cycle: string;
-  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
+  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
   created_at: string;
   daily_homework_opt_in: boolean;

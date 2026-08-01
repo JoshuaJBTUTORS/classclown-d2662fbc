@@ -21,7 +21,9 @@ const lessonTimeSchema = z.object({
   time: z.string().min(1, 'Time is required'),
   duration: z.number().min(15, 'Duration must be at least 15 minutes'),
   subject: z.string().min(1, 'Subject is required'),
+  price: z.number().min(0, 'Price must be positive'),
 });
+
 
 const proposalSchema = z.object({
   recipientName: z.string().min(1, 'Recipient name is required').max(100),
@@ -34,7 +36,7 @@ const proposalSchema = z.object({
     .or(z.literal('')),
   lessonType: z.string().min(1, 'Lesson type is required'),
   subject: z.string().min(1, 'Subject is required'),
-  pricePerLesson: z.number().min(0, 'Price must be positive'),
+  pricePerLesson: z.number().min(0).optional(),
   paymentCycle: z.string().min(1, 'Payment cycle is required'),
   contractTerm: z.enum(['month_to_month', '3_months', '12_months'], {
     required_error: 'Contract term is required',
@@ -62,14 +64,20 @@ export default function ProposalBuilder() {
         pricePerLesson?: number;
         paymentCycle?: string;
         contractTerm?: 'month_to_month' | '3_months' | '12_months';
-        lessonTimes?: Array<{ day: string; time: string; duration: number; subject: string }>;
+        lessonTimes?: Array<{ day: string; time: string; duration: number; subject: string; price?: number }>;
       }
     | undefined;
 
-  const prefilledTimes = prefill?.lessonTimes?.length ? prefill.lessonTimes : null;
+  const defaultPrice = prefill?.pricePerLesson ?? 45;
 
-  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>(
-    prefilledTimes ?? [{ day: '', time: '', duration: 60, subject: '' }]
+  type LessonTimeRow = { day: string; time: string; duration: number; subject: string; price: number };
+
+  const prefilledTimes: LessonTimeRow[] | null = prefill?.lessonTimes?.length
+    ? prefill.lessonTimes.map((lt) => ({ ...lt, price: lt.price ?? defaultPrice }))
+    : null;
+
+  const [lessonTimes, setLessonTimes] = useState<LessonTimeRow[]>(
+    prefilledTimes ?? [{ day: '', time: '', duration: 60, subject: '', price: defaultPrice }]
   );
 
   const form = useForm<ProposalFormData>({
@@ -80,7 +88,7 @@ export default function ProposalBuilder() {
       recipientPhone: prefill?.recipientPhone || searchParams.get('phone') || '',
       lessonType: prefill?.lessonType || '',
       subject: prefill?.subject || searchParams.get('subject') || '',
-      pricePerLesson: prefill?.pricePerLesson ?? 45,
+      pricePerLesson: defaultPrice,
       paymentCycle: prefill?.paymentCycle || '',
       contractTerm: prefill?.contractTerm || 'month_to_month',
       dailyHomeworkOptIn: false,
@@ -91,7 +99,7 @@ export default function ProposalBuilder() {
 
 
   const addLessonTime = () => {
-    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '' }];
+    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '', price: defaultPrice }];
     setLessonTimes(newLessonTimes);
     form.setValue('lessonTimes', newLessonTimes);
   };
@@ -112,15 +120,22 @@ export default function ProposalBuilder() {
   const onSubmit = async (data: ProposalFormData) => {
     setIsSubmitting(true);
     try {
+      const validTimes = lessonTimes.filter(lt => lt.day && lt.time && lt.subject);
+      // Legacy single-price column: keep the lowest row price so summaries stay sensible.
+      const headlinePrice = validTimes.length
+        ? Math.min(...validTimes.map((lt) => lt.price || 0))
+        : 0;
       const { data: response, error } = await supabase.functions.invoke('create-lesson-proposal', {
           body: {
             ...data,
             recipientPhone: data.recipientPhone || null,
             dailyHomeworkOptIn: data.dailyHomeworkOptIn,
             internalNotes: data.internalNotes?.trim() || null,
-            lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
+            pricePerLesson: headlinePrice,
+            lessonTimes: validTimes,
           },
       });
+
 
       if (error) throw error;
 
@@ -255,27 +270,7 @@ export default function ProposalBuilder() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="pricePerLesson"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price Per Lesson (£)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === '' ? 0 : parseFloat(value) || 0);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <FormField
                   control={form.control}
@@ -339,7 +334,7 @@ export default function ProposalBuilder() {
 
                 {lessonTimes.map((lessonTime, index) => (
                   <div key={index} className="flex gap-4 items-end">
-                    <div className="flex-1 grid grid-cols-4 gap-4">
+                    <div className="flex-1 grid grid-cols-5 gap-4">
                       <div>
                         <FormLabel>Day</FormLabel>
                         <Select
@@ -390,7 +385,21 @@ export default function ProposalBuilder() {
                           onChange={(e) => updateLessonTime(index, 'subject', e.target.value)}
                         />
                       </div>
+
+                      <div>
+                        <FormLabel>Price (£)</FormLabel>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={lessonTime.price}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            updateLessonTime(index, 'price', value === '' ? 0 : parseFloat(value) || 0);
+                          }}
+                        />
+                      </div>
                     </div>
+
 
                     {lessonTimes.length > 1 && (
                       <Button
