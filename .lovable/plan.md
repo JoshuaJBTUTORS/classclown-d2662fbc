@@ -1,39 +1,15 @@
 ## Goal
+Add voice input to Agent Cleo so users can speak, have it transcribed to text in the composer, then edit/send manually.
 
-When a client is onboarded (Step 3, "I have added the lessons"), find their contact in HubSpot by email or phone and set `hs_lead_status` to **Active Customer**.
-
-## Approach
-
-Extend the existing `hubspot-create-payment-ticket` edge function, which already runs at exactly that moment and already searches HubSpot for the contact by email. No new function or new frontend call needed.
-
-### Contact lookup (improved)
-Current behaviour: search by email only, create the contact if not found.
-
-New behaviour:
-1. Search by `email` (exact match).
-2. If nothing found and a phone number exists, search again by `phone` — and also by `mobilephone` — using a normalised number (strip spaces/dashes, try both `07...` and `+447...` forms) so UK-formatted numbers match.
-3. If still nothing found, create the contact as today.
-
-### Status update
-After the contact is resolved, PATCH the contact with:
-```
-hs_lead_status = "Active Customer"
-```
-This runs before the ticket creation and is independent of it: if the status update fails (for example because "Active Customer" is not a configured option on the property in this HubSpot portal), log the HubSpot status and body, show a warning toast, and still create the payment setup ticket. Onboarding is never blocked.
-
-The function response gains `contactId`, `leadStatusUpdated: true|false`, and `leadStatusError` so the UI can report accurately.
-
-### Onboarding UI
-In `src/pages/Onboarding.tsx`, after the ticket call returns, surface the outcome:
-- success: "Payment ticket created and HubSpot contact marked Active Customer"
-- partial: existing success toast plus a warning "Could not update HubSpot lead status — update manually"
-
-## Note on the property value
-
-`hs_lead_status` is a dropdown. "Active Customer" must exist as an option in your HubSpot portal, and HubSpot expects the option's *internal value*, which is often uppercase/underscored (e.g. `ACTIVE_CUSTOMER`). The function will read the property's option list once via the HubSpot properties API and match "Active Customer" case-insensitively by label to get the correct internal value, so it works regardless of how the option was named internally. If no matching option exists, it logs a clear error rather than silently failing.
+## Behaviour
+- A mic button sits next to the send button in the Agent Cleo composer.
+- Click mic → recording starts (button turns into a stop button with a pulsing state and a running timer, plus a cancel "✕").
+- Click stop → shows a spinner while transcribing.
+- Transcript is inserted into the existing textarea (appended if there's already text), textarea refocuses, cursor at end. Nothing is auto-sent — the user reviews and presses send.
+- Errors (no mic permission, unsupported browser, transcription failure) show a toast and reset to idle.
 
 ## Technical details
-
-- `supabase/functions/hubspot-create-payment-ticket/index.ts`: add `findContactByPhone`, `resolveLeadStatusValue` (properties API lookup, cached per invocation), and `setLeadStatus`; wire them into the existing flow; extend the JSON response.
-- `src/pages/Onboarding.tsx`: read the new response fields in `handleAddedLessons` and adjust toasts.
-- No database changes.
+- Reuse `src/utils/audioRecorder.ts` (`AudioRecorder`) — already used by `src/components/cleo/CleoInput.tsx`.
+- Reuse the existing `voice-to-text` edge function (`supabase/functions/voice-to-text/index.ts`, OpenAI Whisper) — no backend changes needed.
+- Changes are confined to `src/pages/AgentCleo.tsx`: local `recordingState` ('idle' | 'recording' | 'processing'), duration timer, recorder ref, cleanup on unmount, and the mic/stop/cancel buttons in the composer around line 825-838.
+- Mic button is disabled while a reply is streaming (`loading`), matching the send button.
