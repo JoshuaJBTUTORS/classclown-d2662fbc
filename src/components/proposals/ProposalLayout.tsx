@@ -372,6 +372,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                     <th className="px-5 py-3 font-semibold">Time</th>
                     <th className="px-5 py-3 font-semibold">Duration</th>
                     <th className="px-5 py-3 font-semibold">Subject</th>
+                    <th className="px-5 py-3 font-semibold text-right">Price</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -381,10 +382,20 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                       <td className="px-5 py-4">{t.time}</td>
                       <td className="px-5 py-4 text-muted-foreground">{t.duration} min</td>
                       <td className="px-5 py-4">{t.subject || proposal.subject}</td>
+                      <td className="px-5 py-4 text-right font-semibold">£{rowPrice(t)}</td>
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t border-border bg-muted/40">
+                    <td className="px-5 py-3 text-xs uppercase tracking-wider text-muted-foreground" colSpan={4}>
+                      Total per week
+                    </td>
+                    <td className="px-5 py-3 text-right font-semibold">£{weeklyTotal.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
               </table>
+
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               Lesson type: <span className="font-medium text-foreground">{proposal.lesson_type}</span>
