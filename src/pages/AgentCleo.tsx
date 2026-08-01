@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { AudioRecorder } from '@/utils/audioRecorder';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -393,6 +395,89 @@ const AgentCleo: React.FC = () => {
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 220) + 'px';
+  };
+
+  // ---- Voice input (speech -> text in the composer) ----
+  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'processing'>('idle');
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recorderRef = useRef<AudioRecorder | null>(null);
+  const durationIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+    recorderRef.current?.cancel();
+  }, []);
+
+  const clearDurationTimer = () => {
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+  };
+
+  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+  const startRecording = async () => {
+    if (!AudioRecorder.isSupported()) {
+      toast.error('Voice recording is not supported in your browser');
+      return;
+    }
+    try {
+      recorderRef.current = new AudioRecorder();
+      await recorderRef.current.start();
+      setRecordingState('recording');
+      setRecordingDuration(0);
+      durationIntervalRef.current = window.setInterval(() => {
+        if (recorderRef.current) setRecordingDuration(recorderRef.current.getRecordingDuration());
+      }, 1000);
+    } catch (e) {
+      console.error('Failed to start recording:', e);
+      toast.error(e instanceof Error ? e.message : 'Could not access your microphone');
+      recorderRef.current = null;
+      setRecordingState('idle');
+    }
+  };
+
+  const cancelRecording = () => {
+    clearDurationTimer();
+    recorderRef.current?.cancel();
+    recorderRef.current = null;
+    setRecordingState('idle');
+    setRecordingDuration(0);
+  };
+
+  const stopRecordingAndTranscribe = async () => {
+    if (!recorderRef.current) return;
+    try {
+      setRecordingState('processing');
+      clearDurationTimer();
+      const blob = await recorderRef.current.stop();
+      const base64Audio = await AudioRecorder.blobToBase64(blob);
+      const { data, error } = await supabase.functions.invoke('voice-to-text', {
+        body: { audio: base64Audio },
+      });
+      if (error) throw error;
+      const text: string = (data?.text || '').trim();
+      if (!text) {
+        toast.error('No speech detected. Please try again.');
+        return;
+      }
+      setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+        autoresize();
+      });
+    } catch (e) {
+      console.error('Transcription error:', e);
+      toast.error('Failed to transcribe audio. Please try again.');
+    } finally {
+      recorderRef.current = null;
+      setRecordingState('idle');
+      setRecordingDuration(0);
+    }
   };
 
   const handleSend = async () => {
@@ -824,21 +909,51 @@ const AgentCleo: React.FC = () => {
             <div className="relative flex items-end bg-[#2f2f2f] rounded-3xl border border-white/5 shadow-lg">
               <textarea
                 ref={textareaRef}
-                value={input}
+                value={recordingState === 'recording' ? `Recording… ${formatDuration(recordingDuration)}` : input}
                 onChange={(e) => { setInput(e.target.value); autoresize(); }}
                 onKeyDown={handleKeyDown}
                 rows={1}
-                placeholder="Message Agent Cleo"
-                className="flex-1 bg-transparent resize-none px-5 py-4 pr-14 outline-none placeholder:text-[#8e8ea0] max-h-[220px]"
+                readOnly={recordingState !== 'idle'}
+                placeholder={recordingState === 'processing' ? 'Transcribing…' : 'Message Agent Cleo'}
+                className="flex-1 bg-transparent resize-none px-5 py-4 pr-32 outline-none placeholder:text-[#8e8ea0] max-h-[220px]"
               />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || loading}
-                className="absolute right-2.5 bottom-2.5 w-9 h-9 rounded-full bg-white text-black flex items-center justify-center disabled:bg-white/20 disabled:text-white/40 transition-colors"
-                aria-label="Send"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
-              </button>
+              <div className="absolute right-2.5 bottom-2.5 flex items-center gap-2">
+                {recordingState === 'recording' && (
+                  <button
+                    onClick={cancelRecording}
+                    className="w-9 h-9 rounded-full border border-white/15 text-white/70 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    aria-label="Cancel recording"
+                    title="Cancel recording"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={recordingState === 'recording' ? stopRecordingAndTranscribe : startRecording}
+                  disabled={loading || recordingState === 'processing'}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-40 ${
+                    recordingState === 'recording'
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'border border-white/15 text-white/70 hover:bg-white/10'
+                  }`}
+                  aria-label={recordingState === 'recording' ? 'Stop recording' : 'Record voice message'}
+                  title={recordingState === 'recording' ? 'Stop and transcribe' : 'Record voice message'}
+                >
+                  {recordingState === 'processing'
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : recordingState === 'recording'
+                      ? <Square className="w-4 h-4" />
+                      : <Mic className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || loading || recordingState !== 'idle'}
+                  className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center disabled:bg-white/20 disabled:text-white/40 transition-colors"
+                  aria-label="Send"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <p className="text-center text-xs text-[#8e8ea0] mt-2">Agent Cleo has read-only access to the CRM database.</p>
           </div>
