@@ -17,26 +17,59 @@ interface RequestBody {
   lessonTimes?: Array<{ day?: string; time?: string; duration?: number }> | null;
 }
 
+const searchContactBy = async (
+  apiKey: string,
+  propertyName: string,
+  value: string,
+): Promise<string | null> => {
+  const res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      filterGroups: [{ filters: [{ propertyName, operator: 'EQ', value }] }],
+      properties: ['email'],
+      limit: 1,
+    }),
+  });
+  if (!res.ok) {
+    console.error(`HubSpot search by ${propertyName} failed:`, res.status, await res.text());
+    return null;
+  }
+  const data = await res.json();
+  return data.results?.length ? data.results[0].id : null;
+};
+
+const phoneVariants = (phone: string): string[] => {
+  const digits = phone.replace(/[^\d+]/g, '');
+  const variants = new Set<string>([phone.trim(), digits]);
+  const bare = digits.replace(/^\+/, '');
+  if (bare.startsWith('44')) {
+    variants.add(`+${bare}`);
+    variants.add(`0${bare.slice(2)}`);
+  } else if (bare.startsWith('0')) {
+    variants.add(`+44${bare.slice(1)}`);
+    variants.add(`44${bare.slice(1)}`);
+  }
+  return [...variants].filter(Boolean);
+};
+
 const findOrCreateContact = async (
   apiKey: string,
   email: string,
   parentName: string,
   phone?: string | null,
 ): Promise<string> => {
-  const searchRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      filterGroups: [{ filters: [{ propertyName: 'email', operator: 'EQ', value: email }] }],
-      properties: ['email'],
-      limit: 1,
-    }),
-  });
-  if (!searchRes.ok) {
-    throw new Error(`HubSpot search failed: ${searchRes.status} ${await searchRes.text()}`);
+  const byEmail = await searchContactBy(apiKey, 'email', email);
+  if (byEmail) return byEmail;
+
+  if (phone) {
+    for (const variant of phoneVariants(phone)) {
+      for (const prop of ['phone', 'mobilephone']) {
+        const found = await searchContactBy(apiKey, prop, variant);
+        if (found) return found;
+      }
+    }
   }
-  const searchData = await searchRes.json();
-  if (searchData.results?.length) return searchData.results[0].id;
 
   const parts = (parentName || '').trim().split(/\s+/);
   const firstname = parts[0] || '';
@@ -55,6 +88,54 @@ const findOrCreateContact = async (
   const created = await createRes.json();
   return created.id;
 };
+
+const ACTIVE_CUSTOMER_LABEL = 'active customer';
+
+const resolveLeadStatusValue = async (apiKey: string): Promise<string | null> => {
+  const res = await fetch('https://api.hubapi.com/crm/v3/properties/contacts/hs_lead_status', {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+  });
+  if (!res.ok) {
+    console.error('HubSpot hs_lead_status property fetch failed:', res.status, await res.text());
+    return null;
+  }
+  const prop = await res.json();
+  const options: Array<{ label?: string; value?: string }> = prop.options || [];
+  const match = options.find(
+    (o) =>
+      (o.label || '').trim().toLowerCase() === ACTIVE_CUSTOMER_LABEL ||
+      (o.value || '').trim().toLowerCase().replace(/[_-]/g, ' ') === ACTIVE_CUSTOMER_LABEL,
+  );
+  if (!match?.value) {
+    console.error(
+      'No "Active Customer" option on hs_lead_status. Available:',
+      options.map((o) => `${o.label}=${o.value}`).join(', '),
+    );
+    return null;
+  }
+  return match.value;
+};
+
+const setLeadStatus = async (
+  apiKey: string,
+  contactId: string,
+): Promise<{ updated: boolean; error?: string }> => {
+  const value = await resolveLeadStatusValue(apiKey);
+  if (!value) return { updated: false, error: 'No "Active Customer" option found on hs_lead_status' };
+
+  const res = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactId}`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ properties: { hs_lead_status: value } }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('HubSpot lead status update failed:', res.status, body);
+    return { updated: false, error: `[${res.status}]: ${body}` };
+  }
+  return { updated: true };
+};
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -82,6 +163,8 @@ serve(async (req) => {
     }
 
     const contactId = await findOrCreateContact(apiKey, parentEmail, parentName, parentPhone);
+    const leadStatus = await setLeadStatus(apiKey, contactId);
+
 
     const sessionsLine = sessionsPerWeek
       ? `${sessionsPerWeek}`
@@ -138,7 +221,14 @@ serve(async (req) => {
     }
 
     const ticket = await ticketRes.json();
-    return new Response(JSON.stringify({ success: true, ticketId: ticket.id, contactId }), {
+    return new Response(JSON.stringify({
+      success: true,
+      ticketId: ticket.id,
+      contactId,
+      leadStatusUpdated: leadStatus.updated,
+      leadStatusError: leadStatus.error ?? null,
+    }), {
+
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
