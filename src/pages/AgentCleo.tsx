@@ -397,6 +397,89 @@ const AgentCleo: React.FC = () => {
     el.style.height = Math.min(el.scrollHeight, 220) + 'px';
   };
 
+  // ---- Voice input (speech -> text in the composer) ----
+  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'processing'>('idle');
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recorderRef = useRef<AudioRecorder | null>(null);
+  const durationIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+    recorderRef.current?.cancel();
+  }, []);
+
+  const clearDurationTimer = () => {
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+  };
+
+  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+  const startRecording = async () => {
+    if (!AudioRecorder.isSupported()) {
+      toast.error('Voice recording is not supported in your browser');
+      return;
+    }
+    try {
+      recorderRef.current = new AudioRecorder();
+      await recorderRef.current.start();
+      setRecordingState('recording');
+      setRecordingDuration(0);
+      durationIntervalRef.current = window.setInterval(() => {
+        if (recorderRef.current) setRecordingDuration(recorderRef.current.getRecordingDuration());
+      }, 1000);
+    } catch (e) {
+      console.error('Failed to start recording:', e);
+      toast.error(e instanceof Error ? e.message : 'Could not access your microphone');
+      recorderRef.current = null;
+      setRecordingState('idle');
+    }
+  };
+
+  const cancelRecording = () => {
+    clearDurationTimer();
+    recorderRef.current?.cancel();
+    recorderRef.current = null;
+    setRecordingState('idle');
+    setRecordingDuration(0);
+  };
+
+  const stopRecordingAndTranscribe = async () => {
+    if (!recorderRef.current) return;
+    try {
+      setRecordingState('processing');
+      clearDurationTimer();
+      const blob = await recorderRef.current.stop();
+      const base64Audio = await AudioRecorder.blobToBase64(blob);
+      const { data, error } = await supabase.functions.invoke('voice-to-text', {
+        body: { audio: base64Audio },
+      });
+      if (error) throw error;
+      const text: string = (data?.text || '').trim();
+      if (!text) {
+        toast.error('No speech detected. Please try again.');
+        return;
+      }
+      setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+        autoresize();
+      });
+    } catch (e) {
+      console.error('Transcription error:', e);
+      toast.error('Failed to transcribe audio. Please try again.');
+    } finally {
+      recorderRef.current = null;
+      setRecordingState('idle');
+      setRecordingDuration(0);
+    }
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || loading) return;
