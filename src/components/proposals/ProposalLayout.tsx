@@ -375,7 +375,24 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           {/* The Plan */}
           <Section id="plan" eyebrow="The Plan" title="Your weekly schedule">
             <div className="overflow-hidden rounded-2xl border border-border">
-              <table className="w-full text-left text-sm">
+              {/* Mobile: stacked cards */}
+              <div className="md:hidden">
+                {proposal.lesson_times.map((t, i) => (
+                  <div key={i} className={`px-4 py-4 ${i > 0 ? 'border-t border-border' : ''}`}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-semibold text-foreground">{t.day}</span>
+                      <span className="font-semibold text-foreground">£{rowPrice(t)}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t.time} · {t.duration} min
+                    </p>
+                    <p className="mt-1 text-sm text-foreground">{t.subject || proposal.subject}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: table */}
+              <table className="hidden w-full text-left text-sm md:table">
                 <thead className="bg-muted/60 text-[11px] uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-5 py-3 font-semibold">Day</th>
@@ -397,6 +414,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   ))}
                 </tbody>
               </table>
+
 
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
