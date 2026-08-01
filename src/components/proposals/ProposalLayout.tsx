@@ -134,20 +134,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-3 px-4 md:px-6">
           <div className="flex min-w-0 items-center gap-2 md:gap-3">
             <span className="font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">Class<span className="text-primary">Beyond</span></span>
-            {!signed && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold tabular-nums md:text-xs ${
-                  remainingMs <= 0
-                    ? 'border-destructive/40 bg-destructive/10 text-destructive'
-                    : 'border-primary/30 bg-primary/5 text-primary'
-                }`}
-                title="Time remaining to confirm this proposal"
-              >
-                <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                {countdownLabel}
-              </span>
-            )}
           </div>
+
 
           {/* Desktop actions */}
           <div className="hidden items-center gap-2 md:flex">
@@ -285,6 +273,25 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <br />
                 <span className="text-primary">{proposal.recipient_name}</span>
               </h1>
+              {!signed && (
+                <div
+                  className={`mt-6 inline-flex items-center gap-2 rounded-2xl border px-4 py-3 md:gap-3 md:px-6 md:py-4 ${
+                    remainingMs <= 0
+                      ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                      : 'border-primary/30 bg-primary/5 text-primary'
+                  }`}
+                  title="Time remaining to confirm this proposal"
+                >
+                  <Clock className="h-6 w-6 md:h-8 md:w-8" />
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-heading text-2xl font-bold tabular-nums md:text-4xl">{countdownLabel}</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-widest opacity-80 md:text-xs">
+                      {remainingMs <= 0 ? 'Offer expired' : 'Left to confirm this offer'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <p className="mt-6 max-w-xl text-lg text-muted-foreground">
                 {(() => {
                   switch (proposal.lesson_type) {
