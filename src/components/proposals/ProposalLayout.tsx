@@ -99,6 +99,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
   const totalMinutesPerWeek = proposal.lesson_times.reduce((sum, t) => sum + (t.duration || 0), 0);
   const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
+  const rowPrice = (t: { price?: number }) =>
+    typeof t.price === 'number' ? t.price : proposal.price_per_lesson;
+  const weeklyTotal = proposal.lesson_times.reduce((sum, t) => sum + rowPrice(t), 0);
+  const hasMixedPricing = new Set(proposal.lesson_times.map(rowPrice)).size > 1;
+
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const shortRef = `CB-${proposal.id.slice(0, 8).toUpperCase()}`;
   const signedDateStr = signedAt
