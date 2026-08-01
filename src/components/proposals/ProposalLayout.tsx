@@ -286,8 +286,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   <div className="flex flex-col leading-tight">
                     <span className="font-heading text-2xl font-bold tabular-nums md:text-4xl">{countdownLabel}</span>
                     <span className="text-[11px] font-semibold uppercase tracking-widest opacity-80 md:text-xs">
-                      {remainingMs <= 0 ? 'Offer expired' : 'Left to confirm this offer'}
+                      {remainingMs <= 0
+                        ? 'Discounted rate expired'
+                        : 'Left to claim this discounted rate'}
                     </span>
+
                   </div>
                 </div>
               )}
