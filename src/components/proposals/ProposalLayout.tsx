@@ -37,7 +37,7 @@ interface Proposal {
   price_per_lesson: number;
   payment_cycle: string;
   contract_term?: 'month_to_month' | '3_months' | '12_months' | null;
-  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string }>;
+  lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
   created_at: string;
   daily_homework_opt_in: boolean;
