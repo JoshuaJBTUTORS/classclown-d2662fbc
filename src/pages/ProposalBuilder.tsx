@@ -21,7 +21,9 @@ const lessonTimeSchema = z.object({
   time: z.string().min(1, 'Time is required'),
   duration: z.number().min(15, 'Duration must be at least 15 minutes'),
   subject: z.string().min(1, 'Subject is required'),
+  price: z.number().min(0, 'Price must be positive'),
 });
+
 
 const proposalSchema = z.object({
   recipientName: z.string().min(1, 'Recipient name is required').max(100),
