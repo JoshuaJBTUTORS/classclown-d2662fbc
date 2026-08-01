@@ -270,27 +270,7 @@ export default function ProposalBuilder() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="pricePerLesson"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price Per Lesson (£)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === '' ? 0 : parseFloat(value) || 0);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <FormField
                   control={form.control}
