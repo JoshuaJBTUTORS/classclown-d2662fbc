@@ -64,14 +64,20 @@ export default function ProposalBuilder() {
         pricePerLesson?: number;
         paymentCycle?: string;
         contractTerm?: 'month_to_month' | '3_months' | '12_months';
-        lessonTimes?: Array<{ day: string; time: string; duration: number; subject: string }>;
+        lessonTimes?: Array<{ day: string; time: string; duration: number; subject: string; price?: number }>;
       }
     | undefined;
 
-  const prefilledTimes = prefill?.lessonTimes?.length ? prefill.lessonTimes : null;
+  const defaultPrice = prefill?.pricePerLesson ?? 45;
 
-  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>(
-    prefilledTimes ?? [{ day: '', time: '', duration: 60, subject: '' }]
+  type LessonTimeRow = { day: string; time: string; duration: number; subject: string; price: number };
+
+  const prefilledTimes: LessonTimeRow[] | null = prefill?.lessonTimes?.length
+    ? prefill.lessonTimes.map((lt) => ({ ...lt, price: lt.price ?? defaultPrice }))
+    : null;
+
+  const [lessonTimes, setLessonTimes] = useState<LessonTimeRow[]>(
+    prefilledTimes ?? [{ day: '', time: '', duration: 60, subject: '', price: defaultPrice }]
   );
 
   const form = useForm<ProposalFormData>({
@@ -82,7 +88,7 @@ export default function ProposalBuilder() {
       recipientPhone: prefill?.recipientPhone || searchParams.get('phone') || '',
       lessonType: prefill?.lessonType || '',
       subject: prefill?.subject || searchParams.get('subject') || '',
-      pricePerLesson: prefill?.pricePerLesson ?? 45,
+      pricePerLesson: defaultPrice,
       paymentCycle: prefill?.paymentCycle || '',
       contractTerm: prefill?.contractTerm || 'month_to_month',
       dailyHomeworkOptIn: false,
@@ -93,7 +99,7 @@ export default function ProposalBuilder() {
 
 
   const addLessonTime = () => {
-    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '' }];
+    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '', price: defaultPrice }];
     setLessonTimes(newLessonTimes);
     form.setValue('lessonTimes', newLessonTimes);
   };
@@ -114,15 +120,22 @@ export default function ProposalBuilder() {
   const onSubmit = async (data: ProposalFormData) => {
     setIsSubmitting(true);
     try {
+      const validTimes = lessonTimes.filter(lt => lt.day && lt.time && lt.subject);
+      // Legacy single-price column: keep the lowest row price so summaries stay sensible.
+      const headlinePrice = validTimes.length
+        ? Math.min(...validTimes.map((lt) => lt.price || 0))
+        : 0;
       const { data: response, error } = await supabase.functions.invoke('create-lesson-proposal', {
           body: {
             ...data,
             recipientPhone: data.recipientPhone || null,
             dailyHomeworkOptIn: data.dailyHomeworkOptIn,
             internalNotes: data.internalNotes?.trim() || null,
-            lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
+            pricePerLesson: headlinePrice,
+            lessonTimes: validTimes,
           },
       });
+
 
       if (error) throw error;
 
