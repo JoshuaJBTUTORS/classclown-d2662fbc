@@ -134,20 +134,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-3 px-4 md:px-6">
           <div className="flex min-w-0 items-center gap-2 md:gap-3">
             <span className="font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">Class<span className="text-primary">Beyond</span></span>
-            {!signed && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold tabular-nums md:text-xs ${
-                  remainingMs <= 0
-                    ? 'border-destructive/40 bg-destructive/10 text-destructive'
-                    : 'border-primary/30 bg-primary/5 text-primary'
-                }`}
-                title="Time remaining to confirm this proposal"
-              >
-                <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                {countdownLabel}
-              </span>
-            )}
           </div>
+
 
           {/* Desktop actions */}
           <div className="hidden items-center gap-2 md:flex">
