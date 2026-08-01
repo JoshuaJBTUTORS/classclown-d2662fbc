@@ -101,7 +101,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   const uniqueSubjects = Array.from(new Set(proposal.lesson_times.map((t) => t.subject || proposal.subject)));
   const rowPrice = (t: { price?: number }) =>
     typeof t.price === 'number' ? t.price : proposal.price_per_lesson;
-  const weeklyTotal = proposal.lesson_times.reduce((sum, t) => sum + rowPrice(t), 0);
+  
   const hasMixedPricing = new Set(proposal.lesson_times.map(rowPrice)).size > 1;
 
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -386,14 +386,6 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                     </tr>
                   ))}
                 </tbody>
-                <tfoot>
-                  <tr className="border-t border-border bg-muted/40">
-                    <td className="px-5 py-3 text-xs uppercase tracking-wider text-muted-foreground" colSpan={4}>
-                      Total per week
-                    </td>
-                    <td className="px-5 py-3 text-right font-semibold">£{weeklyTotal.toFixed(2)}</td>
-                  </tr>
-                </tfoot>
               </table>
 
             </div>
@@ -442,16 +434,23 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           {/* Pricing */}
           <Section id="pricing" eyebrow="Pricing" title="Simple, transparent pricing">
             <div className="rounded-2xl border border-border bg-card p-8">
-              <div className="flex items-baseline gap-2">
-                <span className="font-heading text-5xl font-bold text-foreground">£{weeklyTotal.toFixed(2)}</span>
-                <span className="text-muted-foreground">per week</span>
-              </div>
+              {hasMixedPricing ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="font-heading text-3xl font-bold text-foreground">Priced per lesson</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="font-heading text-5xl font-bold text-foreground">£{rowPrice(proposal.lesson_times[0] ?? {})}</span>
+                  <span className="text-muted-foreground">per lesson</span>
+                </div>
+              )}
               <p className="mt-2 text-sm text-muted-foreground">
                 {hasMixedPricing
                   ? 'Each session is priced individually (see the weekly schedule above).'
-                  : `£${rowPrice(proposal.lesson_times[0] ?? {})} per lesson.`}{' '}
+                  : `Each session is charged at £${rowPrice(proposal.lesson_times[0] ?? {})}.`}{' '}
                 Billed <span className="font-medium text-foreground">every 4 weeks in advance</span>. No sign-up fee.
               </p>
+
 
 
               {/* Contract term */}
