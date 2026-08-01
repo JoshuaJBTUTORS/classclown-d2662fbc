@@ -342,8 +342,11 @@ const LessonEditProposalCard: React.FC<{
 
 
 
-const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo`;
-const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
+const FUNCTIONS_BASE_URL = (
+  import.meta.env.VITE_SUPABASE_URL || 'https://sjxbxkpegcnnfjbsxazo.supabase.co'
+).replace(/\/+$/, '');
+const FUNCTION_URL = `${FUNCTIONS_BASE_URL}/functions/v1/agent-cleo`;
+const CREATE_LESSON_URL = `${FUNCTIONS_BASE_URL}/functions/v1/agent-cleo-create-lesson`;
 
 const AgentCleo: React.FC = () => {
   const { threadId } = useParams<{ threadId?: string }>();
@@ -437,6 +440,13 @@ const AgentCleo: React.FC = () => {
       if (!resp.ok || !resp.body) {
         const errText = await resp.text();
         throw new Error(errText || `HTTP ${resp.status}`);
+      }
+
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('text/event-stream')) {
+        throw new Error(
+          `Unexpected response from Agent Cleo (${contentType || 'unknown type'}). The function endpoint could not be reached.`,
+        );
       }
 
       const reader = resp.body.getReader();
