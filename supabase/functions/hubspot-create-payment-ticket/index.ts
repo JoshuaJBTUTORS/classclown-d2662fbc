@@ -163,6 +163,8 @@ serve(async (req) => {
     }
 
     const contactId = await findOrCreateContact(apiKey, parentEmail, parentName, parentPhone);
+    const leadStatus = await setLeadStatus(apiKey, contactId);
+
 
     const sessionsLine = sessionsPerWeek
       ? `${sessionsPerWeek}`
@@ -219,7 +221,14 @@ serve(async (req) => {
     }
 
     const ticket = await ticketRes.json();
-    return new Response(JSON.stringify({ success: true, ticketId: ticket.id, contactId }), {
+    return new Response(JSON.stringify({
+      success: true,
+      ticketId: ticket.id,
+      contactId,
+      leadStatusUpdated: leadStatus.updated,
+      leadStatusError: leadStatus.error ?? null,
+    }), {
+
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
