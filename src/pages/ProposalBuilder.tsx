@@ -354,7 +354,7 @@ export default function ProposalBuilder() {
 
                 {lessonTimes.map((lessonTime, index) => (
                   <div key={index} className="flex gap-4 items-end">
-                    <div className="flex-1 grid grid-cols-4 gap-4">
+                    <div className="flex-1 grid grid-cols-5 gap-4">
                       <div>
                         <FormLabel>Day</FormLabel>
                         <Select
