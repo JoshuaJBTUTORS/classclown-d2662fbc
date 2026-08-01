@@ -442,6 +442,13 @@ const AgentCleo: React.FC = () => {
         throw new Error(errText || `HTTP ${resp.status}`);
       }
 
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('text/event-stream')) {
+        throw new Error(
+          `Unexpected response from Agent Cleo (${contentType || 'unknown type'}). The function endpoint could not be reached.`,
+        );
+      }
+
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
