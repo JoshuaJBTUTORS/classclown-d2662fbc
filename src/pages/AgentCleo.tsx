@@ -342,8 +342,11 @@ const LessonEditProposalCard: React.FC<{
 
 
 
-const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo`;
-const CREATE_LESSON_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-cleo-create-lesson`;
+const FUNCTIONS_BASE_URL = (
+  import.meta.env.VITE_SUPABASE_URL || 'https://sjxbxkpegcnnfjbsxazo.supabase.co'
+).replace(/\/+$/, '');
+const FUNCTION_URL = `${FUNCTIONS_BASE_URL}/functions/v1/agent-cleo`;
+const CREATE_LESSON_URL = `${FUNCTIONS_BASE_URL}/functions/v1/agent-cleo-create-lesson`;
 
 const AgentCleo: React.FC = () => {
   const { threadId } = useParams<{ threadId?: string }>();
