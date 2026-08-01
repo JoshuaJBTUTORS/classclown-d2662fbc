@@ -142,10 +142,16 @@ const Onboarding: React.FC = () => {
       });
       if (error) throw error;
       if ((data as any)?.ticketId) {
-        toast.success('Onboarding complete — payment setup ticket created in HubSpot');
+        if ((data as any)?.leadStatusUpdated) {
+          toast.success('Onboarding complete — payment ticket created and HubSpot contact marked Active Customer');
+        } else {
+          toast.success('Onboarding complete — payment setup ticket created in HubSpot');
+          toast.warning('Could not update HubSpot lead status — please set Active Customer manually');
+        }
       } else {
         throw new Error((data as any)?.error || 'Unknown response from HubSpot');
       }
+
       await welcomeEmailPromise;
     } catch (e: any) {
       console.error('HubSpot ticket push failed:', e);
