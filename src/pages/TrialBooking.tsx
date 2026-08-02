@@ -102,9 +102,6 @@ const TrialBookingPage: React.FC = () => {
         if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';else {
           const phoneCheck = validatePhone(formData.phone, splitPhone(formData.phone).dial);
           if (!phoneCheck.valid) newErrors.phone = phoneCheck.error!;
-        }else {
-          const phoneCheck = validatePhone(formData.phone, splitPhone(formData.phone).dial);
-          if (!phoneCheck.valid) newErrors.phone = phoneCheck.error!;
         }
         break;
     }
