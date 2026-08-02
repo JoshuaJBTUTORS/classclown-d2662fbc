@@ -29,6 +29,9 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
   selectedDate,
   selectedTime
 }) => {
+  const { dial, national } = splitPhone(formData.phone);
+  const country = getCountryByDial(dial);
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
