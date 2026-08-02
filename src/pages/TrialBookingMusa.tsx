@@ -1,3 +1,4 @@
+import { validatePhone, splitPhone } from '@/utils/phone';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -134,7 +135,13 @@ const TrialBookingMusaPage: React.FC = () => {
         if (!formData.parentName.trim()) newErrors.parentName = 'Parent name is required';
         if (!formData.childName.trim()) newErrors.childName = 'Child name is required';
         if (!formData.email.trim()) newErrors.email = 'Email is required';else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
-        if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+        if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';else {
+          const phoneCheck = validatePhone(formData.phone, splitPhone(formData.phone).dial);
+          if (!phoneCheck.valid) newErrors.phone = phoneCheck.error!;
+        }else {
+          const phoneCheck = validatePhone(formData.phone, splitPhone(formData.phone).dial);
+          if (!phoneCheck.valid) newErrors.phone = phoneCheck.error!;
+        }
         break;
     }
     setErrors(newErrors);

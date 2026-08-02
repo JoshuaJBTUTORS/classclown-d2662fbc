@@ -3,7 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Mail, Phone, BookOpen, Calendar, Clock } from 'lucide-react';
+import { COUNTRY_DIAL_CODES, getCountryByDial, normalisePhone, splitPhone } from '@/utils/phone';
 
 interface ContactInfoStepProps {
   formData: {
@@ -27,6 +29,9 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
   selectedDate,
   selectedTime
 }) => {
+  const { dial, national } = splitPhone(formData.phone);
+  const country = getCountryByDial(dial);
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -135,17 +140,38 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
           
           <div>
             <Label htmlFor="phone">Phone Number *</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                type="tel"
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => onChange('phone', e.target.value)}
-                className={`pl-10 ${errors.phone ? 'border-red-500' : ''}`}
-                placeholder="Enter phone number"
-              />
+            <div className="flex gap-2">
+              <Select
+                value={dial}
+                onValueChange={(newDial) => onChange('phone', normalisePhone(national, newDial))}
+              >
+                <SelectTrigger className="w-[130px] shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-64 bg-background z-50">
+                  {COUNTRY_DIAL_CODES.map((c) => (
+                    <SelectItem key={c.code} value={c.dial}>
+                      {c.dial} {c.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative flex-1">
+                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  id="phone"
+                  inputMode="tel"
+                  value={national}
+                  onChange={(e) => onChange('phone', normalisePhone(e.target.value, dial))}
+                  className={`pl-10 ${errors.phone ? 'border-red-500' : ''}`}
+                  placeholder={country.example}
+                />
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Saved as {formData.phone || `${dial}...`}
+            </p>
             {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
           </div>
 
