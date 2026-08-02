@@ -3,7 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Mail, Phone, BookOpen, Calendar, Clock } from 'lucide-react';
+import { COUNTRY_DIAL_CODES, getCountryByDial, normalisePhone, splitPhone } from '@/utils/phone';
 
 interface ContactInfoStepProps {
   formData: {
