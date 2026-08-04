@@ -41,6 +41,7 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
         message: data.message,
         booking_source: data.booking_source || 'general',
         is_unique_booking: data.is_unique_booking ?? true,
+        referral_code: data.referral_code || null,
         status: 'pending'
       })
       .select('id')
