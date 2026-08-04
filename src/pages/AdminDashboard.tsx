@@ -222,6 +222,22 @@ const AdminDashboard = () => {
 
         {/* Stripe Metrics */}
         <StripeMetricsCard />
+
+        {/* Revenue Expansion */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Revenue Expansion</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">
+              Net revenue retention and per-customer spend growth from Stripe.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/revenue-expansion')}>
+              View revenue expansion
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
