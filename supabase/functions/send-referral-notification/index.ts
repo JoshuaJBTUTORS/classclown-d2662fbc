@@ -14,6 +14,10 @@ interface ReferralRequest {
   friendName: string;
   friendEmail: string;
   friendPhone: string;
+  childName?: string;
+  notes?: string;
+  referralCode?: string;
+  referralId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -25,43 +29,51 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { 
-      referrerName, 
-      referrerEmail, 
-      friendName, 
-      friendEmail, 
-      friendPhone 
+    const {
+      referrerName,
+      referrerEmail,
+      friendName,
+      friendEmail,
+      friendPhone,
+      childName,
+      notes,
+      referralCode,
+      referralId,
     }: ReferralRequest = await req.json();
 
     console.log("Processing referral:", { referrerName, referrerEmail, friendName, friendEmail });
 
-    const emailSubject = `New Referral from ${referrerName} - £100 Referral Program`;
-    
+    const emailSubject = `New referral from ${referrerName} (Refer a Friend, £50)`;
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-          New Friend Referral - £100 Program
+          New friend referral - £50 give, £50 get
         </h2>
-        
+
         <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #007bff; margin-top: 0;">Referrer Information:</h3>
+          <h3 style="color: #007bff; margin-top: 0;">Referrer</h3>
           <p><strong>Name:</strong> ${referrerName}</p>
           <p><strong>Email:</strong> ${referrerEmail}</p>
+          ${referralCode ? `<p><strong>Referral code:</strong> ${referralCode}</p>` : ''}
+          ${referralId ? `<p><strong>Referral ID:</strong> ${referralId}</p>` : ''}
         </div>
 
         <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #28a745; margin-top: 0;">Referred Friend Information:</h3>
+          <h3 style="color: #28a745; margin-top: 0;">Referred friend</h3>
           <p><strong>Name:</strong> ${friendName}</p>
-          <p><strong>Email:</strong> ${friendEmail}</p>
-          <p><strong>Phone:</strong> ${friendPhone}</p>
+          <p><strong>Email:</strong> ${friendEmail || 'Not provided'}</p>
+          <p><strong>Phone:</strong> ${friendPhone || 'Not provided'}</p>
+          ${childName ? `<p><strong>Child:</strong> ${childName}</p>` : ''}
+          ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
         </div>
 
         <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-          <p style="margin: 0;"><strong>Action Required:</strong> Please follow up with ${friendName} about our tutoring services. Remember to track this referral for the £100 reward program.</p>
+          <p style="margin: 0;"><strong>Action required:</strong> Please follow up with ${friendName} to arrange a free trial lesson. The friend receives £50 off when they join and ${referrerName} receives £50.</p>
         </div>
 
         <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        
+
         <p style="color: #666; font-size: 14px;">
           <strong>Submitted on:</strong> ${new Date().toLocaleString('en-GB', { 
             timeZone: 'Europe/London',
@@ -74,6 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
         </p>
       </div>
     `;
+
 
     // Send email to both recipients
     const recipients = ['joshua@classbeyondacademy.io', 'britney@classbeyondacademy.io'];
