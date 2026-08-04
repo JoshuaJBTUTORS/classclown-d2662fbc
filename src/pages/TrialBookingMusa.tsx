@@ -224,9 +224,13 @@ const TrialBookingMusaPage: React.FC = () => {
   };
   return <div className="container mx-auto py-10 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-2">Book a Trial Lesson (MUSA)</h1>
+        <h1 className="text-3xl font-bold text-center mb-2">
+          {referrerName ? `${referrerName} has invited you to book a trial with Class Beyond Academy` : 'Book a Trial Lesson (MUSA)'}
+        </h1>
         <p className="text-muted-foreground text-center mb-8">
-          Submit a request for a free 45-minute trial lesson - Musa Referral Link
+          {referrerName
+            ? 'Submit a request for a free 45-minute trial lesson - and you both get £50 when the trial goes ahead'
+            : 'Submit a request for a free 45-minute trial lesson - Musa Referral Link'}
         </p>
 
         <StepIndicator currentStep={currentStep} totalSteps={totalSteps} stepLabels={stepLabels} />

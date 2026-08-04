@@ -172,8 +172,13 @@ const TrialBookingPage: React.FC = () => {
   };
   return <div className="container mx-auto py-10 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-2">Book a Trial Lesson</h1>
-        <p className="text-gray-600 text-center mb-8">Submit a request for a free 45-minute trial lesson with one of our qualified tutors</p>
+        <h1 className="text-3xl font-bold text-center mb-2">
+          {referrerName ? `${referrerName} has invited you to book a trial with Class Beyond Academy` : 'Book a Trial Lesson'}
+        </h1>
+        <p className="text-gray-600 text-center mb-8">
+          Submit a request for a free 45-minute trial lesson with one of our qualified tutors
+          {referrerName ? ' - and you both get £50 when the trial goes ahead' : ''}
+        </p>
 
         <StepIndicator currentStep={currentStep} totalSteps={totalSteps} stepLabels={stepLabels} />
 
