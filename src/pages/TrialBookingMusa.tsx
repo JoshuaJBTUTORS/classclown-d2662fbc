@@ -171,7 +171,8 @@ const TrialBookingMusaPage: React.FC = () => {
         subject_id: formData.subject?.id || '',
         message: `Musa trial lesson request for ${formData.childName}`,
         booking_source: 'musa',
-        is_unique_booking: uniquenessCheck.isUnique
+        is_unique_booking: uniquenessCheck.isUnique,
+        referral_code: new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase() || undefined
       });
       if (!trialBookingResult.success) {
         throw new Error(trialBookingResult.error || 'Failed to submit trial booking request.');
