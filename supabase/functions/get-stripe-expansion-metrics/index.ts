@@ -95,7 +95,10 @@ Deno.serve(async (req) => {
     const meta = new Map<string, { email: string | null; name: string | null; account: string }>();
 
     for (const r of rows) {
-      const key = account === 'both' ? `${r.account}:${r.stripe_customer_id}` : r.stripe_customer_id;
+      // Key on the Stripe customer id only. The same customer id can appear under
+      // both account labels when they point at the same Stripe account, and
+      // counting it twice would double every figure on the page.
+      const key = r.stripe_customer_id;
       if (!meta.has(key)) {
         meta.set(key, { email: r.customer_email, name: r.customer_name, account: r.account });
       } else if (r.customer_email || r.customer_name) {
@@ -106,7 +109,8 @@ Deno.serve(async (req) => {
         m = new Map();
         byMonth.set(r.month, m);
       }
-      m.set(key, (m.get(key) || 0) + Number(r.amount));
+      // Take the larger of the duplicated rows rather than summing them.
+      m.set(key, Math.max(m.get(key) || 0, Number(r.amount)));
     }
 
     // Build a continuous month list
