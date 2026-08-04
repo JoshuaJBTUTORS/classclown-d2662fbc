@@ -1,44 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Trash2, Mail } from 'lucide-react';
-
-const lessonTimeSchema = z.object({
-  day: z.string().min(1, 'Day is required'),
-  time: z.string().min(1, 'Time is required'),
-  duration: z.number().min(15, 'Duration must be at least 15 minutes'),
-  subject: z.string().min(1, 'Subject is required'),
-});
-
-const proposalSchema = z.object({
-  recipientName: z.string().min(1, 'Recipient name is required').max(100),
-  recipientEmail: z.string().email('Invalid email address').max(255),
-  recipientPhone: z.string()
-    .min(10, 'Phone number must be at least 10 digits')
-    .max(20, 'Phone number must be less than 20 characters')
-    .regex(/^[\d\s\+\-\(\)]+$/, 'Invalid phone number format')
-    .optional()
-    .or(z.literal('')),
-  lessonType: z.string().min(1, 'Lesson type is required'),
-  subject: z.string().min(1, 'Subject is required'),
-  pricePerLesson: z.number().min(0, 'Price must be positive'),
-  paymentCycle: z.string().min(1, 'Payment cycle is required'),
-  contractTerm: z.enum(['month_to_month', '3_months', '12_months'], {
-    required_error: 'Contract term is required',
-  }),
-  lessonTimes: z.array(lessonTimeSchema).min(1, 'At least one lesson time is required'),
-});
-
-type ProposalFormData = z.infer<typeof proposalSchema>;
+import { Loader2, Mail } from 'lucide-react';
+import ProposalForm, {
+  DEFAULT_LESSON_PRICE,
+  LessonTimeRow,
+  ProposalFormData,
+  emptyLessonTime,
+  headlinePriceOf,
+} from '@/components/proposals/ProposalForm';
 
 export default function EditProposal() {
   const navigate = useNavigate();
@@ -46,36 +18,16 @@ export default function EditProposal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [lessonTimes, setLessonTimes] = useState<Array<{ day: string; time: string; duration: number; subject: string }>>([
-    { day: '', time: '', duration: 60, subject: '' },
-  ]);
-
-  const form = useForm<ProposalFormData>({
-    resolver: zodResolver(proposalSchema),
-    defaultValues: {
-      recipientName: '',
-      recipientEmail: '',
-      recipientPhone: '',
-      lessonType: '',
-      subject: '',
-      pricePerLesson: 45,
-      paymentCycle: '',
-      contractTerm: 'month_to_month',
-      lessonTimes: [],
-    },
-  });
+  const [defaultValues, setDefaultValues] = useState<ProposalFormData | null>(null);
 
   useEffect(() => {
     loadProposal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalId]);
 
   const loadProposal = async () => {
     if (!proposalId) {
-      toast({
-        title: 'Error',
-        description: 'Invalid proposal ID',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Invalid proposal ID', variant: 'destructive' });
       navigate('/admin/proposals');
       return;
     }
@@ -90,41 +42,39 @@ export default function EditProposal() {
       if (error) throw error;
 
       if (!proposal) {
-        toast({
-          title: 'Error',
-          description: 'Proposal not found',
-          variant: 'destructive',
-        });
+        toast({ title: 'Error', description: 'Proposal not found', variant: 'destructive' });
         navigate('/admin/proposals');
         return;
       }
 
-      // Parse lesson times with proper type casting, use top-level subject as fallback
-      const parsedLessonTimes = proposal.lesson_times && Array.isArray(proposal.lesson_times)
-        ? proposal.lesson_times.map((lt: any) => ({
-            day: lt.day || '',
-            time: lt.time || '',
-            duration: lt.duration || 60,
-            subject: lt.subject || proposal.subject || '',
-          }))
-        : [{ day: '', time: '', duration: 60, subject: proposal.subject || '' }];
+      // Older proposals have no per-row price: fall back to the legacy single price column.
+      const fallbackPrice = Number(proposal.price_per_lesson) || DEFAULT_LESSON_PRICE;
 
-      // Pre-fill form with existing data
-      form.reset({
+      const parsedLessonTimes: LessonTimeRow[] =
+        proposal.lesson_times && Array.isArray(proposal.lesson_times) && proposal.lesson_times.length
+          ? (proposal.lesson_times as any[]).map((lt: any) => ({
+              day: lt.day || '',
+              time: lt.time || '',
+              duration: lt.duration || 60,
+              subject: lt.subject || proposal.subject || '',
+              price: typeof lt.price === 'number' ? lt.price : fallbackPrice,
+            }))
+          : [{ ...emptyLessonTime(fallbackPrice), subject: proposal.subject || '' }];
+
+      setDefaultValues({
         recipientName: proposal.recipient_name || '',
         recipientEmail: proposal.recipient_email || '',
         recipientPhone: proposal.recipient_phone || '',
         lessonType: proposal.lesson_type || '',
         subject: proposal.subject || '',
-        pricePerLesson: proposal.price_per_lesson || 45,
+        pricePerLesson: fallbackPrice,
         paymentCycle: proposal.payment_cycle || '',
-        contractTerm: ((proposal as any).contract_term as 'month_to_month' | '3_months' | '12_months') || 'month_to_month',
+        contractTerm:
+          ((proposal as any).contract_term as 'month_to_month' | '3_months' | '12_months') || 'month_to_month',
+        dailyHomeworkOptIn: Boolean((proposal as any).daily_homework_opt_in),
+        internalNotes: (proposal as any).internal_notes || '',
         lessonTimes: parsedLessonTimes,
       });
-
-      // Set lesson times
-      setLessonTimes(parsedLessonTimes);
-
     } catch (error: any) {
       console.error('Error loading proposal:', error);
       toast({
@@ -138,44 +88,26 @@ export default function EditProposal() {
     }
   };
 
-  const addLessonTime = () => {
-    const newLessonTimes = [...lessonTimes, { day: '', time: '', duration: 60, subject: '' }];
-    setLessonTimes(newLessonTimes);
-    form.setValue('lessonTimes', newLessonTimes);
-  };
+  const buildBody = (data: ProposalFormData, validTimes: LessonTimeRow[]) => ({
+    proposalId,
+    ...data,
+    recipientPhone: data.recipientPhone || null,
+    dailyHomeworkOptIn: data.dailyHomeworkOptIn,
+    internalNotes: data.internalNotes?.trim() || null,
+    pricePerLesson: headlinePriceOf(validTimes),
+    lessonTimes: validTimes,
+  });
 
-  const removeLessonTime = (index: number) => {
-    const filtered = lessonTimes.filter((_, i) => i !== index);
-    setLessonTimes(filtered);
-    form.setValue('lessonTimes', filtered);
-  };
-
-  const updateLessonTime = (index: number, field: string, value: string | number) => {
-    const updated = [...lessonTimes];
-    updated[index] = { ...updated[index], [field]: value };
-    setLessonTimes(updated);
-    form.setValue('lessonTimes', updated);
-  };
-
-  const onSubmit = async (data: ProposalFormData) => {
+  const onSubmit = async (data: ProposalFormData, validTimes: LessonTimeRow[]) => {
     setIsSubmitting(true);
     try {
-      const { data: response, error } = await supabase.functions.invoke('update-lesson-proposal', {
-          body: {
-            proposalId,
-            ...data,
-            recipientPhone: data.recipientPhone || null,
-            lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
-          },
+      const { error } = await supabase.functions.invoke('update-lesson-proposal', {
+        body: buildBody(data, validTimes),
       });
 
       if (error) throw error;
 
-      toast({
-        title: 'Proposal Updated!',
-        description: 'The proposal has been updated successfully.',
-      });
-
+      toast({ title: 'Proposal Updated!', description: 'The proposal has been updated successfully.' });
       navigate('/admin/proposals');
     } catch (error: any) {
       console.error('Error updating proposal:', error);
@@ -189,60 +121,34 @@ export default function EditProposal() {
     }
   };
 
-  const handleSaveAndResend = async () => {
+  const handleSaveAndResend = async (data: ProposalFormData, validTimes: LessonTimeRow[]) => {
     setIsResending(true);
     try {
-      // First, validate and get form data
-      const isValid = await form.trigger();
-      if (!isValid) {
-        toast({
-          title: 'Validation Error',
-          description: 'Please fix the form errors before resending.',
-          variant: 'destructive',
-        });
-        setIsResending(false);
-        return;
-      }
-
-      const formData = form.getValues();
-
-      // Update the proposal
       const { error: updateError } = await supabase.functions.invoke('update-lesson-proposal', {
-        body: {
-          proposalId,
-          ...formData,
-          recipientPhone: formData.recipientPhone || null,
-          lessonTimes: lessonTimes.filter(lt => lt.day && lt.time && lt.subject),
-        },
+        body: buildBody(data, validTimes),
       });
 
       if (updateError) throw updateError;
 
-      // Resend the proposal using the updated data
       const { data: resendData, error: resendError } = await supabase.functions.invoke('send-proposal-email', {
         body: {
           proposalId,
-          recipientEmail: formData.recipientEmail,
-          recipientName: formData.recipientName,
-          recipientPhone: formData.recipientPhone,
+          recipientEmail: data.recipientEmail,
+          recipientName: data.recipientName,
+          recipientPhone: data.recipientPhone,
         },
       });
 
       if (resendError) throw resendError;
 
-      // Build detailed success message
-      let successMessage = `✉️ Email sent to ${formData.recipientEmail}`;
-      if (resendData?.whatsappSent && formData.recipientPhone) {
-        successMessage += `\n📱 WhatsApp sent to ${formData.recipientPhone}`;
-      } else if (formData.recipientPhone) {
-        successMessage += `\n❌ WhatsApp failed: ${resendData?.whatsappError || 'Unknown error'}`;
+      let successMessage = `Email sent to ${data.recipientEmail}`;
+      if (resendData?.whatsappSent && data.recipientPhone) {
+        successMessage += `\nWhatsApp sent to ${data.recipientPhone}`;
+      } else if (data.recipientPhone) {
+        successMessage += `\nWhatsApp failed: ${resendData?.whatsappError || 'Unknown error'}`;
       }
 
-      toast({
-        title: 'Proposal Updated & Resent!',
-        description: successMessage,
-      });
-
+      toast({ title: 'Proposal Updated & Resent!', description: successMessage });
       navigate('/admin/proposals');
     } catch (error: any) {
       console.error('Error updating and resending proposal:', error);
@@ -256,7 +162,7 @@ export default function EditProposal() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !defaultValues) {
     return (
       <div className="container max-w-4xl py-8 flex justify-center items-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -269,288 +175,23 @@ export default function EditProposal() {
       <Card>
         <CardHeader>
           <CardTitle>Edit Lesson Proposal</CardTitle>
-          <CardDescription>
-            Update the lesson proposal details
-          </CardDescription>
+          <CardDescription>Update the lesson proposal details</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="recipientName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recipient Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="recipientEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recipient Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="john@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="recipientPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recipient Phone (Optional)</FormLabel>
-                      <FormControl>
-                        <Input type="tel" placeholder="+44 7123 456789" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="lessonType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Lesson Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select lesson type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="1-to-1 Online">1-to-1 Online</SelectItem>
-                          <SelectItem value="1-to-1 In-Person">1-to-1 In-Person</SelectItem>
-                          <SelectItem value="Group Session">Small Group Session</SelectItem>
-                          <SelectItem value="Large Group Session">Large Group Session</SelectItem>
-                          <SelectItem value="Mixed">Mixed (1-to-1 & Group)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="subject"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subject</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Mathematics" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="pricePerLesson"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price Per Lesson (£)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === '' ? 0 : parseFloat(value) || 0);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="paymentCycle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Payment Cycle</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select payment cycle" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Per Lesson">Per Lesson</SelectItem>
-                          <SelectItem value="Monthly">Monthly</SelectItem>
-                          <SelectItem value="Termly">Termly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="contractTerm"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contract Term</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select contract term" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="month_to_month">Month to Month</SelectItem>
-                        <SelectItem value="3_months">3 Months</SelectItem>
-                        <SelectItem value="12_months">12 Months</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      During the term, sessions cannot be reduced and plans cannot be downgraded (upgrades are always allowed). Auto-renews at term end — clients must give 30 days' notice before the end date to cancel.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="space-y-4">
-
-                <div className="flex items-center justify-between">
-                  <FormLabel>Lesson Times</FormLabel>
-                  <Button type="button" variant="outline" size="sm" onClick={addLessonTime}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Time
-                  </Button>
-                </div>
-
-                {lessonTimes.map((lessonTime, index) => (
-                  <div key={index} className="flex gap-4 items-end">
-                    <div className="flex-1 grid grid-cols-4 gap-4">
-                      <div>
-                        <FormLabel>Day</FormLabel>
-                        <Select
-                          value={lessonTime.day}
-                          onValueChange={(value) => updateLessonTime(index, 'day', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select day" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(
-                              (day) => (
-                                <SelectItem key={day} value={day}>
-                                  {day}
-                                </SelectItem>
-                              )
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <FormLabel>Time</FormLabel>
-                        <Input
-                          type="time"
-                          value={lessonTime.time}
-                          onChange={(e) => updateLessonTime(index, 'time', e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <FormLabel>Duration (min)</FormLabel>
-                        <Input
-                          type="number"
-                          value={lessonTime.duration}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <FormLabel>Subject</FormLabel>
-                        <Input
-                          placeholder="e.g., Maths, English"
-                          value={lessonTime.subject}
-                          onChange={(e) => updateLessonTime(index, 'subject', e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {lessonTimes.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeLessonTime(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <FormField
-                  control={form.control}
-                  name="lessonTimes"
-                  render={() => (
-                    <FormItem>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <Button type="button" variant="outline" onClick={() => navigate('/admin/proposals')}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting || isResending}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Update Proposal
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={handleSaveAndResend} 
-                  disabled={isSubmitting || isResending}
-                  variant="secondary"
-                >
-                  {isResending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Save & Resend
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
+          <ProposalForm
+            defaultValues={defaultValues}
+            onSubmit={onSubmit}
+            isSubmitting={isSubmitting}
+            submitLabel="Update Proposal"
+            onCancel={() => navigate('/admin/proposals')}
+            secondaryAction={{
+              label: 'Save & Resend',
+              loadingLabel: 'Sending...',
+              icon: <Mail className="mr-2 h-4 w-4" />,
+              isLoading: isResending,
+              onClick: handleSaveAndResend,
+            }}
+          />
         </CardContent>
       </Card>
     </div>
