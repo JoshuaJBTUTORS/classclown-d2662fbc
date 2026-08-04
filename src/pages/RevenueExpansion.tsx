@@ -57,7 +57,13 @@ const RevenueExpansion = () => {
     label: monthLabel(s.month),
   }));
 
-  const latest = data?.series?.[data.series.length - 1];
+  const series = data?.series ?? [];
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const currentPartial = series.find((s) => s.month === currentMonthKey);
+  // Tiles describe the last completed month; the in-progress month is shown separately
+  // so a mid-month figure is never mistaken for a full month.
+  const latest = [...series].reverse().find((s) => s.month !== currentMonthKey) ?? currentPartial;
 
   const runSync = async (mode: 'backfill' | 'recent') => {
     setSyncing(true);
