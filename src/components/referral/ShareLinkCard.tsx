@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, Copy, Link2, Mail, MessageCircle, Sparkles } from 'lucide-react';
 
 interface ShareLinkCardProps {
   shareUrl: string;
@@ -31,7 +30,7 @@ export const ShareLinkCard: React.FC<ShareLinkCardProps> = ({ shareUrl, isLoadin
 
         <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <div className="relative flex items-center">
-            <Link2 className="pointer-events-none absolute left-4 h-5 w-5 text-muted-foreground" />
+            <span className="pointer-events-none absolute left-4 text-base" aria-hidden="true">🔗</span>
             <Input
               readOnly
               value={isLoading ? 'Generating your link…' : shareUrl}
@@ -39,7 +38,7 @@ export const ShareLinkCard: React.FC<ShareLinkCardProps> = ({ shareUrl, isLoadin
             />
           </div>
           <Button onClick={handleCopy} disabled={!shareUrl} size="lg" className="h-14 rounded-xl px-7 text-base">
-            {copied ? <Check className="mr-2 h-5 w-5" /> : <Copy className="mr-2 h-5 w-5" />}
+            <span className="mr-2" aria-hidden="true">{copied ? '✅' : '📋'}</span>
             {copied ? 'Copied' : 'Copy link'}
           </Button>
         </div>
@@ -49,12 +48,12 @@ export const ShareLinkCard: React.FC<ShareLinkCardProps> = ({ shareUrl, isLoadin
             variant="outline"
             size="lg"
             disabled={!shareUrl}
-            className="h-14 rounded-xl border-primary/40 text-base text-primary hover:bg-primary/5 hover:text-primary"
+            className="h-14 rounded-xl text-base"
             onClick={() =>
               window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage(shareUrl))}`, '_blank', 'noopener,noreferrer')
             }
           >
-            <MessageCircle className="mr-2 h-5 w-5" />
+            <span className="mr-2" aria-hidden="true">💬</span>
             Share on WhatsApp
           </Button>
           <Button
@@ -71,34 +70,34 @@ export const ShareLinkCard: React.FC<ShareLinkCardProps> = ({ shareUrl, isLoadin
               )
             }
           >
-            <Mail className="mr-2 h-5 w-5" />
+            <span className="mr-2" aria-hidden="true">✉️</span>
             Share by email
           </Button>
         </div>
       </div>
 
-      <aside className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent p-6">
-        <div className="mb-4 flex items-center gap-2 font-bold text-primary">
-          <Sparkles className="h-5 w-5" />
+      <aside className="rounded-2xl border border-border bg-muted/40 p-6">
+        <div className="mb-4 flex items-center gap-2 font-bold">
+          <span aria-hidden="true">✨</span>
           It&apos;s a win-win
         </div>
         <div className="flex items-center justify-between gap-3 py-3">
           <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-              F
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-background text-lg" aria-hidden="true">
+              🙋
             </span>
             <span className="font-medium">Your friend gets</span>
           </div>
-          <span className="rounded-xl bg-primary/10 px-3 py-2 text-sm font-extrabold text-primary">£50 OFF</span>
+          <span className="rounded-xl bg-background px-3 py-2 text-sm font-extrabold text-primary">£50 OFF</span>
         </div>
-        <div className="flex items-center justify-between gap-3 border-t border-primary/15 py-3">
+        <div className="flex items-center justify-between gap-3 border-t border-border py-3">
           <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-amber-100 text-sm font-bold text-amber-700">
-              Y
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-background text-lg" aria-hidden="true">
+              🎉
             </span>
             <span className="font-medium">You get</span>
           </div>
-          <span className="rounded-xl bg-primary/10 px-3 py-2 text-sm font-extrabold text-primary">£50</span>
+          <span className="rounded-xl bg-background px-3 py-2 text-sm font-extrabold text-primary">£50</span>
         </div>
       </aside>
     </section>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Gift, Link2, PoundSterling } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useReferral } from '@/hooks/useReferral';
 import { useAuth } from '@/contexts/AuthContext';
 import ShareLinkCard from '@/components/referral/ShareLinkCard';
@@ -10,9 +10,9 @@ import ReferralList from '@/components/referral/ReferralList';
 import GiftIllustration from '@/components/referral/GiftIllustration';
 
 const STEPS = [
-  { icon: Link2, title: 'Share your link', copy: 'Send your personal link to a friend' },
-  { icon: Gift, title: 'They try a free lesson', copy: 'No cost, no commitment' },
-  { icon: PoundSterling, title: 'You both get £50', copy: 'Once they join us' },
+  { emoji: '🔗', title: 'Share your link', copy: 'Send your personal link to a friend' },
+  { emoji: '🎓', title: 'They try a free lesson', copy: 'No cost, no commitment' },
+  { emoji: '💷', title: 'You both get £50', copy: 'Once they join us' },
 ];
 
 const ReferFriend: React.FC = () => {
@@ -37,9 +37,9 @@ const ReferFriend: React.FC = () => {
 
         <section className="grid items-center gap-8 rounded-2xl border border-border bg-card/90 p-6 shadow-sm backdrop-blur sm:p-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
           <div>
-            <span className="inline-flex items-center gap-3 rounded-full border border-primary/20 bg-background/70 py-1.5 pl-1.5 pr-4 text-xs font-extrabold uppercase tracking-widest text-primary">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/10">
-                <Gift className="h-4 w-4" />
+            <span className="inline-flex items-center gap-3 rounded-full border border-border bg-background/70 py-1.5 pl-1.5 pr-4 text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-muted text-base" aria-hidden="true">
+                🎁
               </span>
               Refer a friend
             </span>
@@ -53,13 +53,13 @@ const ReferFriend: React.FC = () => {
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {STEPS.map(({ icon: Icon, title, copy }) => (
+              {STEPS.map(({ emoji, title, copy }) => (
                 <div
                   key={title}
                   className="flex items-center gap-3 rounded-2xl border border-border bg-background/70 p-4"
                 >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-muted text-xl" aria-hidden="true">
+                    {emoji}
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold leading-tight">{title}</p>
