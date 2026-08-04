@@ -133,7 +133,7 @@ const RevenueExpansion = () => {
               <SelectItem value="proposal">Proposal</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={String(months)} onValueChange={(v) => { setMonths(Number(v)); setMoverMonth(undefined); }}>
+          <Select value={String(months)} onValueChange={(v) => setMonths(Number(v))}>
             <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="6">Last 6 months</SelectItem>
