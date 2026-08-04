@@ -267,7 +267,12 @@ const RevenueExpansion = () => {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg expansion per customer</CardTitle>
+                <CardTitle
+                  className="text-sm font-medium"
+                  title="Average lifetime growth (current spend minus their first month) across customers still paying in this month, excluding anyone who joined during this month."
+                >
+                  Avg expansion per customer
+                </CardTitle>
                 <ArrowUpRight className="h-4 w-4 text-emerald-600" />
               </CardHeader>
               <CardContent>
@@ -275,10 +280,14 @@ const RevenueExpansion = () => {
                   {fmt(data?.avgExpansionPerCustomer ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {data?.activeCustomerCount ?? 0} active customers ·{' '}
+                  {data?.activeCustomerCount ?? 0} established customers ·{' '}
                   {fmt(data?.totalCumulativeExpansion ?? 0)} total growth since they joined
                   {data?.customerMonth ? ` (as of ${monthLabel(data.customerMonth)})` : ''}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Excludes customers who joined this month
+                </p>
+
               </CardContent>
             </Card>
             <Card>
