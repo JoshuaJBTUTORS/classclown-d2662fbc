@@ -32,9 +32,19 @@ const randomCode = (length = 6) =>
 
 export const REFERRAL_BASE_URL = 'https://classclowncrm.com';
 
+const GUEST_STORAGE_KEY = 'cba_guest_referral';
+
 export const useReferral = () => {
   const { user, profile } = useAuth();
   const [code, setCode] = useState<string | null>(null);
+  const [guestLink, setGuestLink] = useState<{ name: string; email: string; shareUrl: string } | null>(() => {
+    try {
+      const raw = localStorage.getItem(GUEST_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -110,6 +120,37 @@ export const useReferral = () => {
   }, [user, ensureCode, loadReferrals]);
 
   const shareUrl = code ? `${REFERRAL_BASE_URL}/book-trial?ref=${code}` : '';
+
+  const requestPublicLink = async (name: string, email: string) => {
+    const { data, error } = await supabase.functions.invoke('get-referral-link', {
+      body: { name, email },
+    });
+
+    if (error) {
+      console.error('get-referral-link failed:', error);
+      return { success: false, error: 'Something went wrong. Please try again.' };
+    }
+    if (data?.error) return { success: false, error: data.error as string };
+    if (!data?.shareUrl) return { success: false, error: 'Could not create your link. Please try again.' };
+
+    const next = { name: name.trim(), email: email.trim().toLowerCase(), shareUrl: data.shareUrl as string };
+    setGuestLink(next);
+    try {
+      localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // ignore storage failures
+    }
+    return { success: true };
+  };
+
+  const resetGuestLink = () => {
+    setGuestLink(null);
+    try {
+      localStorage.removeItem(GUEST_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  };
 
   const submitReferral = async (input: NewReferralInput) => {
     if (!user) return { success: false, error: 'You must be logged in' };
@@ -190,6 +231,9 @@ export const useReferral = () => {
     isLoading,
     submitReferral,
     submitPublicReferral,
+    guestLink,
+    requestPublicLink,
+    resetGuestLink,
     isAuthenticated: !!user,
     refresh: loadReferrals,
   };

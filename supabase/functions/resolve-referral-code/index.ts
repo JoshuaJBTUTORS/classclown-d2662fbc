@@ -31,13 +31,19 @@ Deno.serve(async (req) => {
 
     const { data: codeRow } = await supabase
       .from('referral_codes')
-      .select('user_id')
+      .select('user_id, guest_name')
       .eq('code', raw)
       .maybeSingle();
 
-    if (!codeRow?.user_id) return json({ found: false });
+    if (!codeRow) return json({ found: false });
 
     let firstName = '';
+
+    if (!codeRow.user_id) {
+      firstName = String(codeRow.guest_name || '').trim().split(' ')[0] || '';
+      if (!firstName) return json({ found: false });
+      return json({ found: true, firstName });
+    }
 
     const { data: profile } = await supabase
       .from('profiles')

@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const { data: codeRow } = await supabase
       .from('referral_codes')
-      .select('user_id, code')
+      .select('user_id, code, guest_name, guest_email')
       .eq('code', code)
       .maybeSingle();
 
@@ -43,11 +43,14 @@ Deno.serve(async (req) => {
 
     // Try to match an existing pending referral by email or phone
     let existingId: string | null = null;
-    const { data: candidates } = await supabase
+    const candidatesQuery = supabase
       .from('referrals')
       .select('id, friend_email, friend_phone, status')
-      .eq('referrer_user_id', codeRow.user_id)
       .eq('status', 'invited');
+
+    const { data: candidates } = codeRow.user_id
+      ? await candidatesQuery.eq('referrer_user_id', codeRow.user_id)
+      : await candidatesQuery.eq('referral_code', codeRow.code);
 
     const normalisedEmail = (friendEmail || '').trim().toLowerCase();
     const phoneDigits = (friendPhone || '').replace(/\D/g, '').slice(-9);
@@ -70,6 +73,8 @@ Deno.serve(async (req) => {
       await supabase.from('referrals').insert({
         referrer_user_id: codeRow.user_id,
         referral_code: codeRow.code,
+        referrer_name: codeRow.user_id ? null : codeRow.guest_name || null,
+        referrer_email: codeRow.user_id ? null : codeRow.guest_email || null,
         friend_name: friendName || 'Trial booking',
         friend_email: normalisedEmail || null,
         friend_phone: friendPhone || null,

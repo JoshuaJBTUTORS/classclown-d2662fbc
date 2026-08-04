@@ -86,9 +86,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Resolve or create a referral code for the matched user
+    // Resolve or create a referral code for the matched user (or guest)
     let referralCode: string | null = null;
-    if (referrerUserId) {
+    if (!referrerUserId && referrerEmail) {
+      const { data: guestCode } = await supabase
+        .from('referral_codes')
+        .select('code')
+        .ilike('guest_email', referrerEmail)
+        .is('user_id', null)
+        .maybeSingle();
+      if (guestCode?.code) referralCode = guestCode.code;
+    }
+    if (!referralCode && referrerUserId) {
       const { data: existing } = await supabase
         .from('referral_codes')
         .select('code')

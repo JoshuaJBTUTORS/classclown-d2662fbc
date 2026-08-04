@@ -3709,23 +3709,29 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          guest_email: string | null
+          guest_name: string | null
           id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           code: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           code?: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

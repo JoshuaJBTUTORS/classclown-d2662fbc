@@ -8,6 +8,7 @@ import ShareLinkCard from '@/components/referral/ShareLinkCard';
 import ReferralForm from '@/components/referral/ReferralForm';
 import ReferralList from '@/components/referral/ReferralList';
 import GiftIllustration from '@/components/referral/GiftIllustration';
+import GetLinkCard from '@/components/referral/GetLinkCard';
 
 const STEPS = [
   { emoji: '🔗', title: 'Share your link', copy: 'Send your personal link to a friend' },
@@ -18,7 +19,15 @@ const STEPS = [
 const ReferFriend: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { shareUrl, referrals, isLoading, submitReferral, submitPublicReferral } = useReferral();
+  const {
+    shareUrl,
+    referrals,
+    isLoading,
+    submitReferral,
+    submitPublicReferral,
+    guestLink,
+    requestPublicLink,
+  } = useReferral();
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,9 +92,21 @@ const ReferFriend: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="mx-auto w-full max-w-2xl">
-            <ReferralForm mode="public" onSubmit={submitPublicReferral} />
-          </div>
+          <>
+            {guestLink ? (
+              <ShareLinkCard shareUrl={guestLink.shareUrl} />
+            ) : (
+              <GetLinkCard onSubmit={requestPublicLink} />
+            )}
+
+            <div className="mx-auto w-full max-w-2xl">
+              <ReferralForm
+                mode="public"
+                onSubmit={submitPublicReferral}
+                initialReferrer={guestLink ? { name: guestLink.name, email: guestLink.email } : undefined}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>

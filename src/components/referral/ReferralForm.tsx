@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,12 +12,13 @@ import type { NewReferralInput } from '@/hooks/useReferral';
 interface ReferralFormProps {
   onSubmit: (input: NewReferralInput) => Promise<{ success: boolean; error?: string }>;
   mode?: 'authenticated' | 'public';
+  initialReferrer?: { name: string; email: string };
 }
 
-export const ReferralForm: React.FC<ReferralFormProps> = ({ onSubmit, mode = 'authenticated' }) => {
+export const ReferralForm: React.FC<ReferralFormProps> = ({ onSubmit, mode = 'authenticated', initialReferrer }) => {
   const isPublic = mode === 'public';
   const [values, setValues] = useState({ name: '', email: '', childName: '', notes: '' });
-  const [me, setMe] = useState({ name: '', email: '' });
+  const [me, setMe] = useState({ name: initialReferrer?.name ?? '', email: initialReferrer?.email ?? '' });
   const [myDial, setMyDial] = useState(DEFAULT_DIAL_CODE);
   const [myPhone, setMyPhone] = useState('');
   const [dial, setDial] = useState(DEFAULT_DIAL_CODE);
@@ -25,6 +26,12 @@ export const ReferralForm: React.FC<ReferralFormProps> = ({ onSubmit, mode = 'au
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (initialReferrer) {
+      setMe({ name: initialReferrer.name, email: initialReferrer.email });
+    }
+  }, [initialReferrer?.name, initialReferrer?.email]);
 
   const set = (field: string, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -85,7 +92,7 @@ export const ReferralForm: React.FC<ReferralFormProps> = ({ onSubmit, mode = 'au
       setSent(true);
       setValues({ name: '', email: '', childName: '', notes: '' });
       setPhone('');
-      setMe({ name: '', email: '' });
+      setMe({ name: initialReferrer?.name ?? '', email: initialReferrer?.email ?? '' });
       setMyPhone('');
       setTimeout(() => setSent(false), 5000);
     } else {
