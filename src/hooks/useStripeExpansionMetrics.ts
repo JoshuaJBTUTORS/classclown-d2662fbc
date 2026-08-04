@@ -28,6 +28,21 @@ export interface ExpansionMover {
   status: 'expansion' | 'contraction' | 'churned' | 'new';
 }
 
+export interface CustomerExpansionRow {
+  stripeCustomerId: string;
+  email: string | null;
+  name: string | null;
+  currency: string;
+  month: string;
+  joinedMonth: string;
+  startingMrr: number;
+  previousMrr: number;
+  currentMrr: number;
+  expansionMrr: number;
+  contractionMrr: number;
+  cumulativeExpansion: number;
+}
+
 export interface ExpansionResponse {
   account: ExpansionAccount;
   months: number;
@@ -36,19 +51,24 @@ export interface ExpansionResponse {
   series: ExpansionMonth[];
   moverMonth: string;
   movers: ExpansionMover[];
+  customerMonth: string;
+  customers: CustomerExpansionRow[];
   generatedAt: string;
 }
 
 export const useStripeExpansionMetrics = (
   account: ExpansionAccount,
   months: number,
+  month?: string,
 ) => {
+
   return useQuery({
-    queryKey: ['stripe-expansion-metrics', account, months],
+    queryKey: ['stripe-expansion-metrics', account, months, month ?? null],
     queryFn: async (): Promise<ExpansionResponse> => {
       const { data, error } = await supabase.functions.invoke('get-stripe-expansion-metrics', {
-        body: { account, months },
+        body: { account, months, ...(month ? { month } : {}) },
       });
+
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as ExpansionResponse;

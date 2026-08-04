@@ -9,6 +9,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import PageTitle from '@/components/ui/PageTitle';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -33,14 +43,27 @@ import { RefreshCw, TrendingUp, TrendingDown, ArrowUpRight, AlertCircle } from '
 const monthLabel = (m: string) =>
   new Date(`${m}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
 
+const lastCompleteMonthKey = () => {
+  const n = new Date();
+  const d = new Date(Date.UTC(n.getFullYear(), n.getMonth() - 1, 1));
+  return d.toISOString().slice(0, 10);
+};
+
 const RevenueExpansion = () => {
   const { toast } = useToast();
   const [account, setAccount] = useState<ExpansionAccount>('both');
   const [months, setMonths] = useState(12);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'cumulative' | 'current' | 'expansion' | 'contraction'>('cumulative');
 
-  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(account, months);
+  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(
+    account,
+    months,
+    lastCompleteMonthKey(),
+  );
+
 
   const fmt = useMemo(() => {
     const code = (data?.currency || 'gbp').toUpperCase();
@@ -107,7 +130,62 @@ const RevenueExpansion = () => {
     }
   };
 
+  const customers = data?.customers ?? [];
 
+  const visibleCustomers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? customers.filter(
+          (c) =>
+            (c.name || '').toLowerCase().includes(q) ||
+            (c.email || '').toLowerCase().includes(q) ||
+            c.stripeCustomerId.toLowerCase().includes(q),
+        )
+      : customers;
+    const key = {
+      cumulative: (c: any) => c.cumulativeExpansion,
+      current: (c: any) => c.currentMrr,
+      expansion: (c: any) => c.expansionMrr,
+      contraction: (c: any) => c.contractionMrr,
+    }[sortBy];
+    return [...filtered].sort((a, b) => key(b) - key(a));
+  }, [customers, search, sortBy]);
+
+  const exportCsv = () => {
+    const header = [
+      'Customer',
+      'Email',
+      'Stripe customer id',
+      'Joined',
+      'Starting MRR',
+      'Previous MRR',
+      'Current MRR',
+      'Expansion MRR',
+      'Contraction MRR',
+      'Cumulative expansion',
+    ];
+    const rows = visibleCustomers.map((c) => [
+      c.name ?? '',
+      c.email ?? '',
+      c.stripeCustomerId,
+      c.joinedMonth,
+      c.startingMrr,
+      c.previousMrr,
+      c.currentMrr,
+      c.expansionMrr,
+      c.contractionMrr,
+      c.cumulativeExpansion,
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customer-expansion-${data?.customerMonth ?? 'export'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
 
   return (
@@ -261,6 +339,99 @@ const RevenueExpansion = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
+          <Card className="mb-8">
+            <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 space-y-0">
+              <div>
+                <CardTitle className="text-base">Customer expansion</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {data?.customerMonth ? monthLabel(data.customerMonth) : ''} · {visibleCustomers.length} customers
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  placeholder="Search name or email"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-[220px]"
+                />
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                  <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cumulative">Cumulative expansion</SelectItem>
+                    <SelectItem value="current">Current MRR</SelectItem>
+                    <SelectItem value="expansion">Monthly expansion</SelectItem>
+                    <SelectItem value="contraction">Monthly contraction</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={exportCsv} disabled={visibleCustomers.length === 0}>
+                  Export CSV
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Starting</TableHead>
+                      <TableHead className="text-right">Previous</TableHead>
+                      <TableHead className="text-right">Current</TableHead>
+                      <TableHead className="text-right">Expansion</TableHead>
+                      <TableHead className="text-right">Contraction</TableHead>
+                      <TableHead className="text-right">Cumulative</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleCustomers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
+                          No customer data for this month yet.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      visibleCustomers.map((c) => (
+                        <TableRow key={c.stripeCustomerId}>
+                          <TableCell>
+                            <div className="font-medium">{c.name || c.email || c.stripeCustomerId}</div>
+                            {c.name && c.email && (
+                              <div className="text-xs text-muted-foreground">{c.email}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {monthLabel(c.joinedMonth)}
+                          </TableCell>
+                          <TableCell className="text-right">{fmt(c.startingMrr)}</TableCell>
+                          <TableCell className="text-right">{fmt(c.previousMrr)}</TableCell>
+                          <TableCell className="text-right font-medium">{fmt(c.currentMrr)}</TableCell>
+                          <TableCell className="text-right text-emerald-600">
+                            {c.expansionMrr > 0 ? fmt(c.expansionMrr) : '—'}
+                          </TableCell>
+                          <TableCell className="text-right text-destructive">
+                            {c.contractionMrr > 0 ? fmt(c.contractionMrr) : '—'}
+                          </TableCell>
+                          <TableCell
+                            className={`text-right font-medium ${
+                              c.cumulativeExpansion > 0
+                                ? 'text-emerald-600'
+                                : c.cumulativeExpansion < 0
+                                  ? 'text-destructive'
+                                  : ''
+                            }`}
+                          >
+                            {fmt(c.cumulativeExpansion)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
 
         </>
       )}
