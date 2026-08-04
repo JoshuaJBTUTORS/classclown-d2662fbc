@@ -124,6 +124,7 @@ function App() {
                 <Route path="/offer/:offerId/:token" element={<OfferView />} />
                 <Route path="/o/:offerId/:token" element={<OfferView />} />
                 <Route path="/update-card" element={<UpdateCardDetails />} />
+                <Route path="/refer" element={<ReferFriend />} />
                <Route path="/agent-cleo" element={<ProtectedRoute><AgentCleo /></ProtectedRoute>} />
                <Route path="/agent-cleo/:threadId" element={<ProtectedRoute><AgentCleo /></ProtectedRoute>} />
 
