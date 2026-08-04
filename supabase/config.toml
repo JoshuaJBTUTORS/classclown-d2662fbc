@@ -207,3 +207,9 @@ inspector_port = 54329
 
 [functions.agent-cleo-optimise-proposal]
 verify_jwt = true
+
+[functions.sync-stripe-customer-revenue]
+verify_jwt = true
+
+[functions.get-stripe-expansion-metrics]
+verify_jwt = true
