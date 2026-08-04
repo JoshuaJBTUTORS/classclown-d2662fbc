@@ -13,6 +13,7 @@ import StepIndicator from '@/components/trialBooking/StepIndicator';
 import SubjectSelectionStep from '@/components/trialBooking/SubjectSelectionStep';
 import DateTimeSelector from '@/components/trialBooking/DateTimeSelector';
 import ContactInfoStep from '@/components/trialBooking/ContactInfoStep';
+import { useReferrerName, getRefCodeFromUrl } from '@/hooks/useReferrerName';
 interface FormData {
   parentName: string;
   childName: string;
@@ -28,6 +29,8 @@ interface FormData {
   selectedTutorId: string;
 }
 const TrialBookingMusaPage: React.FC = () => {
+  const refCode = getRefCodeFromUrl();
+  const referrerName = useReferrerName(refCode);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     parentName: '',

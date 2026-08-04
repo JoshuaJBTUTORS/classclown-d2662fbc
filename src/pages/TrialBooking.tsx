@@ -1,4 +1,5 @@
 import { validatePhone, splitPhone } from '@/utils/phone';
+import { useReferrerName, getRefCodeFromUrl } from '@/hooks/useReferrerName';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,8 @@ interface FormData {
   selectedTutorId: string;
 }
 const TrialBookingPage: React.FC = () => {
+  const refCode = getRefCodeFromUrl();
+  const referrerName = useReferrerName(refCode);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     parentName: '',
