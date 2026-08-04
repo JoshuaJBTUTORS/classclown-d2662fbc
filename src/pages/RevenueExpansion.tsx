@@ -113,15 +113,8 @@ const RevenueExpansion = () => {
     }
   };
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      expansion: 'bg-emerald-100 text-emerald-800',
-      new: 'bg-blue-100 text-blue-800',
-      contraction: 'bg-amber-100 text-amber-800',
-      churned: 'bg-rose-100 text-rose-800',
-    };
-    return <Badge className={`${map[status] ?? ''} border-0 capitalize`}>{status}</Badge>;
-  };
+
+
 
   return (
     <div className="container mx-auto px-6 py-8">
