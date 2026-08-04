@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Gift, Link2, PoundSterling } from 'lucide-react';
 import { useReferral } from '@/hooks/useReferral';
+import { useAuth } from '@/contexts/AuthContext';
 import ShareLinkCard from '@/components/referral/ShareLinkCard';
 import ReferralForm from '@/components/referral/ReferralForm';
 import ReferralList from '@/components/referral/ReferralList';
@@ -16,15 +17,23 @@ const STEPS = [
 
 const ReferFriend: React.FC = () => {
   const navigate = useNavigate();
-  const { shareUrl, referrals, isLoading, submitReferral } = useReferral();
+  const { user } = useAuth();
+  const { shareUrl, referrals, isLoading, submitReferral, submitPublicReferral } = useReferral();
 
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')} className="-ml-2">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to my lessons
-        </Button>
+        {user ? (
+          <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')} className="-ml-2">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to my lessons
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="-ml-2">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Log in to my account
+          </Button>
+        )}
 
         <section className="grid items-center gap-8 rounded-2xl border border-border bg-card/90 p-6 shadow-sm backdrop-blur sm:p-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
           <div>
@@ -64,12 +73,20 @@ const ReferFriend: React.FC = () => {
           <GiftIllustration className="min-h-[280px]" />
         </section>
 
-        <ShareLinkCard shareUrl={shareUrl} isLoading={isLoading} />
+        {user ? (
+          <>
+            <ShareLinkCard shareUrl={shareUrl} isLoading={isLoading} />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ReferralForm onSubmit={submitReferral} />
-          <ReferralList referrals={referrals} />
-        </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ReferralForm onSubmit={submitReferral} />
+              <ReferralList referrals={referrals} />
+            </div>
+          </>
+        ) : (
+          <div className="mx-auto w-full max-w-2xl">
+            <ReferralForm mode="public" onSubmit={submitPublicReferral} />
+          </div>
+        )}
       </div>
     </div>
   );

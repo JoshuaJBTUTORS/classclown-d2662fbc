@@ -16,6 +16,9 @@ export interface Referral {
 
 export interface NewReferralInput {
   friend_name: string;
+  referrer_name?: string;
+  referrer_email?: string;
+  referrer_phone?: string;
   friend_email?: string;
   friend_phone?: string;
   child_name?: string;
@@ -156,5 +159,38 @@ export const useReferral = () => {
     return { success: true };
   };
 
-  return { code, shareUrl, referrals, isLoading, submitReferral, refresh: loadReferrals };
+  const submitPublicReferral = async (input: NewReferralInput) => {
+    const { data, error } = await supabase.functions.invoke('submit-public-referral', {
+      body: {
+        referrer_name: input.referrer_name,
+        referrer_email: input.referrer_email,
+        referrer_phone: input.referrer_phone,
+        friend_name: input.friend_name,
+        friend_email: input.friend_email,
+        friend_phone: input.friend_phone,
+        child_name: input.child_name,
+        notes: input.notes,
+      },
+    });
+
+    if (error) {
+      console.error('Public referral failed:', error);
+      return { success: false, error: 'Something went wrong. Please try again.' };
+    }
+    if (data?.error) {
+      return { success: false, error: data.error as string };
+    }
+    return { success: true };
+  };
+
+  return {
+    code,
+    shareUrl,
+    referrals,
+    isLoading,
+    submitReferral,
+    submitPublicReferral,
+    isAuthenticated: !!user,
+    refresh: loadReferrals,
+  };
 };
