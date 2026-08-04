@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { COUNTRY_DIAL_CODES, DEFAULT_DIAL_CODE, normalisePhone, validatePhone } from '@/utils/phone';
 import type { NewReferralInput } from '@/hooks/useReferral';
 
@@ -250,7 +250,7 @@ export const ReferralForm: React.FC<ReferralFormProps> = ({ onSubmit, mode = 'au
           )}
 
           <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="mr-2" aria-hidden="true">📨</span>}
             Send referral
           </Button>
         </form>
