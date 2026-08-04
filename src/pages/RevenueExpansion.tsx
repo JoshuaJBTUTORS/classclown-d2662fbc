@@ -183,7 +183,7 @@ const RevenueExpansion = () => {
                   {latest?.nrr != null ? `${latest.nrr}%` : '—'}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {latest ? monthLabel(latest.month) : ''} vs previous month
+                  {latest ? `${monthLabel(latest.month)} (full month)` : ''} vs previous month
                 </p>
               </CardContent>
             </Card>
@@ -194,7 +194,9 @@ const RevenueExpansion = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-emerald-600">{fmt(latest?.expansion ?? 0)}</div>
-                <p className="text-xs text-muted-foreground mt-1">From existing customers</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From existing customers{latest ? ` in ${monthLabel(latest.month)}` : ''}
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -205,11 +207,21 @@ const RevenueExpansion = () => {
               <CardContent>
                 <div className="text-3xl font-bold text-primary">{fmt(latest?.newRevenue ?? 0)}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {latest?.customerCount ?? 0} paying customers
+                  {latest?.customerCount ?? 0} paying customers{latest ? ` in ${monthLabel(latest.month)}` : ''}
                 </p>
               </CardContent>
             </Card>
           </div>
+
+          {currentPartial && currentPartial.month !== latest?.month && (
+            <div className="text-sm text-muted-foreground bg-muted/50 border rounded-md p-3 mb-8">
+              {monthLabel(currentPartial.month)} is still in progress:{' '}
+              {fmt(currentPartial.totalRevenue)} collected so far from{' '}
+              {currentPartial.customerCount} customers. It is included in the charts below but not
+              in the tiles above.
+            </div>
+          )}
+
 
           <Card className="mb-8">
             <CardHeader>
