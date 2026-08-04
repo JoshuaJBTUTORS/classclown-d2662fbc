@@ -190,8 +190,14 @@ export const useVideoRoom = (lessonId: string) => {
   };
 
   const handleLeaveRoom = () => {
+    // Students (and parents joining on their behalf) land on the refer-a-friend page
+    if (userRole === 'student' || userRole === 'parent') {
+      navigate('/refer');
+      return;
+    }
     navigate('/calendar');
   };
+
 
   const getDisplayName = () => {
     if (studentContext) {
