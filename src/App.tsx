@@ -139,6 +139,7 @@ function App() {
                   }
                 >
                   <Route path="calendar" element={<Calendar />} />
+                  <Route path="refer" element={<ReferFriend />} />
                   <Route 
                     path="students" 
                     element={
