@@ -33,14 +33,27 @@ import { RefreshCw, TrendingUp, TrendingDown, ArrowUpRight, AlertCircle } from '
 const monthLabel = (m: string) =>
   new Date(`${m}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
 
+const lastCompleteMonthKey = () => {
+  const n = new Date();
+  const d = new Date(Date.UTC(n.getFullYear(), n.getMonth() - 1, 1));
+  return d.toISOString().slice(0, 10);
+};
+
 const RevenueExpansion = () => {
   const { toast } = useToast();
   const [account, setAccount] = useState<ExpansionAccount>('both');
   const [months, setMonths] = useState(12);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'cumulative' | 'current' | 'expansion' | 'contraction'>('cumulative');
 
-  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(account, months);
+  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(
+    account,
+    months,
+    lastCompleteMonthKey(),
+  );
+
 
   const fmt = useMemo(() => {
     const code = (data?.currency || 'gbp').toUpperCase();
