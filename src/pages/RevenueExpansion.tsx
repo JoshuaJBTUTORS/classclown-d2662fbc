@@ -55,8 +55,6 @@ const RevenueExpansion = () => {
   const chartData = (data?.series ?? []).map((s) => ({
     ...s,
     label: monthLabel(s.month),
-    contractionNeg: -s.contraction,
-    churnNeg: -s.churn,
   }));
 
   const latest = data?.series?.[data.series.length - 1];
