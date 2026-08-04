@@ -241,7 +241,6 @@ function App() {
                     }
                   />
                   <Route 
-
                     path="admin/proposals" 
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
