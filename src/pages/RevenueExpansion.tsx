@@ -267,13 +267,17 @@ const RevenueExpansion = () => {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Expansion</CardTitle>
+                <CardTitle className="text-sm font-medium">Avg expansion per customer</CardTitle>
                 <ArrowUpRight className="h-4 w-4 text-emerald-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-600">{fmt(latest?.expansion ?? 0)}</div>
+                <div className="text-3xl font-bold text-emerald-600">
+                  {fmt(data?.avgExpansionPerCustomer ?? 0)}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  From existing customers{latest ? ` in ${monthLabel(latest.month)}` : ''}
+                  {data?.activeCustomerCount ?? 0} active customers ·{' '}
+                  {fmt(data?.totalCumulativeExpansion ?? 0)} total growth since they joined
+                  {data?.customerMonth ? ` (as of ${monthLabel(data.customerMonth)})` : ''}
                 </p>
               </CardContent>
             </Card>
