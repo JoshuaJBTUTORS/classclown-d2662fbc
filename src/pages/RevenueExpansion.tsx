@@ -120,7 +120,62 @@ const RevenueExpansion = () => {
     }
   };
 
+  const customers = data?.customers ?? [];
 
+  const visibleCustomers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? customers.filter(
+          (c) =>
+            (c.name || '').toLowerCase().includes(q) ||
+            (c.email || '').toLowerCase().includes(q) ||
+            c.stripeCustomerId.toLowerCase().includes(q),
+        )
+      : customers;
+    const key = {
+      cumulative: (c: any) => c.cumulativeExpansion,
+      current: (c: any) => c.currentMrr,
+      expansion: (c: any) => c.expansionMrr,
+      contraction: (c: any) => c.contractionMrr,
+    }[sortBy];
+    return [...filtered].sort((a, b) => key(b) - key(a));
+  }, [customers, search, sortBy]);
+
+  const exportCsv = () => {
+    const header = [
+      'Customer',
+      'Email',
+      'Stripe customer id',
+      'Joined',
+      'Starting MRR',
+      'Previous MRR',
+      'Current MRR',
+      'Expansion MRR',
+      'Contraction MRR',
+      'Cumulative expansion',
+    ];
+    const rows = visibleCustomers.map((c) => [
+      c.name ?? '',
+      c.email ?? '',
+      c.stripeCustomerId,
+      c.joinedMonth,
+      c.startingMrr,
+      c.previousMrr,
+      c.currentMrr,
+      c.expansionMrr,
+      c.contractionMrr,
+      c.cumulativeExpansion,
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customer-expansion-${data?.customerMonth ?? 'export'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
 
   return (
