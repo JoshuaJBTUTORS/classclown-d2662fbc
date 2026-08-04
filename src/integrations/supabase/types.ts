@@ -3739,6 +3739,9 @@ export type Database = {
           id: string
           notes: string | null
           referral_code: string | null
+          referrer_email: string | null
+          referrer_name: string | null
+          referrer_phone: string | null
           referrer_user_id: string | null
           source: string
           status: string
@@ -3754,6 +3757,9 @@ export type Database = {
           id?: string
           notes?: string | null
           referral_code?: string | null
+          referrer_email?: string | null
+          referrer_name?: string | null
+          referrer_phone?: string | null
           referrer_user_id?: string | null
           source?: string
           status?: string
@@ -3769,6 +3775,9 @@ export type Database = {
           id?: string
           notes?: string | null
           referral_code?: string | null
+          referrer_email?: string | null
+          referrer_name?: string | null
+          referrer_phone?: string | null
           referrer_user_id?: string | null
           source?: string
           status?: string
