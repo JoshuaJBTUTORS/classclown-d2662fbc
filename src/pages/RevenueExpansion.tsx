@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -9,14 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import PageTitle from '@/components/ui/PageTitle';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,11 +37,10 @@ const RevenueExpansion = () => {
   const { toast } = useToast();
   const [account, setAccount] = useState<ExpansionAccount>('both');
   const [months, setMonths] = useState(12);
-  const [moverMonth, setMoverMonth] = useState<string | undefined>(undefined);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>('');
 
-  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(account, months, moverMonth);
+  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(account, months);
 
   const fmt = useMemo(() => {
     const code = (data?.currency || 'gbp').toUpperCase();
@@ -113,15 +103,8 @@ const RevenueExpansion = () => {
     }
   };
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      expansion: 'bg-emerald-100 text-emerald-800',
-      new: 'bg-blue-100 text-blue-800',
-      contraction: 'bg-amber-100 text-amber-800',
-      churned: 'bg-rose-100 text-rose-800',
-    };
-    return <Badge className={`${map[status] ?? ''} border-0 capitalize`}>{status}</Badge>;
-  };
+
+
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -141,7 +124,7 @@ const RevenueExpansion = () => {
               <SelectItem value="proposal">Proposal</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={String(months)} onValueChange={(v) => { setMonths(Number(v)); setMoverMonth(undefined); }}>
+          <Select value={String(months)} onValueChange={(v) => setMonths(Number(v))}>
             <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="6">Last 6 months</SelectItem>
@@ -280,72 +263,6 @@ const RevenueExpansion = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <CardTitle className="text-base">Top movers</CardTitle>
-              <Select
-                value={data?.moverMonth ?? ''}
-                onValueChange={(v) => setMoverMonth(v)}
-              >
-                <SelectTrigger className="w-[180px]"><SelectValue placeholder="Select month" /></SelectTrigger>
-                <SelectContent>
-                  {(data?.series ?? []).map((s) => (
-                    <SelectItem key={s.month} value={s.month}>{monthLabel(s.month)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardHeader>
-            <CardContent>
-              {(data?.movers?.length ?? 0) === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No customer movement recorded for this month. If this looks wrong, run "Import full history" first.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Customer</TableHead>
-                        {account === 'both' && <TableHead>Account</TableHead>}
-                        <TableHead className="text-right">Previous</TableHead>
-                        <TableHead className="text-right">Current</TableHead>
-                        <TableHead className="text-right">Change</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data!.movers.map((m) => (
-                        <TableRow key={m.key}>
-                          <TableCell>
-                            <div className="font-medium">{m.name || m.email || m.key}</div>
-                            {m.name && m.email && (
-                              <div className="text-xs text-muted-foreground">{m.email}</div>
-                            )}
-                          </TableCell>
-                          {account === 'both' && (
-                            <TableCell className="capitalize text-muted-foreground">{m.account}</TableCell>
-                          )}
-                          <TableCell className="text-right">{fmt(m.previous)}</TableCell>
-                          <TableCell className="text-right">{fmt(m.current)}</TableCell>
-                          <TableCell
-                            className={`text-right font-medium ${m.delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}
-                          >
-                            {m.delta >= 0 ? '+' : ''}{fmt(m.delta)}
-                            {m.percentChange != null && (
-                              <span className="text-xs text-muted-foreground ml-1">
-                                ({m.percentChange > 0 ? '+' : ''}{m.percentChange}%)
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>{statusBadge(m.status)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </>
       )}
     </div>
