@@ -28,7 +28,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
-import { RefreshCw, TrendingUp, TrendingDown, ArrowDownRight, ArrowUpRight, AlertCircle } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, ArrowUpRight, AlertCircle } from 'lucide-react';
 
 const monthLabel = (m: string) =>
   new Date(`${m}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
