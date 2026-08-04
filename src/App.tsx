@@ -35,6 +35,7 @@ import TrialBooking from './pages/TrialBooking';
 import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
+import ReferFriend from './pages/ReferFriend';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import MainLayout from './components/layout/MainLayout';
@@ -139,6 +140,7 @@ function App() {
                   }
                 >
                   <Route path="calendar" element={<Calendar />} />
+                  <Route path="refer" element={<ReferFriend />} />
                   <Route 
                     path="students" 
                     element={

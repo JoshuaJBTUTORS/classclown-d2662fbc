@@ -14,6 +14,7 @@ interface CreateTrialBookingData {
   message?: string;
   booking_source?: string;
   is_unique_booking?: boolean;
+  referral_code?: string;
 }
 
 interface TrialBookingResult {
@@ -40,6 +41,7 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
         message: data.message,
         booking_source: data.booking_source || 'general',
         is_unique_booking: data.is_unique_booking ?? true,
+        referral_code: data.referral_code || null,
         status: 'pending'
       })
       .select('id')
@@ -51,6 +53,26 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
     }
 
     console.log('Trial booking created successfully:', bookingData);
+
+    // Attribute the booking to a referrer when a referral code was used
+    if (data.referral_code) {
+      try {
+        await supabase.functions.invoke('link-trial-referral', {
+          body: {
+            referralCode: data.referral_code,
+            trialBookingId: bookingData.id,
+            friendName: data.parent_name,
+            friendEmail: data.email,
+            friendPhone: data.phone || '',
+            childName: data.child_name,
+          },
+        });
+      } catch (referralError) {
+        console.error('Failed to link trial referral:', referralError);
+      }
+    }
+
+
 
     // Fetch subject name for emails
     const { data: subjectData } = await supabase

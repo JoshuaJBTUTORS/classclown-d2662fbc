@@ -133,7 +133,8 @@ const TrialBookingPage: React.FC = () => {
         lesson_time: formData.lessonTime,
         // Actual lesson time
         subject_id: formData.subject?.id || '',
-        message: `Trial lesson request for ${formData.childName}`
+        message: `Trial lesson request for ${formData.childName}`,
+        referral_code: new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase() || undefined
       });
       if (!trialBookingResult.success) {
         throw new Error(trialBookingResult.error || 'Failed to submit trial booking request.');
