@@ -227,8 +227,11 @@ Deno.serve(async (req) => {
       cumulativeExpansion: round(Number(c.cumulative_expansion)),
     }));
 
-    // Average lifetime expansion per ACTIVE customer (paying in the requested month)
-    const activeCustomers = customers.filter((c) => c.currentMrr > 0);
+    // Average lifetime expansion per ESTABLISHED active customer:
+    // paying in the requested month AND joined before it (new joiners cannot have expanded yet)
+    const activeCustomers = customers.filter(
+      (c) => c.currentMrr > 0 && c.joinedMonth && c.joinedMonth < c.month,
+    );
     const totalCumulativeExpansion = activeCustomers.reduce((s, c) => s + c.cumulativeExpansion, 0);
     const activeCustomerCount = activeCustomers.length;
     const avgExpansionPerCustomer =
