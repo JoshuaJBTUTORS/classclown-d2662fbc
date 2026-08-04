@@ -5701,6 +5701,23 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_customer_expansion: {
+        Row: {
+          contraction_mrr: number | null
+          cumulative_expansion: number | null
+          currency: string | null
+          current_mrr: number | null
+          customer_email: string | null
+          customer_name: string | null
+          expansion_mrr: number | null
+          joined_month: string | null
+          month: string | null
+          previous_mrr: number | null
+          starting_mrr: number | null
+          stripe_customer_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       advance_school_progress_cycle: { Args: never; Returns: undefined }
