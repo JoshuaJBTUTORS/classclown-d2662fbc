@@ -201,6 +201,31 @@ Deno.serve(async (req) => {
       .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
       .slice(0, 50);
 
+    // Per-customer expansion detail for the requested month, from the deduped view
+    const { data: customerRows, error: custErr } = await supabaseAdmin
+      .from('stripe_customer_expansion')
+      .select(
+        'stripe_customer_id, customer_email, customer_name, currency, month, joined_month, starting_mrr, previous_mrr, current_mrr, expansion_mrr, contraction_mrr, cumulative_expansion',
+      )
+      .eq('month', requestedMonth)
+      .limit(5000);
+    if (custErr) console.error('customer expansion view error:', custErr.message);
+
+    const customers = (customerRows ?? []).map((c: any) => ({
+      stripeCustomerId: c.stripe_customer_id,
+      email: c.customer_email,
+      name: c.customer_name,
+      currency: c.currency,
+      month: c.month,
+      joinedMonth: c.joined_month,
+      startingMrr: round(Number(c.starting_mrr)),
+      previousMrr: round(Number(c.previous_mrr)),
+      currentMrr: round(Number(c.current_mrr)),
+      expansionMrr: round(Number(c.expansion_mrr)),
+      contractionMrr: round(Number(c.contraction_mrr)),
+      cumulativeExpansion: round(Number(c.cumulative_expansion)),
+    }));
+
     return new Response(
       JSON.stringify({
         account,
@@ -210,10 +235,13 @@ Deno.serve(async (req) => {
         series,
         moverMonth: requestedMonth,
         movers,
+        customerMonth: requestedMonth,
+        customers,
         generatedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
+
   } catch (error: any) {
     console.error('get-stripe-expansion-metrics error:', error);
     return new Response(JSON.stringify({ error: error?.message || 'Internal error' }), {

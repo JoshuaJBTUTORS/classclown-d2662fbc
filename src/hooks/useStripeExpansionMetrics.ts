@@ -28,6 +28,21 @@ export interface ExpansionMover {
   status: 'expansion' | 'contraction' | 'churned' | 'new';
 }
 
+export interface CustomerExpansionRow {
+  stripeCustomerId: string;
+  email: string | null;
+  name: string | null;
+  currency: string;
+  month: string;
+  joinedMonth: string;
+  startingMrr: number;
+  previousMrr: number;
+  currentMrr: number;
+  expansionMrr: number;
+  contractionMrr: number;
+  cumulativeExpansion: number;
+}
+
 export interface ExpansionResponse {
   account: ExpansionAccount;
   months: number;
@@ -36,13 +51,17 @@ export interface ExpansionResponse {
   series: ExpansionMonth[];
   moverMonth: string;
   movers: ExpansionMover[];
+  customerMonth: string;
+  customers: CustomerExpansionRow[];
   generatedAt: string;
 }
 
 export const useStripeExpansionMetrics = (
   account: ExpansionAccount,
   months: number,
+  month?: string,
 ) => {
+
   return useQuery({
     queryKey: ['stripe-expansion-metrics', account, months],
     queryFn: async (): Promise<ExpansionResponse> => {
