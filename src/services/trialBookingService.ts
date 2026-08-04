@@ -14,6 +14,7 @@ interface CreateTrialBookingData {
   message?: string;
   booking_source?: string;
   is_unique_booking?: boolean;
+  referral_code?: string;
 }
 
 interface TrialBookingResult {
