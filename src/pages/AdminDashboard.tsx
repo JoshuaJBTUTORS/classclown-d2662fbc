@@ -19,6 +19,7 @@ const AdminDashboard = () => {
     return new Date(n.getFullYear(), n.getMonth(), 1);
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const loadDashboardData = async (showToast = false, monthDate = selectedMonth) => {
     const loading = showToast ? setIsRefreshing : setIsLoading;
