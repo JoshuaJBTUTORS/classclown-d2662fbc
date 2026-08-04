@@ -232,7 +232,16 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="admin/revenue-expansion"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <RevenueExpansion />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route 
+
                     path="admin/proposals" 
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
