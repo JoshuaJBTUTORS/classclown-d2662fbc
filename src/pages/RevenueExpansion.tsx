@@ -28,7 +28,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
-import { RefreshCw, TrendingUp, TrendingDown, ArrowDownRight, ArrowUpRight, AlertCircle } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, ArrowUpRight, AlertCircle } from 'lucide-react';
 
 const monthLabel = (m: string) =>
   new Date(`${m}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
@@ -55,8 +55,6 @@ const RevenueExpansion = () => {
   const chartData = (data?.series ?? []).map((s) => ({
     ...s,
     label: monthLabel(s.month),
-    contractionNeg: -s.contraction,
-    churnNeg: -s.churn,
   }));
 
   const latest = data?.series?.[data.series.length - 1];
@@ -168,7 +166,7 @@ const RevenueExpansion = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Net Revenue Retention</CardTitle>
@@ -191,20 +189,6 @@ const RevenueExpansion = () => {
               <CardContent>
                 <div className="text-3xl font-bold text-emerald-600">{fmt(latest?.expansion ?? 0)}</div>
                 <p className="text-xs text-muted-foreground mt-1">From existing customers</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Contraction + Churn</CardTitle>
-                <ArrowDownRight className="h-4 w-4 text-rose-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-rose-600">
-                  {fmt((latest?.contraction ?? 0) + (latest?.churn ?? 0))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {fmt(latest?.contraction ?? 0)} down-spend, {fmt(latest?.churn ?? 0)} lost
-                </p>
               </CardContent>
             </Card>
             <Card>
@@ -243,21 +227,18 @@ const RevenueExpansion = () => {
 
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-base">Expansion vs contraction and churn</CardTitle>
+              <CardTitle className="text-base">Expansion and new revenue</CardTitle>
             </CardHeader>
             <CardContent className="h-[340px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} stackOffset="sign">
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip formatter={(v: any) => fmt(Math.abs(Number(v)))} />
                   <Legend />
-                  <ReferenceLine y={0} stroke="hsl(var(--foreground))" />
                   <Bar dataKey="expansion" name="Expansion" stackId="a" fill="#10b981" />
                   <Bar dataKey="newRevenue" name="New" stackId="a" fill="#3b82f6" />
-                  <Bar dataKey="contractionNeg" name="Contraction" stackId="a" fill="#f59e0b" />
-                  <Bar dataKey="churnNeg" name="Churn" stackId="a" fill="#ef4444" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
