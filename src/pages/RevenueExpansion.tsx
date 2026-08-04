@@ -387,8 +387,16 @@ const RevenueExpansion = () => {
                   <TableBody>
                     {visibleCustomers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
-                          No customer data for this month yet.
+                        <TableCell colSpan={8} className="text-center text-sm py-8">
+                          {data?.customersError ? (
+                            <span className="text-destructive">
+                              Couldn't load customer data: {data.customersError}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              No customer data for this month yet.
+                            </span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ) : (

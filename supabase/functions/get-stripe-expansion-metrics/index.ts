@@ -210,6 +210,7 @@ Deno.serve(async (req) => {
       .eq('month', requestedMonth)
       .limit(5000);
     if (custErr) console.error('customer expansion view error:', custErr.message);
+    const customersError = custErr ? custErr.message : null;
 
     const customers = (customerRows ?? []).map((c: any) => ({
       stripeCustomerId: c.stripe_customer_id,
@@ -237,6 +238,7 @@ Deno.serve(async (req) => {
         movers,
         customerMonth: requestedMonth,
         customers,
+        customersError,
         generatedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
