@@ -53,6 +53,7 @@ export interface ExpansionResponse {
   movers: ExpansionMover[];
   customerMonth: string;
   customers: CustomerExpansionRow[];
+  customersError?: string | null;
   generatedAt: string;
 }
 
