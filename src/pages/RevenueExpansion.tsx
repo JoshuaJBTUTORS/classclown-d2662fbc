@@ -46,11 +46,10 @@ const RevenueExpansion = () => {
   const { toast } = useToast();
   const [account, setAccount] = useState<ExpansionAccount>('both');
   const [months, setMonths] = useState(12);
-  const [moverMonth, setMoverMonth] = useState<string | undefined>(undefined);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>('');
 
-  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(account, months, moverMonth);
+  const { data, isLoading, error, refetch } = useStripeExpansionMetrics(account, months);
 
   const fmt = useMemo(() => {
     const code = (data?.currency || 'gbp').toUpperCase();
