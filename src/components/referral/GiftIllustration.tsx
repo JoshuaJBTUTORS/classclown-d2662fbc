@@ -21,8 +21,12 @@ export const GiftIllustration: React.FC<{ className?: string }> = ({ className =
         <p className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">For you</p>
       </div>
 
-      <span className="mt-2 text-[7rem] leading-none sm:text-[9rem]" role="img" aria-label="Gift box">
-        🎁
+      <span
+        className="mt-2 font-extrabold leading-none tracking-tighter text-primary text-[7rem] sm:text-[9rem]"
+        role="img"
+        aria-label="Fifty pound reward"
+      >
+        £
       </span>
     </div>
   </div>
