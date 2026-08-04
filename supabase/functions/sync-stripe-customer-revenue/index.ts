@@ -179,6 +179,7 @@ Deno.serve(async (req) => {
       body.account === 'main' || body.account === 'proposal' ? [body.account] : ['main', 'proposal'];
 
     const results: any[] = [];
+    const seenKeys = new Set<string>();
 
     for (const account of requested) {
       const key = Deno.env.get(KEY_BY_ACCOUNT[account]);
@@ -186,6 +187,13 @@ Deno.serve(async (req) => {
         results.push({ account, skipped: 'no_api_key' });
         continue;
       }
+      // Both labels can point at the same Stripe account (post-migration).
+      // Syncing it twice would duplicate every customer and double all metrics.
+      if (seenKeys.has(key)) {
+        results.push({ account, skipped: 'duplicate_api_key' });
+        continue;
+      }
+      seenKeys.add(key);
       const stripe = new Stripe(key, { apiVersion: '2023-10-16' });
 
       const { data: state } = await supabaseAdmin
