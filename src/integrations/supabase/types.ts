@@ -3705,6 +3705,78 @@ export type Database = {
           },
         ]
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          child_name: string | null
+          created_at: string
+          friend_email: string | null
+          friend_name: string
+          friend_phone: string | null
+          id: string
+          notes: string | null
+          referral_code: string | null
+          referrer_user_id: string | null
+          source: string
+          status: string
+          trial_booking_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          child_name?: string | null
+          created_at?: string
+          friend_email?: string | null
+          friend_name: string
+          friend_phone?: string | null
+          id?: string
+          notes?: string | null
+          referral_code?: string | null
+          referrer_user_id?: string | null
+          source?: string
+          status?: string
+          trial_booking_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          child_name?: string | null
+          created_at?: string
+          friend_email?: string | null
+          friend_name?: string
+          friend_phone?: string | null
+          id?: string
+          notes?: string | null
+          referral_code?: string | null
+          referrer_user_id?: string | null
+          source?: string
+          status?: string
+          trial_booking_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       revision_progress: {
         Row: {
           confidence_level: number | null
@@ -4646,6 +4718,7 @@ export type Database = {
           phone: string | null
           preferred_date: string | null
           preferred_time: string | null
+          referral_code: string | null
           status: string
           subject_id: string | null
           tutor_id: string | null
@@ -4671,6 +4744,7 @@ export type Database = {
           phone?: string | null
           preferred_date?: string | null
           preferred_time?: string | null
+          referral_code?: string | null
           status?: string
           subject_id?: string | null
           tutor_id?: string | null
@@ -4696,6 +4770,7 @@ export type Database = {
           phone?: string | null
           preferred_date?: string | null
           preferred_time?: string | null
+          referral_code?: string | null
           status?: string
           subject_id?: string | null
           tutor_id?: string | null
