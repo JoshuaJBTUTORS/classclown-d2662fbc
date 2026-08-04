@@ -4030,6 +4030,87 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_customer_monthly_revenue: {
+        Row: {
+          account: string
+          amount: number
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          invoice_count: number
+          month: string
+          stripe_customer_id: string
+          synced_at: string
+          updated_at: string
+        }
+        Insert: {
+          account: string
+          amount?: number
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          invoice_count?: number
+          month: string
+          stripe_customer_id: string
+          synced_at?: string
+          updated_at?: string
+        }
+        Update: {
+          account?: string
+          amount?: number
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          invoice_count?: number
+          month?: string
+          stripe_customer_id?: string
+          synced_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stripe_revenue_sync_state: {
+        Row: {
+          account: string
+          backfill_complete: boolean
+          backfilled_through: string | null
+          created_at: string
+          earliest_seen: string | null
+          error: string | null
+          last_run_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account: string
+          backfill_complete?: boolean
+          backfilled_through?: string | null
+          created_at?: string
+          earliest_seen?: string | null
+          error?: string | null
+          last_run_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account?: string
+          backfill_complete?: boolean
+          backfilled_through?: string | null
+          created_at?: string
+          earliest_seen?: string | null
+          error?: string | null
+          last_run_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_lesson_insights: {
         Row: {
           ai_summary: string | null
