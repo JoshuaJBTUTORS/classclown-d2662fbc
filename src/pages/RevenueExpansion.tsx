@@ -229,21 +229,18 @@ const RevenueExpansion = () => {
 
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-base">Expansion vs contraction and churn</CardTitle>
+              <CardTitle className="text-base">Expansion and new revenue</CardTitle>
             </CardHeader>
             <CardContent className="h-[340px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} stackOffset="sign">
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip formatter={(v: any) => fmt(Math.abs(Number(v)))} />
                   <Legend />
-                  <ReferenceLine y={0} stroke="hsl(var(--foreground))" />
                   <Bar dataKey="expansion" name="Expansion" stackId="a" fill="#10b981" />
                   <Bar dataKey="newRevenue" name="New" stackId="a" fill="#3b82f6" />
-                  <Bar dataKey="contractionNeg" name="Contraction" stackId="a" fill="#f59e0b" />
-                  <Bar dataKey="churnNeg" name="Churn" stackId="a" fill="#ef4444" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
