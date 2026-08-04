@@ -63,11 +63,12 @@ export const useStripeExpansionMetrics = (
 ) => {
 
   return useQuery({
-    queryKey: ['stripe-expansion-metrics', account, months],
+    queryKey: ['stripe-expansion-metrics', account, months, month ?? null],
     queryFn: async (): Promise<ExpansionResponse> => {
       const { data, error } = await supabase.functions.invoke('get-stripe-expansion-metrics', {
-        body: { account, months },
+        body: { account, months, ...(month ? { month } : {}) },
       });
+
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as ExpansionResponse;
