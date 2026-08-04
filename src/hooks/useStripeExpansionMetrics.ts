@@ -54,6 +54,9 @@ export interface ExpansionResponse {
   customerMonth: string;
   customers: CustomerExpansionRow[];
   customersError?: string | null;
+  activeCustomerCount?: number;
+  totalCumulativeExpansion?: number;
+  avgExpansionPerCustomer?: number;
   generatedAt: string;
 }
 

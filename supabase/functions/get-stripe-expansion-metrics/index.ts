@@ -227,6 +227,13 @@ Deno.serve(async (req) => {
       cumulativeExpansion: round(Number(c.cumulative_expansion)),
     }));
 
+    // Average lifetime expansion per ACTIVE customer (paying in the requested month)
+    const activeCustomers = customers.filter((c) => c.currentMrr > 0);
+    const totalCumulativeExpansion = activeCustomers.reduce((s, c) => s + c.cumulativeExpansion, 0);
+    const activeCustomerCount = activeCustomers.length;
+    const avgExpansionPerCustomer =
+      activeCustomerCount > 0 ? totalCumulativeExpansion / activeCustomerCount : 0;
+
     return new Response(
       JSON.stringify({
         account,
@@ -239,6 +246,9 @@ Deno.serve(async (req) => {
         customerMonth: requestedMonth,
         customers,
         customersError,
+        activeCustomerCount,
+        totalCumulativeExpansion: round(totalCumulativeExpansion),
+        avgExpansionPerCustomer: round(avgExpansionPerCustomer),
         generatedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
