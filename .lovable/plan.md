@@ -43,5 +43,5 @@ Confirmed in the live data: there are groups still due to extend that have zero 
 
 ## Technical details
 - New security-definer function handling deletion scope, cancellation records, related-record cleanup and lesson removal in one transaction.
-- `extend_recurring_lessons()` gains an "empty series" guard alongside its existing tutor and student guards.
+- `extend_recurring_lessons()` gains an "empty series" guard and a two-week lookback guard (no lesson rows for the series in the 14 days before the generation start week means stop and stamp the group), alongside its existing tutor and student guards.
 - One-off data cleanup for the orphaned groups already in the database.
