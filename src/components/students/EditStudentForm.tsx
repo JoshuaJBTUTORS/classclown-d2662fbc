@@ -46,7 +46,7 @@ const formSchema = z.object({
   subjects: z.string().min(2, {
     message: "Subjects must be at least 2 characters.",
   }),
-  status: z.enum(['active', 'inactive', 'trial']),
+  status: z.enum(['active', 'inactive', 'trial', 'stopped']),
 });
 
 const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onClose, onUpdate }) => {
@@ -65,9 +65,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
       email: student?.email || "",
       studentId: student?.student_id || "",
       subjects: subjectsString,
-      status: (student?.status === 'active' || student?.status === 'inactive' || student?.status === 'trial'
+      status: (student?.status === 'active' || student?.status === 'inactive' || student?.status === 'trial' || student?.status === 'stopped'
               ? student.status 
-              : "active") as 'active' | 'inactive' | 'trial',
+              : "active") as 'active' | 'inactive' | 'trial' | 'stopped',
     },
   });
 
@@ -84,9 +84,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         email: student.email || "",
         studentId: student.student_id || "",
         subjects: subjectsValue,
-        status: (student.status === 'active' || student.status === 'inactive' || student.status === 'trial'
+        status: (student.status === 'active' || student.status === 'inactive' || student.status === 'trial' || student.status === 'stopped'
                 ? student.status 
-                : "active") as 'active' | 'inactive' | 'trial',
+                : "active") as 'active' | 'inactive' | 'trial' | 'stopped',
       });
     }
   }, [student, form]);
@@ -130,7 +130,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
           email: data[0].email || '',
           phone: data[0].phone || '',
           subjects: data[0].subjects || '',
-          status: data[0].status as 'active' | 'inactive' | 'trial' || 'active',
+          status: data[0].status as 'active' | 'inactive' | 'trial' | 'stopped' || 'active',
           joinedDate: new Date(data[0].created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -254,6 +254,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
                         <SelectItem value="trial">Trial</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="stopped">Stopped</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>

@@ -7,7 +7,7 @@ export interface Student {
   phone?: string;
   grade?: string;
   notes?: string;
-  status: 'active' | 'inactive' | 'trial' | string;
+  status: 'active' | 'inactive' | 'trial' | 'stopped' | string;
   created_at?: string | null;
   updated_at?: string;
   subjects?: string | string[];
