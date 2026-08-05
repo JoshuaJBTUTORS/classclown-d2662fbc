@@ -117,13 +117,19 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
                 ) : (
                   <>
                     <p className="mb-2">
-                      This will mark {tutor.first_name} {tutor.last_name} as inactive. 
-                      The tutor will still appear in historical data but won't be available for new lessons.
+                      This will mark {tutor.first_name} {tutor.last_name} as inactive, end their
+                      recurring series and clear their upcoming sessions from the calendar.
+                    </p>
+                    <p className="mb-2">
+                      {futureCount === null
+                        ? 'Checking upcoming lessons...'
+                        : `${futureCount} upcoming lesson${futureCount === 1 ? '' : 's'} will be cancelled. Reassign them to another tutor first if they should continue.`}
                     </p>
                     <p>
-                      You can reactivate the tutor later if needed.
+                      Past lessons and history are kept. You can reactivate the tutor later if needed.
                     </p>
                   </>
+
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
