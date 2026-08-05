@@ -244,6 +244,14 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="admin/live-sessions"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <LiveSessions />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route 
                     path="admin/proposals" 
                     element={
