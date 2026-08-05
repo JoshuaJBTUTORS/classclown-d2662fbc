@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Radio, RefreshCw, LogIn, LogOut, Play, Square, GraduationCap, User, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
+interface LiveStint {
+  joinedAt: string;
+  leftAt: string | null;
+  active: boolean;
+  durationMinutes: number;
+}
+
 interface LiveParticipant {
   id: string;
   name: string;
@@ -14,6 +21,8 @@ interface LiveParticipant {
   joinedAt: string | null;
   lastJoinedAt?: string | null;
   rejoinCount?: number;
+  stints?: LiveStint[];
+  totalMinutes?: number;
 }
 
 interface LiveLesson {
