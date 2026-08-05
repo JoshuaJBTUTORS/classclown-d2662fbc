@@ -73,6 +73,42 @@ serve(async (req) => {
       );
     }
 
+    // Batch load enrolment + attendance so we can tell whether any student is
+    // actually expected in the room before alerting about a missing tutor.
+    const lessonIds = (lessons ?? []).map((l: any) => l.id);
+    const enrolled = new Map<string, Set<number>>();
+    const notExpected = new Map<string, Set<number>>();
+    if (lessonIds.length) {
+      const { data: ls } = await supabase
+        .from("lesson_students")
+        .select("lesson_id, student_id")
+        .in("lesson_id", lessonIds);
+      (ls ?? []).forEach((r: any) => {
+        if (!enrolled.has(r.lesson_id)) enrolled.set(r.lesson_id, new Set());
+        enrolled.get(r.lesson_id)!.add(r.student_id);
+      });
+
+      const { data: att } = await supabase
+        .from("lesson_attendance")
+        .select("lesson_id, student_id, attendance_status")
+        .in("lesson_id", lessonIds);
+      (att ?? []).forEach((r: any) => {
+        const st = String(r.attendance_status ?? "").toLowerCase();
+        if (st !== "excused" && st !== "absent") return;
+        if (!notExpected.has(r.lesson_id)) notExpected.set(r.lesson_id, new Set());
+        notExpected.get(r.lesson_id)!.add(r.student_id);
+      });
+    }
+
+    const expectedStudentCount = (lessonId: string) => {
+      const all = enrolled.get(lessonId);
+      if (!all || all.size === 0) return 0;
+      const skip = notExpected.get(lessonId) ?? new Set<number>();
+      let count = 0;
+      all.forEach((id) => { if (!skip.has(id)) count += 1; });
+      return count;
+    };
+
     const processed: any[] = [];
 
     for (const lesson of lessons ?? []) {
@@ -162,7 +198,9 @@ serve(async (req) => {
       }
 
       // No tutor yet
-      const shouldAlert = minutesSinceStart >= LATE_THRESHOLD_MIN && !existing?.alert_sent_at;
+      const expectedStudents = expectedStudentCount(lesson.id);
+      const shouldAlert =
+        expectedStudents > 0 && minutesSinceStart >= LATE_THRESHOLD_MIN && !existing?.alert_sent_at;
       let alertSentAt: string | null = existing?.alert_sent_at ?? null;
 
       if (shouldAlert) {
@@ -198,13 +236,24 @@ serve(async (req) => {
           tutor_id: lesson.tutor_id,
           tutor_name: tutorName,
           lesson_start: lesson.start_time,
-          status: minutesSinceStart >= LATE_THRESHOLD_MIN ? "no_show" : "pending",
+          status:
+            expectedStudents === 0
+              ? "no_students_expected"
+              : minutesSinceStart >= LATE_THRESHOLD_MIN
+              ? "no_show"
+              : "pending",
           alert_sent_at: alertSentAt,
         },
         { onConflict: "lesson_id" },
       );
 
-      processed.push({ lesson: lesson.id, status: "no_tutor", minutesSinceStart, alerted: Boolean(alertSentAt) });
+      processed.push({
+        lesson: lesson.id,
+        status: expectedStudents === 0 ? "no_students_expected" : "no_tutor",
+        minutesSinceStart,
+        expectedStudents,
+        alerted: Boolean(alertSentAt),
+      });
     }
 
     return new Response(JSON.stringify({ checked: lessons?.length ?? 0, processed }), {
