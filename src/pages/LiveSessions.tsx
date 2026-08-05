@@ -12,6 +12,8 @@ interface LiveParticipant {
   role: string | null;
   isLeader: boolean;
   joinedAt: string | null;
+  lastJoinedAt?: string | null;
+  rejoinCount?: number;
 }
 
 interface LiveLesson {
@@ -221,7 +223,10 @@ const LiveSessions: React.FC = () => {
                       {p.name}
                       {p.joinedAt && (
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(p.joinedAt), 'HH:mm')}
+                          First joined {format(new Date(p.joinedAt), 'HH:mm')}
+                          {!!p.rejoinCount && p.lastJoinedAt && (
+                            <> · rejoined {format(new Date(p.lastJoinedAt), 'HH:mm')}</>
+                          )}
                         </span>
                       )}
                     </span>
