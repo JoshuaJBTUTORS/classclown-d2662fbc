@@ -5130,6 +5130,56 @@ export type Database = {
           },
         ]
       }
+      tutor_punctuality: {
+        Row: {
+          alert_sent_at: string | null
+          created_at: string
+          id: string
+          lesson_id: string
+          lesson_start: string
+          minutes_late: number | null
+          status: string
+          tutor_first_join_at: string | null
+          tutor_id: string | null
+          tutor_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_sent_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id: string
+          lesson_start: string
+          minutes_late?: number | null
+          status?: string
+          tutor_first_join_at?: string | null
+          tutor_id?: string | null
+          tutor_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_sent_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          lesson_start?: string
+          minutes_late?: number | null
+          status?: string
+          tutor_first_join_at?: string | null
+          tutor_id?: string | null
+          tutor_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_punctuality_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_subjects: {
         Row: {
           created_at: string | null
