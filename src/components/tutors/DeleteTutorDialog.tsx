@@ -30,6 +30,18 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
 }) => {
   const [isHardDelete, setIsHardDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [futureCount, setFutureCount] = useState<number | null>(null);
+
+  const tutorId = tutor?.id ?? null;
+
+  React.useEffect(() => {
+    if (!isOpen || !tutorId) return;
+    setFutureCount(null);
+    supabase.functions
+      .invoke('stop-lessons', { body: { mode: 'tutor', tutorId, dryRun: true } })
+      .then(({ data }) => setFutureCount((data as any)?.affectedLessons ?? 0))
+      .catch(() => setFutureCount(null));
+  }, [isOpen, tutorId]);
 
   // If tutor is null, we should not render the dialog contents
   if (!tutor && isOpen) {
@@ -52,15 +64,19 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
         
         toast.success(`Tutor ${tutor.first_name} ${tutor.last_name} has been permanently deleted.`);
       } else {
-        // Soft delete - mark as inactive
-        const { error } = await supabase
-          .from('tutors')
-          .update({ status: 'inactive' })
-          .eq('id', tutor.id);
+        // Deactivate: marks inactive, ends their recurring series and clears
+        // their upcoming sessions from the calendar.
+        const { data, error } = await supabase.functions.invoke('stop-lessons', {
+          body: { mode: 'tutor', tutorId: tutor.id },
+        });
 
         if (error) throw error;
-        
-        toast.success(`Tutor ${tutor.first_name} ${tutor.last_name} has been marked as inactive.`);
+        if ((data as any)?.error) throw new Error((data as any).error);
+
+        const cancelled = (data as any)?.cancelledLessons ?? 0;
+        toast.success(
+          `${tutor.first_name} ${tutor.last_name} marked as inactive. ${cancelled} upcoming lesson${cancelled === 1 ? '' : 's'} cancelled.`
+        );
       }
       
       onDeleted(); // Refresh the tutor list
@@ -72,6 +88,7 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
       setIsDeleting(false);
     }
   };
+
 
   // We only want to render the dialog content if we have a tutor
   // This prevents accessing properties of null
