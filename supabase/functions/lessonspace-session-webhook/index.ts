@@ -119,7 +119,7 @@ serve(async (req) => {
         lesson_id: lessonRow?.id ?? null,
         room_id: roomId ?? null,
         session_id: sessionId ?? null,
-        event_type: eventHeader,
+        event_type: normalizedEvent,
         participant_external_id: externalId ?? null,
         participant_name: user?.name ?? null,
         participant_role: role,
@@ -130,7 +130,7 @@ serve(async (req) => {
       if (evErr) console.error(`[${rid}] participant event insert failed:`, evErr.message);
       else
         console.log(
-          `[${rid}] ${eventHeader} recorded | lesson=${lessonRow?.id ?? "unmatched"} | user=${user?.name ?? externalId ?? "unknown"} | role=${role ?? "unknown"}`,
+          `[${rid}] ${normalizedEvent} recorded | lesson=${lessonRow?.id ?? "unmatched"} | user=${user?.name ?? externalId ?? "unknown"} | role=${role ?? "unknown"}`,
         );
 
       return new Response(JSON.stringify({ success: true, recorded: eventHeader }), {
@@ -152,7 +152,7 @@ serve(async (req) => {
       lesson_id: lessonRow?.id ?? null,
       room_id: roomId ?? null,
       session_id: sessionId,
-      event_type: eventHeader || "session.unknown",
+      event_type: normalizedEvent || "session.unknown",
       occurred_at: new Date().toISOString(),
       raw_payload: payload,
     });
