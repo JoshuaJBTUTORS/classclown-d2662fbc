@@ -133,7 +133,7 @@ const LiveSessions: React.FC = () => {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [loadLive, loadEvents]);
+  }, [loadLive, loadEvents, loadPunctuality]);
 
   const activeLessons = lessons.filter(l => l.participants.length > 0);
   const idleLessons = lessons.filter(l => l.participants.length === 0);
