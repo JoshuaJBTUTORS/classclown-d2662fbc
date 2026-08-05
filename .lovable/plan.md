@@ -1,47 +1,32 @@
-# Lesson proposal expiry reminders
+# Fix: show first join time, not latest
 
-Send two friendly reminder emails before a lesson proposal's 24 hour window closes: one at 12 hours remaining and one at 1 hour remaining.
+## Problem
 
-## When reminders go out
+A tutor who joins, drops out, and rejoins (e.g. 18:02 then 18:14) is currently shown as joining at 18:14.
 
-The proposal countdown already runs for 24 hours from the moment the proposal is created.
+Two places cause this:
 
-- 12 hour reminder: sent once the proposal is roughly 12 hours old
-- 1 hour reminder: sent once the proposal is roughly 23 hours old
+- The live participants poller picks the **most recent** `user-joined` log for each person.
+- The punctuality monitor only inspects the single currently-active LessonSpace session, so an earlier session (or earlier log within it) for the same lesson can be ignored.
 
-A reminder is skipped if the proposal has already been agreed, completed, or expired, or if that reminder was already sent. Each reminder is sent at most once per proposal.
+## Changes
 
-## Email content
+1. Live participants poller
+   - For each participant, sort their `user-joined` logs ascending and take the **earliest** as `joinedAt`.
+   - Also return `lastJoinedAt` and a `rejoinCount` so the tracker can still show reconnections.
 
-Plain text style, no emojis, no hyphens, no marketing filler. Subject: "Your lesson proposal is expiring soon".
+2. Punctuality monitor
+   - Consider **all** sessions returned for the lesson's space (not just the active one), and all `user-joined` logs across them.
+   - Take the earliest teacher join across everything as `tutor_first_join_at`.
+   - When a record already exists, still overwrite `tutor_first_join_at` if a newly discovered join is earlier (so an incorrectly-late record self-corrects), and recompute `minutes_late` / `status`.
+   - Same earliest-wins rule applied to the webhook `lesson_participant_events` fallback.
 
-Body:
+3. Live Lesson Tracker UI (`/admin/live-sessions`)
+   - Label the time as "First joined" and, where a rejoin happened, add a small "rejoined HH:MM" note.
 
-```text
-Hi [name],
-
-Just a friendly reminder that your lesson proposal from Class Beyond Academy will be expiring soon.
-
-Please note that completing the document does not initiate any charges. You are not charged until after your first lesson.
-
-You can review and complete your proposal here:
-[proposal link]
-
-If you have any questions, just reply to this email or call us on 01438 582848.
-
-Class Beyond Academy
-```
-
-The 1 hour email uses the same wording with a line noting the proposal expires within the hour.
+4. Backfill the lesson happening now by re-running the monitor once the earliest-wins logic is in place.
 
 ## Technical notes
 
-1. Migration on `lesson_proposals`: add `reminder_12h_sent_at` and `reminder_1h_sent_at` (timestamptz, nullable).
-2. New edge function `send-proposal-expiry-reminders`:
-   - Uses the service role client, so it needs no caller auth.
-   - Selects proposals with `status` in ('sent', 'viewed') whose `created_at` falls in the 12 hour or 1 hour window and whose matching reminder column is null.
-   - Renders the email with React Email in `_templates/proposal-expiry-reminder-email.tsx` and sends it via Resend from `enquiries@classbeyondacademy.io`.
-   - Builds the link as `https://classclowncrm.com/proposal/{id}/{access_token}`, matching `send-proposal-email`.
-   - Stamps the relevant reminder column after a successful send so it never repeats.
-   - Logs and continues on individual failures so one bad address does not stop the batch.
-3. Schedule with pg_cron every 15 minutes calling the function through pg_net, following the existing scheduled function pattern.
+- Files: `supabase/functions/lessonspace-live-participants/index.ts`, `supabase/functions/tutor-punctuality-monitor/index.ts`, `src/pages/admin/LiveSessions.tsx`.
+- No schema change needed; `tutor_punctuality` already stores `tutor_first_join_at`, `minutes_late`, `status`.
