@@ -231,7 +231,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
         invite: true
       },
       webhooks: {
-        session: { end: sessionWebhookUrl },
+        session: { start: sessionWebhookUrl, end: sessionWebhookUrl },
+        user: { joined: sessionWebhookUrl, left: sessionWebhookUrl },
         transcription: { finish: transcriptWebhookUrl }
       }
     };
@@ -295,7 +296,8 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
           invite: true
         },
         webhooks: {
-          session: { end: sessionWebhookUrl },
+          session: { start: sessionWebhookUrl, end: sessionWebhookUrl },
+          user: { joined: sessionWebhookUrl, left: sessionWebhookUrl },
           transcription: { finish: transcriptWebhookUrl }
         }
       };
@@ -504,7 +506,14 @@ async function joinLessonSpace(data: JoinSpaceRequest, supabase: any) {
         invite: true
       },
       webhooks: {
-        session: { end: `${supabaseUrl}/functions/v1/lessonspace-session-webhook` },
+        session: {
+          start: `${supabaseUrl}/functions/v1/lessonspace-session-webhook`,
+          end: `${supabaseUrl}/functions/v1/lessonspace-session-webhook`
+        },
+        user: {
+          joined: `${supabaseUrl}/functions/v1/lessonspace-session-webhook`,
+          left: `${supabaseUrl}/functions/v1/lessonspace-session-webhook`
+        },
         transcription: { finish: `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook` }
       }
     };
@@ -664,7 +673,14 @@ async function addStudentsToRoom(data: any, supabase: any) {
           invite: true
         },
         webhooks: {
-          session: { end: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook` },
+          session: {
+            start: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook`,
+            end: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook`
+          },
+          user: {
+            joined: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook`,
+            left: `${supabaseUrlForStudents}/functions/v1/lessonspace-session-webhook`
+          },
           transcription: { finish: `${supabaseUrlForStudents}/functions/v1/lessonspace-transcript-webhook` }
         }
       };
