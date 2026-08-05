@@ -23,9 +23,23 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
 }) => {
   const [isHardDelete, setIsHardDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [futureCount, setFutureCount] = useState<number | null>(null);
+
+  const studentId = student
+    ? (typeof student.id === 'string' ? parseInt(student.id, 10) : student.id)
+    : null;
+
+  React.useEffect(() => {
+    if (!isOpen || studentId === null) return;
+    setFutureCount(null);
+    supabase.functions
+      .invoke('stop-lessons', { body: { mode: 'student', studentId, dryRun: true } })
+      .then(({ data }) => setFutureCount((data as any)?.affectedLessons ?? 0))
+      .catch(() => setFutureCount(null));
+  }, [isOpen, studentId]);
 
   // Don't render if student is null
-  if (!student) {
+  if (!student || studentId === null) {
     return null;
   }
 
@@ -37,21 +51,25 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
         const { error } = await supabase
           .from('students')
           .delete()
-          .eq('id', typeof student.id === 'string' ? parseInt(student.id, 10) : student.id);
+          .eq('id', studentId);
 
         if (error) throw error;
         
         toast.success(`Student ${student.first_name} ${student.last_name} has been permanently deleted.`);
       } else {
-        // Soft delete - mark as inactive
-        const { error } = await supabase
-          .from('students')
-          .update({ status: 'inactive' })
-          .eq('id', typeof student.id === 'string' ? parseInt(student.id, 10) : student.id);
+        // Stop lessons: marks the student as stopped, ends their recurring series
+        // and clears their upcoming sessions from the calendar.
+        const { data, error } = await supabase.functions.invoke('stop-lessons', {
+          body: { mode: 'student', studentId },
+        });
 
         if (error) throw error;
-        
-        toast.success(`Student ${student.first_name} ${student.last_name} has been marked as inactive.`);
+        if ((data as any)?.error) throw new Error((data as any).error);
+
+        const cancelled = (data as any)?.cancelledLessons ?? 0;
+        toast.success(
+          `${student.first_name} ${student.last_name} marked as stopped. ${cancelled} upcoming lesson${cancelled === 1 ? '' : 's'} cancelled.`
+        );
       }
       
       onDeleted(); // Refresh the student list
@@ -63,6 +81,7 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
       setIsDeleting(false);
     }
   };
+
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
