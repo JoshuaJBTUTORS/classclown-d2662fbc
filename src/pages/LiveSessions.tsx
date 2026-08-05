@@ -251,6 +251,43 @@ const LiveSessions: React.FC = () => {
       )}
 
       <Card>
+        <CardHeader>
+          <CardTitle>Tutor punctuality today</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {punctuality.length === 0 && (
+            <p className="text-sm text-muted-foreground">No lessons tracked yet today.</p>
+          )}
+          {punctuality.map(row => {
+            const badge =
+              row.status === 'on_time'
+                ? { label: 'On time', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
+                : row.status === 'late'
+                ? { label: `Late by ${row.minutes_late} min`, className: 'bg-amber-100 text-amber-800 border-amber-200' }
+                : row.status === 'no_show'
+                ? { label: 'Tutor not joined', className: 'bg-destructive/10 text-destructive border-destructive/20' }
+                : { label: 'Waiting', className: 'bg-muted text-muted-foreground border-border' };
+            return (
+              <div key={row.id} className="flex flex-wrap items-center gap-3 border-b last:border-b-0 py-2">
+                <Badge variant="outline" className={badge.className}>{badge.label}</Badge>
+                <span className="text-sm font-medium">{row.tutor_name || 'Unassigned tutor'}</span>
+                <span className="text-xs text-muted-foreground">
+                  start {format(new Date(row.lesson_start), 'HH:mm')}
+                  {row.tutor_first_join_at && ` · joined ${format(new Date(row.tutor_first_join_at), 'HH:mm')}`}
+                </span>
+                {row.alert_sent_at && (
+                  <span className="ml-auto text-xs text-muted-foreground shrink-0">
+                    alert sent {format(new Date(row.alert_sent_at), 'HH:mm')}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+
+      <Card>
         <CardHeader><CardTitle>Webhook activity feed (last 24 hours)</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           {events.length === 0 && (
