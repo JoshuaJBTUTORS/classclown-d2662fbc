@@ -29,6 +29,7 @@ Confirmed in the live data: there are groups still due to extend that have zero 
 
 3. **Make the generator self-correcting**
    - Skip and permanently retire any group whose series has no remaining lessons, so it cannot resurrect a fully deleted series.
+   - **Two-week lookback rule**: before generating a date, look at the two weeks immediately before the week being generated. If the series had no lesson in that window, assume it has ended and generate nothing (and retire the group). If it did have a lesson, treat the series as live and generate as normal.
 
 4. **Clean up the existing backlog**
    - Retire the groups that are currently due to extend but have no remaining future lessons and no cancellation record, so they stop producing ghosts.
