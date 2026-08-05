@@ -146,7 +146,8 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
               ? 'Processing...' 
               : isHardDelete 
                 ? 'Yes, Delete Permanently' 
-                : 'Deactivate Student'}
+                : 'Stop Lessons'}
+
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
