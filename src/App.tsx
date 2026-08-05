@@ -60,6 +60,7 @@ import AdminEarnings from './pages/AdminEarnings';
 import AdminDashboard from './pages/AdminDashboard';
 import Goals from './pages/Goals';
 import RevenueExpansion from './pages/RevenueExpansion';
+import LiveSessions from './pages/LiveSessions';
 import TrialBookingMusa from './pages/TrialBookingMusa';
 import ReviewRoom from './pages/ReviewRoom';
 
@@ -240,6 +241,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <RevenueExpansion />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="admin/live-sessions"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <LiveSessions />
                       </ProtectedRoute>
                     }
                   />

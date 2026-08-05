@@ -31,6 +31,7 @@ import {
   ClipboardCheck,
   RefreshCw,
   Target,
+  Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -173,6 +174,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: Target,
           label: 'Goals',
           href: '/goals',
+          roles: ['admin', 'owner'],
+        },
+        {
+          icon: Radio,
+          label: 'Live Sessions',
+          href: '/admin/live-sessions',
           roles: ['admin', 'owner'],
         },
         {
@@ -358,7 +365,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                   {item.href === '#' ? (
                                     <button
                                       onClick={() => {
-                                        item.onClick?.();
+                                        (item as { onClick?: () => void }).onClick?.();
                                         onClose();
                                       }}
                                       className={cn(
