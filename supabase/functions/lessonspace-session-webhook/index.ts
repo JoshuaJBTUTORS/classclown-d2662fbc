@@ -148,7 +148,7 @@ serve(async (req) => {
     }
 
     // Log session.start / session.end for visibility too
-    await supabase.from("lesson_participant_events").insert({
+    const { error: sessEvErr } = await supabase.from("lesson_participant_events").insert({
       lesson_id: lessonRow?.id ?? null,
       room_id: roomId ?? null,
       session_id: sessionId,
@@ -156,6 +156,8 @@ serve(async (req) => {
       occurred_at: new Date().toISOString(),
       raw_payload: payload,
     });
+    if (sessEvErr) console.error(`[${rid}] session event insert failed:`, sessEvErr.message);
+    else console.log(`[${rid}] ${normalizedEvent} recorded for lesson=${lessonRow?.id ?? "unmatched"}`);
 
     if (!lessonRow?.id) {
       console.warn(`[${rid}] no lesson matched room_id=${roomId}; acknowledging without update`);
