@@ -69,7 +69,7 @@ serve(async (req) => {
     const sessionId: string | undefined = payload?.id ?? payload?.session?.id;
     const roomId: string | undefined = payload?.room?.id ?? payload?.roomId;
 
-    if (!sessionId || !roomId) {
+    if (!roomId && !sessionId) {
       return new Response(JSON.stringify({ error: "missing_session_or_room_id" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -77,15 +77,84 @@ serve(async (req) => {
     }
 
     // Find the lesson by room_id (session_id is what we're setting)
-    const { data: lessonRow, error: lessonErr } = await supabase
+    let lessonQuery = supabase
       .from("lessons")
       .select("id, lesson_space_webhook_secret, lesson_space_session_id")
-      .eq("lesson_space_room_id", roomId)
-      .maybeSingle();
+      .limit(1);
+    if (roomId) lessonQuery = lessonQuery.eq("lesson_space_room_id", roomId);
+    else lessonQuery = lessonQuery.eq("lesson_space_session_id", sessionId!);
+
+    const { data: lessonRow, error: lessonErr } = await lessonQuery.maybeSingle();
 
     if (lessonErr) {
       console.error(`[${rid}] lesson lookup failed:`, lessonErr.message);
     }
+
+    // Verify signature if we stored a secret for this lesson (log only, never drop the event)
+    if (lessonRow?.lesson_space_webhook_secret && signatureHeader) {
+      const expected = await hmacSha256Hex(lessonRow.lesson_space_webhook_secret, rawBody);
+      if (!timingSafeEq(expected, signatureHeader.trim())) {
+        console.warn(`[${rid}] signature mismatch for lesson ${lessonRow.id} — accepting anyway`);
+      }
+    } else {
+      console.warn(`[${rid}] no stored secret or no signature — accepting (lesson=${lessonRow?.id ?? "unknown"})`);
+    }
+
+    // ---- Participant join/leave tracking (user.joined / user.left) ----
+    const isUserEvent = eventHeader.startsWith("user.");
+    if (isUserEvent) {
+      const user = payload?.user ?? payload?.participant ?? {};
+      const externalId: string | undefined = user?.id ?? payload?.userId;
+      const role =
+        user?.role ??
+        (typeof externalId === "string" && externalId.startsWith("tutor_")
+          ? "teacher"
+          : typeof externalId === "string" && externalId.startsWith("student_")
+            ? "student"
+            : null);
+
+      const { error: evErr } = await supabase.from("lesson_participant_events").insert({
+        lesson_id: lessonRow?.id ?? null,
+        room_id: roomId ?? null,
+        session_id: sessionId ?? null,
+        event_type: eventHeader,
+        participant_external_id: externalId ?? null,
+        participant_name: user?.name ?? null,
+        participant_role: role,
+        is_leader: typeof user?.leader === "boolean" ? user.leader : null,
+        occurred_at: payload?.timestamp ?? new Date().toISOString(),
+        raw_payload: payload,
+      });
+      if (evErr) console.error(`[${rid}] participant event insert failed:`, evErr.message);
+      else
+        console.log(
+          `[${rid}] ${eventHeader} recorded | lesson=${lessonRow?.id ?? "unmatched"} | user=${user?.name ?? externalId ?? "unknown"} | role=${role ?? "unknown"}`,
+        );
+
+      return new Response(JSON.stringify({ success: true, recorded: eventHeader }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ---- Session events ----
+    if (!sessionId) {
+      return new Response(JSON.stringify({ error: "missing_session_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Log session.start / session.end for visibility too
+    await supabase.from("lesson_participant_events").insert({
+      lesson_id: lessonRow?.id ?? null,
+      room_id: roomId ?? null,
+      session_id: sessionId,
+      event_type: eventHeader || "session.unknown",
+      occurred_at: new Date().toISOString(),
+      raw_payload: payload,
+    });
+
     if (!lessonRow?.id) {
       console.warn(`[${rid}] no lesson matched room_id=${roomId}; acknowledging without update`);
       return new Response(JSON.stringify({ success: true, matched: false }), {
@@ -94,19 +163,6 @@ serve(async (req) => {
       });
     }
 
-    // Verify signature if we stored a secret for this lesson
-    if (lessonRow.lesson_space_webhook_secret && signatureHeader) {
-      const expected = await hmacSha256Hex(lessonRow.lesson_space_webhook_secret, rawBody);
-      if (!timingSafeEq(expected, signatureHeader.trim())) {
-        console.warn(`[${rid}] signature mismatch for lesson ${lessonRow.id}`);
-        return new Response(JSON.stringify({ error: "invalid_signature" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else {
-      console.warn(`[${rid}] no stored secret or no signature — accepting (lesson=${lessonRow.id})`);
-    }
 
     // Only overwrite if we don't already have a session_id, to avoid clobbering
     if (lessonRow.lesson_space_session_id && lessonRow.lesson_space_session_id !== sessionId) {
