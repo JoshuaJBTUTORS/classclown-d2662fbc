@@ -75,21 +75,50 @@ serve(async (req) => {
             new Set(connected.map((c) => c?.profile).filter((p) => p != null)),
           );
 
+          const nowMs = Date.now();
           const participants = connectedProfileIds.map((pid) => {
             const profile = profiles.find((p) => p?.user === pid);
-            const joins = logs
-              .filter((l) => l?.profile === pid && l?.log_type === "user-joined")
+            const userLogs = logs
+              .filter(
+                (l) =>
+                  l?.profile === pid &&
+                  (l?.log_type === "user-joined" || l?.log_type === "user-left"),
+              )
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            const firstJoin = joins[0];
-            const lastJoin = joins[joins.length - 1];
+
+            // Build join/leave stints so every visit is listed separately
+            const stints: any[] = [];
+            for (const log of userLogs) {
+              if (log.log_type === "user-joined") {
+                stints.push({ joinedAt: log.date, leftAt: null });
+              } else if (stints.length && !stints[stints.length - 1].leftAt) {
+                stints[stints.length - 1].leftAt = log.date;
+              }
+            }
+            if (stints.length === 0 && active?.start_time) {
+              stints.push({ joinedAt: active.start_time, leftAt: null });
+            }
+            const withDuration = stints.map((s) => {
+              const start = new Date(s.joinedAt).getTime();
+              const end = s.leftAt ? new Date(s.leftAt).getTime() : nowMs;
+              return {
+                ...s,
+                active: !s.leftAt,
+                durationMinutes: Math.max(0, Math.round((end - start) / 60000)),
+              };
+            });
+            const totalMinutes = withDuration.reduce((sum, s) => sum + s.durationMinutes, 0);
+
             return {
               id: String(pid),
               name: profile?.name ?? "Unknown",
               role: profile?.role ?? null,
               isLeader: profile?.role === "teacher",
-              joinedAt: firstJoin?.date ?? active?.start_time ?? null,
-              lastJoinedAt: lastJoin?.date ?? null,
-              rejoinCount: Math.max(0, joins.length - 1),
+              joinedAt: withDuration[0]?.joinedAt ?? active?.start_time ?? null,
+              lastJoinedAt: withDuration[withDuration.length - 1]?.joinedAt ?? null,
+              rejoinCount: Math.max(0, withDuration.length - 1),
+              stints: withDuration,
+              totalMinutes,
             };
           });
 
@@ -101,6 +130,8 @@ serve(async (req) => {
             joinedAt: null,
             lastJoinedAt: null,
             rejoinCount: 0,
+            stints: [],
+            totalMinutes: 0,
           }));
 
           return {
