@@ -86,11 +86,6 @@ serve(async (req) => {
         .eq("lesson_id", lesson.id)
         .maybeSingle();
 
-      if (existing?.tutor_first_join_at) {
-        processed.push({ lesson: lesson.id, skipped: "already_recorded" });
-        continue;
-      }
-
       // 1. Look for a webhook-recorded tutor join
       let firstJoin: string | null = null;
       const { data: events } = await supabase
@@ -122,6 +117,7 @@ serve(async (req) => {
               .filter((p) => String(p?.role ?? "").toLowerCase() === "teacher")
               .map((p) => p?.user);
 
+            // Earliest teacher join within the active session
             const joinLog = logs
               .filter((l) => l?.log_type === "user-joined" && teacherProfileIds.includes(l?.profile))
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
@@ -135,6 +131,13 @@ serve(async (req) => {
       }
 
       const tutorName = lesson.tutor_id ? tutorMap.get(lesson.tutor_id) ?? null : null;
+
+      // Earliest wins: keep whichever join time is earlier
+      if (existing?.tutor_first_join_at) {
+        if (!firstJoin || new Date(existing.tutor_first_join_at).getTime() <= new Date(firstJoin).getTime()) {
+          firstJoin = existing.tutor_first_join_at;
+        }
+      }
 
       if (firstJoin) {
         const minutesLate = Math.max(

@@ -77,15 +77,19 @@ serve(async (req) => {
 
           const participants = connectedProfileIds.map((pid) => {
             const profile = profiles.find((p) => p?.user === pid);
-            const lastJoin = [...logs]
+            const joins = logs
               .filter((l) => l?.profile === pid && l?.log_type === "user-joined")
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            const firstJoin = joins[0];
+            const lastJoin = joins[joins.length - 1];
             return {
               id: String(pid),
               name: profile?.name ?? "Unknown",
               role: profile?.role ?? null,
               isLeader: profile?.role === "teacher",
-              joinedAt: lastJoin?.date ?? active?.start_time ?? null,
+              joinedAt: firstJoin?.date ?? active?.start_time ?? null,
+              lastJoinedAt: lastJoin?.date ?? null,
+              rejoinCount: Math.max(0, joins.length - 1),
             };
           });
 
@@ -95,6 +99,8 @@ serve(async (req) => {
             role: "guest",
             isLeader: false,
             joinedAt: null,
+            lastJoinedAt: null,
+            rejoinCount: 0,
           }));
 
           return {
