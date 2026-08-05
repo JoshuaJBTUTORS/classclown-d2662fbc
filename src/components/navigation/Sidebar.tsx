@@ -365,7 +365,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                   {item.href === '#' ? (
                                     <button
                                       onClick={() => {
-                                        item.onClick?.();
+                                        (item as { onClick?: () => void }).onClick?.();
                                         onClose();
                                       }}
                                       className={cn(
