@@ -2597,6 +2597,59 @@ export type Database = {
           },
         ]
       }
+      lesson_participant_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          is_leader: boolean | null
+          lesson_id: string | null
+          occurred_at: string
+          participant_external_id: string | null
+          participant_name: string | null
+          participant_role: string | null
+          raw_payload: Json | null
+          room_id: string | null
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          is_leader?: boolean | null
+          lesson_id?: string | null
+          occurred_at?: string
+          participant_external_id?: string | null
+          participant_name?: string | null
+          participant_role?: string | null
+          raw_payload?: Json | null
+          room_id?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_leader?: boolean | null
+          lesson_id?: string | null
+          occurred_at?: string
+          participant_external_id?: string | null
+          participant_name?: string | null
+          participant_role?: string | null
+          raw_payload?: Json | null
+          room_id?: string | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_participant_events_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_participant_urls: {
         Row: {
           created_at: string
