@@ -65,22 +65,46 @@ serve(async (req) => {
           }
           const json = await res.json();
           const sessions: any[] = Array.isArray(json) ? json : (json?.results ?? []);
-          // Active session = no end timestamp
-          const active = sessions.find((s) => !s?.end && !s?.ended_at) ?? sessions[0];
-          const users: any[] = active?.users ?? active?.participants ?? [];
-          const participants = users
-            .filter((u) => !u?.left && !u?.left_at)
-            .map((u) => ({
-              name: u?.name ?? u?.display_name ?? u?.user?.name ?? "Unknown",
-              isLeader: Boolean(u?.leader ?? u?.is_leader),
-              joinedAt: u?.joined ?? u?.joined_at ?? null,
-            }));
+          // Active session = no end_time
+          const active = sessions.find((s) => !s?.end_time) ?? null;
+          const profiles: any[] = active?.profiles ?? [];
+          const connected: any[] = active?.connected_users ?? [];
+          const logs: any[] = active?.logs ?? [];
+
+          const connectedProfileIds = Array.from(
+            new Set(connected.map((c) => c?.profile).filter((p) => p != null)),
+          );
+
+          const participants = connectedProfileIds.map((pid) => {
+            const profile = profiles.find((p) => p?.user === pid);
+            const lastJoin = [...logs]
+              .filter((l) => l?.profile === pid && l?.log_type === "user-joined")
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+            return {
+              id: String(pid),
+              name: profile?.name ?? "Unknown",
+              role: profile?.role ?? null,
+              isLeader: profile?.role === "teacher",
+              joinedAt: lastJoin?.date ?? active?.start_time ?? null,
+            };
+          });
+
+          const guests = (active?.guests ?? []).map((g: any, i: number) => ({
+            id: `guest-${i}`,
+            name: g?.name ?? "Guest",
+            role: "guest",
+            isLeader: false,
+            joinedAt: null,
+          }));
+
           return {
             ...lesson,
-            sessionId: active?.id ?? null,
-            sessionActive: Boolean(active && !active?.end && !active?.ended_at),
-            participants,
+            sessionId: active?.uuid ?? null,
+            sessionStart: active?.start_time ?? null,
+            sessionActive: Boolean(active),
+            participants: [...participants, ...guests],
           };
+
         } catch (e) {
           return { ...lesson, participants: [], error: (e as Error).message };
         }
