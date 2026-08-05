@@ -155,7 +155,7 @@ const LiveSessions: React.FC = () => {
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             Auto refreshing
           </Badge>
-          <Button variant="outline" size="sm" onClick={() => { loadLive(); loadEvents(); }} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={() => { loadLive(); loadEvents(); loadPunctuality(); }} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
