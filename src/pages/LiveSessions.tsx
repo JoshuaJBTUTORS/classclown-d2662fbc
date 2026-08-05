@@ -67,6 +67,7 @@ const eventMeta = (type: string) => {
 const LiveSessions: React.FC = () => {
   const [lessons, setLessons] = useState<LiveLesson[]>([]);
   const [events, setEvents] = useState<ParticipantEvent[]>([]);
+  const [punctuality, setPunctuality] = useState<PunctualityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
