@@ -5846,6 +5846,10 @@ export type Database = {
       clean_expired_oauth_states: { Args: never; Returns: undefined }
       cleanup_expired_reset_tokens: { Args: never; Returns: undefined }
       cleanup_old_time_off_requests: { Args: never; Returns: number }
+      delete_lesson_scoped: {
+        Args: { p_lesson_id: string; p_scope: string }
+        Returns: Json
+      }
       extend_recurring_lessons: { Args: never; Returns: undefined }
       generate_future_school_progress_cycles: {
         Args: never
