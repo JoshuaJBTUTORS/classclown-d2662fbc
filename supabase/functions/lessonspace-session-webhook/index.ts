@@ -101,7 +101,9 @@ serve(async (req) => {
     }
 
     // ---- Participant join/leave tracking (user.joined / user.left) ----
-    const isUserEvent = eventHeader.startsWith("user.");
+    // LessonSpace sends the event name prefixed, e.g. "webhooks.user.joined"
+    const normalizedEvent = eventHeader.replace(/^webhooks\./, "");
+    const isUserEvent = normalizedEvent.startsWith("user.");
     if (isUserEvent) {
       const user = payload?.user ?? payload?.participant ?? {};
       const externalId: string | undefined = user?.id ?? payload?.userId;
