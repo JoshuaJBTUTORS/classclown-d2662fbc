@@ -90,6 +90,9 @@ export const TrialBookingConfirmationEmail = ({
                 )}
               </Text>
               <Text style={text}>
+                Please try to join using a laptop or tablet if possible, as this gives the best lesson experience for {childName}.
+              </Text>
+              <Text style={text}>
                 A quick note, although the trial is free of charge, the tutor is setting this time aside specifically for {childName}. If anything comes up and you can no longer make it, please do let us know so we can offer the slot to another family.
               </Text>
             </>

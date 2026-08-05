@@ -39,6 +39,8 @@ Date: ${preferredDate}
 Start time: ${preferredTime}
 Session: a 15 minute platform walkthrough followed by a 30 minute trial lesson
 
+Please try to join using a laptop or tablet if possible, as this gives the best lesson experience for ${childName}.
+
 We'll send the video link across shortly before the session begins.
 
 Just a gentle note, although the trial is free of charge, the tutor is setting this time aside especially for ${childName}. If anything changes and you can't make it, please do let us know so we can offer the slot to another family.
