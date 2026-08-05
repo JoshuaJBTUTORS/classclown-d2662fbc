@@ -176,6 +176,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner'],
         },
         {
+          icon: Radio,
+          label: 'Live Sessions',
+          href: '/admin/live-sessions',
+          roles: ['admin', 'owner'],
+        },
+        {
           icon: DollarSign,
           label: 'Earnings',
           href: '/earnings',
