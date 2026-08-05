@@ -28,6 +28,17 @@ interface LiveLesson {
   error?: string;
 }
 
+interface PunctualityRow {
+  id: string;
+  lesson_id: string;
+  tutor_name: string | null;
+  lesson_start: string;
+  tutor_first_join_at: string | null;
+  minutes_late: number | null;
+  status: string;
+  alert_sent_at: string | null;
+}
+
 interface ParticipantEvent {
   id: string;
   lesson_id: string | null;
