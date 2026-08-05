@@ -99,6 +99,8 @@ serve(async (req) => {
             role: "guest",
             isLeader: false,
             joinedAt: null,
+            lastJoinedAt: null,
+            rejoinCount: 0,
           }));
 
           return {
