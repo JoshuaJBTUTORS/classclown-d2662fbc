@@ -283,6 +283,8 @@ const LiveSessions: React.FC = () => {
                 ? { label: `Late by ${row.minutes_late} min`, className: 'bg-amber-100 text-amber-800 border-amber-200' }
                 : row.status === 'no_show'
                 ? { label: 'Tutor not joined', className: 'bg-destructive/10 text-destructive border-destructive/20' }
+                : row.status === 'no_students_expected'
+                ? { label: 'No students expected', className: 'bg-muted text-muted-foreground border-border' }
                 : { label: 'Waiting', className: 'bg-muted text-muted-foreground border-border' };
             return (
               <div key={row.id} className="flex flex-wrap items-center gap-3 border-b last:border-b-0 py-2">
