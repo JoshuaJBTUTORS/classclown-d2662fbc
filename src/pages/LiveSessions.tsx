@@ -28,6 +28,17 @@ interface LiveLesson {
   error?: string;
 }
 
+interface PunctualityRow {
+  id: string;
+  lesson_id: string;
+  tutor_name: string | null;
+  lesson_start: string;
+  tutor_first_join_at: string | null;
+  minutes_late: number | null;
+  status: string;
+  alert_sent_at: string | null;
+}
+
 interface ParticipantEvent {
   id: string;
   lesson_id: string | null;
@@ -56,6 +67,7 @@ const eventMeta = (type: string) => {
 const LiveSessions: React.FC = () => {
   const [lessons, setLessons] = useState<LiveLesson[]>([]);
   const [events, setEvents] = useState<ParticipantEvent[]>([]);
+  const [punctuality, setPunctuality] = useState<PunctualityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -84,12 +96,25 @@ const LiveSessions: React.FC = () => {
     setEvents((data || []) as ParticipantEvent[]);
   }, []);
 
+  const loadPunctuality = useCallback(async () => {
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    const { data } = await supabase
+      .from('tutor_punctuality')
+      .select('id, lesson_id, tutor_name, lesson_start, tutor_first_join_at, minutes_late, status, alert_sent_at')
+      .gte('lesson_start', since.toISOString())
+      .order('lesson_start', { ascending: false });
+    setPunctuality((data || []) as PunctualityRow[]);
+  }, []);
+
   useEffect(() => {
     loadLive();
     loadEvents();
+    loadPunctuality();
     const interval = setInterval(() => {
       loadLive();
       loadEvents();
+      loadPunctuality();
     }, 20000);
 
     const channel = supabase
@@ -108,7 +133,7 @@ const LiveSessions: React.FC = () => {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [loadLive, loadEvents]);
+  }, [loadLive, loadEvents, loadPunctuality]);
 
   const activeLessons = lessons.filter(l => l.participants.length > 0);
   const idleLessons = lessons.filter(l => l.participants.length === 0);
@@ -130,7 +155,7 @@ const LiveSessions: React.FC = () => {
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             Auto refreshing
           </Badge>
-          <Button variant="outline" size="sm" onClick={() => { loadLive(); loadEvents(); }} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={() => { loadLive(); loadEvents(); loadPunctuality(); }} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -224,6 +249,43 @@ const LiveSessions: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tutor punctuality today</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {punctuality.length === 0 && (
+            <p className="text-sm text-muted-foreground">No lessons tracked yet today.</p>
+          )}
+          {punctuality.map(row => {
+            const badge =
+              row.status === 'on_time'
+                ? { label: 'On time', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
+                : row.status === 'late'
+                ? { label: `Late by ${row.minutes_late} min`, className: 'bg-amber-100 text-amber-800 border-amber-200' }
+                : row.status === 'no_show'
+                ? { label: 'Tutor not joined', className: 'bg-destructive/10 text-destructive border-destructive/20' }
+                : { label: 'Waiting', className: 'bg-muted text-muted-foreground border-border' };
+            return (
+              <div key={row.id} className="flex flex-wrap items-center gap-3 border-b last:border-b-0 py-2">
+                <Badge variant="outline" className={badge.className}>{badge.label}</Badge>
+                <span className="text-sm font-medium">{row.tutor_name || 'Unassigned tutor'}</span>
+                <span className="text-xs text-muted-foreground">
+                  start {format(new Date(row.lesson_start), 'HH:mm')}
+                  {row.tutor_first_join_at && ` · joined ${format(new Date(row.tutor_first_join_at), 'HH:mm')}`}
+                </span>
+                {row.alert_sent_at && (
+                  <span className="ml-auto text-xs text-muted-foreground shrink-0">
+                    alert sent {format(new Date(row.alert_sent_at), 'HH:mm')}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader><CardTitle>Webhook activity feed (last 24 hours)</CardTitle></CardHeader>
