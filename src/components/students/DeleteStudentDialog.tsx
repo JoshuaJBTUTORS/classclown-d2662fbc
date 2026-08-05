@@ -90,7 +90,7 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
           <AlertDialogTitle>
             {isHardDelete 
               ? 'Permanently Delete Student' 
-              : 'Deactivate Student'}
+              : 'Stop Lessons for Student'}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isHardDelete ? (
@@ -106,15 +106,21 @@ const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
             ) : (
               <>
                 <p className="mb-2">
-                  This will mark {student.first_name} {student.last_name} as inactive. 
-                  The student will still appear in historical data but won't be available for new lessons.
+                  This will mark {student.first_name} {student.last_name} as stopped, end any
+                  recurring series they are on, and clear their upcoming sessions from the calendar.
+                </p>
+                <p className="mb-2">
+                  {futureCount === null
+                    ? 'Checking upcoming lessons...'
+                    : `${futureCount} upcoming lesson${futureCount === 1 ? '' : 's'} will be removed.`}
                 </p>
                 <p>
-                  You can reactivate the student later if needed.
+                  Past lessons and history are kept. You can set them back to active later if needed.
                 </p>
               </>
             )}
           </AlertDialogDescription>
+
         </AlertDialogHeader>
         
         <div className="flex items-center space-x-2 my-4">
