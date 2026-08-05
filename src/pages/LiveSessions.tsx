@@ -95,12 +95,25 @@ const LiveSessions: React.FC = () => {
     setEvents((data || []) as ParticipantEvent[]);
   }, []);
 
+  const loadPunctuality = useCallback(async () => {
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    const { data } = await supabase
+      .from('tutor_punctuality')
+      .select('id, lesson_id, tutor_name, lesson_start, tutor_first_join_at, minutes_late, status, alert_sent_at')
+      .gte('lesson_start', since.toISOString())
+      .order('lesson_start', { ascending: false });
+    setPunctuality((data || []) as PunctualityRow[]);
+  }, []);
+
   useEffect(() => {
     loadLive();
     loadEvents();
+    loadPunctuality();
     const interval = setInterval(() => {
       loadLive();
       loadEvents();
+      loadPunctuality();
     }, 20000);
 
     const channel = supabase
