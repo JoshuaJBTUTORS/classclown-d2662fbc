@@ -101,7 +101,9 @@ serve(async (req) => {
     }
 
     // ---- Participant join/leave tracking (user.joined / user.left) ----
-    const isUserEvent = eventHeader.startsWith("user.");
+    // LessonSpace sends the event name prefixed, e.g. "webhooks.user.joined"
+    const normalizedEvent = eventHeader.replace(/^webhooks\./, "");
+    const isUserEvent = normalizedEvent.startsWith("user.");
     if (isUserEvent) {
       const user = payload?.user ?? payload?.participant ?? {};
       const externalId: string | undefined = user?.id ?? payload?.userId;
@@ -117,7 +119,7 @@ serve(async (req) => {
         lesson_id: lessonRow?.id ?? null,
         room_id: roomId ?? null,
         session_id: sessionId ?? null,
-        event_type: eventHeader,
+        event_type: normalizedEvent,
         participant_external_id: externalId ?? null,
         participant_name: user?.name ?? null,
         participant_role: role,
@@ -128,7 +130,7 @@ serve(async (req) => {
       if (evErr) console.error(`[${rid}] participant event insert failed:`, evErr.message);
       else
         console.log(
-          `[${rid}] ${eventHeader} recorded | lesson=${lessonRow?.id ?? "unmatched"} | user=${user?.name ?? externalId ?? "unknown"} | role=${role ?? "unknown"}`,
+          `[${rid}] ${normalizedEvent} recorded | lesson=${lessonRow?.id ?? "unmatched"} | user=${user?.name ?? externalId ?? "unknown"} | role=${role ?? "unknown"}`,
         );
 
       return new Response(JSON.stringify({ success: true, recorded: eventHeader }), {
@@ -146,14 +148,16 @@ serve(async (req) => {
     }
 
     // Log session.start / session.end for visibility too
-    await supabase.from("lesson_participant_events").insert({
+    const { error: sessEvErr } = await supabase.from("lesson_participant_events").insert({
       lesson_id: lessonRow?.id ?? null,
       room_id: roomId ?? null,
       session_id: sessionId,
-      event_type: eventHeader || "session.unknown",
+      event_type: normalizedEvent || "session.unknown",
       occurred_at: new Date().toISOString(),
       raw_payload: payload,
     });
+    if (sessEvErr) console.error(`[${rid}] session event insert failed:`, sessEvErr.message);
+    else console.log(`[${rid}] ${normalizedEvent} recorded for lesson=${lessonRow?.id ?? "unmatched"}`);
 
     if (!lessonRow?.id) {
       console.warn(`[${rid}] no lesson matched room_id=${roomId}; acknowledging without update`);
