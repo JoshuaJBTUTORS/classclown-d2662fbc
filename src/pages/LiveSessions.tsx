@@ -221,27 +221,30 @@ const LiveSessions: React.FC = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {lesson.participants.map(p => {
+                {lesson.participants.flatMap(p => {
                   const Icon = p.isLeader ? GraduationCap : User;
-                  return (
+                  const stints = p.stints?.length
+                    ? p.stints
+                    : [{ joinedAt: p.joinedAt ?? '', leftAt: null, active: true, durationMinutes: 0 }];
+                  return stints.map((s, i) => (
                     <span
-                      key={p.id}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${p.isLeader ? 'bg-primary/10 border-primary/20' : 'bg-muted border-border'}`}
+                      key={`${p.id}-${i}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${p.isLeader ? 'bg-primary/10 border-primary/20' : 'bg-muted border-border'} ${s.active ? '' : 'opacity-70'}`}
                     >
                       <Icon className="h-3.5 w-3.5" />
                       {p.name}
-                      {p.joinedAt && (
+                      {s.joinedAt && (
                         <span className="text-xs text-muted-foreground">
-                          First joined {format(new Date(p.joinedAt), 'HH:mm')}
-                          {!!p.rejoinCount && p.lastJoinedAt && (
-                            <> · rejoined {format(new Date(p.lastJoinedAt), 'HH:mm')}</>
-                          )}
+                          {format(new Date(s.joinedAt), 'HH:mm')}
+                          {s.leftAt ? ` to ${format(new Date(s.leftAt), 'HH:mm')}` : ' to now'}
+                          {` · ${s.durationMinutes} min`}
                         </span>
                       )}
                     </span>
-                  );
+                  ));
                 })}
               </div>
+
             </div>
           ))}
         </CardContent>
