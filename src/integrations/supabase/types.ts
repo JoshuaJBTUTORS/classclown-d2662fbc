@@ -2833,6 +2833,8 @@ export type Database = {
           recipient_email: string
           recipient_name: string
           recipient_phone: string | null
+          reminder_12h_sent_at: string | null
+          reminder_1h_sent_at: string | null
           sent_at: string | null
           status: string
           student_id: number | null
@@ -2859,6 +2861,8 @@ export type Database = {
           recipient_email: string
           recipient_name: string
           recipient_phone?: string | null
+          reminder_12h_sent_at?: string | null
+          reminder_1h_sent_at?: string | null
           sent_at?: string | null
           status?: string
           student_id?: number | null
@@ -2885,6 +2889,8 @@ export type Database = {
           recipient_email?: string
           recipient_name?: string
           recipient_phone?: string | null
+          reminder_12h_sent_at?: string | null
+          reminder_1h_sent_at?: string | null
           sent_at?: string | null
           status?: string
           student_id?: number | null
