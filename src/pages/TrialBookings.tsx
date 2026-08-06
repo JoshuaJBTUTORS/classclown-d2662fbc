@@ -651,6 +651,15 @@ const TrialBookings = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
+                            {booking.referral_code ? (
+                              <Badge variant="secondary" title={`Referred with code ${booking.referral_code}`}>
+                                Referred
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4 text-muted-foreground" />
                               <span>{format(parseISO(booking.created_at), 'MMM d, yyyy')}</span>
