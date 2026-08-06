@@ -432,7 +432,7 @@ const TrialBookings = () => {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           Loading trial bookings...
                         </TableCell>
                       </TableRow>
