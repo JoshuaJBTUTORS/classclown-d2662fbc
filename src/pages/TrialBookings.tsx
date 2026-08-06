@@ -775,6 +775,14 @@ const TrialBookings = () => {
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedBooking.message}</p>
                 </div>
               )}
+              {selectedBooking.referral_code && (
+                <div className="rounded-md border bg-muted/50 p-3">
+                  <label className="text-sm font-medium">Referral</label>
+                  <p className="text-sm text-muted-foreground">
+                    Booked via referral code <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">{selectedBooking.referral_code}</code>
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Status</label>
