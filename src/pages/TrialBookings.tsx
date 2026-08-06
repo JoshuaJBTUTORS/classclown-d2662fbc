@@ -399,6 +399,18 @@ const TrialBookings = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="w-full sm:w-[180px]">
+                  <Select value={referralFilter} onValueChange={(v) => setReferralFilter(v as typeof referralFilter)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by referral" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Referrals</SelectItem>
+                      <SelectItem value="referred">Referred only</SelectItem>
+                      <SelectItem value="not_referred">Not referred</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="rounded-md border overflow-hidden">
