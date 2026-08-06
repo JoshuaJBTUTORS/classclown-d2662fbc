@@ -74,6 +74,7 @@ interface TrialBooking {
   assigned_tutor_id?: string;
   lesson_id?: string;
   booking_source?: string;
+  referral_code?: string;
 }
 
 const TrialBookings = () => {
