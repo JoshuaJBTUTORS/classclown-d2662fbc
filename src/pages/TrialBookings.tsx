@@ -541,6 +541,15 @@ const TrialBookings = () => {
                                 </div>
                               </TableCell>
                               <TableCell>
+                                {head.referral_code ? (
+                                  <Badge variant="secondary" title={`Referred with code ${head.referral_code}`}>
+                                    Referred
+                                  </Badge>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-4 w-4 text-muted-foreground" />
                                   <span>{format(parseISO(head.created_at), 'MMM d, yyyy')}</span>
