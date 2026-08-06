@@ -609,7 +609,7 @@ const TrialBookings = () => {
                       })()
                     ) : filteredBookings.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           No trial bookings found
                         </TableCell>
                       </TableRow>
