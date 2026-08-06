@@ -84,6 +84,7 @@ const TrialBookings = () => {
   const [filteredBookings, setFilteredBookings] = useState<TrialBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [referralFilter, setReferralFilter] = useState<'all' | 'referred' | 'not_referred'>('all');
   const [sourceTab, setSourceTab] = useState<'all' | 'trial' | 'review_room'>('all');
   const [reviewRoomDayTab, setReviewRoomDayTab] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
