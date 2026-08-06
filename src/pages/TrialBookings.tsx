@@ -149,7 +149,7 @@ const TrialBookings = () => {
 
   useEffect(() => {
     filterBookings();
-  }, [bookings, searchQuery, statusFilter, sourceTab, reviewRoomDayTab]);
+  }, [bookings, searchQuery, statusFilter, referralFilter, sourceTab, reviewRoomDayTab]);
 
   const fetchBookings = async () => {
     setIsLoading(true);
