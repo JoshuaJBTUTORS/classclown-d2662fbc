@@ -424,6 +424,7 @@ const TrialBookings = () => {
                         {sourceTab === 'review_room' ? 'Sessions' : 'Preferred Date'}
                       </TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Referral</TableHead>
                       <TableHead>Submitted</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
