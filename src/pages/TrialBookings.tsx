@@ -249,6 +249,13 @@ const TrialBookings = () => {
       filtered = filtered.filter(booking => booking.status === statusFilter);
     }
 
+    if (referralFilter !== 'all') {
+      const hasCode = (b: TrialBooking) => Boolean(b.referral_code && b.referral_code.trim());
+      filtered = filtered.filter(booking =>
+        referralFilter === 'referred' ? hasCode(booking) : !hasCode(booking)
+      );
+    }
+
     setFilteredBookings(filtered);
   };
 
