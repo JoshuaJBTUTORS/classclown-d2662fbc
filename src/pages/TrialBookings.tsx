@@ -74,6 +74,7 @@ interface TrialBooking {
   assigned_tutor_id?: string;
   lesson_id?: string;
   booking_source?: string;
+  referral_code?: string;
 }
 
 const TrialBookings = () => {
@@ -83,6 +84,7 @@ const TrialBookings = () => {
   const [filteredBookings, setFilteredBookings] = useState<TrialBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [referralFilter, setReferralFilter] = useState<'all' | 'referred' | 'not_referred'>('all');
   const [sourceTab, setSourceTab] = useState<'all' | 'trial' | 'review_room'>('all');
   const [reviewRoomDayTab, setReviewRoomDayTab] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -147,7 +149,7 @@ const TrialBookings = () => {
 
   useEffect(() => {
     filterBookings();
-  }, [bookings, searchQuery, statusFilter, sourceTab, reviewRoomDayTab]);
+  }, [bookings, searchQuery, statusFilter, referralFilter, sourceTab, reviewRoomDayTab]);
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -245,6 +247,13 @@ const TrialBookings = () => {
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter(booking => booking.status === statusFilter);
+    }
+
+    if (referralFilter !== 'all') {
+      const hasCode = (b: TrialBooking) => Boolean(b.referral_code && b.referral_code.trim());
+      filtered = filtered.filter(booking =>
+        referralFilter === 'referred' ? hasCode(booking) : !hasCode(booking)
+      );
     }
 
     setFilteredBookings(filtered);
@@ -390,6 +399,18 @@ const TrialBookings = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="w-full sm:w-[180px]">
+                  <Select value={referralFilter} onValueChange={(v) => setReferralFilter(v as typeof referralFilter)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by referral" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Referrals</SelectItem>
+                      <SelectItem value="referred">Referred only</SelectItem>
+                      <SelectItem value="not_referred">Not referred</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="rounded-md border overflow-hidden">
@@ -403,6 +424,7 @@ const TrialBookings = () => {
                         {sourceTab === 'review_room' ? 'Sessions' : 'Preferred Date'}
                       </TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Referral</TableHead>
                       <TableHead>Submitted</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -410,7 +432,7 @@ const TrialBookings = () => {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           Loading trial bookings...
                         </TableCell>
                       </TableRow>
@@ -430,7 +452,7 @@ const TrialBookings = () => {
                         if (groupArr.length === 0) {
                           return (
                             <TableRow>
-                              <TableCell colSpan={7} className="h-24 text-center">
+                              <TableCell colSpan={8} className="h-24 text-center">
                                 No Review Room bookings found
                               </TableCell>
                             </TableRow>
@@ -519,6 +541,15 @@ const TrialBookings = () => {
                                 </div>
                               </TableCell>
                               <TableCell>
+                                {head.referral_code ? (
+                                  <Badge variant="secondary" title={`Referred with code ${head.referral_code}`}>
+                                    Referred
+                                  </Badge>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-4 w-4 text-muted-foreground" />
                                   <span>{format(parseISO(head.created_at), 'MMM d, yyyy')}</span>
@@ -578,7 +609,7 @@ const TrialBookings = () => {
                       })()
                     ) : filteredBookings.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           No trial bookings found
                         </TableCell>
                       </TableRow>
@@ -618,6 +649,15 @@ const TrialBookings = () => {
                             <Badge className={getStatusColor(booking.status)}>
                               {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {booking.referral_code ? (
+                              <Badge variant="secondary" title={`Referred with code ${booking.referral_code}`}>
+                                Referred
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
@@ -733,6 +773,14 @@ const TrialBookings = () => {
                 <div>
                   <label className="text-sm font-medium">Message</label>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedBooking.message}</p>
+                </div>
+              )}
+              {selectedBooking.referral_code && (
+                <div className="rounded-md border bg-muted/50 p-3">
+                  <label className="text-sm font-medium">Referral</label>
+                  <p className="text-sm text-muted-foreground">
+                    Booked via referral code <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">{selectedBooking.referral_code}</code>
+                  </p>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
