@@ -90,6 +90,7 @@ export interface LessonEditProposal {
     student_ids?: number[];
   };
   side_effects: string[];
+  warnings?: string[];
 }
 
 type ProposalState = 'pending' | 'confirming' | 'created' | 'cancelled' | 'error';
