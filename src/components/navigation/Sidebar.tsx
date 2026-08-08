@@ -75,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: FileText,
           label: 'Homework',
           href: '/homework',
-          roles: ['admin', 'owner', 'tutor'],
+          roles: ['admin', 'owner'],
         },
         {
           icon: ClipboardCheck,
