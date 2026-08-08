@@ -873,6 +873,21 @@ async function buildLessonEditProposal(args: Record<string, any>) {
   if (updates.tutor_id) sideEffects.push("The LessonSpace room and all participant links are regenerated.");
   if (updates.student_ids) sideEffects.push("Enrollment notifications are sent for students added or removed.");
 
+  // Re-check tutor availability whenever the tutor or the timing changes.
+  const effectiveTutorId = (updates.tutor_id as string) ?? lesson.tutor_id;
+  const effectiveStart = (updates.start_time as string) ?? lesson.start_time;
+  const effectiveEnd = (updates.end_time as string) ?? lesson.end_time;
+  const warnings =
+    effectiveTutorId && (updates.tutor_id || updates.start_time || updates.end_time || updates.subject)
+      ? await tutorSlotWarnings({
+          tutorId: effectiveTutorId,
+          startISO: new Date(effectiveStart).toISOString(),
+          endISO: new Date(effectiveEnd).toISOString(),
+          subject: (updates.subject as string) ?? lesson.subject,
+          excludeLessonId: lesson.id,
+        })
+      : [];
+
   return {
     ok: true as const,
     proposal: {
@@ -885,6 +900,7 @@ async function buildLessonEditProposal(args: Record<string, any>) {
       changes,
       updates,
       side_effects: sideEffects,
+      warnings,
     },
   };
 }
