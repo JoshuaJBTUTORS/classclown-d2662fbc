@@ -61,6 +61,7 @@ export interface LessonProposal {
   end_time: string;
   is_group: boolean;
   recurring: { interval: string; occurrences: number } | null;
+  warnings?: string[];
 }
 
 export interface LessonEditChange {
@@ -89,6 +90,7 @@ export interface LessonEditProposal {
     student_ids?: number[];
   };
   side_effects: string[];
+  warnings?: string[];
 }
 
 type ProposalState = 'pending' | 'confirming' | 'created' | 'cancelled' | 'error';
@@ -209,6 +211,17 @@ const LessonProposalCard: React.FC<{
         )}
       </dl>
 
+      {proposal.warnings && proposal.warnings.length > 0 && (
+        <div className="mx-4 mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+          <div className="text-xs font-medium text-amber-300 mb-1">Tutor availability check</div>
+          <ul className="list-disc pl-4 text-xs text-amber-200/90 space-y-1">
+            {proposal.warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {message && (
         <div
           className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
@@ -304,6 +317,17 @@ const LessonEditProposalCard: React.FC<{
               <li key={s}>{s}</li>
             ))}
           </ul>
+        )}
+
+        {proposal.warnings && proposal.warnings.length > 0 && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+            <div className="text-xs font-medium text-amber-300 mb-1">Tutor availability check</div>
+            <ul className="list-disc pl-4 text-xs text-amber-200/90 space-y-1">
+              {proposal.warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 

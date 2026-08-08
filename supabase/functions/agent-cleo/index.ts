@@ -56,6 +56,16 @@ EDITING LESSONS:
 - You MAY propose several edits at once: when the user's request covers multiple lessons, call \`propose_lesson_edit\` once per lesson in the SAME turn (one card each, maximum 10 per turn). You can also mix creates and edits in one turn.
 - After calling \`propose_lesson_edit\`, reply with ONE short sentence covering all the cards shown, asking the user to review the changes and press Confirm. Never say the lessons have been changed.
 
+TUTORS (working hours, pay, subjects, time off):
+- \`tutor_snapshot\` is the fastest way to answer any question about ONE tutor. It returns their profile, both pay rates, weekly availability, subjects, time off and upcoming lessons in a single call. Use it before writing SQL about a named tutor.
+- \`tutors\`: first_name, last_name, email, phone, status ('active' / 'inactive'), title, bio, education, rating, specialities (text array), normal_hourly_rate, absence_hourly_rate.
+- \`tutor_availability\`: the recurring weekly working pattern. \`day_of_week\` is a capitalised day NAME ('Monday' … 'Sunday'), and \`start_time\` / \`end_time\` are plain local Europe/London times, NOT UTC.
+- \`tutor_subjects\` joins to \`subjects\` via subject_id — this is what a tutor is approved to teach. \`tutors.specialities\` is free text and less reliable.
+- \`time_off_requests\`: start_date / end_date (timestamptz) with \`status\` of 'pending', 'approved' or 'denied'. Only 'approved' actually blocks work; mention pending requests as a risk, never as confirmed time off.
+- \`lessons\` (+ \`lesson_students\`) hold the real scheduled load and are stored in UTC. Convert with \`AT TIME ZONE 'Europe/London'\` before comparing against \`tutor_availability\` times or before quoting a time to the user.
+- Pay rates are sensitive. Report them when the user asks about pay or cost; never volunteer them in unrelated answers.
+- Cross-check clashes yourself: a tutor is unavailable if the slot is outside their weekly availability, falls inside approved time off, or overlaps an existing lesson.
+
 
 
 WHEN A TOOL FAILS (failure recovery protocol):
@@ -117,6 +127,22 @@ const tools = [
         type: "object",
         properties: { sql: { type: "string", description: "A single SELECT or WITH statement" } },
         required: ["sql"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "tutor_snapshot",
+      description:
+        "Everything about one tutor in a single call: profile, status, hourly rates, weekly availability (Europe/London), subjects they can teach, approved and pending time off for the next 60 days, upcoming lessons for the next 14 days with time-off clashes flagged, and weekly scheduled vs available hours. Pass a name or a uuid. If the name is ambiguous it returns the matching candidates instead.",
+      parameters: {
+        type: "object",
+        properties: {
+          tutor: { type: "string", description: "Tutor uuid, full name, first name or last name" },
+        },
+        required: ["tutor"],
         additionalProperties: false,
       },
     },
@@ -263,6 +289,9 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
       const rows = await execSql(sql);
       return JSON.stringify({ ok: true, rows });
     }
+    if (name === "tutor_snapshot") {
+      return JSON.stringify(await tutorSnapshot(String(args.tutor ?? "")));
+    }
     return JSON.stringify({ ok: false, error: `Unknown tool: ${name}` });
   } catch (e) {
     const message = (e as Error).message;
@@ -306,6 +335,272 @@ function recoveryHint(message: string): string {
   }
   return "Read the error, change your approach, and try a different query. Do not repeat the same one.";
 }
+
+/* ------------------------------------------------------------------ *
+ * Tutor knowledge: availability, pay, subjects, time off, clashes
+ * ------------------------------------------------------------------ */
+
+const LONDON = "Europe/London";
+
+/** Weekday name + HH:MM for an instant, in Europe/London local time. */
+function londonParts(iso: string | Date): { day: string; time: string; label: string } {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const day = new Intl.DateTimeFormat("en-GB", { timeZone: LONDON, weekday: "long" }).format(d);
+  const time = new Intl.DateTimeFormat("en-GB", {
+    timeZone: LONDON,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+  const label = new Intl.DateTimeFormat("en-GB", {
+    timeZone: LONDON,
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+  return { day, time, label };
+}
+
+const toMinutes = (t: string) => {
+  const [h, m] = String(t).slice(0, 5).split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+async function resolveTutor(input: string) {
+  const term = input.trim();
+  if (!term) return { candidates: [] as any[] };
+
+  if (/^[0-9a-f-]{36}$/i.test(term)) {
+    const { data } = await service.from("tutors").select("*").eq("id", term).maybeSingle();
+    return { candidates: data ? [data] : [] };
+  }
+
+  const like = `%${term}%`;
+  const { data } = await service
+    .from("tutors")
+    .select("*")
+    .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like}`);
+  let rows = data ?? [];
+
+  if (rows.length > 1 && term.includes(" ")) {
+    const [first, ...rest] = term.split(/\s+/);
+    const last = rest.join(" ").toLowerCase();
+    const exact = rows.filter(
+      (t: any) =>
+        (t.first_name ?? "").toLowerCase() === first.toLowerCase() &&
+        (t.last_name ?? "").toLowerCase() === last,
+    );
+    if (exact.length) rows = exact;
+  }
+  return { candidates: rows };
+}
+
+/**
+ * Full picture of one tutor: profile, rates, weekly availability,
+ * subjects, time off and upcoming lessons with clashes flagged.
+ */
+async function tutorSnapshot(input: string) {
+  const { candidates } = await resolveTutor(input);
+  if (!candidates.length) {
+    return { ok: false, error: `No tutor matched "${input}". Search public.tutors with ILIKE to find the right name.` };
+  }
+  if (candidates.length > 1) {
+    return {
+      ok: false,
+      ambiguous: true,
+      error: `${candidates.length} tutors match "${input}". Ask the user which one they mean.`,
+      candidates: candidates.map((t: any) => ({
+        id: t.id,
+        name: `${t.first_name ?? ""} ${t.last_name ?? ""}`.trim(),
+        email: t.email,
+        status: t.status,
+      })),
+    };
+  }
+
+  const tutor: any = candidates[0];
+  const now = new Date();
+  const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const in60 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+  const [availabilityRes, subjectsRes, timeOffRes, lessonsRes] = await Promise.all([
+    service
+      .from("tutor_availability")
+      .select("day_of_week, start_time, end_time")
+      .eq("tutor_id", tutor.id),
+    service.from("tutor_subjects").select("subject_id, subjects(name)").eq("tutor_id", tutor.id),
+    service
+      .from("time_off_requests")
+      .select("id, start_date, end_date, status, reason")
+      .eq("tutor_id", tutor.id)
+      .lte("start_date", in60.toISOString())
+      .gte("end_date", now.toISOString()),
+    service
+      .from("lessons")
+      .select("id, title, subject, start_time, end_time, status, is_group")
+      .eq("tutor_id", tutor.id)
+      .gte("start_time", now.toISOString())
+      .lte("start_time", in14.toISOString())
+      .order("start_time", { ascending: true }),
+  ]);
+
+  const availability = (availabilityRes.data ?? []).map((a: any) => ({
+    day: a.day_of_week,
+    start: String(a.start_time).slice(0, 5),
+    end: String(a.end_time).slice(0, 5),
+  }));
+  const availableHoursPerWeek =
+    availability.reduce((sum, a) => sum + Math.max(0, toMinutes(a.end) - toMinutes(a.start)), 0) / 60;
+
+  const timeOff = (timeOffRes.data ?? []).map((t: any) => ({
+    id: t.id,
+    status: t.status,
+    start: t.start_date,
+    end: t.end_date,
+    reason: t.reason ?? null,
+  }));
+  const approvedOff = timeOff.filter((t) => t.status === "approved");
+
+  const lessons = (lessonsRes.data ?? []).map((l: any) => {
+    const p = londonParts(l.start_time);
+    const clash = approvedOff.find(
+      (o) => new Date(l.start_time) < new Date(o.end) && new Date(l.end_time) > new Date(o.start),
+    );
+    return {
+      id: l.id,
+      title: l.title,
+      subject: l.subject,
+      status: l.status,
+      is_group: l.is_group,
+      london: p.label,
+      start_time_utc: l.start_time,
+      end_time_utc: l.end_time,
+      clashes_with_approved_time_off: Boolean(clash),
+    };
+  });
+
+  const next7 = lessons.filter((l) => new Date(l.start_time_utc) <= new Date(now.getTime() + 7 * 864e5));
+  const scheduledHoursNext7 =
+    next7.reduce(
+      (sum, l) => sum + (new Date(l.end_time_utc).getTime() - new Date(l.start_time_utc).getTime()) / 3600000,
+      0,
+    ) || 0;
+
+  return {
+    ok: true,
+    tutor: {
+      id: tutor.id,
+      name: `${tutor.first_name ?? ""} ${tutor.last_name ?? ""}`.trim(),
+      email: tutor.email,
+      phone: tutor.phone ?? null,
+      status: tutor.status,
+      title: tutor.title ?? null,
+      education: tutor.education ?? null,
+      rating: tutor.rating ?? null,
+      specialities: tutor.specialities ?? [],
+      normal_hourly_rate: tutor.normal_hourly_rate ?? null,
+      absence_hourly_rate: tutor.absence_hourly_rate ?? null,
+    },
+    availability_note: "Weekly recurring pattern, times are Europe/London local.",
+    availability,
+    available_hours_per_week: Number(availableHoursPerWeek.toFixed(2)),
+    subjects: (subjectsRes.data ?? []).map((s: any) => s.subjects?.name).filter(Boolean),
+    time_off_next_60_days: timeOff,
+    lessons_next_14_days: lessons,
+    scheduled_hours_next_7_days: Number(scheduledHoursNext7.toFixed(2)),
+  };
+}
+
+/**
+ * Non-blocking checks for a proposed slot: availability window, approved
+ * time off, overlapping lessons and subject coverage. Returns plain warnings.
+ */
+async function tutorSlotWarnings(opts: {
+  tutorId: string;
+  startISO: string;
+  endISO: string;
+  subject?: string | null;
+  excludeLessonId?: string | null;
+}): Promise<string[]> {
+  const warnings: string[] = [];
+  const start = new Date(opts.startISO);
+  const end = new Date(opts.endISO);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return warnings;
+
+  try {
+    const [availRes, offRes, clashRes, subjRes] = await Promise.all([
+      service.from("tutor_availability").select("day_of_week, start_time, end_time").eq("tutor_id", opts.tutorId),
+      service
+        .from("time_off_requests")
+        .select("start_date, end_date, status")
+        .eq("tutor_id", opts.tutorId)
+        .lte("start_date", end.toISOString())
+        .gte("end_date", start.toISOString()),
+      service
+        .from("lessons")
+        .select("id, title, start_time, end_time, status")
+        .eq("tutor_id", opts.tutorId)
+        .lt("start_time", end.toISOString())
+        .gt("end_time", start.toISOString()),
+      opts.subject
+        ? service.from("tutor_subjects").select("subjects(name)").eq("tutor_id", opts.tutorId)
+        : Promise.resolve({ data: null } as any),
+    ]);
+
+    const startParts = londonParts(start);
+    const endParts = londonParts(end);
+    const slots = (availRes.data ?? []).filter(
+      (a: any) => String(a.day_of_week).toLowerCase() === startParts.day.toLowerCase(),
+    );
+    if (!slots.length) {
+      warnings.push(`Tutor has no availability recorded for ${startParts.day}.`);
+    } else {
+      const fits = slots.some(
+        (a: any) =>
+          toMinutes(startParts.time) >= toMinutes(a.start_time) &&
+          toMinutes(endParts.time) <= toMinutes(a.end_time),
+      );
+      if (!fits) {
+        const windows = slots.map((a: any) => `${String(a.start_time).slice(0, 5)}–${String(a.end_time).slice(0, 5)}`);
+        warnings.push(
+          `${startParts.time}–${endParts.time} is outside the tutor's ${startParts.day} availability (${windows.join(", ")}).`,
+        );
+      }
+    }
+
+    for (const off of offRes.data ?? []) {
+      if (off.status === "approved") warnings.push("Tutor has approved time off covering this slot.");
+      else if (off.status === "pending") warnings.push("Tutor has a pending time off request covering this slot.");
+    }
+
+    const clashes = (clashRes.data ?? []).filter(
+      (l: any) => l.id !== opts.excludeLessonId && l.status !== "cancelled",
+    );
+    for (const c of clashes) {
+      warnings.push(`Overlaps an existing lesson: ${c.title ?? "Lesson"} at ${londonParts(c.start_time).label}.`);
+    }
+
+    if (opts.subject && subjRes?.data) {
+      const names = (subjRes.data as any[]).map((s) => s.subjects?.name).filter(Boolean) as string[];
+      if (names.length) {
+        const wanted = opts.subject.toLowerCase();
+        const covered = names.some((n) => wanted.includes(n.toLowerCase()) || n.toLowerCase().includes(wanted));
+        if (!covered) {
+          warnings.push(`Tutor is not linked to this subject (teaches: ${names.join(", ")}).`);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("tutorSlotWarnings failed", e);
+  }
+
+  return warnings;
+}
+
+
 
 /**
  * Validate a proposed lesson and enrich it with human-readable names.
@@ -369,6 +664,13 @@ async function buildLessonProposal(args: Record<string, any>) {
     return { ok: false as const, error: `No student found with id ${missing.join(", ")}. Look students up in public.students first.` };
   }
 
+  const warnings = await tutorSlotWarnings({
+    tutorId,
+    startISO: start.toISOString(),
+    endISO: end.toISOString(),
+    subject,
+  });
+
   const proposal = {
     title,
     subject,
@@ -381,6 +683,7 @@ async function buildLessonProposal(args: Record<string, any>) {
     end_time: end.toISOString(),
     is_group: typeof args.is_group === "boolean" ? args.is_group : studentIds.length > 1,
     recurring,
+    warnings,
   };
 
   return { ok: true as const, proposal };
@@ -570,6 +873,21 @@ async function buildLessonEditProposal(args: Record<string, any>) {
   if (updates.tutor_id) sideEffects.push("The LessonSpace room and all participant links are regenerated.");
   if (updates.student_ids) sideEffects.push("Enrollment notifications are sent for students added or removed.");
 
+  // Re-check tutor availability whenever the tutor or the timing changes.
+  const effectiveTutorId = (updates.tutor_id as string) ?? lesson.tutor_id;
+  const effectiveStart = (updates.start_time as string) ?? lesson.start_time;
+  const effectiveEnd = (updates.end_time as string) ?? lesson.end_time;
+  const warnings =
+    effectiveTutorId && (updates.tutor_id || updates.start_time || updates.end_time || updates.subject)
+      ? await tutorSlotWarnings({
+          tutorId: effectiveTutorId,
+          startISO: new Date(effectiveStart).toISOString(),
+          endISO: new Date(effectiveEnd).toISOString(),
+          subject: (updates.subject as string) ?? lesson.subject,
+          excludeLessonId: lesson.id,
+        })
+      : [];
+
   return {
     ok: true as const,
     proposal: {
@@ -582,6 +900,7 @@ async function buildLessonEditProposal(args: Record<string, any>) {
       changes,
       updates,
       side_effects: sideEffects,
+      warnings,
     },
   };
 }
