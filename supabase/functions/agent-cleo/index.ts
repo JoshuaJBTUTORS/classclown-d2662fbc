@@ -134,6 +134,22 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "tutor_snapshot",
+      description:
+        "Everything about one tutor in a single call: profile, status, hourly rates, weekly availability (Europe/London), subjects they can teach, approved and pending time off for the next 60 days, upcoming lessons for the next 14 days with time-off clashes flagged, and weekly scheduled vs available hours. Pass a name or a uuid. If the name is ambiguous it returns the matching candidates instead.",
+      parameters: {
+        type: "object",
+        properties: {
+          tutor: { type: "string", description: "Tutor uuid, full name, first name or last name" },
+        },
+        required: ["tutor"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "propose_lesson",
       description:
         "Propose a new lesson (one-off or recurring). This does NOT create anything — it shows the user a confirmation card which they must approve. Resolve real tutor_id and student_ids from the database first, and ask the user for any missing detail instead of guessing.",
