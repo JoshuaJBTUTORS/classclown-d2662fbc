@@ -289,6 +289,9 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
       const rows = await execSql(sql);
       return JSON.stringify({ ok: true, rows });
     }
+    if (name === "tutor_snapshot") {
+      return JSON.stringify(await tutorSnapshot(String(args.tutor ?? "")));
+    }
     return JSON.stringify({ ok: false, error: `Unknown tool: ${name}` });
   } catch (e) {
     const message = (e as Error).message;
