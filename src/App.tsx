@@ -192,7 +192,14 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
-                  <Route path="homework" element={<Homework />} />
+                  <Route
+                    path="homework"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <Homework />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="assessment-center" element={<AssessmentCenter />} />
                   <Route path="assessment-center/:assignmentId/take" element={<AssessmentTake />} />
                   <Route 
