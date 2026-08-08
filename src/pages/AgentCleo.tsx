@@ -389,6 +389,8 @@ const AgentCleo: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Tracks the thread the current send belongs to, so a thread created mid-send is persisted to.
   const activeThreadRef = useRef<string | null>(threadId ?? null);
+  // Thread just created by this page's own send — its URL change must not trigger a DB restore.
+  const justCreatedThreadRef = useRef<string | null>(null);
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
   useEffect(() => {
@@ -399,6 +401,11 @@ const AgentCleo: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     activeThreadRef.current = threadId ?? null;
+    if (threadId && justCreatedThreadRef.current === threadId) {
+      // We just created this thread locally; keep the optimistic/streaming messages on screen.
+      justCreatedThreadRef.current = null;
+      return;
+    }
     if (!threadId) {
       setMessages([]);
       return;
