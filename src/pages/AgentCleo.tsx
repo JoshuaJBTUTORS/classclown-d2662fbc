@@ -635,7 +635,12 @@ const AgentCleo: React.FC = () => {
       ));
     } finally {
       if (currentThread && assistantText.trim()) {
-        void saveMessage(currentThread, 'assistant', assistantText);
+        const threadForSave = currentThread;
+        void userSavePromise.then(() =>
+          saveMessage(threadForSave, 'assistant', assistantText).catch((e) =>
+            console.error('Failed to save assistant message:', e),
+          ),
+        );
       }
       setLoading(false);
       textareaRef.current?.focus();
