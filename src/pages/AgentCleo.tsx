@@ -521,10 +521,13 @@ const AgentCleo: React.FC = () => {
       currentThread = await createThread(text);
       if (currentThread) {
         activeThreadRef.current = currentThread;
+        justCreatedThreadRef.current = currentThread;
         navigate(`/agent-cleo/${currentThread}`, { replace: true });
       }
     }
-    if (currentThread) void saveMessage(currentThread, 'user', text);
+    const userSavePromise = currentThread
+      ? saveMessage(currentThread, 'user', text).catch((e) => console.error('Failed to save user message:', e))
+      : Promise.resolve();
 
     const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: text };
     const assistantId = crypto.randomUUID();
