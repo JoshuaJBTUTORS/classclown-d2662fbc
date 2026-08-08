@@ -664,6 +664,13 @@ async function buildLessonProposal(args: Record<string, any>) {
     return { ok: false as const, error: `No student found with id ${missing.join(", ")}. Look students up in public.students first.` };
   }
 
+  const warnings = await tutorSlotWarnings({
+    tutorId,
+    startISO: start.toISOString(),
+    endISO: end.toISOString(),
+    subject,
+  });
+
   const proposal = {
     title,
     subject,
@@ -676,6 +683,7 @@ async function buildLessonProposal(args: Record<string, any>) {
     end_time: end.toISOString(),
     is_group: typeof args.is_group === "boolean" ? args.is_group : studentIds.length > 1,
     recurring,
+    warnings,
   };
 
   return { ok: true as const, proposal };
