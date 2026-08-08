@@ -61,6 +61,7 @@ export interface LessonProposal {
   end_time: string;
   is_group: boolean;
   recurring: { interval: string; occurrences: number } | null;
+  warnings?: string[];
 }
 
 export interface LessonEditChange {
