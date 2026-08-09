@@ -306,7 +306,14 @@ serve(async (req) => {
     const service = createClient(supabaseUrl, serviceKey);
 
     // Parse body (optional).
-    let body: { week_start?: string; student_ids?: number[]; dry_run?: boolean } = {};
+    let body: {
+      week_start?: string;
+      student_ids?: number[];
+      dry_run?: boolean;
+      notify?: boolean;
+      notify_only?: boolean;
+      delay_ms?: number;
+    } = {};
     try {
       body = await req.json();
     } catch {
