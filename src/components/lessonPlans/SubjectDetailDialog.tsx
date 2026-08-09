@@ -58,6 +58,8 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('plans');
   const [materialCounts, setMaterialCounts] = useState<Record<number, number>>({});
+  const [rebuildOpen, setRebuildOpen] = useState(false);
+
   const { isAdmin, isOwner, isTutor } = useAuth();
 
   // Filter plans for student/parent view (current week only)
