@@ -459,7 +459,19 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
             )}
           </TabsContent>
         </Tabs>
+
+        <RebuildPlanFromPdfDialog
+          subject={subject}
+          isOpen={rebuildOpen}
+          onClose={() => setRebuildOpen(false)}
+          onCompleted={() => {
+            fetchSubjectPlans();
+            fetchMaterialCounts();
+            onUpdate();
+          }}
+        />
       </DialogContent>
+
     </Dialog>
   );
 };
