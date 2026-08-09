@@ -74,6 +74,9 @@ async function docxToText(base64: string): Promise<string> {
   const xml = await file.async("string");
 
   const text = xml
+    // Word can wrap run text in CDATA — unwrap it before tags are stripped.
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner) =>
+      String(inner).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
     .replace(/<w:tab[^>]*\/>/g, " ")
     .replace(/<w:br[^>]*\/>/g, "\n")
     .replace(/<\/w:p>/g, "\n")
@@ -116,16 +119,20 @@ function sliceByKeyStage(text: string, keyStage: string) {
   marks.forEach((mark, i) => {
     if (!years.includes(mark.year)) return;
     const end = i + 1 < marks.length ? marks[i + 1].start : text.length;
+    const chunk = text.slice(mark.start, end).trim();
+    // Skip contents-page links, which produce headings with almost no body.
+    if (chunk.length < 800) return;
     detectedYears.push(mark.year);
-    chunks.push(text.slice(mark.start, end).trim());
+    chunks.push(chunk);
   });
 
   if (chunks.length === 0) return { text, detectedYears: [], unitCount: 0 };
 
   const sliced = chunks.join("\n\n");
-  const unitCount = (sliced.match(/^\s*(?:#+\s*)?\**\s*\d+\.\s+\S/gim) || []).length;
+  const unitCount = (sliced.match(/^\s*(?:#+\s*)?\**\s*\d+[.)]?\**\s*$|^\s*(?:#+\s*)?\**\s*\d+\.\s+\S/gim) || []).length;
   return { text: sliced, detectedYears, unitCount };
 }
+
 
 async function callModel(
   instructions: string,
