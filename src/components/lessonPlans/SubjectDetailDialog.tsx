@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp } from 'lucide-react';
+import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp, Wand2 } from 'lucide-react';
+import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SubjectIcon } from './SubjectIcon';
@@ -56,6 +58,8 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('plans');
   const [materialCounts, setMaterialCounts] = useState<Record<number, number>>({});
+  const [rebuildOpen, setRebuildOpen] = useState(false);
+
   const { isAdmin, isOwner, isTutor } = useAuth();
 
   // Filter plans for student/parent view (current week only)
@@ -197,8 +201,21 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 )}
               </div>
             </DialogTitle>
-            
+
+            {(isAdmin || isOwner) && !isStudentOrParent && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto mr-4"
+                onClick={() => setRebuildOpen(true)}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                Rebuild from PDF
+              </Button>
+            )}
+
             {/* Quick Stats */}
+
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <div className="text-lg font-bold text-[hsl(var(--deep-purple-blue))] font-playfair">{totalWeeks}</div>
@@ -442,7 +459,19 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
             )}
           </TabsContent>
         </Tabs>
+
+        <RebuildPlanFromPdfDialog
+          subject={subject}
+          isOpen={rebuildOpen}
+          onClose={() => setRebuildOpen(false)}
+          onCompleted={() => {
+            fetchSubjectPlans();
+            fetchMaterialCounts();
+            onUpdate();
+          }}
+        />
       </DialogContent>
+
     </Dialog>
   );
 };
