@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp } from 'lucide-react';
+import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp, Wand2 } from 'lucide-react';
+import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SubjectIcon } from './SubjectIcon';
