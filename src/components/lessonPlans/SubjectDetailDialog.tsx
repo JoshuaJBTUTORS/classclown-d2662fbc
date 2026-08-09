@@ -197,8 +197,21 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 )}
               </div>
             </DialogTitle>
-            
+
+            {(isAdmin || isOwner) && !isStudentOrParent && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto mr-4"
+                onClick={() => setRebuildOpen(true)}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                Rebuild from PDF
+              </Button>
+            )}
+
             {/* Quick Stats */}
+
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <div className="text-lg font-bold text-[hsl(var(--deep-purple-blue))] font-playfair">{totalWeeks}</div>
