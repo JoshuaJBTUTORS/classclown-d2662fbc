@@ -367,6 +367,9 @@ Also return a short list of the notable changes you made (removals, rewordings o
       inserted,
       deleted: toDelete.length,
       changes: Array.isArray(result?.changes) ? result.changes : [],
+      detectedYears,
+      unitCount,
+
     });
   } catch (error) {
     console.error("rebuild-lesson-plan-from-pdf error:", error);
