@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@4.0.0";
+import { renderAsync } from "npm:@react-email/components@0.0.22";
+import React from "npm:react@18.3.1";
+import { WeeklyHomeworkReleaseEmail } from "./_templates/weekly-homework-release-email.tsx";
+import { whatsappService } from "../_shared/whatsapp-service.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,6 +125,147 @@ async function postWithRetry(url: string, headers: Record<string, string>, body:
 }
 
 // -----------------------------------------------------------------------------
+// Weekly homework release announcement
+// -----------------------------------------------------------------------------
+
+const RELEASE_SUBJECT = "Your new homework is ready";
+
+const RELEASE_MESSAGE = `Hello,
+
+Hope you're well. Your new homework is now ready to complete.
+
+A quick reminder that homework is compulsory and forms part of your ongoing lessons. Homework is released every Monday and should be completed by Friday. If homework remains incomplete for more than 5 days after the deadline, access to future lessons may be temporarily restricted until it has been completed.
+
+Homework should usually take around 20 to 30 minutes to complete. If you would like additional homework, please contact your account manager.
+
+How to access your homework:
+
+Go to ClassClownCRM.com. This is the same site you use to join your lessons.
+
+Click Homework in the menu.
+
+This will open HeyCleo, our learning platform currently being deployed in schools across the UK.
+
+Complete all of the questions on the platform.
+
+Once finished, click Complete Homework.
+
+That's it. Your homework will then be marked as complete.`;
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function normalisePhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const trimmed = String(phone).trim();
+  if (!trimmed) return null;
+  return whatsappService.formatPhoneNumber(trimmed);
+}
+
+/**
+ * Sends the weekly homework release announcement to the given contacts by
+ * email and WhatsApp. Idempotent per (week, channel, contact) using the
+ * `notifications` table.
+ */
+async function notifyContacts(
+  service: any,
+  resend: Resend | null,
+  weekStartIso: string,
+  studentId: number,
+  emails: string[],
+  phones: string[],
+): Promise<{ emailsSent: number; whatsappSent: number; errors: string[] }> {
+  const errors: string[] = [];
+  let emailsSent = 0;
+  let whatsappSent = 0;
+
+  const html = await renderAsync(React.createElement(WeeklyHomeworkReleaseEmail));
+
+  for (const email of emails) {
+    const logKey = `email:${email}`;
+    const { data: existing } = await service
+      .from("notifications")
+      .select("id")
+      .eq("type", "weekly_homework_release")
+      .eq("email", logKey)
+      .eq("subject", weekStartIso)
+      .eq("status", "sent")
+      .limit(1);
+    if (existing && existing.length > 0) {
+      console.log("[weekly-homework-sync] Email already sent this week", { studentId, email });
+      continue;
+    }
+
+    if (!resend) {
+      errors.push("RESEND_API_KEY not configured");
+      break;
+    }
+
+    try {
+      const { error } = await resend.emails.send({
+        from: "Class Beyond Academy <enquiries@classbeyondacademy.io>",
+        to: [email],
+        subject: RELEASE_SUBJECT,
+        html,
+        text: RELEASE_MESSAGE,
+      });
+      if (error) throw new Error(typeof error === "string" ? error : JSON.stringify(error));
+      emailsSent += 1;
+      await service.from("notifications").insert({
+        type: "weekly_homework_release",
+        subject: weekStartIso,
+        email: logKey,
+        status: "sent",
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[weekly-homework-sync] Email failed", { studentId, email, msg });
+      errors.push(`email ${email}: ${msg}`);
+      await service.from("notifications").insert({
+        type: "weekly_homework_release",
+        subject: weekStartIso,
+        email: logKey,
+        status: "failed",
+      });
+    }
+  }
+
+  for (const phone of phones) {
+    const logKey = `whatsapp:${phone}`;
+    const { data: existing } = await service
+      .from("notifications")
+      .select("id")
+      .eq("type", "weekly_homework_release")
+      .eq("email", logKey)
+      .eq("subject", weekStartIso)
+      .eq("status", "sent")
+      .limit(1);
+    if (existing && existing.length > 0) {
+      console.log("[weekly-homework-sync] WhatsApp already sent this week", { studentId, phone });
+      continue;
+    }
+
+    const result = await whatsappService.sendMessage({ phoneNumber: phone, text: RELEASE_MESSAGE });
+    if (result.success) {
+      whatsappSent += 1;
+    } else {
+      console.error("[weekly-homework-sync] WhatsApp failed", { studentId, phone, error: result.error });
+      errors.push(`whatsapp ${phone}: ${result.error}`);
+    }
+    await service.from("notifications").insert({
+      type: "weekly_homework_release",
+      subject: weekStartIso,
+      email: logKey,
+      status: result.success ? "sent" : "failed",
+    });
+  }
+
+  return { emailsSent, whatsappSent, errors };
+}
+
+
+// -----------------------------------------------------------------------------
 // Handler
 // -----------------------------------------------------------------------------
 
@@ -160,7 +306,14 @@ serve(async (req) => {
     const service = createClient(supabaseUrl, serviceKey);
 
     // Parse body (optional).
-    let body: { week_start?: string; student_ids?: number[]; dry_run?: boolean } = {};
+    let body: {
+      week_start?: string;
+      student_ids?: number[];
+      dry_run?: boolean;
+      notify?: boolean;
+      notify_only?: boolean;
+      delay_ms?: number;
+    } = {};
     try {
       body = await req.json();
     } catch {
@@ -293,34 +446,61 @@ serve(async (req) => {
     const activeStudentIds = Array.from(byStudent.keys());
     const { data: studentsRows, error: studErr } = await service
       .from("students")
-      .select("id, first_name, last_name, email, parent_id")
+      .select("id, first_name, last_name, email, phone, parent_id")
       .in("id", activeStudentIds);
     if (studErr) throw studErr;
 
-    // Parent emails (may be null; used as fallback contact).
+    // Parent contact details (email + phone).
     const parentIds = Array.from(
       new Set((studentsRows ?? []).map((s: any) => s.parent_id).filter(Boolean))
     );
     const parentEmailMap = new Map<string, string>();
+    const parentPhoneMap = new Map<string, string>();
     if (parentIds.length > 0) {
       const { data: parentRows } = await service
         .from("parents")
-        .select("id, email")
+        .select("id, email, phone")
         .in("id", parentIds);
       (parentRows ?? []).forEach((p: any) => {
         if (p.email) parentEmailMap.set(p.id, p.email);
+        if (p.phone) parentPhoneMap.set(p.id, p.phone);
       });
     }
 
     const studentMap = new Map<number, any>();
     (studentsRows ?? []).forEach((s: any) => studentMap.set(s.id, s));
 
+    const notifyEnabled = body.notify !== false && !body.dry_run;
+    const syncEnabled = !body.notify_only;
+    const delayMs = typeof body.delay_ms === "number" ? body.delay_ms : 5000;
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const resend = resendKey ? new Resend(resendKey) : null;
+    if (notifyEnabled && !resend) {
+      console.warn("[weekly-homework-sync] RESEND_API_KEY missing — emails will be skipped");
+    }
+
     let sent = 0;
     let failed = 0;
     let skipped = 0;
+    let notified = 0;
+    let emailsSent = 0;
+    let whatsappSent = 0;
+    let isFirstStudent = true;
+
+
+    const runStartedAt = Date.now();
+    const maxRunMs = 240000; // keep well inside the edge function wall-clock budget
+    const remainingStudentIds: number[] = [];
 
     for (const [studentId, subjMap] of byStudent) {
+      // Hand the rest of the queue to a fresh invocation before we time out.
+      if (Date.now() - runStartedAt > maxRunMs) {
+        remainingStudentIds.push(studentId);
+        continue;
+      }
+
       const student = studentMap.get(studentId);
+
       if (!student) {
         skipped += 1;
         continue;
@@ -380,37 +560,115 @@ serve(async (req) => {
       }
 
 
-      const result = await postWithRetry(
-        receiverUrl,
-        {
-          "Content-Type": "application/json",
-          "x-heycleo-secret": sharedSecret,
-        },
-        JSON.stringify(payload)
-      );
+      // Pace requests so we never hit HeyCleo rate limits.
+      if (!isFirstStudent && delayMs > 0) {
+        await sleep(delayMs);
+      }
+      isFirstStudent = false;
 
-      if (result.ok) {
-        sent += 1;
-        console.log("[weekly-homework-sync] Sent", { studentId, contactEmail, status: result.status });
-      } else {
-        failed += 1;
-        console.error("[weekly-homework-sync] Failed", { studentId, contactEmail, status: result.status, body: result.body?.slice(0, 300) });
+      let syncOk = true;
+      let result = { ok: true, status: 0, body: "skipped" };
+
+      if (syncEnabled) {
+        result = await postWithRetry(
+          receiverUrl,
+          {
+            "Content-Type": "application/json",
+            "x-heycleo-secret": sharedSecret,
+          },
+          JSON.stringify(payload)
+        );
+        syncOk = result.ok;
+
+        if (result.ok) {
+          sent += 1;
+          console.log("[weekly-homework-sync] Sent", { studentId, contactEmail, status: result.status });
+        } else {
+          failed += 1;
+          console.error("[weekly-homework-sync] Failed", { studentId, contactEmail, status: result.status, body: result.body?.slice(0, 300) });
+        }
+
+        // Log outcome for observability (best-effort).
+        try {
+          await service.from("notifications").insert({
+            type: "heycleo_weekly_homework_sync",
+            subject: `${weekStartIso} · ${subjects.length} subjects`,
+            email: contactEmail,
+            status: result.ok ? "sent" : "failed",
+          });
+        } catch (logErr) {
+          console.warn("[weekly-homework-sync] notification log failed", logErr);
+        }
       }
 
-      // Log outcome for observability (best-effort).
-      try {
-        await service.from("notifications").insert({
-          type: "heycleo_weekly_homework_sync",
-          subject: `${weekStartIso} · ${subjects.length} subjects`,
-          email: contactEmail,
-          status: result.ok ? "sent" : "failed",
-        });
-      } catch (logErr) {
-        console.warn("[weekly-homework-sync] notification log failed", logErr);
+      // Only announce once the student's homework actually reached HeyCleo.
+      if (notifyEnabled && syncOk) {
+        const parentPhone = student.parent_id ? parentPhoneMap.get(student.parent_id) ?? null : null;
+        const emails = Array.from(
+          new Set(
+            [student.email, parent_email]
+              .filter(Boolean)
+              .map((e: string) => e.trim().toLowerCase())
+          )
+        );
+        const phones = Array.from(
+          new Set(
+            [normalisePhone(student.phone), normalisePhone(parentPhone)].filter(Boolean) as string[]
+          )
+        );
+
+        if (emails.length === 0 && phones.length === 0) {
+          console.warn("[weekly-homework-sync] No contact details for student", { studentId });
+        } else {
+          try {
+            const outcome = await notifyContacts(
+              service,
+              resend,
+              weekStartIso,
+              studentId,
+              emails,
+              phones
+            );
+            emailsSent += outcome.emailsSent;
+            whatsappSent += outcome.whatsappSent;
+            if (outcome.emailsSent > 0 || outcome.whatsappSent > 0) notified += 1;
+            if (outcome.errors.length > 0) {
+              console.error("[weekly-homework-sync] Notification errors", { studentId, errors: outcome.errors });
+            }
+          } catch (notifyErr) {
+            console.error("[weekly-homework-sync] Notification threw", { studentId, notifyErr });
+          }
+        }
       }
     }
 
-    console.log("[weekly-homework-sync] Done", { weekStartIso, sent, failed, skipped });
+    // Continue the queue in a fresh invocation if we ran out of time.
+    if (remainingStudentIds.length > 0) {
+      console.log("[weekly-homework-sync] Handing off remaining students", { count: remainingStudentIds.length });
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/weekly-homework-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            week_start: weekStartIso,
+            student_ids: remainingStudentIds,
+            notify: body.notify,
+            notify_only: body.notify_only,
+            delay_ms: delayMs,
+          }),
+        });
+      } catch (handoffErr) {
+        console.error("[weekly-homework-sync] Handoff failed", handoffErr);
+      }
+    }
+
+
+
+
+    console.log("[weekly-homework-sync] Done", { weekStartIso, sent, failed, skipped, notified, emailsSent, whatsappSent });
 
     return new Response(
       JSON.stringify({
@@ -420,7 +678,11 @@ serve(async (req) => {
         sent,
         failed,
         skipped,
+        notified,
+        emails_sent: emailsSent,
+        whatsapp_sent: whatsappSent,
       }),
+
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
