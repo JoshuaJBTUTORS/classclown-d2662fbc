@@ -52,7 +52,108 @@ const schema = {
   },
 };
 
-async function callModel(instructions: string, userText: string, pdfBase64: string, filename: string) {
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function decodeEntities(text: string) {
+  return text
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, "&");
+}
+
+async function docxToText(base64: string): Promise<string> {
+  const { default: JSZip } = await import("https://esm.sh/jszip@3.10.1");
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  const zip = await JSZip.loadAsync(bytes);
+  const file = zip.file("word/document.xml");
+  if (!file) throw new Error("This does not look like a valid Word document.");
+  const xml = await file.async("string");
+
+  const text = xml
+    // Word can wrap run text in CDATA — unwrap it before tags are stripped.
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner) =>
+      String(inner).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
+    .replace(/<w:tab[^>]*\/>/g, " ")
+    .replace(/<w:br[^>]*\/>/g, "\n")
+    .replace(/<\/w:p>/g, "\n")
+    .replace(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g, (_, inner) => inner)
+    .replace(/<[^>]+>/g, "");
+
+  return decodeEntities(text)
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter((line, i, arr) => line.length > 0 || (i > 0 && arr[i - 1].length > 0))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+const KEY_STAGE_YEARS: Record<string, number[]> = {
+  ks3: [7, 8, 9],
+  gcse: [10, 11],
+};
+
+/**
+ * Slices a curriculum document down to the "Year N units" sections that belong
+ * to the requested key stage. Returns the original text when the document does
+ * not use that structure.
+ */
+function sliceByKeyStage(text: string, keyStage: string) {
+  const years = KEY_STAGE_YEARS[keyStage];
+  if (!years) return { text, detectedYears: [] as number[], unitCount: 0 };
+
+  const headingRe = /^\s*(?:#+\s*)?\**\s*Year\s+(\d+)\s+units\**\s*$/gim;
+  const marks: Array<{ year: number; start: number }> = [];
+  let match: RegExpExecArray | null;
+  while ((match = headingRe.exec(text)) !== null) {
+    marks.push({ year: Number(match[1]), start: match.index });
+  }
+  if (marks.length < 2) return { text, detectedYears: [], unitCount: 0 };
+
+  const detectedYears: number[] = [];
+  const chunks: string[] = [];
+  marks.forEach((mark, i) => {
+    if (!years.includes(mark.year)) return;
+    const end = i + 1 < marks.length ? marks[i + 1].start : text.length;
+    const chunk = text.slice(mark.start, end).trim();
+    // Skip contents-page links, which produce headings with almost no body.
+    if (chunk.length < 800) return;
+    detectedYears.push(mark.year);
+    chunks.push(chunk);
+  });
+
+  if (chunks.length === 0) return { text, detectedYears: [], unitCount: 0 };
+
+  const sliced = chunks.join("\n\n");
+  const unitCount = (sliced.match(/^\s*(?:#+\s*)?\**\s*\d+[.)]?\**\s*$|^\s*(?:#+\s*)?\**\s*\d+\.\s+\S/gim) || []).length;
+  return { text: sliced, detectedYears, unitCount };
+}
+
+
+async function callModel(
+  instructions: string,
+  userText: string,
+  source: { kind: "pdf"; base64: string; filename: string } | { kind: "text"; text: string },
+) {
+  const content: unknown[] = [];
+  if (source.kind === "pdf") {
+    content.push({
+      type: "input_file",
+      filename: source.filename,
+      file_data: `data:application/pdf;base64,${source.base64}`,
+    });
+  } else {
+    content.push({
+      type: "input_text",
+      text: `SOURCE CURRICULUM DOCUMENT (extracted text):\n\n${source.text}`,
+    });
+  }
+  content.push({ type: "input_text", text: userText });
+
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
     headers: {
@@ -64,19 +165,7 @@ async function callModel(instructions: string, userText: string, pdfBase64: stri
       model: MODEL,
       stream: true,
       instructions,
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_file",
-              filename,
-              file_data: `data:application/pdf;base64,${pdfBase64}`,
-            },
-            { type: "input_text", text: userText },
-          ],
-        },
-      ],
+      input: [{ role: "user", content }],
       reasoning: { effort: "medium", summary: "auto" },
       text: {
         format: {
@@ -126,18 +215,27 @@ async function callModel(instructions: string, userText: string, pdfBase64: stri
   return JSON.parse(output);
 }
 
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { subject, pdfBase64, filename } = await req.json();
+    const body = await req.json();
+    const subject: string = body.subject;
+    const filename: string = body.filename || "curriculum-plan";
+    const mimeType: string = body.mimeType || "application/pdf";
+    const keyStage: string = ["ks3", "gcse", "all"].includes(body.keyStage) ? body.keyStage : "all";
+    const fileBase64: string = body.fileBase64 || body.pdfBase64;
 
     if (!subject || typeof subject !== "string") {
       return jsonResponse({ error: "subject is required" }, 400);
     }
-    if (!pdfBase64 || typeof pdfBase64 !== "string") {
-      return jsonResponse({ error: "pdfBase64 is required" }, 400);
+    if (!fileBase64 || typeof fileBase64 !== "string") {
+      return jsonResponse({ error: "A PDF or Word document is required" }, 400);
     }
+
+    const isDocx = mimeType === DOCX_MIME || filename.toLowerCase().endsWith(".docx");
+
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -160,17 +258,45 @@ Deno.serve(async (req) => {
     const minWeek = Math.min(...weekNumbers);
     const maxWeek = Math.max(...weekNumbers);
 
+    // Build the source material: PDFs go to the model as a file, Word documents
+    // are converted to text and (where possible) sliced to the relevant years.
+    let detectedYears: number[] = [];
+    let unitCount = 0;
+    let source: { kind: "pdf"; base64: string; filename: string } | { kind: "text"; text: string };
+
+    if (isDocx) {
+      const fullText = await docxToText(fileBase64);
+      if (!fullText) throw new Error("No readable text was found in that Word document.");
+      const sliced = sliceByKeyStage(fullText, keyStage);
+      detectedYears = sliced.detectedYears;
+      unitCount = sliced.unitCount;
+      source = { kind: "text", text: sliced.text };
+    } else {
+      source = { kind: "pdf", base64: fileBase64, filename };
+    }
+
+    const sourceLabel = source.kind === "pdf" ? "attached PDF" : "curriculum document text provided below";
+    const yearScope = detectedYears.length
+      ? `\nThe document has been filtered to Year ${detectedYears.join(", ")} only. Use nothing outside those years.`
+      : "";
+
     const instructions = `You are a UK curriculum lead rebuilding an online tutoring scheme of work for "${subject}".
 
-The attached PDF is the SOURCE OF TRUTH for topic order, topic naming and lesson structure. Rebuild the weekly plan so it matches the PDF.
+The ${sourceLabel} is the SOURCE OF TRUTH for topic order, topic naming and lesson structure. Rebuild the weekly plan so it matches it.${yearScope}
 
 Apply these rules strictly:
 1. Remove any week that does not have a clear learning outcome (revision, retrieval practice, recap, catch-up, consolidation, buffer, "TBC" and similar). Do not keep them.
-2. Use the PDF's format, sequence and terminology. Keep existing wording only where it already matches the PDF.
+2. Use the document's sequence and terminology. Keep existing wording only where it already matches the document.
 3. These four weeks MUST be assessment weeks, overwriting whatever currently sits there:
 ${Object.entries(ASSESSMENT_WEEKS).map(([w, d]) => `   - Week ${w} (${d})`).join("\n")}
    Title them as an assessment (e.g. "Assessment Week — <topics covered so far>") and describe what is assessed based on the preceding weeks.
 4. Remove or reword anything that cannot be run online. Required practicals must become teacher demonstrations, virtual simulations, or analysis of provided results. Never instruct the student to physically carry out an experiment.
+
+If the source document is organised into UNITS rather than weeks, convert units to weeks like this:
+- Take every unit for the years in scope, in the order the document gives them, and compress them into the single ${minWeek}-${maxWeek} week cycle.
+- Roughly one to two weeks per unit: a large unit (about 10 or more lessons) may span two consecutive weeks; two short units may share one week.
+- The unit title drives the week's topic title; the unit's lesson list and unit description drive the week's description (list the key lessons/outcomes covered).
+- Never leave units out because you have run short of weeks — merge related units instead so the whole sequence is represented.
 
 Week numbering rules:
 - Week numbers are fixed to the calendar and must stay within ${minWeek}-${maxWeek}.
@@ -189,9 +315,10 @@ Also return a short list of the notable changes you made (removals, rewordings o
       })),
       null,
       2,
-    )}\n\nTerm label for each week number:\n${JSON.stringify(termByWeek)}\n\nRebuild this plan against the attached PDF following the rules.`;
+    )}\n\nTerm label for each week number:\n${JSON.stringify(termByWeek)}\n\nRebuild this plan against the source document following the rules.`;
 
-    const result = await callModel(instructions, userText, pdfBase64, filename || "scheme-of-work.pdf");
+    const result = await callModel(instructions, userText, source);
+
 
     const weeks: Array<{ week_number: number; term: string; topic_title: string; description: string | null }> =
       Array.isArray(result?.weeks) ? result.weeks : [];
@@ -247,6 +374,9 @@ Also return a short list of the notable changes you made (removals, rewordings o
       inserted,
       deleted: toDelete.length,
       changes: Array.isArray(result?.changes) ? result.changes : [],
+      detectedYears,
+      unitCount,
+
     });
   } catch (error) {
     console.error("rebuild-lesson-plan-from-pdf error:", error);
