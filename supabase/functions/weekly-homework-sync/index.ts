@@ -488,8 +488,19 @@ serve(async (req) => {
     let isFirstStudent = true;
 
 
+    const runStartedAt = Date.now();
+    const maxRunMs = 240000; // keep well inside the edge function wall-clock budget
+    const remainingStudentIds: number[] = [];
+
     for (const [studentId, subjMap] of byStudent) {
+      // Hand the rest of the queue to a fresh invocation before we time out.
+      if (Date.now() - runStartedAt > maxRunMs) {
+        remainingStudentIds.push(studentId);
+        continue;
+      }
+
       const student = studentMap.get(studentId);
+
       if (!student) {
         skipped += 1;
         continue;
