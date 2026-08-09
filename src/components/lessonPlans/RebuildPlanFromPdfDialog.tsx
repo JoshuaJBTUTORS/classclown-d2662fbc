@@ -18,12 +18,13 @@ interface RebuildPlanFromPdfDialogProps {
 const MAX_BYTES = 15 * 1024 * 1024;
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-type KeyStage = 'ks3' | 'gcse' | 'all';
+type KeyStage = 'ks2' | 'ks3' | 'gcse' | 'all';
 
 const detectKeyStage = (subject: string): KeyStage => {
   const s = subject.toLowerCase();
   if (s.includes('gcse') || s.includes('year 10') || s.includes('year 11')) return 'gcse';
-  if (s.includes('ks3') || s.includes('ks2') || s.includes('11 plus')) return 'ks3';
+  if (s.includes('ks2') || s.includes('sats') || s.includes('11 plus')) return 'ks2';
+  if (s.includes('ks3')) return 'ks3';
   return 'all';
 };
 
@@ -158,6 +159,7 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="ks2">KS2 — Years 3, 4, 5 and 6</SelectItem>
               <SelectItem value="ks3">KS3 — Years 7, 8 and 9</SelectItem>
               <SelectItem value="gcse">GCSE — Years 10 and 11</SelectItem>
               <SelectItem value="all">Whole document</SelectItem>

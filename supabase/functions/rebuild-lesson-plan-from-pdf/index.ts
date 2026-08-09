@@ -93,6 +93,7 @@ async function docxToText(base64: string): Promise<string> {
 }
 
 const KEY_STAGE_YEARS: Record<string, number[]> = {
+  ks2: [3, 4, 5, 6],
   ks3: [7, 8, 9],
   gcse: [10, 11],
 };
@@ -224,7 +225,7 @@ Deno.serve(async (req) => {
     const subject: string = body.subject;
     const filename: string = body.filename || "curriculum-plan";
     const mimeType: string = body.mimeType || "application/pdf";
-    const keyStage: string = ["ks3", "gcse", "all"].includes(body.keyStage) ? body.keyStage : "all";
+    const keyStage: string = ["ks2", "ks3", "gcse", "all"].includes(body.keyStage) ? body.keyStage : "all";
     const fileBase64: string = body.fileBase64 || body.pdfBase64;
 
     if (!subject || typeof subject !== "string") {
