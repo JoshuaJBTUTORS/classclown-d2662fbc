@@ -632,7 +632,7 @@ serve(async (req) => {
     }
 
 
-    console.log("[weekly-homework-sync] Done", { weekStartIso, sent, failed, skipped });
+    console.log("[weekly-homework-sync] Done", { weekStartIso, sent, failed, skipped, notified, emailsSent, whatsappSent });
 
     return new Response(
       JSON.stringify({
@@ -642,7 +642,11 @@ serve(async (req) => {
         sent,
         failed,
         skipped,
+        notified,
+        emails_sent: emailsSent,
+        whatsapp_sent: whatsappSent,
       }),
+
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
