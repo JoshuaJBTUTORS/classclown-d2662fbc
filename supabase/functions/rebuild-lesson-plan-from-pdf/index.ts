@@ -93,6 +93,7 @@ async function docxToText(base64: string): Promise<string> {
 }
 
 const KEY_STAGE_YEARS: Record<string, number[]> = {
+  ks2: [3, 4, 5, 6],
   ks3: [7, 8, 9],
   gcse: [10, 11],
 };
