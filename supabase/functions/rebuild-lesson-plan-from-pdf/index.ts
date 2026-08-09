@@ -251,17 +251,45 @@ Deno.serve(async (req) => {
     const minWeek = Math.min(...weekNumbers);
     const maxWeek = Math.max(...weekNumbers);
 
+    // Build the source material: PDFs go to the model as a file, Word documents
+    // are converted to text and (where possible) sliced to the relevant years.
+    let detectedYears: number[] = [];
+    let unitCount = 0;
+    let source: { kind: "pdf"; base64: string; filename: string } | { kind: "text"; text: string };
+
+    if (isDocx) {
+      const fullText = await docxToText(fileBase64);
+      if (!fullText) throw new Error("No readable text was found in that Word document.");
+      const sliced = sliceByKeyStage(fullText, keyStage);
+      detectedYears = sliced.detectedYears;
+      unitCount = sliced.unitCount;
+      source = { kind: "text", text: sliced.text };
+    } else {
+      source = { kind: "pdf", base64: fileBase64, filename };
+    }
+
+    const sourceLabel = source.kind === "pdf" ? "attached PDF" : "curriculum document text provided below";
+    const yearScope = detectedYears.length
+      ? `\nThe document has been filtered to Year ${detectedYears.join(", ")} only. Use nothing outside those years.`
+      : "";
+
     const instructions = `You are a UK curriculum lead rebuilding an online tutoring scheme of work for "${subject}".
 
-The attached PDF is the SOURCE OF TRUTH for topic order, topic naming and lesson structure. Rebuild the weekly plan so it matches the PDF.
+The ${sourceLabel} is the SOURCE OF TRUTH for topic order, topic naming and lesson structure. Rebuild the weekly plan so it matches it.${yearScope}
 
 Apply these rules strictly:
 1. Remove any week that does not have a clear learning outcome (revision, retrieval practice, recap, catch-up, consolidation, buffer, "TBC" and similar). Do not keep them.
-2. Use the PDF's format, sequence and terminology. Keep existing wording only where it already matches the PDF.
+2. Use the document's sequence and terminology. Keep existing wording only where it already matches the document.
 3. These four weeks MUST be assessment weeks, overwriting whatever currently sits there:
 ${Object.entries(ASSESSMENT_WEEKS).map(([w, d]) => `   - Week ${w} (${d})`).join("\n")}
    Title them as an assessment (e.g. "Assessment Week — <topics covered so far>") and describe what is assessed based on the preceding weeks.
 4. Remove or reword anything that cannot be run online. Required practicals must become teacher demonstrations, virtual simulations, or analysis of provided results. Never instruct the student to physically carry out an experiment.
+
+If the source document is organised into UNITS rather than weeks, convert units to weeks like this:
+- Take every unit for the years in scope, in the order the document gives them, and compress them into the single ${minWeek}-${maxWeek} week cycle.
+- Roughly one to two weeks per unit: a large unit (about 10 or more lessons) may span two consecutive weeks; two short units may share one week.
+- The unit title drives the week's topic title; the unit's lesson list and unit description drive the week's description (list the key lessons/outcomes covered).
+- Never leave units out because you have run short of weeks — merge related units instead so the whole sequence is represented.
 
 Week numbering rules:
 - Week numbers are fixed to the calendar and must stay within ${minWeek}-${maxWeek}.
@@ -280,9 +308,10 @@ Also return a short list of the notable changes you made (removals, rewordings o
       })),
       null,
       2,
-    )}\n\nTerm label for each week number:\n${JSON.stringify(termByWeek)}\n\nRebuild this plan against the attached PDF following the rules.`;
+    )}\n\nTerm label for each week number:\n${JSON.stringify(termByWeek)}\n\nRebuild this plan against the source document following the rules.`;
 
-    const result = await callModel(instructions, userText, pdfBase64, filename || "scheme-of-work.pdf");
+    const result = await callModel(instructions, userText, source);
+
 
     const weeks: Array<{ week_number: number; term: string; topic_title: string; description: string | null }> =
       Array.isArray(result?.weeks) ? result.weeks : [];
