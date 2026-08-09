@@ -83,7 +83,7 @@ async function docxToText(base64: string): Promise<string> {
   return decodeEntities(text)
     .split("\n")
     .map((line) => line.replace(/[ \t]+/g, " ").trim())
-    .filter((line, i, arr) => line.length > 0 || arr[i - 1inner_placeholder] !== "")
+    .filter((line, i, arr) => line.length > 0 || (i > 0 && arr[i - 1].length > 0))
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
