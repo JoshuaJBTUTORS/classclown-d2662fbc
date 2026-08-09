@@ -213,14 +213,22 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { subject, pdfBase64, filename } = await req.json();
+    const body = await req.json();
+    const subject: string = body.subject;
+    const filename: string = body.filename || "curriculum-plan";
+    const mimeType: string = body.mimeType || "application/pdf";
+    const keyStage: string = ["ks3", "gcse", "all"].includes(body.keyStage) ? body.keyStage : "all";
+    const fileBase64: string = body.fileBase64 || body.pdfBase64;
 
     if (!subject || typeof subject !== "string") {
       return jsonResponse({ error: "subject is required" }, 400);
     }
-    if (!pdfBase64 || typeof pdfBase64 !== "string") {
-      return jsonResponse({ error: "pdfBase64 is required" }, 400);
+    if (!fileBase64 || typeof fileBase64 !== "string") {
+      return jsonResponse({ error: "A PDF or Word document is required" }, 400);
     }
+
+    const isDocx = mimeType === DOCX_MIME || filename.toLowerCase().endsWith(".docx");
+
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
