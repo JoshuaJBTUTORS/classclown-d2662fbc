@@ -549,35 +549,88 @@ serve(async (req) => {
       }
 
 
-      const result = await postWithRetry(
-        receiverUrl,
-        {
-          "Content-Type": "application/json",
-          "x-heycleo-secret": sharedSecret,
-        },
-        JSON.stringify(payload)
-      );
+      // Pace requests so we never hit HeyCleo rate limits.
+      if (!isFirstStudent && delayMs > 0) {
+        await sleep(delayMs);
+      }
+      isFirstStudent = false;
 
-      if (result.ok) {
-        sent += 1;
-        console.log("[weekly-homework-sync] Sent", { studentId, contactEmail, status: result.status });
-      } else {
-        failed += 1;
-        console.error("[weekly-homework-sync] Failed", { studentId, contactEmail, status: result.status, body: result.body?.slice(0, 300) });
+      let syncOk = true;
+      let result = { ok: true, status: 0, body: "skipped" };
+
+      if (syncEnabled) {
+        result = await postWithRetry(
+          receiverUrl,
+          {
+            "Content-Type": "application/json",
+            "x-heycleo-secret": sharedSecret,
+          },
+          JSON.stringify(payload)
+        );
+        syncOk = result.ok;
+
+        if (result.ok) {
+          sent += 1;
+          console.log("[weekly-homework-sync] Sent", { studentId, contactEmail, status: result.status });
+        } else {
+          failed += 1;
+          console.error("[weekly-homework-sync] Failed", { studentId, contactEmail, status: result.status, body: result.body?.slice(0, 300) });
+        }
+
+        // Log outcome for observability (best-effort).
+        try {
+          await service.from("notifications").insert({
+            type: "heycleo_weekly_homework_sync",
+            subject: `${weekStartIso} · ${subjects.length} subjects`,
+            email: contactEmail,
+            status: result.ok ? "sent" : "failed",
+          });
+        } catch (logErr) {
+          console.warn("[weekly-homework-sync] notification log failed", logErr);
+        }
       }
 
-      // Log outcome for observability (best-effort).
-      try {
-        await service.from("notifications").insert({
-          type: "heycleo_weekly_homework_sync",
-          subject: `${weekStartIso} · ${subjects.length} subjects`,
-          email: contactEmail,
-          status: result.ok ? "sent" : "failed",
-        });
-      } catch (logErr) {
-        console.warn("[weekly-homework-sync] notification log failed", logErr);
+      // Only announce once the student's homework actually reached HeyCleo.
+      if (notifyEnabled && syncOk) {
+        const parentPhone = student.parent_id ? parentPhoneMap.get(student.parent_id) ?? null : null;
+        const emails = Array.from(
+          new Set(
+            [student.email, parent_email]
+              .filter(Boolean)
+              .map((e: string) => e.trim().toLowerCase())
+          )
+        );
+        const phones = Array.from(
+          new Set(
+            [normalisePhone(student.phone), normalisePhone(parentPhone)].filter(Boolean) as string[]
+          )
+        );
+
+        if (emails.length === 0 && phones.length === 0) {
+          console.warn("[weekly-homework-sync] No contact details for student", { studentId });
+        } else {
+          try {
+            const outcome = await notifyContacts(
+              service,
+              resend,
+              weekStartIso,
+              studentId,
+              emails,
+              phones
+            );
+            emailsSent += outcome.emailsSent;
+            whatsappSent += outcome.whatsappSent;
+            if (outcome.emailsSent > 0 || outcome.whatsappSent > 0) notified += 1;
+            if (outcome.errors.length > 0) {
+              console.error("[weekly-homework-sync] Notification errors", { studentId, errors: outcome.errors });
+            }
+          } catch (notifyErr) {
+            console.error("[weekly-homework-sync] Notification threw", { studentId, notifyErr });
+          }
+        }
       }
     }
+
 
     console.log("[weekly-homework-sync] Done", { weekStartIso, sent, failed, skipped });
 
