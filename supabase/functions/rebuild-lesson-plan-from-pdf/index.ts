@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
     const subject: string = body.subject;
     const filename: string = body.filename || "curriculum-plan";
     const mimeType: string = body.mimeType || "application/pdf";
-    const keyStage: string = ["ks3", "gcse", "all"].includes(body.keyStage) ? body.keyStage : "all";
+    const keyStage: string = ["ks2", "ks3", "gcse", "all"].includes(body.keyStage) ? body.keyStage : "all";
     const fileBase64: string = body.fileBase64 || body.pdfBase64;
 
     if (!subject || typeof subject !== "string") {
