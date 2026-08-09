@@ -642,6 +642,31 @@ serve(async (req) => {
       }
     }
 
+    // Continue the queue in a fresh invocation if we ran out of time.
+    if (remainingStudentIds.length > 0) {
+      console.log("[weekly-homework-sync] Handing off remaining students", { count: remainingStudentIds.length });
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/weekly-homework-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            week_start: weekStartIso,
+            student_ids: remainingStudentIds,
+            notify: body.notify,
+            notify_only: body.notify_only,
+            delay_ms: delayMs,
+          }),
+        });
+      } catch (handoffErr) {
+        console.error("[weekly-homework-sync] Handoff failed", handoffErr);
+      }
+    }
+
+
+
 
     console.log("[weekly-homework-sync] Done", { weekStartIso, sent, failed, skipped, notified, emailsSent, whatsappSent });
 
