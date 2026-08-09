@@ -52,7 +52,101 @@ const schema = {
   },
 };
 
-async function callModel(instructions: string, userText: string, pdfBase64: string, filename: string) {
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function decodeEntities(text: string) {
+  return text
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, "&");
+}
+
+async function docxToText(base64: string): Promise<string> {
+  const { default: JSZip } = await import("https://esm.sh/jszip@3.10.1");
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  const zip = await JSZip.loadAsync(bytes);
+  const file = zip.file("word/document.xml");
+  if (!file) throw new Error("This does not look like a valid Word document.");
+  const xml = await file.async("string");
+
+  const text = xml
+    .replace(/<w:tab[^>]*\/>/g, " ")
+    .replace(/<w:br[^>]*\/>/g, "\n")
+    .replace(/<\/w:p>/g, "\n")
+    .replace(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g, (_, inner) => inner)
+    .replace(/<[^>]+>/g, "");
+
+  return decodeEntities(text)
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter((line, i, arr) => line.length > 0 || arr[i - 1inner_placeholder] !== "")
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+const KEY_STAGE_YEARS: Record<string, number[]> = {
+  ks3: [7, 8, 9],
+  gcse: [10, 11],
+};
+
+/**
+ * Slices a curriculum document down to the "Year N units" sections that belong
+ * to the requested key stage. Returns the original text when the document does
+ * not use that structure.
+ */
+function sliceByKeyStage(text: string, keyStage: string) {
+  const years = KEY_STAGE_YEARS[keyStage];
+  if (!years) return { text, detectedYears: [] as number[], unitCount: 0 };
+
+  const headingRe = /^\s*(?:#+\s*)?\**\s*Year\s+(\d+)\s+units\**\s*$/gim;
+  const marks: Array<{ year: number; start: number }> = [];
+  let match: RegExpExecArray | null;
+  while ((match = headingRe.exec(text)) !== null) {
+    marks.push({ year: Number(match[1]), start: match.index });
+  }
+  if (marks.length < 2) return { text, detectedYears: [], unitCount: 0 };
+
+  const detectedYears: number[] = [];
+  const chunks: string[] = [];
+  marks.forEach((mark, i) => {
+    if (!years.includes(mark.year)) return;
+    const end = i + 1 < marks.length ? marks[i + 1].start : text.length;
+    detectedYears.push(mark.year);
+    chunks.push(text.slice(mark.start, end).trim());
+  });
+
+  if (chunks.length === 0) return { text, detectedYears: [], unitCount: 0 };
+
+  const sliced = chunks.join("\n\n");
+  const unitCount = (sliced.match(/^\s*(?:#+\s*)?\**\s*\d+\.\s+\S/gim) || []).length;
+  return { text: sliced, detectedYears, unitCount };
+}
+
+async function callModel(
+  instructions: string,
+  userText: string,
+  source: { kind: "pdf"; base64: string; filename: string } | { kind: "text"; text: string },
+) {
+  const content: unknown[] = [];
+  if (source.kind === "pdf") {
+    content.push({
+      type: "input_file",
+      filename: source.filename,
+      file_data: `data:application/pdf;base64,${source.base64}`,
+    });
+  } else {
+    content.push({
+      type: "input_text",
+      text: `SOURCE CURRICULUM DOCUMENT (extracted text):\n\n${source.text}`,
+    });
+  }
+  content.push({ type: "input_text", text: userText });
+
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
     headers: {
@@ -64,19 +158,7 @@ async function callModel(instructions: string, userText: string, pdfBase64: stri
       model: MODEL,
       stream: true,
       instructions,
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_file",
-              filename,
-              file_data: `data:application/pdf;base64,${pdfBase64}`,
-            },
-            { type: "input_text", text: userText },
-          ],
-        },
-      ],
+      input: [{ role: "user", content }],
       reasoning: { effort: "medium", summary: "auto" },
       text: {
         format: {
@@ -125,6 +207,7 @@ async function callModel(instructions: string, userText: string, pdfBase64: stri
   if (!output.trim()) throw new Error("The model returned an empty response. Please try again.");
   return JSON.parse(output);
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
