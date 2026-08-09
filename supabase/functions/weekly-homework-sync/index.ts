@@ -446,31 +446,47 @@ serve(async (req) => {
     const activeStudentIds = Array.from(byStudent.keys());
     const { data: studentsRows, error: studErr } = await service
       .from("students")
-      .select("id, first_name, last_name, email, parent_id")
+      .select("id, first_name, last_name, email, phone, parent_id")
       .in("id", activeStudentIds);
     if (studErr) throw studErr;
 
-    // Parent emails (may be null; used as fallback contact).
+    // Parent contact details (email + phone).
     const parentIds = Array.from(
       new Set((studentsRows ?? []).map((s: any) => s.parent_id).filter(Boolean))
     );
     const parentEmailMap = new Map<string, string>();
+    const parentPhoneMap = new Map<string, string>();
     if (parentIds.length > 0) {
       const { data: parentRows } = await service
         .from("parents")
-        .select("id, email")
+        .select("id, email, phone")
         .in("id", parentIds);
       (parentRows ?? []).forEach((p: any) => {
         if (p.email) parentEmailMap.set(p.id, p.email);
+        if (p.phone) parentPhoneMap.set(p.id, p.phone);
       });
     }
 
     const studentMap = new Map<number, any>();
     (studentsRows ?? []).forEach((s: any) => studentMap.set(s.id, s));
 
+    const notifyEnabled = body.notify !== false && !body.dry_run;
+    const syncEnabled = !body.notify_only;
+    const delayMs = typeof body.delay_ms === "number" ? body.delay_ms : 5000;
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const resend = resendKey ? new Resend(resendKey) : null;
+    if (notifyEnabled && !resend) {
+      console.warn("[weekly-homework-sync] RESEND_API_KEY missing — emails will be skipped");
+    }
+
     let sent = 0;
     let failed = 0;
     let skipped = 0;
+    let notified = 0;
+    let emailsSent = 0;
+    let whatsappSent = 0;
+    let isFirstStudent = true;
+
 
     for (const [studentId, subjMap] of byStudent) {
       const student = studentMap.get(studentId);
