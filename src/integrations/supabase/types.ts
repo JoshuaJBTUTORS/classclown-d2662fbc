@@ -3765,6 +3765,7 @@ export type Database = {
       recurring_lesson_groups: {
         Row: {
           created_at: string | null
+          current_tutor_id: string | null
           group_name: string
           id: string
           instances_generated_until: string | null
@@ -3772,11 +3773,15 @@ export type Database = {
           next_extension_date: string | null
           original_lesson_id: string
           recurrence_pattern: Json
+          schedule_end_time: string | null
+          schedule_start_time: string | null
+          schedule_weekday: number | null
           total_instances_generated: number | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          current_tutor_id?: string | null
           group_name: string
           id?: string
           instances_generated_until?: string | null
@@ -3784,11 +3789,15 @@ export type Database = {
           next_extension_date?: string | null
           original_lesson_id: string
           recurrence_pattern?: Json
+          schedule_end_time?: string | null
+          schedule_start_time?: string | null
+          schedule_weekday?: number | null
           total_instances_generated?: number | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          current_tutor_id?: string | null
           group_name?: string
           id?: string
           instances_generated_until?: string | null
@@ -3796,10 +3805,20 @@ export type Database = {
           next_extension_date?: string | null
           original_lesson_id?: string
           recurrence_pattern?: Json
+          schedule_end_time?: string | null
+          schedule_start_time?: string | null
+          schedule_weekday?: number | null
           total_instances_generated?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "recurring_lesson_groups_current_tutor_id_fkey"
+            columns: ["current_tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "recurring_lesson_groups_original_lesson_id_fkey"
             columns: ["original_lesson_id"]
