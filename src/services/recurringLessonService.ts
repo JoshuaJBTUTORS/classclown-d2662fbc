@@ -1,6 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+
+const UK_TIMEZONE = 'Europe/London';
 
 interface RecurringLessonData {
   originalLessonId: string;
@@ -157,6 +160,9 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
     const nextGenerationDate = isInfinite 
       ? addMonths(startTime, 3)
       : null;
+    const scheduleWeekday = Number(formatInTimeZone(startTime, UK_TIMEZONE, 'i'));
+    const scheduleStartTime = formatInTimeZone(startTime, UK_TIMEZONE, 'HH:mm:ss');
+    const scheduleEndTime = formatInTimeZone(endTime, UK_TIMEZONE, 'HH:mm:ss');
 
     const { error: groupError } = await supabase
       .from('recurring_lesson_groups')
@@ -171,7 +177,11 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
         instances_generated_until: instances[instances.length - 1]?.start_time,
         total_instances_generated: instances.length,
         is_infinite: isInfinite || false,
-        next_extension_date: nextGenerationDate?.toISOString()
+        next_extension_date: nextGenerationDate?.toISOString(),
+        schedule_weekday: scheduleWeekday,
+        schedule_start_time: scheduleStartTime,
+        schedule_end_time: scheduleEndTime,
+        current_tutor_id: tutorId
       });
 
     if (groupError) {
