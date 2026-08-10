@@ -1,33 +1,38 @@
-# The 1-1 KS2 Maths ghost occurrences (ARIYAN Hussain)
+# Deletion history and recurring-series data clean
 
-## What this lesson actually is
+## What we actually store today
 
-- Series parent lesson: `35d7d3ca-afc7-41e7-9c3c-709e725a75c7` — "1-1 KS2 Maths", weekly on Sundays, student ARIYAN Hussain (id 102).
-- The occurrence in the screenshot (22 Feb 2026, 12:00, Britney Lawrence) is child instance `e951a74c-d97f-4d42-82e9-6077c702d335`.
-- Recurring group: `b7b63e59-3731-4bab-b894-d6ce01ce1006` ("KS2 1-1 Maths - weekly", pattern marked infinite), 61 instances generated, generated-until 2 Aug 2026, next extension date 25 Oct 2026.
+There is no deletion log. The only record of a deletion is a row in `recurring_lesson_cancellations`, and only for two of the three delete choices:
 
-## What the data shows
+- **This lesson only** — writes a single `cancelled_date` row (only when the lesson belongs to a series).
+- **This and all future occurrences** — writes a `cancelled_from` cutoff row, and stamps the recurring group so it stops extending.
+- **Entire series** — writes nothing; it deletes the group row and even deletes the existing cancellation rows for that series. No trace remains.
 
-Instances run weekly up to **29 March 2026**. Then there is a gap with no lessons from 5 April to 5 July 2026 — consistent with the series having been stopped/deleted.
+Current data: 328 cancellation rows (194 cutoffs, 134 single dates), earliest 23 June 2026. Anything deleted before that date left no record at all.
 
-Then three instances reappear: **12, 19 and 26 July 2026**, all with `created_at = 27 July 2026 01:00` — i.e. created by the nightly `extend_recurring_lessons()` job, not by a person. Those are the ghosts.
+## What the audit found
 
-On 28 July someone deleted from-date-onwards twice, writing two cutoff rows on the series (`cancelled_from` 2026-08-09 and 2026-08-02). Those cutoffs only block dates from 2 Aug onwards; the already-generated 12/19/26 July rows were left behind, and the group row itself was never retired — it is still scheduled to run again on 25 Oct 2026.
+Across 445 recurring groups:
 
-Root cause is the known one: the generator recreates dates from the group whenever no cancellation covers them, and deleting lessons in April never wrote a cutoff for that period.
+- 371 have no future lessons left.
+- 195 of those have no cutoff recorded — nothing states the series ended.
+- 140 groups are still "live" (extension date in the near future) despite having zero future lessons; 45 of those also have no cutoff at all. These are the ghost generators.
+- 111 groups have had no lesson for over 30 days yet are still scheduled to extend. Oldest last lesson: 19 Sept 2025.
+- 15 series carry more than one overlapping cutoff row.
 
-## Fix for this series
+## The clean-up
 
-1. Delete the three ghost instances (12, 19, 26 July 2026) for this parent.
-2. Retire the group: set its next extension far in the future (or remove the group) so 25 Oct cannot regenerate anything.
-3. Replace the two overlapping cutoff rows with a single `cancelled_from` at the real end of the series (30 March 2026), so nothing between April and August can ever be regenerated either.
-4. Re-run the extension function and confirm no new rows appear for this parent.
+1. **Produce the audit list first** — every group with no future lessons, its last real lesson date, whether a cutoff exists, and its next extension date. Reviewed before anything is changed.
+2. **Retire dead groups** — for the 140 live-but-empty groups, push `next_extension_date` 100 years out and mark them non-infinite so the nightly job can never regenerate them.
+3. **Backfill a cutoff** for every retired series that has none, set to the day after its last real lesson, so even a manual re-run cannot recreate the gap.
+4. **Collapse duplicate cutoffs** — where a series has several, keep the earliest and remove the rest.
+5. **Re-run the extension function** and confirm no new lessons appear for any retired series.
 
-## Same problem elsewhere
+## Keeping a record going forward
 
-Run the same audit across all groups: any group whose series has a long gap of deleted lessons but no matching cancellation cutoff will keep producing ghosts. Report the list first, then apply the same retire-and-cutoff cleanup as a reviewed data change.
+Add a lightweight `lesson_deletion_log` table capturing: the lesson id and title, tutor, student ids, start time, the scope used, who deleted it, when, and how many rows went. `delete_lesson_scoped` writes one row per deletion, including the "entire series" case that currently records nothing. This gives a permanent, queryable history of every deletion instead of inferring it from cancellations.
 
 ## Technical notes
 
-- Cleanup is a data change on `lessons`, `recurring_lesson_groups` and `recurring_lesson_cancellations` — no schema change needed for this specific series.
-- The durable fix (guarding `extend_recurring_lessons()` with an "empty/ended series" and two-week lookback rule) is the previously drafted work; this plan can stop at the data cleanup if you only want the one series sorted now.
+- Cleanup is a reviewed data change on `recurring_lesson_groups` and `recurring_lesson_cancellations`; no lessons are deleted by it.
+- New table plus an update to `public.delete_lesson_scoped` to insert the log row before the deletes; log is admin/owner readable only.
