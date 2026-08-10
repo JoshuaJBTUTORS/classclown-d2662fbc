@@ -2597,6 +2597,51 @@ export type Database = {
           },
         ]
       }
+      lesson_deletion_log: {
+        Row: {
+          deleted_at: string
+          deleted_by: string | null
+          end_time: string | null
+          id: string
+          is_recurring: boolean | null
+          lesson_id: string
+          parent_lesson_id: string | null
+          scope: string
+          start_time: string | null
+          subject: string | null
+          title: string | null
+          tutor_id: string | null
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_by?: string | null
+          end_time?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          lesson_id: string
+          parent_lesson_id?: string | null
+          scope: string
+          start_time?: string | null
+          subject?: string | null
+          title?: string | null
+          tutor_id?: string | null
+        }
+        Update: {
+          deleted_at?: string
+          deleted_by?: string | null
+          end_time?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          lesson_id?: string
+          parent_lesson_id?: string | null
+          scope?: string
+          start_time?: string | null
+          subject?: string | null
+          title?: string | null
+          tutor_id?: string | null
+        }
+        Relationships: []
+      }
       lesson_participant_events: {
         Row: {
           created_at: string
