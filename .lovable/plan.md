@@ -2,17 +2,20 @@
 
 ## What I found
 
-Scott's Wednesday 12 August column is full of sessions that do not belong on a Wednesday. Comparing each affected series against its own last 8 weeks of history:
+Scott's Wednesday 12 August column is full of sessions that do not belong on a Wednesday. Checked each affected series against its own bookings for August:
 
-| Series | Normal slot (last 2+ weeks) | What appeared | Created |
-|---|---|---|---|
-| 1-1 GCSE Maths | Mon 17:00 | extra Wed 12 & 19 Aug 17:00 | 6 Aug 01:01 |
-| 1-1 KS2 English | Tue 16:00 | extra Wed 12 & 19 Aug 16:00 | 6 Aug 01:02 |
-| 1-1 KS2 Maths | Fri 17:00 (and Thu 13/20 already generated) | extra Wed 12 & 19 Aug 17:00 | 6 Aug 01:01 |
-| GCSE English Group (Tue) | Tue 17:00 | extra Wed 12 & 19 Aug 17:00 | 6 Aug 01:0x |
-| GCSE English Group (Wed 18:00) | Wed 18:00 | duplicated — two identical rows on 12 Aug and on 19 Aug | 6 Aug 01:01 alongside 2 Jul row |
+| Series | Correct day (still present, all Scott Renwick, students attached) | Extra rows added |
+|---|---|---|
+| 1-1 GCSE Maths | Mon 3, 10, 17, 24, 31 Aug 18:00 | Wed 12, 19, 26 Aug 18:00 |
+| 1-1 KS2 English | Tue 4, 11, 18, 25 Aug 17:00 | Wed 12, 19, 26 Aug 17:00 |
+| 1-1 KS2 Maths (RES) | Thu 13, 20, 27 Aug 18:00 | Wed 12, 19, 26 Aug 18:00, plus a stray Sun 9 Aug 10:00 |
+| GCSE English Group (Tue) | Tue 4, 11, 18, 25 Aug 18:00 | Wed 12, 19, 26 Aug 18:00 — and 12 Aug exists **twice** |
+| KS3 English Group (Wed) | Wed 18:00 as normal | duplicated rows on the same Wednesdays |
 
-Every one of these rows was created by the overnight `extend_recurring_lessons` job in the early hours of 6 August. None were created by a person, and none of today's changes are involved. The correct Mon/Tue/Fri instances are still there — the Wednesday ones are additions, not moves.
+**Answer to your question: no, deleting the Wednesday rows will not leave gaps.** Every series still has its full run of correct-day sessions, all assigned to Scott Renwick, all with their students attached (1, 2, 2 and 6 students respectively). The Wednesday rows are pure additions created by the overnight `extend_recurring_lessons` job on 6–7 August — nobody moved anything, and none of today's changes are involved. Removing them restores each series to exactly its normal pattern.
+
+The only genuine duplicate risk is the reverse case: GCSE English Group has two identical Wed 12 Aug 18:00 rows (one created 6 Aug, one 7 Aug), so the job ran twice and the duplicate guard failed to catch the second.
+
 
 ## Why it happened
 
