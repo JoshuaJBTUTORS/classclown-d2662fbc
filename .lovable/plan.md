@@ -27,7 +27,7 @@ A second, smaller problem: the duplicate check only asks "is there already a les
 
 ## Proposed fix
 
-1. **Clean the calendar now** — delete the off-day instances created by the 6 August run for these series (Wed 12 and 19 Aug), plus the duplicated Wed 18:00 rows, leaving each series' correct day untouched.
+1. **Clean the calendar now** — delete only the off-day rows created by the 6–7 Aug runs (Wed 12, 19, 26 Aug across the four non-Wednesday series, plus the stray Sun 9 Aug KS2 Maths), and de-duplicate the doubled Wednesday rows by keeping the older one. Correct-day sessions and their student lists are left untouched, so no session is lost and no tutor assignment changes.
 2. **Anchor generation to the real weekday** — change `extend_recurring_lessons` so each new instance is placed on the series' own weekday (derived from the parent lesson's start time in UK time, with `recurrence_day` as a cross-check), instead of stepping from `next_extension_date`. Keep `next_extension_date` purely as a "how far ahead have we generated" marker.
 3. **Harden the duplicate guard** — match on series + date + start time, and skip insertion if any row for the series already exists in that calendar week.
 4. **Re-align existing repeat rules** — after the fix, sweep the drifted rules so their next generation lands on the correct weekday.
