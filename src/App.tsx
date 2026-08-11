@@ -31,6 +31,8 @@ import TimeOff from './pages/TimeOff';
 import TimeOffRequests from './pages/TimeOffRequests';
 import TopicRequestsApproval from './pages/TopicRequestsApproval';
 import TrialBookings from './pages/TrialBookings';
+import Referrals from './pages/Referrals';
+
 import TrialBooking from './pages/TrialBooking';
 import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
 import StudentJoinPage from './components/lessons/StudentJoinPage';
