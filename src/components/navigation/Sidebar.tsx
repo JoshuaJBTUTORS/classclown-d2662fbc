@@ -148,6 +148,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner'],
         },
         {
+          icon: Users,
+          label: 'Referrals',
+          href: '/referrals',
+          roles: ['admin', 'owner'],
+        },
+
+        {
           icon: FileSignature,
           label: 'Lesson Proposals',
           href: '/admin/proposals',
