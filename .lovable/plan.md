@@ -31,9 +31,13 @@ A second tab grouping by referrer: number of referrals, how many booked a trial,
 
 ## Making sure referrals actually get tracked
 
-Two gaps to close so the page has data:
-1. **Trial bookings page cross-link** — `/trial-bookings` already stores `referral_code`; add a "Referred" badge and a link to the matching referral row so the two views agree.
-2. **Attribution check** — verify `link-trial-referral` runs on every trial booking that carries a `?ref=` code, and backfill any trial bookings that have a `referral_code` but no matching `referrals` row, so historic referrals appear.
+No — the "Refer Friend £100" button on the calendar does **not** store anything. That dialog (`src/components/calendar/ReferFriendDialog.tsx`) only calls the `send-referral-notification` edge function to email the team; it never writes a row to `referrals`. That is the main reason the table is currently empty.
+
+Three gaps to close so the page has data:
+1. **Calendar refer dialog writes a referral** — on submit, insert a `referrals` row with the logged-in user as `referrer_user_id` (plus their name/email), the friend's details, `source: 'calendar_dialog'`, `status: 'invited'`, and their personal `referral_code`, then send the email as it does today. If the email fails the referral is still saved.
+2. **Trial bookings page cross-link** — `/trial-bookings` already stores `referral_code`; add a "Referred" badge and a link to the matching referral row so the two views agree.
+3. **Attribution check** — verify `link-trial-referral` runs on every trial booking that carries a `?ref=` code, and backfill any trial bookings that have a `referral_code` but no matching `referrals` row, so historic referrals appear.
+
 
 ## Technical notes
 
