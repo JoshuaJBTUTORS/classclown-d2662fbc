@@ -63,25 +63,26 @@ const Referrals: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('referrals')
-        .select(
-          'id, referrer_name, referrer_email, friend_name, friend_email, friend_phone, child_name, notes, status, source, referral_code, created_at'
-        )
-        .order('created_at', { ascending: false });
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('referrals')
+      .select(
+        'id, referrer_name, referrer_email, friend_name, friend_email, friend_phone, child_name, notes, status, source, referral_code, created_at'
+      )
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Failed to load referrals:', error);
-        toast.error('Could not load referrals');
-      }
-      setRows((data as ReferralRow[]) || []);
-      setIsLoading(false);
-    };
-    load();
+    if (error) {
+      console.error('Failed to load referrals:', error);
+      toast.error('Could not load referrals');
+    }
+    setRows((data as ReferralRow[]) || []);
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const updateStatus = async (id: string, status: string) => {
     const previous = rows;
