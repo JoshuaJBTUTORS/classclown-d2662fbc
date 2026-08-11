@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import {
 import { Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import AddReferralDialog from '@/components/referrals/AddReferralDialog';
 
 interface ReferralRow {
   id: string;
@@ -63,25 +64,26 @@ const Referrals: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('referrals')
-        .select(
-          'id, referrer_name, referrer_email, friend_name, friend_email, friend_phone, child_name, notes, status, source, referral_code, created_at'
-        )
-        .order('created_at', { ascending: false });
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('referrals')
+      .select(
+        'id, referrer_name, referrer_email, friend_name, friend_email, friend_phone, child_name, notes, status, source, referral_code, created_at'
+      )
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Failed to load referrals:', error);
-        toast.error('Could not load referrals');
-      }
-      setRows((data as ReferralRow[]) || []);
-      setIsLoading(false);
-    };
-    load();
+    if (error) {
+      console.error('Failed to load referrals:', error);
+      toast.error('Could not load referrals');
+    }
+    setRows((data as ReferralRow[]) || []);
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const updateStatus = async (id: string, status: string) => {
     const previous = rows;
@@ -131,9 +133,12 @@ const Referrals: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="flex items-center gap-2">
-        <Users className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Referrals</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Referrals</h1>
+        </div>
+        <AddReferralDialog onCreated={load} />
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
