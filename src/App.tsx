@@ -364,6 +364,15 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route
+                    path="referrals"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <Referrals />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   <Route 
                     path="settings" 
                     element={<Settings />} 
