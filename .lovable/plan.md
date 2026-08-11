@@ -38,6 +38,19 @@ Three gaps to close so the page has data:
 2. **Trial bookings page cross-link** — `/trial-bookings` already stores `referral_code`; add a "Referred" badge and a link to the matching referral row so the two views agree.
 3. **Attribution check** — verify `link-trial-referral` runs on every trial booking that carries a `?ref=` code, and backfill any trial bookings that have a `referral_code` but no matching `referrals` row, so historic referrals appear.
 
+## Backfilling past referrals from the sent emails
+
+Every past referral only exists as an email. The Supabase edge logs cannot help — they currently hold just 9 rows covering about eight minutes, so historic `send-referral-notification` calls are long gone. The one durable record is Resend, which holds every email the function sent with the subject line `New referral from <name> (Refer a Friend, £50)` (older ones used the previous subject wording) from `noreply@classbeyondacademy.io`.
+
+Backfill approach:
+1. A one-off admin-only edge function `backfill-referrals-from-resend` lists sent emails from the Resend API using the existing `RESEND_API_KEY`, paging back through the full history.
+2. It keeps only referral notification emails (matched on sender plus subject pattern) and parses the referrer name/email, friend name/email/phone, child name, notes and referral code out of the email body, using the email's send date as `created_at`.
+3. It runs in **preview mode first** — returns the parsed list so the results can be checked before anything is written.
+4. On confirmation it inserts the rows into `referrals` with `source: 'backfill_email'` and `status: 'invited'`, matching the referrer to an account by email where one exists, and skipping any referral already present (same friend email/phone and referrer).
+5. The Referrals page then shows the full history, and statuses can be moved forward manually from there.
+
+If Resend's history does not reach far enough back, the remainder can be imported from a CSV export of the notification inbox using the same parser.
+
 
 ## Technical notes
 
