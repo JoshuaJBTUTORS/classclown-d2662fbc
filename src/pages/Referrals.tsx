@@ -21,6 +21,7 @@ import {
 import { Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import AddReferralDialog from '@/components/referrals/AddReferralDialog';
 
 interface ReferralRow {
   id: string;
