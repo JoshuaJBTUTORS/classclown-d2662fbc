@@ -132,9 +132,12 @@ const Referrals: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="flex items-center gap-2">
-        <Users className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Referrals</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Referrals</h1>
+        </div>
+        <AddReferralDialog onCreated={load} />
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
