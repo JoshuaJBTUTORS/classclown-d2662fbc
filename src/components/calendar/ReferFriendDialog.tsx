@@ -63,22 +63,48 @@ export const ReferFriendDialog: React.FC<ReferFriendDialogProps> = ({
     setIsSubmitting(true);
     
     try {
+      const referrerName = `${profile.first_name} ${profile.last_name}`.trim();
+
+      // Store the referral first so it is always tracked, even if the email fails
+      const { data: inserted, error: insertError } = await supabase
+        .from('referrals')
+        .insert({
+          referrer_user_id: user.id,
+          referrer_name: referrerName,
+          referrer_email: user.email,
+          friend_name: data.friendName,
+          friend_email: data.friendEmail,
+          friend_phone: data.friendPhone,
+          status: 'invited',
+          source: 'calendar_dialog',
+        })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        console.error('Error saving referral:', insertError);
+      }
+
       // Call the edge function to send the referral email
       const { error } = await supabase.functions.invoke('send-referral-notification', {
         body: {
-          referrerName: `${profile.first_name} ${profile.last_name}`,
+          referrerName,
           referrerEmail: user.email,
           friendName: data.friendName,
           friendEmail: data.friendEmail,
           friendPhone: data.friendPhone,
+          referralId: inserted?.id,
         },
       });
 
       if (error) {
         console.error('Error sending referral:', error);
-        toast.error('Failed to send referral. Please try again.');
-        return;
+        if (!inserted) {
+          toast.error('Failed to send referral. Please try again.');
+          return;
+        }
       }
+
 
       toast.success('Referral sent successfully! We\'ll be in touch soon.');
       form.reset();
