@@ -385,10 +385,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       
       console.log(isEditing ? "Homework updated successfully:" : "Homework created successfully:", insertData);
       
-      // Fire-and-forget: send notification in background, don't block the UI
-      if (!isEditing && insertData && insertData[0]) {
-        sendHomeworkNotification(insertData[0].id);
-      }
+      // Per-lesson homework notifications are disabled (weekly release job handles comms)
       toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
       
       onSuccess?.();
