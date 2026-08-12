@@ -100,6 +100,14 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Per-lesson homework notifications are disabled.
+  // Only the weekly homework release job (weekly-homework-sync) notifies families.
+  // The implementation below is intentionally left in place for future re-enablement.
+  return new Response(
+    JSON.stringify({ success: true, skipped: 'notifications_disabled' }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+
   try {
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
     const supabase = createClient(

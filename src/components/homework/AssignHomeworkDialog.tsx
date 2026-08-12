@@ -117,26 +117,9 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
     },
   });
 
-  const sendHomeworkNotification = async (homeworkId: string) => {
-    try {
-      console.log('Sending homework notification for:', homeworkId);
-      
-      const { data, error } = await supabase.functions.invoke('send-homework-notification', {
-        body: { homeworkId }
-      });
+  // Homework notifications intentionally removed: only the weekly homework
+  // release job messages families about new homework.
 
-      if (error) {
-        console.error('Error sending homework notification:', error);
-        toast.error('Homework assigned but failed to send notifications');
-      } else {
-        console.log('Homework notification sent successfully:', data);
-        toast.success('Homework assigned and notifications sent!');
-      }
-    } catch (error) {
-      console.error('Error invoking homework notification function:', error);
-      toast.error('Homework assigned but failed to send notifications');
-    }
-  };
 
   // Effect to set preSelectedLessonId when it changes
   useEffect(() => {
@@ -385,10 +368,7 @@ const AssignHomeworkDialog: React.FC<AssignHomeworkDialogProps> = ({
       
       console.log(isEditing ? "Homework updated successfully:" : "Homework created successfully:", insertData);
       
-      // Fire-and-forget: send notification in background, don't block the UI
-      if (!isEditing && insertData && insertData[0]) {
-        sendHomeworkNotification(insertData[0].id);
-      }
+      // Per-lesson homework notifications are disabled (weekly release job handles comms)
       toast.success(isEditing ? 'Homework updated successfully!' : 'Homework assigned successfully!');
       
       onSuccess?.();
