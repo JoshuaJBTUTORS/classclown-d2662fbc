@@ -120,24 +120,9 @@ const CompleteSessionDialog: React.FC<CompleteSessionDialogProps> = ({
     }
   }, [lesson, form, homeworkData, skipHomeworkStep]);
 
-  const sendHomeworkNotification = async (homeworkId: string) => {
-    try {
-      console.log('Sending homework notification for:', homeworkId);
-      
-      const { data, error } = await supabase.functions.invoke('send-homework-notification', {
-        body: { homeworkId }
-      });
+  // Homework notifications intentionally removed: only the weekly homework
+  // release job messages families about new homework.
 
-      if (error) {
-        console.error('Error sending homework notification:', error);
-        // Don't show error toast here as it might be confusing in the context of session completion
-      } else {
-        console.log('Homework notification sent successfully:', data);
-      }
-    } catch (error) {
-      console.error('Error invoking homework notification function:', error);
-    }
-  };
 
   const fetchLessonDetails = async (id: string) => {
     try {
