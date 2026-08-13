@@ -295,8 +295,8 @@ The ${sourceLabel} is the SOURCE OF TRUTH for topic order, topic naming and less
 Apply these rules strictly:
 1. Remove any week that does not have a clear learning outcome (revision, retrieval practice, recap, catch-up, consolidation, buffer, "TBC" and similar). Do not keep them.
 2. Use the document's sequence and terminology. Keep existing wording only where it already matches the document.
-3. These four weeks MUST be assessment weeks, overwriting whatever currently sits there:
-${Object.entries(ASSESSMENT_WEEKS).map(([w, d]) => `   - Week ${w} (${d})`).join("\n")}
+3. These weeks MUST be assessment weeks, overwriting whatever currently sits there:
+${activeAssessmentWeeks.map(([w, d]) => `   - Week ${w} (${d})`).join("\n")}
    Title them as an assessment (e.g. "Assessment Week — <topics covered so far>") and describe what is assessed based on the preceding weeks.
 4. Remove or reword anything that cannot be run online. Required practicals must become teacher demonstrations, virtual simulations, or analysis of provided results. Never instruct the student to physically carry out an experiment.
 
