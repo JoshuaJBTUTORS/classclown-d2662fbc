@@ -203,9 +203,15 @@ async function processLesson(lessonId: string, stats: Stats) {
   }
 
   if (!lesson.lesson_space_session_id) {
-    await deferTranscript(lesson.id, null, "No LessonSpace session found yet", lesson.end_time, stats);
+    const { data: existingRow } = await supabase
+      .from("lesson_transcriptions")
+      .select("id, transcript_poll_attempts")
+      .eq("lesson_id", lesson.id)
+      .maybeSingle();
+    await deferTranscript(lesson.id, null, existingRow, "No LessonSpace session found yet", lesson.end_time, stats);
     return;
   }
+
 
   // Step 2: recording fallback (webhook normally covers this)
   if (!lesson.lesson_space_recording_url) {
@@ -253,7 +259,7 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
       stats.transcripts_completed++;
       return true;
     }
-    await deferTranscript(lesson.id, row, "Transcript URL download failed", lesson.end_time, stats);
+    await deferTranscript(lesson.id, lesson.lesson_space_session_id, row, "Transcript URL download failed", lesson.end_time, stats);
     return false;
   }
 
@@ -278,11 +284,13 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
 
   await deferTranscript(
     lesson.id,
+    lesson.lesson_space_session_id,
     refreshed ?? row,
     pollError ? `Transcript poll error: ${pollError.message}` : "Transcript not ready at LessonSpace",
     lesson.end_time,
     stats,
   );
+
   return false;
 }
 
@@ -345,6 +353,7 @@ function parseTranscript(body: string): string {
 /** Record the failed attempt and schedule the next one, or give up terminally. */
 async function deferTranscript(
   lessonId: string,
+  sessionId: string | null,
   row: any,
   reason: string,
   lessonEndTime: string,
@@ -355,7 +364,6 @@ async function deferTranscript(
   const exhausted = attempts >= MAX_POLL_ATTEMPTS || ageMs > MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 
   const update: Record<string, unknown> = {
-    lesson_id: lessonId,
     transcript_poll_attempts: attempts,
     last_poll_error: reason,
     updated_at: new Date().toISOString(),
@@ -372,11 +380,26 @@ async function deferTranscript(
     console.log(`Lesson ${lessonId} deferred (attempt ${attempts}): ${reason}`);
   }
 
-  const { error } = await supabase
-    .from("lesson_transcriptions")
-    .upsert(update, { onConflict: "lesson_id", ignoreDuplicates: false });
+  // session_id is NOT NULL, so a partial upsert would wipe it — update in place
+  // when a row exists and only insert (with the session id) when it does not.
+  let error;
+  if (row?.id) {
+    ({ error } = await supabase.from("lesson_transcriptions").update(update).eq("id", row.id));
+  } else if (sessionId) {
+    ({ error } = await supabase
+      .from("lesson_transcriptions")
+      .upsert({ ...update, lesson_id: lessonId, session_id: sessionId }, {
+        onConflict: "lesson_id",
+        ignoreDuplicates: false,
+      }));
+  } else {
+    // No row and no session id yet — nothing safe to persist; the lesson stays
+    // in the queue and will be retried on the next run.
+    return;
+  }
   if (error) console.error(`Failed to record transcript attempt for ${lessonId}:`, error.message);
 }
+
 
 async function ensureSummaries(lessonId: string, stats: Stats) {
   const { data: transcription } = await supabase
