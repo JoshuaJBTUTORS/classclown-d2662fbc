@@ -14,6 +14,9 @@ const ASSESSMENT_WEEKS: Record<number, string> = {
   48: "26 July 2027",
 };
 
+/** Term label used when a week number does not exist in the plan yet. */
+const termForWeek = (week: number) => (week <= 12 ? "Autumn" : week <= 24 ? "Spring" : "Summer");
+
 interface PlanRow {
   id: string;
   subject: string;
