@@ -749,7 +749,10 @@ serve(async (req) => {
 
 
 
-    console.log("[weekly-homework-sync] Done", { weekStartIso, sent, failed, skipped, notified, emailsSent, whatsappSent });
+    console.log("[weekly-homework-sync] Done", {
+      weekStartIso, sent, failed, skipped, notified, emailsSent, whatsappSent,
+      queueSize: queueIds.length, batch: batchIds.length, handedOff: overflowIds.length + remainingStudentIds.length,
+    });
 
     return new Response(
       JSON.stringify({
@@ -762,6 +765,10 @@ serve(async (req) => {
         notified,
         emails_sent: emailsSent,
         whatsapp_sent: whatsappSent,
+        queue_size: queueIds.length,
+        batch_size: batchIds.length,
+        handed_off: overflowIds.length + remainingStudentIds.length,
+        eligible_student_ids: body.dry_run ? queueIds : undefined,
       }),
 
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
