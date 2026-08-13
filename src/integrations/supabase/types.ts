@@ -3142,11 +3142,14 @@ export type Database = {
           expires_at: string | null
           fallback_processing_used: boolean | null
           id: string
+          last_poll_error: string | null
           last_processing_error: string | null
           lesson_id: string
+          next_poll_at: string | null
           processing_attempts: number | null
           processing_notes: string | null
           session_id: string
+          transcript_poll_attempts: number
           transcript_size_bytes: number | null
           transcription_status: string
           transcription_text: string | null
@@ -3160,11 +3163,14 @@ export type Database = {
           expires_at?: string | null
           fallback_processing_used?: boolean | null
           id?: string
+          last_poll_error?: string | null
           last_processing_error?: string | null
           lesson_id: string
+          next_poll_at?: string | null
           processing_attempts?: number | null
           processing_notes?: string | null
           session_id: string
+          transcript_poll_attempts?: number
           transcript_size_bytes?: number | null
           transcription_status?: string
           transcription_text?: string | null
@@ -3178,11 +3184,14 @@ export type Database = {
           expires_at?: string | null
           fallback_processing_used?: boolean | null
           id?: string
+          last_poll_error?: string | null
           last_processing_error?: string | null
           lesson_id?: string
+          next_poll_at?: string | null
           processing_attempts?: number | null
           processing_notes?: string | null
           session_id?: string
+          transcript_poll_attempts?: number
           transcript_size_bytes?: number | null
           transcription_status?: string
           transcription_text?: string | null
