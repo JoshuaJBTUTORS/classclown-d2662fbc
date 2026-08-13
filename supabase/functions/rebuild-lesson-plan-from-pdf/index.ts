@@ -347,7 +347,7 @@ Also return a short list of the notable changes you made (removals, rewordings o
       if (!Number.isFinite(weekNumber)) continue;
       keptWeeks.add(weekNumber);
 
-      const term = w.term || termByWeek[weekNumber] || rows[0].term;
+      const term = w.term || termByWeek[weekNumber] || termForWeek(weekNumber);
       const payload = {
         subject,
         term,
