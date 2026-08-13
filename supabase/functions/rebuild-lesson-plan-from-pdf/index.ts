@@ -254,9 +254,17 @@ Deno.serve(async (req) => {
 
     const termByWeek: Record<number, string> = {};
     rows.forEach((r) => { termByWeek[r.week_number] = r.term; });
-    const weekNumbers = rows.map((r) => r.week_number);
-    const minWeek = Math.min(...weekNumbers);
-    const maxWeek = Math.max(...weekNumbers);
+
+    // The week range comes from the requested target (default 52), NOT from the
+    // existing rows — otherwise a 30-week plan can never grow to a full year.
+    const requestedWeeks = Number(body.targetWeeks);
+    const minWeek = 1;
+    const maxWeek = Number.isFinite(requestedWeeks)
+      ? Math.min(52, Math.max(1, Math.round(requestedWeeks)))
+      : 52;
+    const activeAssessmentWeeks = Object.entries(ASSESSMENT_WEEKS)
+      .filter(([w]) => Number(w) <= maxWeek);
+
 
     // Build the source material: PDFs go to the model as a file, Word documents
     // are converted to text and (where possible) sliced to the relevant years.
