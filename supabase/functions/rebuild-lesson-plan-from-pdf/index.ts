@@ -14,6 +14,9 @@ const ASSESSMENT_WEEKS: Record<number, string> = {
   48: "26 July 2027",
 };
 
+/** Term label used when a week number does not exist in the plan yet. */
+const termForWeek = (week: number) => (week <= 12 ? "Autumn" : week <= 24 ? "Spring" : "Summer");
+
 interface PlanRow {
   id: string;
   subject: string;
@@ -254,9 +257,17 @@ Deno.serve(async (req) => {
 
     const termByWeek: Record<number, string> = {};
     rows.forEach((r) => { termByWeek[r.week_number] = r.term; });
-    const weekNumbers = rows.map((r) => r.week_number);
-    const minWeek = Math.min(...weekNumbers);
-    const maxWeek = Math.max(...weekNumbers);
+
+    // The week range comes from the requested target (default 52), NOT from the
+    // existing rows — otherwise a 30-week plan can never grow to a full year.
+    const requestedWeeks = Number(body.targetWeeks);
+    const minWeek = 1;
+    const maxWeek = Number.isFinite(requestedWeeks)
+      ? Math.min(52, Math.max(1, Math.round(requestedWeeks)))
+      : 52;
+    const activeAssessmentWeeks = Object.entries(ASSESSMENT_WEEKS)
+      .filter(([w]) => Number(w) <= maxWeek);
+
 
     // Build the source material: PDFs go to the model as a file, Word documents
     // are converted to text and (where possible) sliced to the relevant years.
@@ -287,8 +298,8 @@ The ${sourceLabel} is the SOURCE OF TRUTH for topic order, topic naming and less
 Apply these rules strictly:
 1. Remove any week that does not have a clear learning outcome (revision, retrieval practice, recap, catch-up, consolidation, buffer, "TBC" and similar). Do not keep them.
 2. Use the document's sequence and terminology. Keep existing wording only where it already matches the document.
-3. These four weeks MUST be assessment weeks, overwriting whatever currently sits there:
-${Object.entries(ASSESSMENT_WEEKS).map(([w, d]) => `   - Week ${w} (${d})`).join("\n")}
+3. These weeks MUST be assessment weeks, overwriting whatever currently sits there:
+${activeAssessmentWeeks.map(([w, d]) => `   - Week ${w} (${d})`).join("\n")}
    Title them as an assessment (e.g. "Assessment Week — <topics covered so far>") and describe what is assessed based on the preceding weeks.
 4. Remove or reword anything that cannot be run online. Required practicals must become teacher demonstrations, virtual simulations, or analysis of provided results. Never instruct the student to physically carry out an experiment.
 
@@ -300,9 +311,9 @@ If the source document is organised into UNITS rather than weeks, convert units 
 
 Week numbering rules:
 - Week numbers are fixed to the calendar and must stay within ${minWeek}-${maxWeek}.
-- When a week is removed, shift the later topics UP into the freed slot so the teaching sequence stays continuous, but the four assessment weeks above always keep their number and content.
-- Output every week number from ${minWeek} to ${maxWeek} exactly once, unless the content genuinely runs out at the end (in which case output fewer trailing weeks).
-- Keep the term label already attached to each week number.
+- When a week is removed, shift the later topics UP into the freed slot so the teaching sequence stays continuous, but the assessment weeks above always keep their number and content.
+- The plan is a full ${maxWeek}-week cycle. Output every week number from ${minWeek} to ${maxWeek} exactly once — spread the document's content across ALL of them. Do not stop early just because the current plan has fewer weeks than that.
+- Keep the term label already attached to each week number. For week numbers that do not exist yet, use: weeks 1-12 Autumn, 13-24 Spring, 25-${maxWeek} Summer.
 
 Also return a short list of the notable changes you made (removals, rewordings of practicals, assessment weeks inserted).`;
 
@@ -339,7 +350,7 @@ Also return a short list of the notable changes you made (removals, rewordings o
       if (!Number.isFinite(weekNumber)) continue;
       keptWeeks.add(weekNumber);
 
-      const term = w.term || termByWeek[weekNumber] || rows[0].term;
+      const term = w.term || termByWeek[weekNumber] || termForWeek(weekNumber);
       const payload = {
         subject,
         term,

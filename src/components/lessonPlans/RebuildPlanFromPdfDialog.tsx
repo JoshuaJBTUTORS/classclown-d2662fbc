@@ -48,9 +48,11 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [keyStage, setKeyStage] = useState<KeyStage>(detectKeyStage(subject));
+  const [targetWeeks, setTargetWeeks] = useState<string>('52');
   const [isRunning, setIsRunning] = useState(false);
   const [changes, setChanges] = useState<string[] | null>(null);
   const [scope, setScope] = useState<{ years: number[]; units: number } | null>(null);
+
 
   useEffect(() => {
     setKeyStage(detectKeyStage(subject));
@@ -87,7 +89,7 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
         : file.type || 'application/pdf';
 
       const { data, error } = await supabase.functions.invoke('rebuild-lesson-plan-from-pdf', {
-        body: { subject, fileBase64, filename: file.name, mimeType, keyStage },
+        body: { subject, fileBase64, filename: file.name, mimeType, keyStage, targetWeeks: Number(targetWeeks) || 52 },
       });
 
       if (error) throw error;
@@ -169,6 +171,25 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
             Only applies to Word documents split into "Year N units" sections. Everything else uses the whole file.
           </p>
         </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm">Weeks in the rebuilt plan</Label>
+          <Select value={targetWeeks} onValueChange={setTargetWeeks} disabled={isRunning}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="52">52 weeks (full year)</SelectItem>
+              <SelectItem value="48">48 weeks</SelectItem>
+              <SelectItem value="39">39 weeks</SelectItem>
+              <SelectItem value="30">30 weeks</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Missing weeks are added. Assessment weeks 9, 22, 35 and 48 only apply if they fall inside this range.
+          </p>
+        </div>
+
 
         <Alert>
           <AlertDescription className="text-xs">
