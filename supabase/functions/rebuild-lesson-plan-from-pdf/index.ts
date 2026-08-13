@@ -308,9 +308,9 @@ If the source document is organised into UNITS rather than weeks, convert units 
 
 Week numbering rules:
 - Week numbers are fixed to the calendar and must stay within ${minWeek}-${maxWeek}.
-- When a week is removed, shift the later topics UP into the freed slot so the teaching sequence stays continuous, but the four assessment weeks above always keep their number and content.
-- Output every week number from ${minWeek} to ${maxWeek} exactly once, unless the content genuinely runs out at the end (in which case output fewer trailing weeks).
-- Keep the term label already attached to each week number.
+- When a week is removed, shift the later topics UP into the freed slot so the teaching sequence stays continuous, but the assessment weeks above always keep their number and content.
+- The plan is a full ${maxWeek}-week cycle. Output every week number from ${minWeek} to ${maxWeek} exactly once — spread the document's content across ALL of them. Do not stop early just because the current plan has fewer weeks than that.
+- Keep the term label already attached to each week number. For week numbers that do not exist yet, use: weeks 1-12 Autumn, 13-24 Spring, 25-${maxWeek} Summer.
 
 Also return a short list of the notable changes you made (removals, rewordings of practicals, assessment weeks inserted).`;
 
