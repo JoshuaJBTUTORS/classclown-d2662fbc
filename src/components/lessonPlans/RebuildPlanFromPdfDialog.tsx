@@ -172,6 +172,25 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
           </p>
         </div>
 
+        <div className="space-y-2">
+          <Label className="text-sm">Weeks in the rebuilt plan</Label>
+          <Select value={targetWeeks} onValueChange={setTargetWeeks} disabled={isRunning}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="52">52 weeks (full year)</SelectItem>
+              <SelectItem value="48">48 weeks</SelectItem>
+              <SelectItem value="39">39 weeks</SelectItem>
+              <SelectItem value="30">30 weeks</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Missing weeks are added. Assessment weeks 9, 22, 35 and 48 only apply if they fall inside this range.
+          </p>
+        </div>
+
+
         <Alert>
           <AlertDescription className="text-xs">
             This overwrites the current weeks for {subject} and cannot be undone. It usually takes 1-3 minutes.
