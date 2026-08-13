@@ -1,39 +1,46 @@
-# Gregory Dacosta: why last week had no homework to sync
+# Lesson summary failures: audit and fix
 
-## What the data shows (confirmed)
+## What the audit found (since 20 July 2026, when briefs began)
 
-Gregory (student 925) had two lessons in week Mon 3 – Sun 9 Aug 2026:
+404 transcript records, of which **131 lessons never produced a single student summary** — so no topics, no homework brief, and nothing for the weekly HeyCleo sync to pick up. They fall into four distinct failure modes:
 
-| Lesson | Date | Transcript state | Summary / homework brief |
+| Failure | Count | State | Cause |
 |---|---|---|---|
-| GCSE Maths Group | Wed 5 Aug 16:00 | `processing`, no transcript text ever fetched, no URL, 0 attempts | none |
-| KS3 Maths Group | Thu 6 Aug 18:00 | `error` — "Maximum processing attempts exceeded", but 67k chars of text **are** stored | none |
+| Transcript never arrived | 81 | `processing`, no URL, 0 attempts | LessonSpace never delivered `transcription.finish`, and polling never returned a URL. Rows sit untouched forever. |
+| Transcript URL expired before fetch | 35 | `available`, URL present, `expires_at` in the past | The URL was stored but the text was never downloaded in time (12–24h validity). |
+| Summary generation failed | 10 | `completed`, text present | Transcript downloaded fine; the summary job never produced rows and nothing retried. |
+| Retry ceiling hit | 2 | `error`, text present | "Maximum processing attempts exceeded" after 4 attempts, despite 67k chars of usable transcript. |
 
-By contrast, his 12 Aug GCSE Maths lesson transcribed cleanly (`completed`, 1 attempt) and produced summaries for all 3 students in the group, including a homework brief.
+Gregory Dacosta is an example of the two most common modes: his 5 Aug GCSE Maths lesson is in the "never arrived" bucket and his 6 Aug KS3 Maths lesson is in the "retry ceiling" bucket — hence an empty week and nothing to sync.
 
-So the sync did not skip him — there was genuinely nothing to sync. The weekly sync only picks up students with a `homework_brief`, and no brief exists because no summary was ever generated for either lesson. The student page showing "0 lessons this week" is the same cause: `student_lesson_insights` rows are derived from those summaries.
+## Why nothing self-heals
 
-Two distinct failures:
+`hourly-lesson-processing` only looks at lessons that ended within the **last 24 hours**. Once a lesson falls out of that window — whichever way it failed — it is never looked at again. There is also no visibility: a failed lesson looks identical to a lesson that simply had no transcript.
 
-1. **5 Aug** — the transcript never arrived from LessonSpace. The row was created at 20:00 on 5 Aug and has sat in `processing` with no URL and zero processing attempts since. Nothing retried it.
-2. **6 Aug** — the transcript text *did* arrive (67k chars) but summary generation failed 4 times and the record was marked `error` with the transcript expiring on 7 Aug. The stored text is still present, so this one is recoverable right now.
+Additionally, summary generation is invoked fire-and-forget from the hourly job, so a failure inside it leaves the transcript marked `completed` with no summaries and no error recorded anywhere.
 
-## Proposed fix
+## Plan
 
-### Step 1 — recover Gregory's week (immediate)
-- Re-run `generate-lesson-summaries` for the 6 Aug KS3 Maths lesson using the transcript text already in the database. This produces summaries and homework briefs for all students in that group, not just Gregory.
-- Investigate the exact failure for that lesson from the edge function logs before re-running, so we fix rather than repeat it.
-- The 5 Aug lesson has no transcript at all and cannot be recovered automatically. Confirm with the tutor whether that session ran; if it did, the brief has to be entered manually or the lesson left without homework.
+### 1. Recover what is recoverable now
+- The 12 records that still hold transcript text (10 `completed` + 2 `error`) can be re-summarised immediately from stored text. Re-run summary generation for those lessons and confirm briefs appear.
+- The 35 expired-URL and 81 never-delivered records have no text. For these, attempt a one-off re-poll of the LessonSpace transcript API by session id; anything LessonSpace still holds gets recovered, the rest is permanently lost and should be marked as such rather than left looking pending.
 
-### Step 2 — stop this happening silently
-- Add a recovery pass (cron) that finds transcriptions which are (a) stuck in `processing` for more than 12 hours, or (b) in `error` but holding transcript text, and retries summary generation for them.
-- Surface stuck/failed transcripts somewhere visible to admins so a missing week is noticed before a parent reports it.
+### 2. Add a recovery pass so this stops accumulating
+A new scheduled function (daily) that looks back 14 days, not 24 hours, and handles each mode:
+- `processing` with no URL and lesson ended >6h ago → re-poll LessonSpace for the transcript.
+- `available` with URL and no text → download the text before it expires.
+- `completed`/`error` with text and no summaries → re-run summary generation.
+- Cap attempts and record the reason on the row so a permanent failure is explicit, not silent.
 
-### Step 3 — after recovery
-- Re-run the weekly HeyCleo sync for week `2026-08-03` limited to the affected students, so the recovered briefs actually reach HeyCleo.
+### 3. Make failures visible
+- Record a terminal state (`unavailable`) with a human-readable reason when recovery is exhausted, instead of leaving rows in `processing` indefinitely.
+- Add an admin view listing lessons from the last 30 days with attendance but no summary, grouped by failure mode, so a bad week is spotted before a parent reports it.
+
+### 4. Re-sync affected weeks
+Once recovery has run, re-run the weekly HeyCleo sync for the weeks touched by recovered briefs, limited to the affected students so nobody is messaged twice.
 
 ## Technical notes
 
-- Affected records: `lesson_transcriptions` ids `74dae432…` (5 Aug, stuck) and `4c7e8bef…` (6 Aug, error with text).
-- Recovery reuses `lesson_transcriptions.transcription_text`; no re-fetch from LessonSpace is needed for the 6 Aug lesson (its `expires_at` has passed, so the remote URL is likely dead anyway).
-- The retry cron would call the existing summary-generation function; no schema changes required beyond possibly a `recovery_attempts` counter to avoid infinite loops.
+- Buckets are derived from `lesson_transcriptions` joined against `lesson_student_summaries`; no schema change is needed beyond an extra status value and a `recovery_attempts` counter to bound retries.
+- Recovery reuses `generate-lesson-summaries` (`get-transcription` action and the summary path) — no new AI logic.
+- Summary invocation from the hourly job should record its outcome rather than being fully fire-and-forget, so failures land on the transcript row.
