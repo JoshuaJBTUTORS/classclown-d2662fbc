@@ -89,7 +89,7 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
         : file.type || 'application/pdf';
 
       const { data, error } = await supabase.functions.invoke('rebuild-lesson-plan-from-pdf', {
-        body: { subject, fileBase64, filename: file.name, mimeType, keyStage },
+        body: { subject, fileBase64, filename: file.name, mimeType, keyStage, targetWeeks: Number(targetWeeks) || 52 },
       });
 
       if (error) throw error;
