@@ -313,6 +313,7 @@ serve(async (req) => {
       notify?: boolean;
       notify_only?: boolean;
       delay_ms?: number;
+      batch_size?: number;
     } = {};
     try {
       body = await req.json();
@@ -487,17 +488,107 @@ serve(async (req) => {
     let whatsappSent = 0;
     let isFirstStudent = true;
 
+    // -------------------------------------------------------------------------
+    // Explicit chunking.
+    //
+    // Previously the whole queue was processed in one invocation with a 240s
+    // wall-clock guard checked *after* each student. The runtime killed the
+    // invocation before that guard ever fired, so the tail of the queue was
+    // silently dropped (10 Aug 2026: 23 of 50 students synced, no error).
+    //
+    // Now: each invocation takes a fixed slice, and the remainder is handed to
+    // a fresh invocation *before* this batch starts work, so a mid-batch death
+    // can no longer take the rest of the queue with it.
+    // -------------------------------------------------------------------------
+    const batchSize = Math.max(1, Math.min(100, Number(body.batch_size) || 20));
+    const queueIds = Array.from(byStudent.keys());
+    const batchIds = queueIds.slice(0, batchSize);
+    const overflowIds = queueIds.slice(batchSize);
+    const isRootRun = !(body.student_ids && body.student_ids.length > 0);
+
+    const contactKeyFor = (studentId: number): string => {
+      const s = studentMap.get(studentId);
+      if (!s) return `student-${studentId}`;
+      const pEmail = s.parent_id ? parentEmailMap.get(s.parent_id) ?? null : null;
+      return s.email || pEmail || `student-${s.id}`;
+    };
+
+    // Run manifest: on the root invocation, record every eligible student as
+    // `queued` up front. Each student flips to sent/failed/skipped as it is
+    // processed, so anything left `queued` is visibly unfinished.
+    async function manifestQueue(ids: number[]) {
+      if (body.dry_run || ids.length === 0) return;
+      try {
+        await service.from("notifications").insert(
+          ids.map((id) => ({
+            type: "heycleo_weekly_homework_sync_manifest",
+            subject: `${weekStartIso} · queued`,
+            email: contactKeyFor(id),
+            status: "queued",
+          }))
+        );
+      } catch (err) {
+        console.warn("[weekly-homework-sync] manifest insert failed", err);
+      }
+    }
+
+    async function manifestResolve(studentId: number, status: string, note: string) {
+      if (body.dry_run) return;
+      try {
+        await service
+          .from("notifications")
+          .update({ status, subject: `${weekStartIso} · ${note}` })
+          .eq("type", "heycleo_weekly_homework_sync_manifest")
+          .eq("email", contactKeyFor(studentId))
+          .eq("subject", `${weekStartIso} · queued`)
+          .eq("status", "queued");
+      } catch (err) {
+        console.warn("[weekly-homework-sync] manifest update failed", err);
+      }
+    }
+
+    function handOff(ids: number[], reason: string) {
+      if (ids.length === 0) return;
+      console.log("[weekly-homework-sync] Handing off students", { count: ids.length, reason });
+      const p = fetch(`${supabaseUrl}/functions/v1/weekly-homework-sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          week_start: weekStartIso,
+          student_ids: ids,
+          notify: body.notify,
+          notify_only: body.notify_only,
+          dry_run: body.dry_run,
+          delay_ms: delayMs,
+          batch_size: batchSize,
+        }),
+      }).catch((err) => console.error("[weekly-homework-sync] Handoff failed", reason, err));
+      try {
+        // deno-lint-ignore no-explicit-any
+        (globalThis as any).EdgeRuntime?.waitUntil?.(p);
+      } catch (_) { /* best-effort */ }
+    }
+
+    if (isRootRun) await manifestQueue(queueIds);
+
+    // Kick the remainder off immediately — before this batch does any work.
+    handOff(overflowIds, "overflow");
 
     const runStartedAt = Date.now();
-    const maxRunMs = 240000; // keep well inside the edge function wall-clock budget
+    const maxRunMs = 90000; // second line of defence, well under the runtime limit
     const remainingStudentIds: number[] = [];
 
-    for (const [studentId, subjMap] of byStudent) {
-      // Hand the rest of the queue to a fresh invocation before we time out.
+    for (const studentId of batchIds) {
+      const subjMap = byStudent.get(studentId)!;
+      // Safety net: if this batch is somehow running long, hand the rest on.
       if (Date.now() - runStartedAt > maxRunMs) {
         remainingStudentIds.push(studentId);
         continue;
       }
+
 
       const student = studentMap.get(studentId);
 
