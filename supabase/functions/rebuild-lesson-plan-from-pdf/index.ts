@@ -170,6 +170,7 @@ async function callModel(
     body: JSON.stringify({
       model: MODEL,
       stream: true,
+      max_output_tokens: 32000,
       instructions,
       input: [{ role: "user", content }],
       reasoning: { effort: "medium", summary: "auto" },
@@ -193,6 +194,8 @@ async function callModel(
   const decoder = new TextDecoder();
   let buffer = "";
   let output = "";
+  let incompleteReason = "";
+  let responseError = "";
 
   while (true) {
     const { done, value } = await reader.read();
@@ -210,6 +213,10 @@ async function callModel(
           output += evt.delta;
         } else if (evt.type === "response.completed" && !output) {
           output = evt.response?.output_text ?? "";
+        } else if (evt.type === "response.incomplete") {
+          incompleteReason = evt.response?.incomplete_details?.reason || "unknown reason";
+        } else if (evt.type === "response.failed") {
+          responseError = evt.response?.error?.message || "The AI generation failed";
         }
       } catch {
         // ignore keepalive / partial frames
@@ -217,6 +224,10 @@ async function callModel(
     }
   }
 
+  if (responseError) throw new Error(responseError);
+  if (incompleteReason) {
+    throw new Error(`The AI could not finish the full lesson plan (${incompleteReason}). No changes were saved.`);
+  }
   if (!output.trim()) throw new Error("The model returned an empty response. Please try again.");
   return JSON.parse(output);
 }
