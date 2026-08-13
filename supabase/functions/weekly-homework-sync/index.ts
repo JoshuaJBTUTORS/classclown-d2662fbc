@@ -618,6 +618,7 @@ serve(async (req) => {
             status: "skipped",
           });
         } catch (_) { /* best-effort */ }
+        await manifestResolve(studentId, "skipped", "skipped: no_eligible_lessons");
         continue;
       }
 
@@ -691,6 +692,14 @@ serve(async (req) => {
         } catch (logErr) {
           console.warn("[weekly-homework-sync] notification log failed", logErr);
         }
+
+        await manifestResolve(
+          studentId,
+          result.ok ? "sent" : "failed",
+          result.ok ? `sent: ${subjects.length} subjects` : `failed: status ${result.status}`
+        );
+      } else {
+        await manifestResolve(studentId, "skipped", "skipped: notify_only");
       }
 
       // Only announce once the student's homework actually reached HeyCleo.
