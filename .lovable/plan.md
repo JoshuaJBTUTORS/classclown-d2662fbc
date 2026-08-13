@@ -1,36 +1,36 @@
-# Hajra's homework sync — what the data shows
+# Why Hajra was missed by Monday's homework sync
 
-## What actually happened
+## Root cause: the run died part-way through and the rest of the queue was silently dropped
 
-Hajra (student 688, parent Sonam, sayub09@gmail.com) **was** included in the last sync run:
+Monday 10 Aug, week `2026-08-03`:
 
-- `heycleo_weekly_homework_sync` — status `sent`, week `2026-08-03`, **1 subject**, recorded 12 Aug 16:02.
-- `weekly_homework_release` email and WhatsApp — both `sent` for the same week.
+- Eligible students that week (brief present, lesson not cancelled): **50**
+- Students actually synced: **23**
+- Run window: 06:00:14 → 06:03:22 UTC, then nothing.
 
-So the sync did not fail. What is missing is **Maths**: only KS2 English went across.
+Hajra was not skipped for a data reason. Her English brief existed from 9 Aug 14:00 (well before the run), attendance was marked `attended`, subject is not filtered. She was simply sitting further down the queue than the function got to. She only synced on 12 Aug 16:02 because that was the manual run.
 
-## Why Maths was left out
+The function paces itself with a 5-second sleep between students and then, at `maxRunMs = 240000`, is supposed to hand the remaining students to a fresh invocation. It never reached that check — the invocation was killed at ~188 seconds, so the handoff `fetch` never fired and the remaining ~27 students were lost with no error and no log row. That is why nothing looked wrong until a parent complained.
 
-The run covers the London week Mon 3 Aug – Sun 9 Aug. Hajra's briefs in that window:
+## The fix
 
-- 9 Aug (Sun) — 1-1 KS2 English — brief present → synced.
-- 10 Aug (Mon) — 1-1 KS2 Maths — brief present, but 10 Aug is the **next** week, so it is not in this bucket.
+1. **Chunk the queue properly instead of racing a timeout.** Each invocation processes a fixed, small batch (20 students), then immediately chains the next batch by re-invoking itself with the remaining `student_ids`. No dependence on wall-clock guesswork.
+2. **Lower the safety cut-off** from 240s to 90s as a second line of defence, so a slow batch still hands off before the runtime kills it.
+3. **Fire the handoff before the work, not after.** Kick off the next invocation as soon as the batch boundary is known, so a mid-batch death can no longer take the rest of the queue with it.
+4. **Log a run manifest.** At the start of a run, write one `notifications` row per eligible student with status `queued` for that week; flip it to `sent`/`failed` as each is processed. Anything still `queued` at the end is visibly unfinished.
+5. **Add a reconciliation pass.** A second cron a few hours after the main run re-invokes the sync for the same week limited to students who have a brief but no `sent` sync row — a self-healing sweep so a partial run fixes itself before anyone notices.
 
-Her Maths slot normally runs on a Saturday (18 Jul, 25 Jul at 10:00). The 10 Aug session sits on a Monday, so it fell just outside the week boundary and will only be picked up by the run that covers 10–16 Aug.
+## Backfill for the week that was missed
 
-Two other things worth noting:
+Re-run week `2026-08-03` restricted to the students with a brief but no sync row (Hajra plus the other ~26), with notifications enabled only for those who never received the release message — the `notifications` de-duplication already prevents double-messaging anyone who did.
 
-- There is a **duplicate student record** for Hajra (id 831, no email, no phone, same parent). It has no lessons or summaries, so it is inert today, but it will cause confusion in any future matching.
-- Hajra's `students.email` is the parent's address (sayub09@gmail.com). Fine for notifications, but worth confirming this matches the HeyCleo account the homework should land in.
+## Technical detail
 
-## Proposed actions
+All changes live in `supabase/functions/weekly-homework-sync/index.ts`:
 
-1. Run the sync for week `2026-08-10` limited to student 688 so the Maths brief goes across now, rather than waiting for Sunday. (Dry run first to confirm two subjects, then the real send with notifications off so the family is not messaged twice.)
-2. Confirm with HeyCleo that the 3 Aug English payload landed on the correct child account, using the sync id for student 688 + week 2026-08-03.
-3. Merge or delete the duplicate student record 831 so future syncs cannot split against the wrong row.
+- Replace the `runStartedAt`/`maxRunMs` guard with an explicit `batch_size` (default 20) slice of `byStudent`, plus the chained self-invocation for the remainder.
+- Add `queued` manifest rows keyed the same way as today (`type: heycleo_weekly_homework_sync`, `subject: <week> · queued`, `email: <contact>`), updated in place per student.
+- New optional body flag `missing_only: true` to select only students lacking a `sent` row for the week — used by both the backfill and the reconciliation cron.
+- New `pg_cron` job `weekly-homework-sync-reconcile`, Monday 10:00 UTC, posting `{"missing_only": true}` (created with the data tool, matching the existing job style).
 
-No code or schema changes are required for any of this — the sync function already accepts `week_start`, `student_ids`, `dry_run` and `notify: false`.
-
-## Optional follow-up (only if you want it)
-
-If sessions drifting across the Sunday/Monday boundary is a recurring problem, the sync could be widened to also sweep up any brief from the previous week that was created after that week's run. That is a change to `supabase/functions/weekly-homework-sync/index.ts` and would need its own pass.
+No schema changes.
