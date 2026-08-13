@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -355,15 +355,15 @@ serve(async (req) => {
 
     if (planError) throw planError;
 
-    // Generate lesson plan using Lovable AI (GPT-5 mini - balanced speed and quality)
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Generate lesson plan using OpenAI directly (GPT-5 mini - balanced speed and quality)
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5-mini',
+        model: 'gpt-5-mini',
         messages: [
           {
             role: 'system',
@@ -952,10 +952,10 @@ Generate a complete lesson with all necessary tables, definitions, diagrams, and
         );
       }
       
-      if (aiResponse.status === 402) {
+      if (aiResponse.status === 402 || aiResponse.status === 401) {
         return new Response(
-          JSON.stringify({ error: 'Payment required. Please add Lovable AI credits to your workspace.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'OpenAI billing or authentication error. Please check the OpenAI API key and account balance.' }),
+          { status: aiResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
@@ -1047,14 +1047,14 @@ ${avoidOverlapContext}
 
 You MUST generate all 20 questions. If you generate fewer, the lesson will be rejected.`;
 
-          const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
+              'Authorization': `Bearer ${openAIApiKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'openai/gpt-5-mini',
+              model: 'gpt-5-mini',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: retryPrompt }
