@@ -92,7 +92,16 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
         body: { subject, fileBase64, filename: file.name, mimeType, keyStage, targetWeeks: Number(targetWeeks) || 52 },
       });
 
-      if (error) throw error;
+      if (error) {
+        const errorContext = (error as { context?: Response }).context;
+        if (errorContext) {
+          const errorPayload = await errorContext.clone().json().catch(() => null);
+          if (errorPayload?.error && typeof errorPayload.error === 'string') {
+            throw new Error(errorPayload.error);
+          }
+        }
+        throw error;
+      }
       if (data?.error) throw new Error(data.error);
 
       toast.success(
