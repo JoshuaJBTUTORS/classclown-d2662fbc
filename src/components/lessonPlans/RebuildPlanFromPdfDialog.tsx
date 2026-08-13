@@ -48,9 +48,11 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [keyStage, setKeyStage] = useState<KeyStage>(detectKeyStage(subject));
+  const [targetWeeks, setTargetWeeks] = useState<string>('52');
   const [isRunning, setIsRunning] = useState(false);
   const [changes, setChanges] = useState<string[] | null>(null);
   const [scope, setScope] = useState<{ years: number[]; units: number } | null>(null);
+
 
   useEffect(() => {
     setKeyStage(detectKeyStage(subject));
