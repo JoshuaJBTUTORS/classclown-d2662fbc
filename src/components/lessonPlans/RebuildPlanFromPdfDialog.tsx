@@ -92,11 +92,20 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
         body: { subject, fileBase64, filename: file.name, mimeType, keyStage, targetWeeks: Number(targetWeeks) || 52 },
       });
 
-      if (error) throw error;
+      if (error) {
+        const errorContext = (error as { context?: Response }).context;
+        if (errorContext) {
+          const errorPayload = await errorContext.clone().json().catch(() => null);
+          if (errorPayload?.error && typeof errorPayload.error === 'string') {
+            throw new Error(errorPayload.error);
+          }
+        }
+        throw error;
+      }
       if (data?.error) throw new Error(data.error);
 
       toast.success(
-        `Plan rebuilt: ${data.updated} updated, ${data.inserted} added, ${data.deleted} removed`
+        `Plan rebuilt with ${data.savedWeeks ?? targetWeeks} weeks: ${data.updated} updated, ${data.inserted} added, ${data.deleted} removed`
       );
       setChanges(Array.isArray(data.changes) ? data.changes : []);
       if (Array.isArray(data.detectedYears) && data.detectedYears.length > 0) {
