@@ -32,13 +32,15 @@ const jsonResponse = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const schema = {
+const buildSchema = (targetWeeks: number) => ({
   type: "object",
   additionalProperties: false,
   required: ["weeks", "changes"],
   properties: {
     weeks: {
       type: "array",
+      minItems: targetWeeks,
+      maxItems: targetWeeks,
       items: {
         type: "object",
         additionalProperties: false,
@@ -53,7 +55,7 @@ const schema = {
     },
     changes: { type: "array", items: { type: "string" } },
   },
-};
+});
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -142,6 +144,7 @@ async function callModel(
   instructions: string,
   userText: string,
   source: { kind: "pdf"; base64: string; filename: string } | { kind: "text"; text: string },
+  targetWeeks: number,
 ) {
   const content: unknown[] = [];
   if (source.kind === "pdf") {
@@ -175,7 +178,7 @@ async function callModel(
           type: "json_schema",
           name: "rebuilt_lesson_plan",
           strict: true,
-          schema,
+          schema: buildSchema(targetWeeks),
         },
       },
     }),
@@ -328,7 +331,7 @@ Also return a short list of the notable changes you made (removals, rewordings o
       2,
     )}\n\nTerm label for each week number:\n${JSON.stringify(termByWeek)}\n\nRebuild this plan against the source document following the rules.`;
 
-    const result = await callModel(instructions, userText, source);
+    const result = await callModel(instructions, userText, source, maxWeek);
 
 
     const weeks: Array<{ week_number: number; term: string; topic_title: string; description: string | null }> =
@@ -336,6 +339,42 @@ Also return a short list of the notable changes you made (removals, rewordings o
 
     if (weeks.length === 0) {
       return jsonResponse({ error: "The model did not return any weeks." }, 502);
+    }
+
+    // Never mutate a valid existing plan with an incomplete model response.
+    // The model must return every requested week exactly once and nothing else.
+    const returnedWeekNumbers = weeks.map((week) => Number(week.week_number));
+    const returnedWeekSet = new Set(returnedWeekNumbers);
+    const expectedWeekNumbers = Array.from({ length: maxWeek }, (_, index) => index + 1);
+    const missingWeeks = expectedWeekNumbers.filter((week) => !returnedWeekSet.has(week));
+    const duplicateWeeks = returnedWeekNumbers.filter(
+      (week, index) => returnedWeekNumbers.indexOf(week) !== index,
+    );
+    const invalidWeeks = returnedWeekNumbers.filter(
+      (week) => !Number.isInteger(week) || week < minWeek || week > maxWeek,
+    );
+
+    if (
+      weeks.length !== maxWeek ||
+      returnedWeekSet.size !== maxWeek ||
+      missingWeeks.length > 0 ||
+      duplicateWeeks.length > 0 ||
+      invalidWeeks.length > 0
+    ) {
+      console.error("Incomplete rebuilt lesson plan", {
+        subject,
+        requestedWeeks: maxWeek,
+        returnedWeeks: weeks.length,
+        missingWeeks,
+        duplicateWeeks: [...new Set(duplicateWeeks)],
+        invalidWeeks: [...new Set(invalidWeeks)],
+      });
+      return jsonResponse({
+        error: `The AI returned ${weeks.length} of ${maxWeek} required weeks. No changes were saved. Please try rebuilding again.`,
+        requestedWeeks: maxWeek,
+        returnedWeeks: weeks.length,
+        missingWeeks,
+      }, 502);
     }
 
     const byWeek = new Map<number, PlanRow>();
@@ -384,6 +423,8 @@ Also return a short list of the notable changes you made (removals, rewordings o
       updated,
       inserted,
       deleted: toDelete.length,
+      requestedWeeks: maxWeek,
+      savedWeeks: keptWeeks.size,
       changes: Array.isArray(result?.changes) ? result.changes : [],
       detectedYears,
       unitCount,

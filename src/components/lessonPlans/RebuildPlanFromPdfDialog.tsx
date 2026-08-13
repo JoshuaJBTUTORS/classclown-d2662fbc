@@ -96,7 +96,7 @@ export const RebuildPlanFromPdfDialog: React.FC<RebuildPlanFromPdfDialogProps> =
       if (data?.error) throw new Error(data.error);
 
       toast.success(
-        `Plan rebuilt: ${data.updated} updated, ${data.inserted} added, ${data.deleted} removed`
+        `Plan rebuilt with ${data.savedWeeks ?? targetWeeks} weeks: ${data.updated} updated, ${data.inserted} added, ${data.deleted} removed`
       );
       setChanges(Array.isArray(data.changes) ? data.changes : []);
       if (Array.isArray(data.detectedYears) && data.detectedYears.length > 0) {
