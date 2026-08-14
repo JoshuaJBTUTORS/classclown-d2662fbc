@@ -14,6 +14,8 @@ import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SubjectIcon } from './SubjectIcon';
+import { getPastelTone } from './pastelPalette';
+
 import MaterialUpload from './MaterialUpload';
 import MaterialList from './MaterialList';
 import WeeklyMaterials from './WeeklyMaterials';
