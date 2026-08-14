@@ -289,10 +289,11 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                                <div className="flex items-start justify-between">
                                  <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-3">
-                                      <Badge 
-                                        variant="secondary" 
-                                        className="bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 text-[hsl(var(--deep-purple-blue))] border-[hsl(var(--deep-purple-blue))]/20"
+                                      <Badge
+                                        variant="secondary"
+                                        className={cn('rounded-full border-0', tone.bg, tone.text)}
                                       >
+
                                         <Clock className="h-3 w-3 mr-1" />
                                         Week {plan.week_number}
                                       </Badge>
