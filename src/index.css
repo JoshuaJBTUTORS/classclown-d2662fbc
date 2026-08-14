@@ -152,7 +152,25 @@
     --border: 220 15% 18%;
     --input: 220 15% 18%;
     --ring: 168 55% 42%;
+
+    /* Soft pastel surfaces — muted for dark mode */
+    --pastel-mint: 165 25% 16%;
+    --pastel-mint-foreground: 158 45% 78%;
+    --pastel-lilac: 265 22% 18%;
+    --pastel-lilac-foreground: 265 45% 82%;
+    --pastel-butter: 40 25% 16%;
+    --pastel-butter-foreground: 44 60% 78%;
+    --pastel-blush: 344 20% 17%;
+    --pastel-blush-foreground: 344 50% 82%;
+    --pastel-sky: 208 25% 17%;
+    --pastel-sky-foreground: 205 55% 80%;
+    --pastel-sand: 30 18% 16%;
+    --pastel-sand-foreground: 30 40% 80%;
+
+    --shadow-soft: 0 10px 30px -12px rgba(0, 0, 0, 0.5);
+    --shadow-soft-lg: 0 22px 45px -18px rgba(0, 0, 0, 0.6);
   }
+
 }
 
 @layer base {
