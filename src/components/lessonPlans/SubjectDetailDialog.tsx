@@ -347,15 +347,16 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                                     </div>
                                   ) : (
                                      <div>
-                                       <h4 className="font-semibold text-[hsl(var(--deep-purple-blue))] mb-2 font-playfair text-lg">
+                                       <h4 className="mb-2 text-lg font-semibold text-foreground">
                                          {plan.topic_title}
                                        </h4>
                                        {plan.description && (
-                                         <p className="text-[hsl(var(--medium-blue))]/70 text-sm leading-relaxed">
+                                         <p className="text-sm leading-relaxed text-muted-foreground">
                                            {plan.description}
                                          </p>
                                        )}
                                       </div>
+
                                    )}
                                  </div>
                                  
