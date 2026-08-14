@@ -31,7 +31,22 @@ export default {
 				handwriting: ['Caveat', 'cursive'],
 			},
 			colors: {
+				pastel: {
+					mint: 'hsl(var(--pastel-mint))',
+					'mint-foreground': 'hsl(var(--pastel-mint-foreground))',
+					lilac: 'hsl(var(--pastel-lilac))',
+					'lilac-foreground': 'hsl(var(--pastel-lilac-foreground))',
+					butter: 'hsl(var(--pastel-butter))',
+					'butter-foreground': 'hsl(var(--pastel-butter-foreground))',
+					blush: 'hsl(var(--pastel-blush))',
+					'blush-foreground': 'hsl(var(--pastel-blush-foreground))',
+					sky: 'hsl(var(--pastel-sky))',
+					'sky-foreground': 'hsl(var(--pastel-sky-foreground))',
+					sand: 'hsl(var(--pastel-sand))',
+					'sand-foreground': 'hsl(var(--pastel-sand-foreground))'
+				},
 				'logo-white': 'hsl(0, 0%, 98%)', // Adding custom logo-white color
+
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
