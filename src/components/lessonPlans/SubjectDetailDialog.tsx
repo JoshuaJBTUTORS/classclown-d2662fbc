@@ -167,98 +167,77 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const completedWeeks = Math.floor(totalWeeks * 0.7); // Simulated completion
   const progress = totalWeeks > 0 ? (completedWeeks / totalWeeks) * 100 : 0;
 
+  const tone = getPastelTone(subject);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white via-[hsl(var(--light-blue))]/5 to-[hsl(var(--light-green))]/5 border-0 shadow-[var(--shadow-glow)]">
-        <DialogHeader className="relative">
-          {/* Background decoration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 via-[hsl(var(--medium-blue))]/5 to-[hsl(var(--light-green))]/10 rounded-t-lg" />
-          
-          <div className="relative z-10 flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/20 to-[hsl(var(--medium-blue))]/20 rounded-lg flex items-center justify-center">
-                <SubjectIcon subject={subject} className="h-5 w-5 text-[hsl(var(--deep-purple-blue))]" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-playfair font-bold text-[hsl(var(--deep-purple-blue))]">
-                  {subject}
-                </h2>
-                <p className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">
-                  {isStudentOrParent 
-                    ? `Current Week Plans • ${weekRange}`
-                    : 'Comprehensive Lesson Planning'
-                  }
-                </p>
-                {isStudentOrParent && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
-                    >
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 bg-background p-5 shadow-[var(--shadow-soft-lg)] sm:p-7">
+        <DialogHeader>
+          <div className={cn('rounded-[var(--radius-soft)] p-5 sm:p-6', tone.bg)}>
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <DialogTitle className="flex items-center gap-4 text-left">
+                <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-background/70', tone.text)}>
+                  <SubjectIcon subject={subject} className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className={cn('text-2xl font-bold tracking-tight sm:text-3xl', tone.text)}>
+                    {subject}
+                  </h2>
+                  <p className={cn('text-sm opacity-75', tone.text)}>
+                    {isStudentOrParent
+                      ? `Current week • ${weekRange}`
+                      : 'Weekly plans and teaching materials'}
+                  </p>
+                  {isStudentOrParent && (
+                    <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-medium', tone.chip)}>
                       Week {currentWeek} • {currentTerm}
-                    </Badge>
-                  </div>
+                    </span>
+                  )}
+                </div>
+              </DialogTitle>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {(isAdmin || isOwner) && !isStudentOrParent && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setRebuildOpen(true)}
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Rebuild from PDF
+                  </Button>
                 )}
-              </div>
-            </DialogTitle>
 
-            {(isAdmin || isOwner) && !isStudentOrParent && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="ml-auto mr-4"
-                onClick={() => setRebuildOpen(true)}
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                Rebuild from PDF
-              </Button>
-            )}
-
-            {/* Quick Stats */}
-
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className="text-lg font-bold text-[hsl(var(--deep-purple-blue))] font-playfair">{totalWeeks}</div>
-                <div className="text-xs text-[hsl(var(--medium-blue))]/60">Weeks</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-[hsl(var(--medium-green))] font-playfair">{terms.length}</div>
-                <div className="text-xs text-[hsl(var(--medium-blue))]/60">Terms</div>
-              </div>
-              <div className="w-16">
-                <Progress value={progress} className="h-2" />
-                <div className="text-xs text-[hsl(var(--medium-blue))]/60 mt-1">{Math.round(progress)}%</div>
+                <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
+                  <span className="text-base font-bold">{totalWeeks}</span> weeks
+                </div>
+                <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
+                  <span className="text-base font-bold">{terms.length}</span> terms
+                </div>
               </div>
             </div>
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className={cn(
-            "grid w-full grid-cols-2 bg-white/60 backdrop-blur-sm",
-            "border border-[hsl(var(--deep-purple-blue))]/20"
-          )}>
-            <TabsTrigger 
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-5">
+          <TabsList className="grid w-full grid-cols-2 rounded-full bg-muted p-1">
+            <TabsTrigger
               value="plans"
-              className={cn(
-                "data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--deep-purple-blue))] data-[state=active]:to-[hsl(var(--medium-blue))]",
-                "data-[state=active]:text-white font-medium"
-              )}
+              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
             >
               <BookOpen className="h-4 w-4 mr-2" />
               Weekly Plans
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="materials"
-              className={cn(
-                "data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--medium-blue))] data-[state=active]:to-[hsl(var(--light-green))]",
-                "data-[state=active]:text-white font-medium"
-              )}
+              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
             >
               <FileText className="h-4 w-4 mr-2" />
               Materials
             </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="plans" className="space-y-4">
             {isLoading ? (
