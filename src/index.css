@@ -107,7 +107,26 @@
     --cleo-radius-lg: 18px;
     --cleo-radius-pill: 999px;
     --cleo-green-soft: 150 25% 94%;
+
+    /* ===== Soft pastel surfaces (Lesson Plans) ===== */
+    --pastel-mint: 158 45% 90%;
+    --pastel-mint-foreground: 168 55% 22%;
+    --pastel-lilac: 265 55% 93%;
+    --pastel-lilac-foreground: 265 40% 32%;
+    --pastel-butter: 44 90% 89%;
+    --pastel-butter-foreground: 34 55% 27%;
+    --pastel-blush: 344 70% 94%;
+    --pastel-blush-foreground: 344 40% 34%;
+    --pastel-sky: 205 80% 92%;
+    --pastel-sky-foreground: 210 50% 28%;
+    --pastel-sand: 30 45% 92%;
+    --pastel-sand-foreground: 28 40% 28%;
+
+    --radius-soft: 1.5rem;
+    --shadow-soft: 0 10px 30px -12px rgba(17, 24, 39, 0.12);
+    --shadow-soft-lg: 0 22px 45px -18px rgba(17, 24, 39, 0.20);
   }
+
 
   .dark {
     --background: 220 20% 6%;
