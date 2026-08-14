@@ -251,46 +251,41 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 {terms.map((term, termIndex) => {
                   const termProgress = (plansByTerm[term].length / 12) * 100; // Assuming 12 weeks per term
                   return (
-                    <Card key={term} className={cn(
-                      "bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-card)]",
-                      "hover:shadow-[var(--shadow-elegant)] transition-all duration-300"
-                    )}>
-                      <CardHeader className="bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 via-[hsl(var(--medium-blue))]/5 to-[hsl(var(--light-green))]/5 border-b border-[hsl(var(--deep-purple-blue))]/10">
-                        <CardTitle className="flex items-center justify-between">
+                    <Card key={term} className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
+                      <CardHeader className="rounded-t-[var(--radius-soft)] border-b border-border/60">
+                        <CardTitle className="flex flex-wrap items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/20 to-[hsl(var(--medium-blue))]/20 rounded-lg flex items-center justify-center">
-                              <Calendar className="h-4 w-4 text-[hsl(var(--deep-purple-blue))]" />
+                            <div className={cn('flex h-9 w-9 items-center justify-center rounded-2xl', tone.bg, tone.text)}>
+                              <Calendar className="h-4 w-4" />
                             </div>
                             <div>
-                              <span className="text-[hsl(var(--deep-purple-blue))] font-playfair">{term}</span>
-                              <div className="flex items-center gap-2 mt-1">
+                              <span className="text-base font-semibold text-foreground">{term}</span>
+                              <div className="mt-1 flex items-center gap-2">
                                 <Progress value={termProgress} className="w-20 h-1" />
-                                <span className="text-xs text-[hsl(var(--medium-blue))]/60">
+                                <span className="text-xs text-muted-foreground">
                                   {Math.round(termProgress)}%
                                 </span>
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="bg-white/60 border-[hsl(var(--medium-blue))]/30">
+                            <Badge variant="secondary" className="rounded-full">
                               {plansByTerm[term].length} week{plansByTerm[term].length !== 1 ? 's' : ''}
                             </Badge>
-                            <TrendingUp className="h-4 w-4 text-[hsl(var(--medium-green))]" />
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </CardTitle>
                       </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-5">
                       <div className="grid gap-4">
                         {plansByTerm[term]
                           .sort((a, b) => a.week_number - b.week_number)
                           .map(plan => (
                              <div key={plan.id} className={cn(
-                               "group relative p-4 rounded-lg transition-all duration-300",
-                               "bg-gradient-to-r from-white/60 to-[hsl(var(--light-blue))]/5",
-                               "border border-[hsl(var(--deep-purple-blue))]/10",
-                               "hover:border-[hsl(var(--medium-blue))]/30 hover:shadow-md",
-                               "hover:bg-gradient-to-r hover:from-white/80 hover:to-[hsl(var(--light-blue))]/10"
+                               "group relative rounded-2xl p-5 transition-all duration-300",
+                               "bg-muted/50 hover:bg-muted"
                              )}>
+
                                <div className="flex items-start justify-between">
                                  <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-3">
