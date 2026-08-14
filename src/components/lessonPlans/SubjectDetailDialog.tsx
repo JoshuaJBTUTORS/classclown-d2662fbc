@@ -14,6 +14,8 @@ import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SubjectIcon } from './SubjectIcon';
+import { getPastelTone } from './pastelPalette';
+
 import MaterialUpload from './MaterialUpload';
 import MaterialList from './MaterialList';
 import WeeklyMaterials from './WeeklyMaterials';
@@ -167,98 +169,77 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const completedWeeks = Math.floor(totalWeeks * 0.7); // Simulated completion
   const progress = totalWeeks > 0 ? (completedWeeks / totalWeeks) * 100 : 0;
 
+  const tone = getPastelTone(subject);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white via-[hsl(var(--light-blue))]/5 to-[hsl(var(--light-green))]/5 border-0 shadow-[var(--shadow-glow)]">
-        <DialogHeader className="relative">
-          {/* Background decoration */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 via-[hsl(var(--medium-blue))]/5 to-[hsl(var(--light-green))]/10 rounded-t-lg" />
-          
-          <div className="relative z-10 flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/20 to-[hsl(var(--medium-blue))]/20 rounded-lg flex items-center justify-center">
-                <SubjectIcon subject={subject} className="h-5 w-5 text-[hsl(var(--deep-purple-blue))]" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-playfair font-bold text-[hsl(var(--deep-purple-blue))]">
-                  {subject}
-                </h2>
-                <p className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">
-                  {isStudentOrParent 
-                    ? `Current Week Plans • ${weekRange}`
-                    : 'Comprehensive Lesson Planning'
-                  }
-                </p>
-                {isStudentOrParent && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
-                    >
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 bg-background p-5 shadow-[var(--shadow-soft-lg)] sm:p-7">
+        <DialogHeader>
+          <div className={cn('rounded-[var(--radius-soft)] p-5 sm:p-6', tone.bg)}>
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <DialogTitle className="flex items-center gap-4 text-left">
+                <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-background/70', tone.text)}>
+                  <SubjectIcon subject={subject} className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className={cn('text-2xl font-bold tracking-tight sm:text-3xl', tone.text)}>
+                    {subject}
+                  </h2>
+                  <p className={cn('text-sm opacity-75', tone.text)}>
+                    {isStudentOrParent
+                      ? `Current week • ${weekRange}`
+                      : 'Weekly plans and teaching materials'}
+                  </p>
+                  {isStudentOrParent && (
+                    <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-medium', tone.chip)}>
                       Week {currentWeek} • {currentTerm}
-                    </Badge>
-                  </div>
+                    </span>
+                  )}
+                </div>
+              </DialogTitle>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {(isAdmin || isOwner) && !isStudentOrParent && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setRebuildOpen(true)}
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Rebuild from PDF
+                  </Button>
                 )}
-              </div>
-            </DialogTitle>
 
-            {(isAdmin || isOwner) && !isStudentOrParent && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="ml-auto mr-4"
-                onClick={() => setRebuildOpen(true)}
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                Rebuild from PDF
-              </Button>
-            )}
-
-            {/* Quick Stats */}
-
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className="text-lg font-bold text-[hsl(var(--deep-purple-blue))] font-playfair">{totalWeeks}</div>
-                <div className="text-xs text-[hsl(var(--medium-blue))]/60">Weeks</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-[hsl(var(--medium-green))] font-playfair">{terms.length}</div>
-                <div className="text-xs text-[hsl(var(--medium-blue))]/60">Terms</div>
-              </div>
-              <div className="w-16">
-                <Progress value={progress} className="h-2" />
-                <div className="text-xs text-[hsl(var(--medium-blue))]/60 mt-1">{Math.round(progress)}%</div>
+                <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
+                  <span className="text-base font-bold">{totalWeeks}</span> weeks
+                </div>
+                <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
+                  <span className="text-base font-bold">{terms.length}</span> terms
+                </div>
               </div>
             </div>
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className={cn(
-            "grid w-full grid-cols-2 bg-white/60 backdrop-blur-sm",
-            "border border-[hsl(var(--deep-purple-blue))]/20"
-          )}>
-            <TabsTrigger 
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-5">
+          <TabsList className="grid w-full grid-cols-2 rounded-full bg-muted p-1">
+            <TabsTrigger
               value="plans"
-              className={cn(
-                "data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--deep-purple-blue))] data-[state=active]:to-[hsl(var(--medium-blue))]",
-                "data-[state=active]:text-white font-medium"
-              )}
+              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
             >
               <BookOpen className="h-4 w-4 mr-2" />
               Weekly Plans
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="materials"
-              className={cn(
-                "data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--medium-blue))] data-[state=active]:to-[hsl(var(--light-green))]",
-                "data-[state=active]:text-white font-medium"
-              )}
+              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
             >
               <FileText className="h-4 w-4 mr-2" />
               Materials
             </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="plans" className="space-y-4">
             {isLoading ? (
@@ -270,53 +251,49 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 {terms.map((term, termIndex) => {
                   const termProgress = (plansByTerm[term].length / 12) * 100; // Assuming 12 weeks per term
                   return (
-                    <Card key={term} className={cn(
-                      "bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-card)]",
-                      "hover:shadow-[var(--shadow-elegant)] transition-all duration-300"
-                    )}>
-                      <CardHeader className="bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 via-[hsl(var(--medium-blue))]/5 to-[hsl(var(--light-green))]/5 border-b border-[hsl(var(--deep-purple-blue))]/10">
-                        <CardTitle className="flex items-center justify-between">
+                    <Card key={term} className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
+                      <CardHeader className="rounded-t-[var(--radius-soft)] border-b border-border/60">
+                        <CardTitle className="flex flex-wrap items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/20 to-[hsl(var(--medium-blue))]/20 rounded-lg flex items-center justify-center">
-                              <Calendar className="h-4 w-4 text-[hsl(var(--deep-purple-blue))]" />
+                            <div className={cn('flex h-9 w-9 items-center justify-center rounded-2xl', tone.bg, tone.text)}>
+                              <Calendar className="h-4 w-4" />
                             </div>
                             <div>
-                              <span className="text-[hsl(var(--deep-purple-blue))] font-playfair">{term}</span>
-                              <div className="flex items-center gap-2 mt-1">
+                              <span className="text-base font-semibold text-foreground">{term}</span>
+                              <div className="mt-1 flex items-center gap-2">
                                 <Progress value={termProgress} className="w-20 h-1" />
-                                <span className="text-xs text-[hsl(var(--medium-blue))]/60">
+                                <span className="text-xs text-muted-foreground">
                                   {Math.round(termProgress)}%
                                 </span>
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="bg-white/60 border-[hsl(var(--medium-blue))]/30">
+                            <Badge variant="secondary" className="rounded-full">
                               {plansByTerm[term].length} week{plansByTerm[term].length !== 1 ? 's' : ''}
                             </Badge>
-                            <TrendingUp className="h-4 w-4 text-[hsl(var(--medium-green))]" />
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </CardTitle>
                       </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-5">
                       <div className="grid gap-4">
                         {plansByTerm[term]
                           .sort((a, b) => a.week_number - b.week_number)
                           .map(plan => (
                              <div key={plan.id} className={cn(
-                               "group relative p-4 rounded-lg transition-all duration-300",
-                               "bg-gradient-to-r from-white/60 to-[hsl(var(--light-blue))]/5",
-                               "border border-[hsl(var(--deep-purple-blue))]/10",
-                               "hover:border-[hsl(var(--medium-blue))]/30 hover:shadow-md",
-                               "hover:bg-gradient-to-r hover:from-white/80 hover:to-[hsl(var(--light-blue))]/10"
+                               "group relative rounded-2xl p-5 transition-all duration-300",
+                               "bg-muted/50 hover:bg-muted"
                              )}>
+
                                <div className="flex items-start justify-between">
                                  <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-3">
-                                      <Badge 
-                                        variant="secondary" 
-                                        className="bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--medium-blue))]/10 text-[hsl(var(--deep-purple-blue))] border-[hsl(var(--deep-purple-blue))]/20"
+                                      <Badge
+                                        variant="secondary"
+                                        className={cn('rounded-full border-0', tone.bg, tone.text)}
                                       >
+
                                         <Clock className="h-3 w-3 mr-1" />
                                         Week {plan.week_number}
                                       </Badge>
@@ -370,15 +347,16 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                                     </div>
                                   ) : (
                                      <div>
-                                       <h4 className="font-semibold text-[hsl(var(--deep-purple-blue))] mb-2 font-playfair text-lg">
+                                       <h4 className="mb-2 text-lg font-semibold text-foreground">
                                          {plan.topic_title}
                                        </h4>
                                        {plan.description && (
-                                         <p className="text-[hsl(var(--medium-blue))]/70 text-sm leading-relaxed">
+                                         <p className="text-sm leading-relaxed text-muted-foreground">
                                            {plan.description}
                                          </p>
                                        )}
                                       </div>
+
                                    )}
                                  </div>
                                  
@@ -413,19 +391,20 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 })}
 
                 {terms.length === 0 && (
-                  <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-[var(--shadow-card)]">
-                    <CardContent className="text-center py-12">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--light-green))]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="h-8 w-8 text-[hsl(var(--medium-blue))]/60" />
+                  <Card className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
+                    <CardContent className="py-14 text-center">
+                      <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', tone.bg, tone.text)}>
+                        <BookOpen className="h-7 w-7" />
                       </div>
-                      <h3 className="text-lg font-playfair font-semibold text-[hsl(var(--deep-purple-blue))] mb-2">
-                        No Lesson Plans Found
+                      <h3 className="mb-2 text-lg font-semibold text-foreground">
+                        No lesson plans found
                       </h3>
-                      <p className="text-[hsl(var(--medium-blue))]/70">
+                      <p className="text-sm text-muted-foreground">
                         No lesson plans have been created for {subject} yet.
                       </p>
                     </CardContent>
                   </Card>
+
                 )}
               </div>
             )}
