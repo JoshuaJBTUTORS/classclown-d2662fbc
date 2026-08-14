@@ -391,19 +391,20 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 })}
 
                 {terms.length === 0 && (
-                  <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-[var(--shadow-card)]">
-                    <CardContent className="text-center py-12">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/10 to-[hsl(var(--light-green))]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="h-8 w-8 text-[hsl(var(--medium-blue))]/60" />
+                  <Card className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
+                    <CardContent className="py-14 text-center">
+                      <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', tone.bg, tone.text)}>
+                        <BookOpen className="h-7 w-7" />
                       </div>
-                      <h3 className="text-lg font-playfair font-semibold text-[hsl(var(--deep-purple-blue))] mb-2">
-                        No Lesson Plans Found
+                      <h3 className="mb-2 text-lg font-semibold text-foreground">
+                        No lesson plans found
                       </h3>
-                      <p className="text-[hsl(var(--medium-blue))]/70">
+                      <p className="text-sm text-muted-foreground">
                         No lesson plans have been created for {subject} yet.
                       </p>
                     </CardContent>
                   </Card>
+
                 )}
               </div>
             )}
