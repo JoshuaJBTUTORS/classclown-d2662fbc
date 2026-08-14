@@ -146,7 +146,7 @@ const LessonPlans: React.FC = () => {
   return (
     <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex flex-col flex-1 w-full min-h-screen bg-gradient-to-br from-[hsl(var(--light-blue))]/5 via-white to-[hsl(var(--light-green))]/5">
+      <div className="flex flex-col flex-1 w-full min-h-screen bg-background">
         <Navbar toggleSidebar={toggleSidebar} />
         
         <main className="flex-1">
@@ -160,40 +160,36 @@ const LessonPlans: React.FC = () => {
           />
 
           {/* Content Section */}
-          <div className="px-4 md:px-6 pb-8">
+          <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-10 sm:px-6 lg:px-8">
             {subjects.length === 0 ? (
-              <div className="max-w-4xl mx-auto">
-                <EmptyState 
-                  searchTerm={searchTerm}
-                  onClearSearch={() => setSearchTerm('')}
-                />
-              </div>
+              <EmptyState 
+                searchTerm={searchTerm}
+                onClearSearch={() => setSearchTerm('')}
+              />
             ) : (
               <>
-                {/* Subject Cards Grid */}
-                <div className="max-w-7xl mx-auto">
-                  <h2 className="text-2xl font-playfair font-bold text-[hsl(var(--deep-purple-blue))] mb-6">
-                    Learning Subjects
-                  </h2>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subjectStats.map((stats, index) => (
-                      <SubjectCard
-                        key={stats.subject}
-                        subject={stats.subject}
-                        totalPlans={stats.totalPlans}
-                        terms={stats.terms}
-                        weeks={stats.weeks}
-                        lastUpdated={stats.lastUpdated}
-                        onClick={() => setSelectedSubject(stats.subject)}
-                        index={index}
-                      />
-                    ))}
-                  </div>
+                <h2 className="mb-6 text-2xl font-bold tracking-tight text-foreground">
+                  Subjects
+                </h2>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {subjectStats.map((stats, index) => (
+                    <SubjectCard
+                      key={stats.subject}
+                      subject={stats.subject}
+                      totalPlans={stats.totalPlans}
+                      terms={stats.terms}
+                      weeks={stats.weeks}
+                      lastUpdated={stats.lastUpdated}
+                      onClick={() => setSelectedSubject(stats.subject)}
+                      index={index}
+                    />
+                  ))}
                 </div>
               </>
             )}
           </div>
+
 
           {/* Subject Detail Dialog */}
           {selectedSubject && (
