@@ -1,6 +1,6 @@
 import React from 'react';
-import { ArrowUpRight } from 'lucide-react';
-import { SubjectIcon } from './SubjectIcon';
+import { ArrowUpRight, Star } from 'lucide-react';
+import { ScribbleStroke } from './ScribbleStroke';
 import { getPastelTone } from './pastelPalette';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,10 @@ interface SubjectCardProps {
   index: number;
 }
 
+/** Radius of the circular arrow button + the notch punched out of the tile. */
+const BUTTON_SIZE = 56;
+const NOTCH_RADIUS = BUTTON_SIZE / 2 + 8;
+
 export const SubjectCard: React.FC<SubjectCardProps> = ({
   subject,
   totalPlans,
@@ -26,62 +30,71 @@ export const SubjectCard: React.FC<SubjectCardProps> = ({
   const tone = getPastelTone(subject);
   const isRecentlyUpdated = new Date(lastUpdated) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+  // Concave cut-out on the right edge so the arrow button looks punched out of the tile.
+  const notch = `radial-gradient(circle ${NOTCH_RADIUS}px at calc(100% - ${BUTTON_SIZE / 2}px) 58%, transparent 99%, #000 100%)`;
+
   return (
     <button
       type="button"
       onClick={onClick}
       style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}
       className={cn(
-        'group relative w-full text-left overflow-hidden animate-fade-in',
-        'rounded-[var(--radius-soft)] p-6 min-h-[190px]',
-        'shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-soft-lg)]',
-        'transition-all duration-300 hover:-translate-y-1',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        tone.bg
+        'group relative w-full text-left animate-fade-in',
+        'min-h-[236px]',
+        'transition-transform duration-300 hover:-translate-y-1',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background',
+        'rounded-[var(--radius-soft)]'
       )}
     >
-      {/* soft scribble-style highlight, purely decorative */}
-      <div className="pointer-events-none absolute -top-10 -right-6 h-32 w-32 rounded-full bg-background/25 blur-2xl" />
+      {/* Masked pastel surface (holds the notch) */}
+      <div
+        style={{ WebkitMaskImage: notch, maskImage: notch }}
+        className={cn(
+          'absolute inset-0 rounded-[var(--radius-soft)] overflow-hidden',
+          'shadow-[var(--shadow-soft)] group-hover:shadow-[var(--shadow-soft-lg)] transition-shadow duration-300',
+          tone.bg
+        )}
+      >
+        {/* painted scribble */}
+        <ScribbleStroke
+          className={cn(
+            'pointer-events-none absolute -top-2 right-0 w-[85%] text-background',
+            'transition-transform duration-500 group-hover:scale-105'
+          )}
+        />
+      </div>
 
-      <div className="relative flex h-full flex-col justify-between gap-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className={cn('flex h-11 w-11 items-center justify-center rounded-2xl bg-background/70', tone.text)}>
-            <SubjectIcon subject={subject} className="h-5 w-5" />
-          </div>
-
-          <span
-            className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background',
-              'transition-transform duration-300 group-hover:rotate-45'
-            )}
-          >
-            <ArrowUpRight className="h-4 w-4" />
-          </span>
+      {/* Content sits above the masked surface */}
+      <div className="relative flex h-full min-h-[236px] flex-col justify-between p-6">
+        <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-background shadow-[var(--shadow-soft)]">
+          <Star className={cn('h-5 w-5', tone.text)} strokeWidth={2} />
+          {isRecentlyUpdated && (
+            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-foreground ring-2 ring-background" />
+          )}
         </div>
 
-        <div className="space-y-3">
-          <h3 className={cn('text-xl font-bold leading-snug tracking-tight', tone.text)}>
+        <div className="pr-16">
+          <h3 className={cn('font-heading text-2xl font-extrabold leading-tight tracking-tight', tone.text)}>
             {subject}
           </h3>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={cn('rounded-full px-3 py-1 text-xs font-medium', tone.chip)}>
-              {weeks} week{weeks !== 1 ? 's' : ''}
-            </span>
-            <span className={cn('rounded-full px-3 py-1 text-xs font-medium', tone.chip)}>
-              {terms} term{terms !== 1 ? 's' : ''}
-            </span>
-            <span className={cn('rounded-full px-3 py-1 text-xs font-medium', tone.chip)}>
-              {totalPlans} plan{totalPlans !== 1 ? 's' : ''}
-            </span>
-            {isRecentlyUpdated && (
-              <span className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background">
-                Updated
-              </span>
-            )}
-          </div>
+          <p className={cn('mt-1.5 text-sm font-medium opacity-70', tone.text)}>
+            {weeks} week{weeks !== 1 ? 's' : ''} · {terms} term{terms !== 1 ? 's' : ''} · {totalPlans} plan
+            {totalPlans !== 1 ? 's' : ''}
+          </p>
         </div>
       </div>
+
+      {/* Arrow button sitting inside the cut-out */}
+      <span
+        style={{ width: BUTTON_SIZE, height: BUTTON_SIZE, right: 0, top: '58%' }}
+        className={cn(
+          'absolute -translate-y-1/2 flex items-center justify-center rounded-full',
+          'bg-foreground text-background',
+          'transition-transform duration-300 group-hover:rotate-45'
+        )}
+      >
+        <ArrowUpRight className="h-6 w-6" strokeWidth={2.25} />
+      </span>
     </button>
   );
 };
