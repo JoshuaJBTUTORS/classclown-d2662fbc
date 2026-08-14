@@ -1,18 +1,48 @@
 import React from 'react';
 
-/** Decorative hand-painted brush squiggle used on the pastel subject tiles. */
+/**
+ * Decorative marker-style scribble used on the pastel subject tiles.
+ * A loose back-and-forth diagonal squiggle with tapered, rounded ends.
+ */
 export const ScribbleStroke: React.FC<{ className?: string }> = ({ className }) => (
   <svg
-    viewBox="0 0 320 140"
+    viewBox="0 0 320 190"
     fill="none"
     aria-hidden="true"
     focusable="false"
     className={className}
   >
     <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" fill="none">
-      <path d="M18 96C60 40 132 24 214 34c26 3 52 10 70 24" strokeWidth="26" opacity="0.5" />
-      <path d="M40 122C92 84 168 74 246 82c22 2 42 7 56 16" strokeWidth="18" opacity="0.38" />
-      <path d="M96 60c48-16 104-18 152-6" strokeWidth="12" opacity="0.32" />
+      {/* long lower sweep */}
+      <path
+        d="M22 160C96 138 196 108 300 70"
+        strokeWidth="26"
+        opacity="0.5"
+      />
+      {/* return stroke */}
+      <path
+        d="M292 60C214 74 116 100 40 128"
+        strokeWidth="22"
+        opacity="0.45"
+      />
+      {/* upper sweep */}
+      <path
+        d="M62 106C138 86 218 62 288 40"
+        strokeWidth="20"
+        opacity="0.42"
+      />
+      {/* short top return */}
+      <path
+        d="M276 30C218 38 152 56 96 76"
+        strokeWidth="16"
+        opacity="0.35"
+      />
+      {/* fine top accent */}
+      <path
+        d="M130 58C176 44 224 30 268 20"
+        strokeWidth="11"
+        opacity="0.3"
+      />
     </g>
   </svg>
 );
