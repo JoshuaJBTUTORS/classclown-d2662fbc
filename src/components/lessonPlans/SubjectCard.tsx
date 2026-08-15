@@ -89,8 +89,7 @@ export const SubjectCard: React.FC<SubjectCardProps> = ({
         style={{ width: BUTTON_SIZE, height: BUTTON_SIZE, right: 0, top: '58%' }}
         className={cn(
           'absolute -translate-y-1/2 flex items-center justify-center rounded-full',
-          'bg-foreground text-background',
-          'transition-transform duration-300 group-hover:rotate-45'
+          'bg-foreground text-background'
         )}
       >
         <ArrowUpRight className="h-6 w-6" strokeWidth={2.25} />
