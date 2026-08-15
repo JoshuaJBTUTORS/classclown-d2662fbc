@@ -75,18 +75,10 @@ export const SubjectCategorySection: React.FC<SubjectCategorySectionProps> = ({
           style={{ width: BUTTON_SIZE, height: BUTTON_SIZE, right: 0, top: '50%' }}
           className={cn(
             'absolute -translate-y-1/2 flex items-center justify-center rounded-full',
-            'bg-foreground text-background',
-            'transition-transform duration-300',
-            isOpen ? 'rotate-180' : 'group-hover:rotate-45'
+            'bg-foreground text-background'
           )}
         >
-          <ArrowUpRight
-            className={cn(
-              'h-6 w-6 transition-transform duration-300',
-              isOpen && 'rotate-90'
-            )}
-            strokeWidth={2.25}
-          />
+          <ArrowUpRight className="h-6 w-6" strokeWidth={2.25} />
         </span>
       </CollapsibleTrigger>
 
