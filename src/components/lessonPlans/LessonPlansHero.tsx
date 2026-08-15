@@ -29,9 +29,6 @@ export const LessonPlansHero: React.FC<LessonPlansHeroProps> = ({
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
             Lesson Plans
           </h1>
-          <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
-            Browse every subject, see what is being taught each week, and keep your materials in one calm place.
-          </p>
         </div>
 
         <div className="relative max-w-xl">
