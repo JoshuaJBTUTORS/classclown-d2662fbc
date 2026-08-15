@@ -13,9 +13,9 @@ export function getAcademicWeekInfo(): AcademicWeekInfo {
   const now = new Date();
   const currentYear = now.getFullYear();
   
-  // Calculate academic year start (first Monday of September)
-  // If we're before September, use previous year's September
-  const academicYearStart = now.getMonth() < 8 
+  // Calculate academic year start (first Monday of September).
+  // August is treated as the start of the new academic year for planning.
+  const academicYearStart = now.getMonth() < 7
     ? new Date(currentYear - 1, 8, 1) // September 1st of previous year
     : new Date(currentYear, 8, 1); // September 1st of current year
   
