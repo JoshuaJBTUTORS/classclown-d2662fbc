@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,10 +8,14 @@ import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import { LessonPlansHero } from '@/components/lessonPlans/LessonPlansHero';
 import { SubjectCard } from '@/components/lessonPlans/SubjectCard';
+import { SubjectCategorySection } from '@/components/lessonPlans/SubjectCategorySection';
+import { groupSubjects } from '@/components/lessonPlans/subjectGroups';
 import { LessonPlansLoadingSkeleton } from '@/components/lessonPlans/LoadingSkeleton';
 import { EmptyState } from '@/components/lessonPlans/EmptyState';
 import { getAcademicWeekInfo } from '@/utils/academicWeekUtils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+
 
 interface LessonPlan {
   id: string;
