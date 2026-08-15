@@ -12,11 +12,6 @@ interface LessonPlansHeroProps {
   totalWeeks: number;
 }
 
-const stats = (totalSubjects: number, totalPlans: number, totalWeeks: number) => [
-  { label: 'Active subjects', value: totalSubjects, tone: 'bg-pastel-mint text-pastel-mint-foreground' },
-  { label: 'Lesson plans', value: totalPlans, tone: 'bg-pastel-lilac text-pastel-lilac-foreground' },
-  { label: 'Weeks covered', value: totalWeeks, tone: 'bg-pastel-butter text-pastel-butter-foreground' },
-];
 
 export const LessonPlansHero: React.FC<LessonPlansHeroProps> = ({
   searchTerm,
