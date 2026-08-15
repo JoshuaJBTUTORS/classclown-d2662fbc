@@ -12,21 +12,26 @@ export interface AcademicWeekInfo {
 export function getAcademicWeekInfo(): AcademicWeekInfo {
   const now = new Date();
   const currentYear = now.getFullYear();
-  
-  // Academic year runs from the first Monday of August.
-  const academicYearStart = now.getMonth() >= 7
-    ? new Date(currentYear, 7, 1) // August 1st of current year
-    : new Date(currentYear - 1, 7, 1); // August 1st of previous year
 
-  // First Monday on or after August 1st
-  const monday = startOfWeek(academicYearStart, { weekStartsOn: 1 });
-  const academicStart = monday < academicYearStart ? addWeeks(monday, 1) : monday;
+  // Week 1 starts on the Monday of the week containing 1 September
+  // (e.g. Monday 31 August 2026 = Week 1 of 2026/27)
+  const startForYear = (year: number) =>
+    startOfWeek(new Date(year, 8, 1), { weekStartsOn: 1 });
 
-  // Calculate weeks since academic year start
-  const weeksSinceStart = Math.max(0, differenceInWeeks(now, academicStart));
+  let academicStart = startForYear(currentYear);
+  if (startOfWeek(now, { weekStartsOn: 1 }) < academicStart) {
+    academicStart = startForYear(currentYear - 1);
+  }
+
+  // Whole weeks elapsed since the academic start Monday
+  const weeksSinceStart = Math.max(
+    0,
+    differenceInWeeks(startOfWeek(now, { weekStartsOn: 1 }), academicStart)
+  );
 
   // Calculate current academic week (1-52)
   const currentWeek = Math.min(52, weeksSinceStart + 1);
+
   
   // Calculate progress percentage
   const weekProgress = (currentWeek / 52) * 100;
