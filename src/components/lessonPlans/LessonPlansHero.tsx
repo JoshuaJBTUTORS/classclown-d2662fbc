@@ -53,21 +53,6 @@ export const LessonPlansHero: React.FC<LessonPlansHeroProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {stats(totalSubjects, totalPlans, totalWeeks).map((stat) => (
-            <div
-              key={stat.label}
-              className={cn(
-                'rounded-[var(--radius-soft)] p-6 transition-transform duration-300 hover:-translate-y-1',
-                'shadow-[var(--shadow-soft)]',
-                stat.tone
-              )}
-            >
-              <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
-              <div className="mt-1 text-sm font-medium opacity-80">{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
