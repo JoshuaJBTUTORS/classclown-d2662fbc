@@ -13,25 +13,20 @@ export function getAcademicWeekInfo(): AcademicWeekInfo {
   const now = new Date();
   const currentYear = now.getFullYear();
   
-  // Calculate academic year start (first Monday of September).
-  // August is treated as the start of the new academic year for planning.
-  const academicYearStart = now.getMonth() < 7
-    ? new Date(currentYear - 1, 8, 1) // September 1st of previous year
-    : new Date(currentYear, 8, 1); // September 1st of current year
-  
-  // Find the first Monday of September (or September 1st if it's already Monday)
-  const firstMonday = startOfWeek(academicYearStart, { weekStartsOn: 1 });
-  
-  // If September 1st is not a Monday, find the next Monday
-  const academicStart = firstMonday.getDate() <= 7 
-    ? firstMonday 
-    : addWeeks(firstMonday, 1);
-  
+  // Academic year runs from the first Monday of August.
+  const academicYearStart = now.getMonth() >= 7
+    ? new Date(currentYear, 7, 1) // August 1st of current year
+    : new Date(currentYear - 1, 7, 1); // August 1st of previous year
+
+  // First Monday on or after August 1st
+  const monday = startOfWeek(academicYearStart, { weekStartsOn: 1 });
+  const academicStart = monday < academicYearStart ? addWeeks(monday, 1) : monday;
+
   // Calculate weeks since academic year start
-  const weeksSinceStart = differenceInWeeks(now, academicStart);
-  
-  // Calculate current academic week (1-52, reset after 52)
-  const currentWeek = ((weeksSinceStart % 52) + 1);
+  const weeksSinceStart = Math.max(0, differenceInWeeks(now, academicStart));
+
+  // Calculate current academic week (1-52)
+  const currentWeek = Math.min(52, weeksSinceStart + 1);
   
   // Calculate progress percentage
   const weekProgress = (currentWeek / 52) * 100;
@@ -53,6 +48,7 @@ export function getAcademicWeekInfo(): AcademicWeekInfo {
   const startYear = academicStart.getFullYear();
   const endYear = startYear + 1;
   const academicYear = `${startYear}/${endYear.toString().slice(-2)} academic year`;
+
   
   return {
     currentWeek,
