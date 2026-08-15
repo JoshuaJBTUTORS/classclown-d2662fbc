@@ -50,7 +50,9 @@ export function getAcademicWeekInfo(): AcademicWeekInfo {
   const weekRange = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
   
   // Academic year string
-  const academicYear = academicStart.getFullYear() + '/' + (academicStart.getFullYear() + 1);
+  const startYear = academicStart.getFullYear();
+  const endYear = startYear + 1;
+  const academicYear = `${startYear}/${endYear.toString().slice(-2)} academic year`;
   
   return {
     currentWeek,
