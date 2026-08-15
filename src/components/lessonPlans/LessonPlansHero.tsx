@@ -12,11 +12,6 @@ interface LessonPlansHeroProps {
   totalWeeks: number;
 }
 
-const stats = (totalSubjects: number, totalPlans: number, totalWeeks: number) => [
-  { label: 'Active subjects', value: totalSubjects, tone: 'bg-pastel-mint text-pastel-mint-foreground' },
-  { label: 'Lesson plans', value: totalPlans, tone: 'bg-pastel-lilac text-pastel-lilac-foreground' },
-  { label: 'Weeks covered', value: totalWeeks, tone: 'bg-pastel-butter text-pastel-butter-foreground' },
-];
 
 export const LessonPlansHero: React.FC<LessonPlansHeroProps> = ({
   searchTerm,
@@ -53,21 +48,6 @@ export const LessonPlansHero: React.FC<LessonPlansHeroProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {stats(totalSubjects, totalPlans, totalWeeks).map((stat) => (
-            <div
-              key={stat.label}
-              className={cn(
-                'rounded-[var(--radius-soft)] p-6 transition-transform duration-300 hover:-translate-y-1',
-                'shadow-[var(--shadow-soft)]',
-                stat.tone
-              )}
-            >
-              <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
-              <div className="mt-1 text-sm font-medium opacity-80">{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
