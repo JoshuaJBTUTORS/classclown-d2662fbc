@@ -70,8 +70,31 @@ const LessonPlans: React.FC = () => {
     };
   });
 
+  // Search-filtered subject tiles
+  const visibleSubjectStats = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return subjectStats;
+    return subjectStats.filter(s => s.subject.toLowerCase().includes(q));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, lessonPlans]);
+
+  const groupedSubjects = useMemo(
+    () => groupSubjects(visibleSubjectStats, s => s.subject),
+    [visibleSubjectStats]
+  );
+
+  const isMobile = useIsMobile();
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  const isGroupOpen = (groupId: string, index: number) => {
+    if (searchTerm.trim()) return true;
+    if (groupId in collapsedGroups) return !collapsedGroups[groupId];
+    return isMobile ? index === 0 : true;
+  };
+
   // Calculate total weeks across all subjects
   const totalWeeks = Array.from(new Set(lessonPlans.map(plan => plan.week_number))).length;
+
 
   useEffect(() => {
     if (isAdmin || isOwner || isTutor || isStudentOrParent) {
