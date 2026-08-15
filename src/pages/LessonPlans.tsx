@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,10 +8,14 @@ import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import { LessonPlansHero } from '@/components/lessonPlans/LessonPlansHero';
 import { SubjectCard } from '@/components/lessonPlans/SubjectCard';
+import { SubjectCategorySection } from '@/components/lessonPlans/SubjectCategorySection';
+import { groupSubjects } from '@/components/lessonPlans/subjectGroups';
 import { LessonPlansLoadingSkeleton } from '@/components/lessonPlans/LoadingSkeleton';
 import { EmptyState } from '@/components/lessonPlans/EmptyState';
 import { getAcademicWeekInfo } from '@/utils/academicWeekUtils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+
 
 interface LessonPlan {
   id: string;
@@ -66,8 +70,31 @@ const LessonPlans: React.FC = () => {
     };
   });
 
+  // Search-filtered subject tiles
+  const visibleSubjectStats = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return subjectStats;
+    return subjectStats.filter(s => s.subject.toLowerCase().includes(q));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, lessonPlans]);
+
+  const groupedSubjects = useMemo(
+    () => groupSubjects(visibleSubjectStats, s => s.subject),
+    [visibleSubjectStats]
+  );
+
+  const isMobile = useIsMobile();
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  const isGroupOpen = (groupId: string, index: number) => {
+    if (searchTerm.trim()) return true;
+    if (groupId in collapsedGroups) return !collapsedGroups[groupId];
+    return isMobile ? index === 0 : true;
+  };
+
   // Calculate total weeks across all subjects
   const totalWeeks = Array.from(new Set(lessonPlans.map(plan => plan.week_number))).length;
+
 
   useEffect(() => {
     if (isAdmin || isOwner || isTutor || isStudentOrParent) {
@@ -161,7 +188,7 @@ const LessonPlans: React.FC = () => {
 
           {/* Content Section */}
           <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-10 sm:px-6 lg:px-8">
-            {subjects.length === 0 ? (
+            {groupedSubjects.length === 0 ? (
               <EmptyState 
                 searchTerm={searchTerm}
                 onClearSearch={() => setSearchTerm('')}
@@ -172,20 +199,33 @@ const LessonPlans: React.FC = () => {
                   Subjects
                 </h2>
 
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {subjectStats.map((stats, index) => (
-                    <SubjectCard
-                      key={stats.subject}
-                      subject={stats.subject}
-                      totalPlans={stats.totalPlans}
-                      terms={stats.terms}
-                      weeks={stats.weeks}
-                      lastUpdated={stats.lastUpdated}
-                      onClick={() => setSelectedSubject(stats.subject)}
-                      index={index}
-                    />
-                  ))}
-                </div>
+                {groupedSubjects.map((group, groupIndex) => (
+                  <SubjectCategorySection
+                    key={group.id}
+                    label={group.label}
+                    count={group.items.length}
+                    isOpen={isGroupOpen(group.id, groupIndex)}
+                    onOpenChange={(open) =>
+                      setCollapsedGroups((prev) => ({ ...prev, [group.id]: !open }))
+                    }
+                  >
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                      {group.items.map((stats, index) => (
+                        <SubjectCard
+                          key={stats.subject}
+                          subject={stats.subject}
+                          totalPlans={stats.totalPlans}
+                          terms={stats.terms}
+                          weeks={stats.weeks}
+                          lastUpdated={stats.lastUpdated}
+                          onClick={() => setSelectedSubject(stats.subject)}
+                          index={index}
+                        />
+                      ))}
+                    </div>
+                  </SubjectCategorySection>
+                ))}
+
               </>
             )}
           </div>
