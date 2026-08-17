@@ -141,7 +141,7 @@ serve(async (req) => {
         }
       } catch (error) {
         console.error(`Error processing lesson ${lesson.id}:`, error);
-        result.error = error.message;
+        result.error = (error as Error).message;
         result.search_attempted = true;
       }
 
@@ -173,7 +173,7 @@ serve(async (req) => {
     console.error('Error in find-lesson-sessions:', error);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
