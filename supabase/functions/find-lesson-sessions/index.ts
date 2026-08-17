@@ -272,7 +272,7 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     const sessions: any[] = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
     console.log(`Room ${lesson.lesson_space_room_id} returned ${sessions.length} sessions`);
     if (sessions.length === 0) return null;
-    console.log(`Sample session payload: ${JSON.stringify(sessions[0]).slice(0, 1200)}`);
+    
 
 
     // Never inherit a session that started after this lesson finished.
