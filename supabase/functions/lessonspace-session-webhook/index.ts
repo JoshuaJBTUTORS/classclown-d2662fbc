@@ -114,9 +114,6 @@ serve(async (req) => {
     }
 
 
-    if (lessonErr) {
-      console.error(`[${rid}] lesson lookup failed:`, lessonErr.message);
-    }
 
     // Verify signature if we stored a secret for this lesson (log only, never drop the event)
     if (lessonRow?.lesson_space_webhook_secret && signatureHeader) {
