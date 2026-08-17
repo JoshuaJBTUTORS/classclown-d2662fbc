@@ -31,7 +31,7 @@ serve(async (req) => {
   try {
     console.log('Starting lesson session search...');
     
-    const { action, lesson_ids, processing_date } = await req.json();
+    const { action, lesson_ids, processing_date, force } = await req.json();
     
     if (action !== 'find_session_ids') {
       throw new Error('Invalid action. Expected: find_session_ids');
