@@ -12,7 +12,14 @@ The reason is not a missing transcript — it is a wrong session ID:
 - The session that actually ran during the 15 Aug slot in the same room is **53e6a4a3…** (started 09:59:44, ended 10:58:38 UTC). That one is attributed to a different lesson row (the 10 Aug KS2 Maths).
 - The same stale session `2350960c…` is also written onto the **29 Aug** future occurrence of the same lesson.
 
-Why it happens: LessonSpace rooms are created per tutor+student pair (`t{tutor}_s{student}`), so one room is reused across every week and even across subjects (KS2 Maths and KS2 English share room `fc6b2136…`). Both the webhook handler and `find-lesson-sessions` attach a session to a lesson by room, without checking that the session's start time falls inside that lesson's own time window. Sessions therefore land on the wrong occurrence, and the transcript poller asks LessonSpace for a session that belongs to another day.
+Why that particular session was chosen (verified in code): there is no "closest session" logic anywhere — nothing sorts by date, so the 9th, 10th and 15th sessions were never compared against each other.
+
+- `find-lesson-sessions` calls `GET /v2/.../sessions/?space={room}` with no date filter and then literally takes `data.results[0]` — the first item LessonSpace returns for that room, which is an arbitrary/oldest-first entry from the room's entire history, not the one on the lesson's date.
+- The webhook handler looks up the lesson with `.eq("lesson_space_room_id", roomId).limit(1)` — no time filter, no ordering — so a live `session.start` attaches to whichever of that room's many lesson rows Postgres happens to return first.
+- Once a lesson has any `lesson_space_session_id`, the webhook keeps the first one ("Keeping first") and `find-lesson-sessions` skips the lesson entirely, so the wrong ID is never corrected.
+
+Rooms are created per tutor+student pair (`t{tutor}_s{student}`) and reused across every week and even across subjects (KS2 Maths and KS2 English share room `fc6b2136…`), so "first session in the room" is essentially a random past lesson — here the 36-second 8 Aug session.
+
 
 Scale: 34 transcript rows from the last 14 days are still `processing`, and 90 in the last 30 days — a large share of these are likely the same mis-attribution rather than genuinely missing recordings.
 
