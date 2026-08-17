@@ -18,6 +18,10 @@ const ALERT_RECIPIENTS = [
 ];
 
 const LATE_THRESHOLD_MIN = 5;
+// Students alone in a room for this long triggers an "unattended" alert
+const UNATTENDED_THRESHOLD_MIN = 5;
+// Do not re-alert about the same unattended room more often than this
+const UNATTENDED_REALERT_MIN = 15;
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
