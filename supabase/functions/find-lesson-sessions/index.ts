@@ -225,12 +225,12 @@ function sessionParticipantCount(session: any): number {
 async function participantsFromEvents(sessionId: string): Promise<number> {
   const { data } = await supabase
     .from("lesson_participant_events")
-    .select("participant_external_id, participant_name, role")
+    .select("participant_external_id, participant_name, participant_role")
     .eq("session_id", sessionId)
     .limit(200);
   if (!data?.length) return 0;
   const ids = new Set(
-    data.map((e: any) => e.participant_external_id ?? e.participant_name ?? e.role ?? "unknown"),
+    data.map((e: any) => e.participant_external_id ?? e.participant_name ?? e.participant_role ?? "unknown"),
   );
   return ids.size;
 }
