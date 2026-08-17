@@ -138,23 +138,38 @@ serve(async (req) => {
           }
         } else {
           console.log(`No session found for lesson ${lesson.id}`);
-          // Clear a stored session that does not even belong to this lesson's room
-          // (cross-room contamination from an earlier webhook mismatch).
-          if (
-            lesson.lesson_space_session_id &&
-            roomSessionIds.length > 0 &&
-            !roomSessionIds.includes(lesson.lesson_space_session_id)
-          ) {
-            console.log(
-              `Clearing stale cross-room session ${lesson.lesson_space_session_id} from lesson ${lesson.id}`,
-            );
-            await supabase
-              .from('lessons')
-              .update({ lesson_space_session_id: null })
-              .eq('id', lesson.id);
-            result.error = 'cleared_stale_cross_room_session';
+          if (lesson.lesson_space_session_id) {
+            // A stored session is stale when it is not one of this room's own
+            // sessions, or when it actually belongs to a lesson in another room
+            // (cross-room contamination from an earlier webhook mismatch).
+            let stale =
+              roomSessionIds.length > 0 && !roomSessionIds.includes(lesson.lesson_space_session_id);
+
+            if (!stale) {
+              const { data: owners } = await supabase
+                .from('lessons')
+                .select('id, lesson_space_room_id')
+                .eq('lesson_space_session_id', lesson.lesson_space_session_id)
+                .neq('id', lesson.id)
+                .limit(10);
+              stale = !!owners?.some(
+                (o: any) => o.lesson_space_room_id && o.lesson_space_room_id !== lesson.lesson_space_room_id,
+              );
+            }
+
+            if (stale) {
+              console.log(
+                `Clearing stale cross-room session ${lesson.lesson_space_session_id} from lesson ${lesson.id}`,
+              );
+              await supabase
+                .from('lessons')
+                .update({ lesson_space_session_id: null })
+                .eq('id', lesson.id);
+              result.error = 'cleared_stale_cross_room_session';
+            }
           }
         }
+
 
       } catch (error) {
         console.error(`Error processing lesson ${lesson.id}:`, error);
