@@ -39,6 +39,71 @@ function fmtTime(iso: string) {
   });
 }
 
+interface RoomState {
+  teacherFirstJoin: string | null;
+  teacherConnected: boolean;
+  students: { name: string; joinedAt: string | null }[];
+}
+
+// Reads the current LessonSpace session for a room: who is connected right
+// now and when the teacher first joined. Same shape the Live Lesson Tracker
+// (lessonspace-live-participants) derives.
+async function fetchRoomState(roomId: string, apiKey: string): Promise<RoomState | null> {
+  try {
+    const res = await fetch(
+      `https://api.thelessonspace.com/v2/spaces/${roomId}/sessions/`,
+      { headers: { Authorization: `Organisation ${apiKey}` } },
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const sessions: any[] = Array.isArray(json) ? json : (json?.results ?? []);
+    const active = sessions.find((s) => !s?.end_time) ?? sessions[0] ?? null;
+    if (!active) return { teacherFirstJoin: null, teacherConnected: false, students: [] };
+
+    const profiles: any[] = active?.profiles ?? [];
+    const logs: any[] = active?.logs ?? [];
+    const connected: any[] = active?.connected_users ?? [];
+    const isTeacher = (pid: any) =>
+      String(profiles.find((p) => p?.user === pid)?.role ?? "").toLowerCase() === "teacher";
+
+    const teacherProfileIds = profiles
+      .filter((p) => String(p?.role ?? "").toLowerCase() === "teacher")
+      .map((p) => p?.user);
+
+    const joinLog = logs
+      .filter((l) => l?.log_type === "user-joined" && teacherProfileIds.includes(l?.profile))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+    let teacherFirstJoin: string | null = joinLog?.date ?? null;
+    if (!teacherFirstJoin && teacherProfileIds.length && active?.start_time) {
+      teacherFirstJoin = active.start_time;
+    }
+
+    const connectedIds = Array.from(
+      new Set(connected.map((c) => c?.profile).filter((p) => p != null)),
+    );
+    const teacherConnected = connectedIds.some((pid) => isTeacher(pid));
+
+    const lastJoinFor = (pid: any) =>
+      logs
+        .filter((l) => l?.profile === pid && l?.log_type === "user-joined")
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]?.date ??
+      active?.start_time ?? null;
+
+    const students = connectedIds
+      .filter((pid) => !isTeacher(pid))
+      .map((pid) => ({
+        name: profiles.find((p) => p?.user === pid)?.name ?? "Student",
+        joinedAt: lastJoinFor(pid),
+      }));
+
+    return { teacherFirstJoin, teacherConnected, students };
+  } catch (e) {
+    console.error("LessonSpace poll failed", roomId, (e as Error).message);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
