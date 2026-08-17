@@ -48,6 +48,8 @@ interface PunctualityRow {
   minutes_late: number | null;
   status: string;
   alert_sent_at: string | null;
+  students_waiting_since: string | null;
+  unattended_alert_sent_at: string | null;
 }
 
 interface ParticipantEvent {
@@ -112,7 +114,7 @@ const LiveSessions: React.FC = () => {
     since.setHours(0, 0, 0, 0);
     const { data } = await supabase
       .from('tutor_punctuality')
-      .select('id, lesson_id, tutor_name, lesson_start, tutor_first_join_at, minutes_late, status, alert_sent_at')
+      .select('id, lesson_id, tutor_name, lesson_start, tutor_first_join_at, minutes_late, status, alert_sent_at, students_waiting_since, unattended_alert_sent_at')
       .gte('lesson_start', since.toISOString())
       .order('lesson_start', { ascending: false });
     setPunctuality((data || []) as PunctualityRow[]);
@@ -214,6 +216,20 @@ const LiveSessions: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {lesson.participants.some(p => p.isLeader) ? (
                     <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Tutor present</Badge>
+                  ) : lesson.participants.length > 0 ? (
+                    <Badge className="bg-destructive/10 text-destructive border-destructive/20">
+                      {(() => {
+                        const joins = lesson.participants
+                          .map(p => p.joinedAt ? new Date(p.joinedAt).getTime() : null)
+                          .filter((t): t is number => t != null);
+                        const mins = joins.length
+                          ? Math.max(0, Math.floor((Date.now() - Math.min(...joins)) / 60000))
+                          : 0;
+                        return mins >= 5
+                          ? `Students waiting ${mins} min, no tutor`
+                          : 'Students waiting, no tutor';
+                      })()}
+                    </Badge>
                   ) : (
                     <Badge className="bg-amber-100 text-amber-800 border-amber-200">No tutor yet</Badge>
                   )}
@@ -283,6 +299,13 @@ const LiveSessions: React.FC = () => {
                 ? { label: `Late by ${row.minutes_late} min`, className: 'bg-amber-100 text-amber-800 border-amber-200' }
                 : row.status === 'no_show'
                 ? { label: 'Tutor not joined', className: 'bg-destructive/10 text-destructive border-destructive/20' }
+                : row.status === 'students_unattended'
+                ? {
+                    label: row.students_waiting_since
+                      ? `Students waiting ${Math.max(0, Math.floor((Date.now() - new Date(row.students_waiting_since).getTime()) / 60000))} min, no tutor`
+                      : 'Students waiting, no tutor',
+                    className: 'bg-destructive/10 text-destructive border-destructive/20',
+                  }
                 : row.status === 'no_students_expected'
                 ? { label: 'No students expected', className: 'bg-muted text-muted-foreground border-border' }
                 : { label: 'Waiting', className: 'bg-muted text-muted-foreground border-border' };
@@ -294,9 +317,9 @@ const LiveSessions: React.FC = () => {
                   start {format(new Date(row.lesson_start), 'HH:mm')}
                   {row.tutor_first_join_at && ` · joined ${format(new Date(row.tutor_first_join_at), 'HH:mm')}`}
                 </span>
-                {row.alert_sent_at && (
+                {(row.unattended_alert_sent_at || row.alert_sent_at) && (
                   <span className="ml-auto text-xs text-muted-foreground shrink-0">
-                    alert sent {format(new Date(row.alert_sent_at), 'HH:mm')}
+                    alert sent {format(new Date(row.unattended_alert_sent_at || row.alert_sent_at!), 'HH:mm')}
                   </span>
                 )}
               </div>
