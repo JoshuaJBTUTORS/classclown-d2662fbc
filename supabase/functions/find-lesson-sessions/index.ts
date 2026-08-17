@@ -118,7 +118,7 @@ serve(async (req) => {
 
 
         // Find session using LessonSpace API
-        const sessionId = await findLessonSpaceSession(lesson);
+        const { sessionId, roomSessionIds } = await findLessonSpaceSession(lesson);
         result.search_attempted = true;
         
         if (sessionId) {
@@ -138,7 +138,24 @@ serve(async (req) => {
           }
         } else {
           console.log(`No session found for lesson ${lesson.id}`);
+          // Clear a stored session that does not even belong to this lesson's room
+          // (cross-room contamination from an earlier webhook mismatch).
+          if (
+            lesson.lesson_space_session_id &&
+            roomSessionIds.length > 0 &&
+            !roomSessionIds.includes(lesson.lesson_space_session_id)
+          ) {
+            console.log(
+              `Clearing stale cross-room session ${lesson.lesson_space_session_id} from lesson ${lesson.id}`,
+            );
+            await supabase
+              .from('lessons')
+              .update({ lesson_space_session_id: null })
+              .eq('id', lesson.id);
+            result.error = 'cleared_stale_cross_room_session';
+          }
         }
+
       } catch (error) {
         console.error(`Error processing lesson ${lesson.id}:`, error);
         result.error = (error as Error).message;
