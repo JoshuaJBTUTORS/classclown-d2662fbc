@@ -21,6 +21,7 @@ import HomeworkCompletionCheckDialog from '@/components/homework/HomeworkComplet
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
+import LessonPlanCard from './LessonPlanCard';
 import TranscriptProposalDialog, { ProposalPrefill } from './TranscriptProposalDialog';
 
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
@@ -550,6 +551,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                     </div>
                   </CardContent>
                 </Card>}
+
+              {/* Lesson Plan for this week */}
+              <LessonPlanCard
+                subject={lesson.subject}
+                startTime={typeof displayStartTime === 'string' ? displayStartTime : undefined}
+                canManagePlans={isTeacherRole}
+              />
+
+
 
               {/* Basic Information */}
               <Card>
