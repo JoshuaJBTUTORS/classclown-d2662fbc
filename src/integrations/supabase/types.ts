@@ -5212,9 +5212,11 @@ export type Database = {
           lesson_start: string
           minutes_late: number | null
           status: string
+          students_waiting_since: string | null
           tutor_first_join_at: string | null
           tutor_id: string | null
           tutor_name: string | null
+          unattended_alert_sent_at: string | null
           updated_at: string
         }
         Insert: {
@@ -5225,9 +5227,11 @@ export type Database = {
           lesson_start: string
           minutes_late?: number | null
           status?: string
+          students_waiting_since?: string | null
           tutor_first_join_at?: string | null
           tutor_id?: string | null
           tutor_name?: string | null
+          unattended_alert_sent_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -5238,9 +5242,11 @@ export type Database = {
           lesson_start?: string
           minutes_late?: number | null
           status?: string
+          students_waiting_since?: string | null
           tutor_first_join_at?: string | null
           tutor_id?: string | null
           tutor_name?: string | null
+          unattended_alert_sent_at?: string | null
           updated_at?: string
         }
         Relationships: [
