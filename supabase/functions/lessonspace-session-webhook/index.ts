@@ -76,15 +76,43 @@ serve(async (req) => {
       });
     }
 
-    // Find the lesson by room_id (session_id is what we're setting)
-    let lessonQuery = supabase
-      .from("lessons")
-      .select("id, lesson_space_webhook_secret, lesson_space_session_id")
-      .limit(1);
-    if (roomId) lessonQuery = lessonQuery.eq("lesson_space_room_id", roomId);
-    else lessonQuery = lessonQuery.eq("lesson_space_session_id", sessionId!);
+    // Find the lesson for this room that is actually running now. A room is
+    // reused by the same tutor+student every week, so matching on room alone
+    // would attach the session to an arbitrary occurrence.
+    const eventAt = Date.parse(payload?.timestamp ?? payload?.summary?.start ?? "") || Date.now();
+    const windowMs = 90 * 60 * 1000;
 
-    const { data: lessonRow, error: lessonErr } = await lessonQuery.maybeSingle();
+    let lessonRow: any = null;
+    if (roomId) {
+      const { data: roomLessons, error: lessonErr0 } = await supabase
+        .from("lessons")
+        .select("id, start_time, end_time, lesson_space_webhook_secret, lesson_space_session_id")
+        .eq("lesson_space_room_id", roomId)
+        .gte("start_time", new Date(eventAt - windowMs).toISOString())
+        .lte("start_time", new Date(eventAt + windowMs).toISOString())
+        .neq("status", "cancelled")
+        .order("start_time", { ascending: true });
+
+      if (lessonErr0) console.error(`[${rid}] lesson lookup failed:`, lessonErr0.message);
+
+      if (roomLessons?.length) {
+        // closest scheduled start to the event
+        lessonRow = roomLessons.reduce((best: any, l: any) =>
+          Math.abs(Date.parse(l.start_time) - eventAt) < Math.abs(Date.parse(best.start_time) - eventAt) ? l : best,
+        );
+      } else {
+        console.warn(`[${rid}] no lesson scheduled near ${new Date(eventAt).toISOString()} for room ${roomId}`);
+      }
+    } else {
+      const { data } = await supabase
+        .from("lessons")
+        .select("id, start_time, end_time, lesson_space_webhook_secret, lesson_space_session_id")
+        .eq("lesson_space_session_id", sessionId!)
+        .limit(1)
+        .maybeSingle();
+      lessonRow = data;
+    }
+
 
     if (lessonErr) {
       console.error(`[${rid}] lesson lookup failed:`, lessonErr.message);
