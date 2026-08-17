@@ -264,15 +264,32 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
   }
 
   // 3b: no live URL — ask LessonSpace for a fresh one, then download immediately.
-  const { error: pollError } = await supabase.functions.invoke("generate-lesson-summaries", {
+  let pollError = (await supabase.functions.invoke("generate-lesson-summaries", {
     body: { action: "get-transcription", lessonId: lesson.id },
-  });
+  })).error;
 
-  const { data: refreshed } = await supabase
+  let refreshed = (await supabase
     .from("lesson_transcriptions")
     .select("id, transcription_url, transcription_text, expires_at, transcript_poll_attempts")
     .eq("lesson_id", lesson.id)
-    .maybeSingle();
+    .maybeSingle()).data;
+
+  // Self-heal: the session bound to this lesson may be the wrong one (rooms are
+  // reused week after week). Re-run selection with the current filters and, if a
+  // different session is chosen, repoint the transcript row and retry at once.
+  if (!refreshed?.transcription_url && lesson.lesson_space_room_id) {
+    const rebound = await reselectSession(lesson, row ?? refreshed, stats);
+    if (rebound) {
+      pollError = (await supabase.functions.invoke("generate-lesson-summaries", {
+        body: { action: "get-transcription", lessonId: lesson.id },
+      })).error;
+      refreshed = (await supabase
+        .from("lesson_transcriptions")
+        .select("id, transcription_url, transcription_text, expires_at, transcript_poll_attempts")
+        .eq("lesson_id", lesson.id)
+        .maybeSingle()).data;
+    }
+  }
 
   if (refreshed?.transcription_url && (!refreshed.expires_at || new Date(refreshed.expires_at).getTime() > Date.now())) {
     const ok = await downloadText(lesson.id, refreshed.transcription_url);
@@ -281,6 +298,7 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
       return true;
     }
   }
+
 
   await deferTranscript(
     lesson.id,
