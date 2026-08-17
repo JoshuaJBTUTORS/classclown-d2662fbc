@@ -31,7 +31,7 @@ serve(async (req) => {
   try {
     console.log('Starting lesson session search...');
     
-    const { action, lesson_ids, processing_date } = await req.json();
+    const { action, lesson_ids, processing_date, force } = await req.json();
     
     if (action !== 'find_session_ids') {
       throw new Error('Invalid action. Expected: find_session_ids');
@@ -107,14 +107,15 @@ serve(async (req) => {
       };
 
       try {
-        // Skip if session ID already exists
-        if (lesson.lesson_space_session_id) {
+        // Skip if session ID already exists (unless the caller forces re-selection)
+        if (lesson.lesson_space_session_id && !force) {
           console.log(`Session ID already exists for lesson ${lesson.id}: ${lesson.lesson_space_session_id}`);
           result.session_id = lesson.lesson_space_session_id;
           result.search_attempted = false;
           results.push(result);
           continue;
         }
+
 
         // Find session using LessonSpace API
         const sessionId = await findLessonSpaceSession(lesson);
@@ -140,7 +141,7 @@ serve(async (req) => {
         }
       } catch (error) {
         console.error(`Error processing lesson ${lesson.id}:`, error);
-        result.error = error.message;
+        result.error = (error as Error).message;
         result.search_attempted = true;
       }
 
@@ -172,7 +173,7 @@ serve(async (req) => {
     console.error('Error in find-lesson-sessions:', error);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -181,6 +182,67 @@ serve(async (req) => {
   }
 });
 
+function sessionUuid(session: any): string | null {
+  return session?.uuid ?? session?.session_id ?? (typeof session?.id === "string" ? session.id : null);
+}
+
+function sessionStart(session: any): number {
+  const raw =
+    session?.start ??
+    session?.started_at ??
+    session?.start_time ??
+    session?.created_at ??
+    session?.summary?.start;
+  const ts = raw ? Date.parse(raw) : NaN;
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+/**
+ * Distinct people the API reports for a session (0 when unknown).
+ * LessonSpace returns them under `profiles` (plus `guests`).
+ */
+function sessionParticipantCount(session: any): number {
+  const groups = [session?.profiles, session?.guests, session?.participants, session?.users, session?.attendees];
+  const ids = new Set<string>();
+  let sawArray = false;
+  for (const g of groups) {
+    if (!Array.isArray(g)) continue;
+    sawArray = true;
+    for (const u of g) {
+      ids.add(String(u?.user ?? u?.id ?? u?.user_id ?? u?.external_id ?? u?.email ?? u?.name ?? JSON.stringify(u)));
+    }
+  }
+  if (sawArray) return ids.size;
+  for (const key of ["participant_count", "num_participants", "user_count"]) {
+    if (typeof session?.[key] === "number") return session[key];
+  }
+  return 0;
+}
+
+
+/** Fallback: count distinct participants we logged ourselves via the webhook. */
+async function participantsFromEvents(sessionId: string): Promise<number> {
+  const { data } = await supabase
+    .from("lesson_participant_events")
+    .select("participant_external_id, participant_name, participant_role")
+    .eq("session_id", sessionId)
+    .limit(200);
+  if (!data?.length) return 0;
+  const ids = new Set(
+    data.map((e: any) => e.participant_external_id ?? e.participant_name ?? e.participant_role ?? "unknown"),
+  );
+  return ids.size;
+}
+
+/**
+ * Pick the right LessonSpace session for a lesson.
+ *
+ * Rooms are reused per tutor+student pair across every week, so the room's
+ * session list spans months. Selection rules:
+ *   1. drop solo sessions (only one participant never yields a transcript)
+ *   2. drop sessions that started after this lesson ended
+ *   3. sort by start date, newest first, and take the most recent
+ */
 async function findLessonSpaceSession(lesson: any): Promise<string | null> {
   if (!lesson.lesson_space_room_id) {
     return null;
@@ -188,10 +250,9 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
 
   try {
     console.log(`Searching sessions for room: ${lesson.lesson_space_room_id} at time: ${lesson.start_time}`);
-    
+
     const apiUrl = `https://api.thelessonspace.com/v2/organisations/20704/sessions/?space=${lesson.lesson_space_room_id}`;
-    console.log(`Calling LessonSpace API: ${apiUrl}`);
-    
+
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -208,20 +269,39 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
     }
 
     const data = await response.json();
-    console.log(`LessonSpace API response status: ${response.status}`);
-    console.log(`Found ${data.results?.length || 0} sessions in time range`);
+    const sessions: any[] = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+    console.log(`Room ${lesson.lesson_space_room_id} returned ${sessions.length} sessions`);
+    if (sessions.length === 0) return null;
     
-    if (data.results && data.results.length > 0) {
-      // Just return the first session found
-      const session = data.results[0];
-      console.log(`Found session - ID: ${session.id}, UUID: ${session.uuid}`);
-      return session.uuid;
+
+
+    // Never inherit a session that started after this lesson finished.
+    const endCutoff = lesson.end_time ? Date.parse(lesson.end_time) : NaN;
+    const cutoff = Number.isNaN(endCutoff) ? Infinity : endCutoff + 60 * 60 * 1000; // 1h grace for overruns
+
+    const candidates = sessions
+      .map((s) => ({ s, uuid: sessionUuid(s), start: sessionStart(s) }))
+      .filter((c) => !!c.uuid)
+      .filter((c) => c.start === 0 || c.start <= cutoff)
+      .sort((a, b) => b.start - a.start); // most recent first
+
+    for (const c of candidates) {
+      let people = sessionParticipantCount(c.s);
+      if (people === 0) people = await participantsFromEvents(c.uuid as string);
+      if (people > 1) {
+        console.log(
+          `Selected session ${c.uuid} (start=${c.start ? new Date(c.start).toISOString() : "unknown"}, participants=${people}) for lesson ${lesson.id}`,
+        );
+        return c.uuid as string;
+      }
+      console.log(`Skipping solo/unknown-attendance session ${c.uuid} (participants=${people})`);
     }
-    
-    console.log('No sessions found in the specified time range');
+
+    console.log(`No multi-participant session found for lesson ${lesson.id}`);
     return null;
   } catch (error) {
     console.error('Error finding LessonSpace session:', error);
     return null;
   }
+
 }

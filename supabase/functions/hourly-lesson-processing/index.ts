@@ -264,15 +264,32 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
   }
 
   // 3b: no live URL — ask LessonSpace for a fresh one, then download immediately.
-  const { error: pollError } = await supabase.functions.invoke("generate-lesson-summaries", {
+  let pollError = (await supabase.functions.invoke("generate-lesson-summaries", {
     body: { action: "get-transcription", lessonId: lesson.id },
-  });
+  })).error;
 
-  const { data: refreshed } = await supabase
+  let refreshed = (await supabase
     .from("lesson_transcriptions")
     .select("id, transcription_url, transcription_text, expires_at, transcript_poll_attempts")
     .eq("lesson_id", lesson.id)
-    .maybeSingle();
+    .maybeSingle()).data;
+
+  // Self-heal: the session bound to this lesson may be the wrong one (rooms are
+  // reused week after week). Re-run selection with the current filters and, if a
+  // different session is chosen, repoint the transcript row and retry at once.
+  if (!refreshed?.transcription_url && lesson.lesson_space_room_id) {
+    const rebound = await reselectSession(lesson, row ?? refreshed, stats);
+    if (rebound) {
+      pollError = (await supabase.functions.invoke("generate-lesson-summaries", {
+        body: { action: "get-transcription", lessonId: lesson.id },
+      })).error;
+      refreshed = (await supabase
+        .from("lesson_transcriptions")
+        .select("id, transcription_url, transcription_text, expires_at, transcript_poll_attempts")
+        .eq("lesson_id", lesson.id)
+        .maybeSingle()).data;
+    }
+  }
 
   if (refreshed?.transcription_url && (!refreshed.expires_at || new Date(refreshed.expires_at).getTime() > Date.now())) {
     const ok = await downloadText(lesson.id, refreshed.transcription_url);
@@ -281,6 +298,7 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
       return true;
     }
   }
+
 
   await deferTranscript(
     lesson.id,
@@ -293,6 +311,44 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
 
   return false;
 }
+
+/**
+ * Force a fresh session selection for this lesson's room (multi-participant,
+ * newest first) and repoint the transcript row when a different session wins.
+ * Returns true when the lesson now points at a new session.
+ */
+async function reselectSession(lesson: any, row: any, stats: Stats): Promise<boolean> {
+  const previous = lesson.lesson_space_session_id;
+  const { data, error } = await supabase.functions.invoke("find-lesson-sessions", {
+    body: { action: "find_session_ids", lesson_ids: [lesson.id], force: true },
+  });
+  if (error) {
+    console.error(`Re-selection failed for lesson ${lesson.id}:`, error.message);
+    return false;
+  }
+  const found = data?.results?.[0]?.session_id;
+  if (!found || found === previous) return false;
+
+  lesson.lesson_space_session_id = found;
+  stats.sessions_discovered++;
+  console.log(`Lesson ${lesson.id} repointed from session ${previous ?? "none"} to ${found}`);
+
+  if (row?.id) {
+    await supabase
+      .from("lesson_transcriptions")
+      .update({
+        session_id: found,
+        transcription_url: null,
+        expires_at: null,
+        transcription_status: "processing",
+        last_poll_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
+  }
+  return true;
+}
+
 
 async function downloadText(lessonId: string, url: string): Promise<boolean> {
   try {
