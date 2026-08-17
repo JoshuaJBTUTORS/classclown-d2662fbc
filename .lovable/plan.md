@@ -23,22 +23,24 @@ Rooms are created per tutor+student pair (`t{tutor}_s{student}`) and reused acro
 
 Scale: 34 transcript rows from the last 14 days are still `processing`, and 90 in the last 30 days — a large share of these are likely the same mis-attribution rather than genuinely missing recordings.
 
-## The fix
+## The fix — session selection filters
 
-1. **Time-window matching for sessions.** In the LessonSpace webhook handler and in `find-lesson-sessions`, only bind a session to a lesson when the session start falls inside that lesson's window (start − 20 min to end + 20 min) for that room. If no lesson matches the window, log the event without writing `lesson_space_session_id`.
-2. **Never overwrite a good session.** Don't write a session ID onto a lesson that already has one with a completed transcript, and never onto a lesson whose scheduled time is in the future.
-3. **Ignore trivial sessions.** Sessions shorter than ~2 minutes never produce a transcript; skip them for binding and mark them so the poller doesn't burn retries.
-4. **Self-healing poller.** When `hourly-lesson-processing` gets a 404 for a session, re-run session discovery for that lesson's room restricted to the lesson's time window, and if a better-matching session is found, repoint the transcript row at it and retry immediately instead of just deferring.
-5. **Terminal state.** After discovery has been retried and the recording window has passed (LessonSpace transcripts expire), mark the row `unavailable` with a clear note so it stops counting as pending.
+When we poll LessonSpace for a room's sessions, stop taking `results[0]`. Instead:
 
-## Data repair (one-off)
+1. **Filter out solo sessions** — keep only sessions with more than one participant (a session where only the tutor or only the student appeared never produces a usable transcript). Participant count comes from the session payload, falling back to our own `lesson_participant_events` for that session when the API doesn't report it.
+2. **Sort by session start date, newest first.**
+3. **Take the most recent remaining session** as the lesson's `lesson_space_session_id`, ignoring any session that started after the lesson's end (so a future occurrence can never inherit a later week's session).
 
-- Repoint the 15 Aug KS2 Maths lesson at session `53e6a4a3…`, clear the stale row, and re-run the transcript fetch plus summary generation for it.
-- Clear `lesson_space_session_id` on future occurrences that inherited a past session (e.g. the 29 Aug KS2 Maths row).
-- Sweep the remaining `processing` transcript rows from the last 30 days: re-match each to the correct session by room + time window, requeue the ones that resolve, and mark the rest `unavailable` with the reason recorded.
+Applied in both places that bind sessions:
+
+- `find-lesson-sessions` — replace `data.results[0]` with the filter/sort/pick above.
+- `hourly-lesson-processing` — when the transcript fetch returns 404, re-run this selection for the lesson's room and repoint the transcript row at the newly chosen session before retrying, instead of only backing off.
+
+Also stop the poller burning retries forever: once discovery has been retried and no qualifying session exists, mark the transcript row `unavailable` with the reason recorded.
 
 ## Technical notes
 
-- Files: `supabase/functions/lessonspace-session-webhook/index.ts`, `supabase/functions/find-lesson-sessions/index.ts`, `supabase/functions/hourly-lesson-processing/index.ts`, `supabase/functions/generate-lesson-summaries/index.ts` (the `get-transcription` path).
-- Transcript endpoint in use: `GET /v2/organisations/20704/sessions/{session_id}/transcript/`; 404 currently maps to `processing` with back-off, which is what hides this bug.
-- No schema change required, though a `processing_notes` value will be used to record why a row was terminated.
+- Files: `supabase/functions/find-lesson-sessions/index.ts`, `supabase/functions/hourly-lesson-processing/index.ts`, `supabase/functions/lessonspace-session-webhook/index.ts` (drop the "keep first" lock so a better session can replace a bad one).
+- Endpoint in use: `GET /v2/organisations/20704/sessions/?space={room}`, transcript at `/sessions/{id}/transcript/`.
+- No schema change required; `processing_notes` records why a row was terminated.
+
