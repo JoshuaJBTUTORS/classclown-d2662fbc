@@ -551,6 +551,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   </CardContent>
                 </Card>}
 
+              {/* Lesson Plan for this week */}
+              <LessonPlanCard
+                subject={lesson.subject}
+                startTime={typeof displayStartTime === 'string' ? displayStartTime : undefined}
+                canManagePlans={isTeacherRole}
+              />
+
+
+
               {/* Basic Information */}
               <Card>
                 <CardContent className="p-4 space-y-3">
