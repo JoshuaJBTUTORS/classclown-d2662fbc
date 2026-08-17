@@ -197,29 +197,28 @@ function sessionStart(session: any): number {
   return Number.isNaN(ts) ? 0 : ts;
 }
 
-/** Number of distinct participants the API reports for a session (0 when unknown). */
+/**
+ * Distinct people the API reports for a session (0 when unknown).
+ * LessonSpace returns them under `profiles` (plus `guests`).
+ */
 function sessionParticipantCount(session: any): number {
-  const candidates = [
-    session?.participants,
-    session?.users,
-    session?.attendees,
-    session?.summary?.participants,
-    session?.summary?.users,
-  ];
-  for (const c of candidates) {
-    if (Array.isArray(c)) {
-      const ids = new Set(
-        c.map((u: any) => u?.id ?? u?.user_id ?? u?.external_id ?? u?.name ?? JSON.stringify(u)),
-      );
-      return ids.size;
+  const groups = [session?.profiles, session?.guests, session?.participants, session?.users, session?.attendees];
+  const ids = new Set<string>();
+  let sawArray = false;
+  for (const g of groups) {
+    if (!Array.isArray(g)) continue;
+    sawArray = true;
+    for (const u of g) {
+      ids.add(String(u?.user ?? u?.id ?? u?.user_id ?? u?.external_id ?? u?.email ?? u?.name ?? JSON.stringify(u)));
     }
-    if (typeof c === "number") return c;
   }
+  if (sawArray) return ids.size;
   for (const key of ["participant_count", "num_participants", "user_count"]) {
     if (typeof session?.[key] === "number") return session[key];
   }
   return 0;
 }
+
 
 /** Fallback: count distinct participants we logged ourselves via the webhook. */
 async function participantsFromEvents(sessionId: string): Promise<number> {
