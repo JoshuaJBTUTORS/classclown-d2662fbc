@@ -260,9 +260,12 @@ async function participantsFromEvents(sessionId: string): Promise<number> {
  *   2. drop sessions that started after this lesson ended
  *   3. sort by start date, newest first, and take the most recent
  */
-async function findLessonSpaceSession(lesson: any): Promise<string | null> {
+async function findLessonSpaceSession(
+  lesson: any,
+): Promise<{ sessionId: string | null; roomSessionIds: string[] }> {
+  const none = { sessionId: null, roomSessionIds: [] as string[] };
   if (!lesson.lesson_space_room_id) {
-    return null;
+    return none;
   }
 
   try {
@@ -282,15 +285,15 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
       console.error(`LessonSpace API error: ${response.status} ${response.statusText}`);
       const errorText = await response.text();
       console.error('Error response body:', errorText);
-      return null;
+      return none;
     }
 
     const data = await response.json();
     const sessions: any[] = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
     console.log(`Room ${lesson.lesson_space_room_id} returned ${sessions.length} sessions`);
-    if (sessions.length === 0) return null;
-    
+    if (sessions.length === 0) return none;
 
+    const roomSessionIds = sessions.map((s) => sessionUuid(s)).filter((u): u is string => !!u);
 
     // Never inherit a session that started after this lesson finished.
     const endCutoff = lesson.end_time ? Date.parse(lesson.end_time) : NaN;
@@ -309,16 +312,17 @@ async function findLessonSpaceSession(lesson: any): Promise<string | null> {
         console.log(
           `Selected session ${c.uuid} (start=${c.start ? new Date(c.start).toISOString() : "unknown"}, participants=${people}) for lesson ${lesson.id}`,
         );
-        return c.uuid as string;
+        return { sessionId: c.uuid as string, roomSessionIds };
       }
       console.log(`Skipping solo/unknown-attendance session ${c.uuid} (participants=${people})`);
     }
 
     console.log(`No multi-participant session found for lesson ${lesson.id}`);
-    return null;
+    return { sessionId: null, roomSessionIds };
   } catch (error) {
     console.error('Error finding LessonSpace session:', error);
-    return null;
+    return none;
   }
+
 
 }
