@@ -107,14 +107,15 @@ serve(async (req) => {
       };
 
       try {
-        // Skip if session ID already exists
-        if (lesson.lesson_space_session_id) {
+        // Skip if session ID already exists (unless the caller forces re-selection)
+        if (lesson.lesson_space_session_id && !force) {
           console.log(`Session ID already exists for lesson ${lesson.id}: ${lesson.lesson_space_session_id}`);
           result.session_id = lesson.lesson_space_session_id;
           result.search_attempted = false;
           results.push(result);
           continue;
         }
+
 
         // Find session using LessonSpace API
         const sessionId = await findLessonSpaceSession(lesson);
