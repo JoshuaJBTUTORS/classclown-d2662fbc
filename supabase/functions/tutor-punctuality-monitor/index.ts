@@ -187,7 +187,7 @@ serve(async (req) => {
       // Existing record
       const { data: existing } = await supabase
         .from("tutor_punctuality")
-        .select("id, status, tutor_first_join_at, alert_sent_at")
+        .select("id, status, tutor_first_join_at, alert_sent_at, students_waiting_since, unattended_alert_sent_at")
         .eq("lesson_id", lesson.id)
         .maybeSingle();
 
@@ -205,37 +205,68 @@ serve(async (req) => {
       );
       if (tutorEvent) firstJoin = tutorEvent.occurred_at;
 
-      // 2. Fall back to polling LessonSpace directly
-      if (!firstJoin) {
-        try {
-          const res = await fetch(
-            `https://api.thelessonspace.com/v2/spaces/${lesson.lesson_space_room_id}/sessions/`,
-            { headers: { Authorization: `Organisation ${apiKey}` } },
-          );
-          if (res.ok) {
-            const json = await res.json();
-            const sessions: any[] = Array.isArray(json) ? json : (json?.results ?? []);
-            const active = sessions.find((s) => !s?.end_time) ?? sessions[0] ?? null;
-            const profiles: any[] = active?.profiles ?? [];
-            const logs: any[] = active?.logs ?? [];
-            const teacherProfileIds = profiles
-              .filter((p) => String(p?.role ?? "").toLowerCase() === "teacher")
-              .map((p) => p?.user);
+      // 2. Poll LessonSpace for live room state (also fills the tutor join time)
+      const room = await fetchRoomState(lesson.lesson_space_room_id, apiKey);
+      if (!firstJoin && room?.teacherFirstJoin) firstJoin = room.teacherFirstJoin;
 
-            // Earliest teacher join within the active session
-            const joinLog = logs
-              .filter((l) => l?.log_type === "user-joined" && teacherProfileIds.includes(l?.profile))
-              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      const tutorName = lesson.tutor_id ? tutorMap.get(lesson.tutor_id) ?? null : null;
 
-            if (joinLog?.date) firstJoin = joinLog.date;
-            else if (teacherProfileIds.length && active?.start_time) firstJoin = active.start_time;
+      // ---- Students in the room with nobody teaching them --------------
+      const studentsInRoom = room?.students ?? [];
+      const unattended = Boolean(room) && !room!.teacherConnected && studentsInRoom.length > 0;
+
+      let waitingSince: string | null = null;
+      let unattendedAlertSentAt: string | null = null;
+      let waitingMinutes = 0;
+
+      if (unattended) {
+        const joinTimes = studentsInRoom
+          .map((s) => (s.joinedAt ? new Date(s.joinedAt).getTime() : null))
+          .filter((t): t is number => t != null);
+        let earliest = joinTimes.length ? Math.min(...joinTimes) : now;
+        if (existing?.students_waiting_since) {
+          earliest = Math.min(earliest, new Date(existing.students_waiting_since).getTime());
+        }
+        waitingSince = new Date(earliest).toISOString();
+        waitingMinutes = Math.max(0, Math.floor((now - earliest) / 60000));
+        unattendedAlertSentAt = existing?.unattended_alert_sent_at ?? null;
+
+        const lastAlertMs = unattendedAlertSentAt ? new Date(unattendedAlertSentAt).getTime() : 0;
+        const dueForAlert =
+          waitingMinutes >= UNATTENDED_THRESHOLD_MIN &&
+          (!lastAlertMs || now - lastAlertMs >= UNATTENDED_REALERT_MIN * 60000);
+
+        if (dueForAlert) {
+          const lessonLabel = lesson.title || lesson.subject || "Lesson";
+          const names = studentsInRoom.map((s) => s.name).join(", ");
+          try {
+            const sent = await resend.emails.send({
+              from: "Class Beyond <enquiries@classbeyondacademy.io>",
+              to: ALERT_RECIPIENTS,
+              subject: `Students waiting with no tutor: ${lessonLabel} (${fmtTime(lesson.start_time)})`,
+              text: [
+                `${studentsInRoom.length} student${studentsInRoom.length === 1 ? " is" : "s are"} in the lesson room with no tutor present.`,
+                ``,
+                `Waiting for: ${waitingMinutes} minutes`,
+                `Students in room: ${names}`,
+                ``,
+                `Lesson: ${lessonLabel}`,
+                `Expected tutor: ${tutorName || "Unassigned"}`,
+                `Scheduled start: ${fmtTime(lesson.start_time)}`,
+                `Scheduled end: ${fmtTime(lesson.end_time)}`,
+                ``,
+                `Please get a tutor into the room as soon as possible.`,
+              ].join("\n"),
+            });
+            if (sent.error) throw new Error(sent.error.message);
+            unattendedAlertSentAt = new Date().toISOString();
+          } catch (e) {
+            console.error("Unattended alert email failed", lesson.id, (e as Error).message);
           }
-        } catch (e) {
-          console.error("LessonSpace poll failed", lesson.id, (e as Error).message);
         }
       }
 
-      const tutorName = lesson.tutor_id ? tutorMap.get(lesson.tutor_id) ?? null : null;
+      const isUnattendedAlertState = unattended && waitingMinutes >= UNATTENDED_THRESHOLD_MIN;
 
       // Earliest wins: keep whichever join time is earlier
       if (existing?.tutor_first_join_at) {
@@ -249,7 +280,8 @@ serve(async (req) => {
           0,
           Math.round((new Date(firstJoin).getTime() - startMs) / 60000),
         );
-        const status = minutesLate > LATE_THRESHOLD_MIN ? "late" : "on_time";
+        const punctualityStatus = minutesLate > LATE_THRESHOLD_MIN ? "late" : "on_time";
+        const status = isUnattendedAlertState ? "students_unattended" : punctualityStatus;
         await supabase.from("tutor_punctuality").upsert(
           {
             lesson_id: lesson.id,
@@ -259,10 +291,18 @@ serve(async (req) => {
             tutor_first_join_at: firstJoin,
             minutes_late: minutesLate,
             status,
+            students_waiting_since: waitingSince,
+            unattended_alert_sent_at: unattendedAlertSentAt,
           },
           { onConflict: "lesson_id" },
         );
-        processed.push({ lesson: lesson.id, status, minutesLate });
+        processed.push({
+          lesson: lesson.id,
+          status,
+          minutesLate,
+          studentsWaiting: unattended ? studentsInRoom.length : 0,
+          waitingMinutes,
+        });
         continue;
       }
 
@@ -281,9 +321,12 @@ serve(async (req) => {
           `Tutor: ${tutorName || "Unassigned"}`,
           `Scheduled start: ${fmtTime(lesson.start_time)}`,
           `Scheduled end: ${fmtTime(lesson.end_time)}`,
+          studentsInRoom.length
+            ? `Students already in the room: ${studentsInRoom.map((s) => s.name).join(", ")}`
+            : ``,
           ``,
           `Please check in with the tutor so the students are not left waiting.`,
-        ].join("\n");
+        ].filter(Boolean).join("\n");
 
         try {
           const sent = await resend.emails.send({
@@ -305,25 +348,35 @@ serve(async (req) => {
           tutor_id: lesson.tutor_id,
           tutor_name: tutorName,
           lesson_start: lesson.start_time,
-          status:
-            expectedStudents === 0
-              ? "no_students_expected"
-              : minutesSinceStart >= LATE_THRESHOLD_MIN
-              ? "no_show"
-              : "pending",
+          status: isUnattendedAlertState
+            ? "students_unattended"
+            : expectedStudents === 0
+            ? "no_students_expected"
+            : minutesSinceStart >= LATE_THRESHOLD_MIN
+            ? "no_show"
+            : "pending",
           alert_sent_at: alertSentAt,
+          students_waiting_since: waitingSince,
+          unattended_alert_sent_at: unattendedAlertSentAt,
         },
         { onConflict: "lesson_id" },
       );
 
       processed.push({
         lesson: lesson.id,
-        status: expectedStudents === 0 ? "no_students_expected" : "no_tutor",
+        status: isUnattendedAlertState
+          ? "students_unattended"
+          : expectedStudents === 0
+          ? "no_students_expected"
+          : "no_tutor",
         minutesSinceStart,
         expectedStudents,
+        studentsWaiting: unattended ? studentsInRoom.length : 0,
+        waitingMinutes,
         alerted: Boolean(alertSentAt),
       });
     }
+
 
     return new Response(JSON.stringify({ checked: lessons?.length ?? 0, processed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
