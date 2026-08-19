@@ -76,7 +76,7 @@ export const SubjectCard: React.FC<SubjectCardProps> = ({
             {subject}
           </h3>
           <p className={cn('mt-1.5 text-sm font-medium opacity-70', tone.text)}>
-            {weeks} week{weeks !== 1 ? 's' : ''} · {terms} term{terms !== 1 ? 's' : ''} · {totalPlans} plan
+            {weeks} week{weeks !== 1 ? 's' : ''} · {totalPlans} plan
             {totalPlans !== 1 ? 's' : ''}
           </p>
         </div>
