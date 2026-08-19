@@ -115,7 +115,7 @@ const TutorRow: React.FC<TutorRowProps> = ({
             ? `${format(slot.date, 'yyyy-MM-dd')}-${parseInt(slot.time.split(':')[0])}`
             : format(slot.date, 'yyyy-MM-dd');
           
-          const isAvailable = availabilityData?.[availabilityKey] || false;
+          const slotStatus = availabilityData?.[availabilityKey] || 'unavailable';
           
           return (
             <div
