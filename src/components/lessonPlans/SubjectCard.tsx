@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 interface SubjectCardProps {
   subject: string;
   totalPlans: number;
-  terms: number;
   weeks: number;
   lastUpdated: string;
   onClick: () => void;
