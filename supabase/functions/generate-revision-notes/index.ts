@@ -60,11 +60,13 @@ serve(async (req) => {
 
     let allowed = isStaff;
 
-    if (!allowed && roleList.includes('tutor')) {
+    const userEmail = userData.user.email;
+
+    if (!allowed && roleList.includes('tutor') && userEmail) {
       const { data: tutor } = await admin
         .from('tutors')
         .select('id')
-        .eq('user_id', userId)
+        .eq('email', userEmail)
         .maybeSingle();
       if (tutor?.id && tutor.id === lesson.tutor_id) allowed = true;
     }
@@ -72,17 +74,22 @@ serve(async (req) => {
     if (!allowed) {
       const { data: student } = await admin
         .from('students')
-        .select('id, parent_id')
+        .select('id, parent_id, email, user_id')
         .eq('id', studentId)
         .maybeSingle();
       if (student) {
-        const { data: profile } = await admin
-          .from('profiles')
-          .select('student_id, parent_id')
-          .eq('id', userId)
-          .maybeSingle();
-        if (profile?.student_id && Number(profile.student_id) === Number(studentId)) allowed = true;
-        if (!allowed && profile?.parent_id && profile.parent_id === student.parent_id) allowed = true;
+        if (student.user_id === userId) allowed = true;
+        if (!allowed && userEmail && student.email && student.email.toLowerCase() === userEmail.toLowerCase()) {
+          allowed = true;
+        }
+        if (!allowed && student.parent_id) {
+          const { data: parent } = await admin
+            .from('parents')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+          if (parent?.id && parent.id === student.parent_id) allowed = true;
+        }
       }
     }
 
