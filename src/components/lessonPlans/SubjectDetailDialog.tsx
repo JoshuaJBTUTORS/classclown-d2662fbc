@@ -86,7 +86,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
         .from('lesson_plans')
         .select('*')
         .eq('subject', subject)
-        .order('term', { ascending: true })
         .order('week_number', { ascending: true });
 
       if (error) throw error;
