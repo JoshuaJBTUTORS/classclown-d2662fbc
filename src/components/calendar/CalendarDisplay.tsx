@@ -97,7 +97,12 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 
   const handleEventClick = (eventInfo: any) => {
     const extendedProps = eventInfo.event.extendedProps;
-    
+
+    // Time off blocks are informational only
+    if (extendedProps?.eventType === 'time_off') {
+      return;
+    }
+
     // For regular lessons, use the event ID
     setSelectedLessonId(eventInfo.event.id);
     

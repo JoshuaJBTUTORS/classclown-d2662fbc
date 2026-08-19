@@ -1356,6 +1356,20 @@
   text-decoration: line-through !important;
 }
 
+.fc-event.time-off-event {
+  background-color: hsl(0 75% 95%) !important;
+  border: 1px dashed hsl(0 65% 70%) !important;
+  color: hsl(0 60% 35%) !important;
+  cursor: default !important;
+}
+
+.fc-event.time-off-event .fc-event-title,
+.fc-event.time-off-event .fc-event-time {
+  color: hsl(0 60% 35%) !important;
+  text-shadow: none !important;
+  font-weight: 600 !important;
+}
+
 .fc-event.absent-event {
   opacity: 0.6 !important;
   position: relative !important;

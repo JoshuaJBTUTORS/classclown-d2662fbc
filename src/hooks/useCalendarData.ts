@@ -36,6 +36,8 @@ export const useCalendarData = ({
   filters 
 }: UseCalendarDataProps) => {
   const [rawLessons, setRawLessons] = useState<any[]>([]);
+  const [timeOffBlocks, setTimeOffBlocks] = useState<any[]>([]);
+  
   
   const [isLoading, setIsLoading] = useState(true);
   
@@ -136,8 +138,26 @@ export const useCalendarData = ({
       calendarEvents.push(...lessonEvents);
     }
 
+    if (timeOffBlocks && timeOffBlocks.length > 0) {
+      const timeOffEvents = timeOffBlocks.map((request: any) => ({
+        id: `time-off-${request.id}`,
+        title: request.reason ? `Time off — ${request.reason}` : 'Time off',
+        start: convertUTCToUK(request.start_date).toISOString(),
+        end: convertUTCToUK(request.end_date).toISOString(),
+        className: 'calendar-event time-off-event',
+        editable: false,
+        extendedProps: {
+          eventType: 'time_off',
+          reason: request.reason || null,
+          userRole,
+        }
+      }));
+
+      calendarEvents.push(...timeOffEvents);
+    }
+
     return calendarEvents;
-  }, [rawLessons, userRole, completionData, attendanceStatusData]);
+  }, [rawLessons, timeOffBlocks, userRole, completionData, attendanceStatusData]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -148,8 +168,13 @@ export const useCalendarData = ({
 
       if (!isAuthenticated || !userRole || !userEmail) {
         setRawLessons([]);
+        setTimeOffBlocks([]);
         setIsLoading(false);
         return;
+      }
+
+      if (userRole !== 'tutor') {
+        setTimeOffBlocks([]);
       }
 
       try {
@@ -286,9 +311,38 @@ export const useCalendarData = ({
 
             if (!tutorData) {
               setRawLessons([]);
+              setTimeOffBlocks([]);
               setIsLoading(false);
               return;
             }
+
+            // Fetch approved time off overlapping the visible range
+            try {
+              let timeOffQuery = supabase
+                .from('time_off_requests')
+                .select('id, start_date, end_date, reason')
+                .eq('tutor_id', tutorData.id)
+                .eq('status', 'approved');
+
+              if (startDate && endDate) {
+                timeOffQuery = timeOffQuery
+                  .lte('start_date', endDate.toISOString())
+                  .gte('end_date', startDate.toISOString());
+              }
+
+              const { data: timeOffData, error: timeOffError } = await timeOffQuery;
+
+              if (timeOffError) {
+                console.error('❌ Error fetching time off requests:', timeOffError);
+                setTimeOffBlocks([]);
+              } else {
+                setTimeOffBlocks(timeOffData || []);
+              }
+            } catch (timeOffErr) {
+              console.error('💥 Time off fetch failed:', timeOffErr);
+              setTimeOffBlocks([]);
+            }
+
 
             // Fetch both original lessons and instances for this tutor
             // Exclude demo sessions from tutor view
