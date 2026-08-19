@@ -21,6 +21,25 @@ Deno.serve(async (req) => {
   const limit: number = body.limit ?? 1000;
 
   try {
+    if (body.mode === "test") {
+      while (Date.now() - started < 120_000) {
+        const { data, error } = await supabase.rpc("list_teaching_material_test_names", {
+          _limit: limit,
+        });
+        if (error) throw error;
+        const paths = (data ?? []).map((r: { name: string }) => r.name);
+        if (paths.length === 0) break;
+        const { error: delErr } = await supabase.storage
+          .from("teaching-materials")
+          .remove(paths);
+        if (delErr) throw delErr;
+        deleted += paths.length;
+      }
+      return new Response(JSON.stringify({ deleted }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (body.mode === "folders") {
       // Delete every file inside each top-level folder (excluding the junk `test` folder)
       const { data: roots, error: rootErr } = await supabase.storage
