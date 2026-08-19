@@ -34,106 +34,13 @@ interface LessonSummaryCardProps {
 }
 
 const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
-  const { isAdmin, isOwner, isTutor } = useAuth();
   const [showRecording, setShowRecording] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [showGenerateAssessment, setShowGenerateAssessment] = useState(false);
-  const [showAssessmentViewer, setShowAssessmentViewer] = useState(false);
-  const [showTranscriptWarning, setShowTranscriptWarning] = useState(false);
-  const [publishedAssessments, setPublishedAssessments] = useState<any[]>([]);
-  const [hasPublishedAssessments, setHasPublishedAssessments] = useState(false);
-  const [transcriptStatus, setTranscriptStatus] = useState<'processing' | 'completed' | 'not_found' | 'error' | null>(null);
-  const [isCheckingTranscript, setIsCheckingTranscript] = useState(false);
+  const [showRevisionNotes, setShowRevisionNotes] = useState(false);
   const lessonDate = parseISO(lesson.start_time);
 
   const hasRecording = lesson.lesson_space_recording_url || lesson.lesson_space_session_id;
-  const canGenerateAssessment = isAdmin || isOwner || isTutor;
-  const canSeeAssessmentButton = canGenerateAssessment || hasPublishedAssessments;
-
-  // Fetch published assessments for this lesson
-  useEffect(() => {
-    const fetchPublishedAssessments = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('ai_assessments')
-          .select('*')
-          .eq('lesson_id', lesson.id)
-          .eq('status', 'published');
-
-        if (error) {
-          console.error('Error fetching assessments:', error);
-          return;
-        }
-
-        setPublishedAssessments(data || []);
-        setHasPublishedAssessments((data || []).length > 0);
-      } catch (error) {
-        console.error('Error fetching assessments:', error);
-      }
-    };
-
-    fetchPublishedAssessments();
-  }, [lesson.id]);
-
-  const checkTranscriptStatus = async () => {
-    setIsCheckingTranscript(true);
-    try {
-      const { data, error } = await supabase
-        .from('lesson_transcriptions')
-        .select('transcription_status')
-        .eq('lesson_id', lesson.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      if (data) {
-        setTranscriptStatus(data.transcription_status as 'processing' | 'completed' | 'not_found' | 'error');
-      } else {
-        setTranscriptStatus('not_found');
-      }
-    } catch (error) {
-      console.error('Error checking transcript status:', error);
-      setTranscriptStatus('error');
-    } finally {
-      setIsCheckingTranscript(false);
-    }
-  };
-
-  const handleAssessmentClick = async () => {
-    if (hasPublishedAssessments) {
-      setShowAssessmentViewer(true);
-    } else if (canGenerateAssessment) {
-      // Check transcript status first
-      await checkTranscriptStatus();
-    }
-  };
-
-  // Use useEffect to handle the logic after transcript status is checked
-  useEffect(() => {
-    if (transcriptStatus && canGenerateAssessment && !hasPublishedAssessments) {
-      // If transcript is ready, proceed directly
-      if (transcriptStatus === 'completed') {
-        setShowGenerateAssessment(true);
-      } else {
-        // Show warning dialog for processing, not_found, or error states
-        setShowTranscriptWarning(true);
-      }
-      // Reset transcript status to avoid repeated triggers
-      setTranscriptStatus(null);
-    }
-  }, [transcriptStatus, canGenerateAssessment, hasPublishedAssessments]);
-
-  const handleContinueWithoutTranscript = () => {
-    setShowTranscriptWarning(false);
-    setShowGenerateAssessment(true);
-  };
-
-  const getAssessmentButtonText = () => {
-    if (canGenerateAssessment) {
-      return 'Assessment';
-    }
-    return 'Take Assessment';
-  };
+  const hasStudents = (lesson.lesson_students || []).length > 0;
 
   // Generate a subtle pastel gradient based on subject
   const getSubjectGradient = (subject: string) => {
