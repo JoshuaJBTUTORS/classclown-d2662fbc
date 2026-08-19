@@ -124,12 +124,14 @@ const TutorRow: React.FC<TutorRowProps> = ({
             >
               {slotEvents.length === 0 ? (
                 <div className={`h-full flex items-center justify-center rounded-md transition-colors ${
-                  isAvailable 
-                    ? 'bg-green-100 text-green-800 border border-green-200' 
-                    : 'text-muted-foreground'
+                  slotStatus === 'time_off'
+                    ? 'bg-red-100 text-red-800 border border-red-200'
+                    : slotStatus === 'available'
+                      ? 'bg-green-100 text-green-800 border border-green-200'
+                      : 'text-muted-foreground'
                 }`}>
                   <span className="text-xs font-medium">
-                    {isAvailable ? 'Available' : 'Unavailable'}
+                    {slotStatus === 'time_off' ? 'Time off' : slotStatus === 'available' ? 'Available' : 'Unavailable'}
                   </span>
                 </div>
               ) : (
