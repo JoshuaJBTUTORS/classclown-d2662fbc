@@ -1,24 +1,27 @@
-# Teacher View access: tutor, admin, owner
+# Show approved time off in a tutor's Calendar View
 
 ## Current state (verified)
 
-- `/calendar` itself has no role restriction — any signed-in user can open the page.
-- Inside `src/pages/Calendar.tsx`, the Teacher View tab is gated by `canUseTeacherView = userRole === 'admin' || userRole === 'owner'`.
-- The gate is applied in two places: the tab trigger and the tab content, so parents and students cannot reach the teacher/availability view today.
-- Tutors are currently **excluded** — they cannot see Teacher View, which does not match the desired rule.
+- `/calendar` has no route-level role restriction, but the **Teacher View** tab in `src/pages/Calendar.tsx` is already gated by `canUseTeacherView = userRole === 'admin' || userRole === 'owner'` on both the tab trigger and the tab content. Tutors, parents and students cannot see it. No change needed there.
+- Calendar View events come from `src/hooks/useCalendarData.ts`, which builds events from `lessons` only. Approved time off is never rendered, so a tutor's calendar looks empty/available during their approved leave.
+- `time_off_requests` holds `tutor_id`, `start_date`, `end_date`, `reason`, `status`.
 
 ## Change
 
-Widen the Teacher View gate to include tutors:
+In `useCalendarData`, when the signed-in user is a tutor:
 
-```
-const canUseTeacherView = userRole === 'admin' || userRole === 'owner' || userRole === 'tutor';
-```
+1. Resolve their tutor record (same email-based lookup pattern already used for other roles).
+2. Fetch `time_off_requests` with `status = 'approved'` overlapping the current calendar date range.
+3. Emit one calendar event per approved request alongside lesson events:
+   - Title: "Time off" (plus reason when present)
+   - Start/end from `start_date`/`end_date`, converted to UK time like lessons
+   - A distinct pale-red `time-off-event` class added to `src/index.css`
+   - `extendedProps.eventType: 'time_off'` so it is clearly not a lesson
 
-Both the `TabsTrigger` and the `TabsContent` already use this flag, so tutors gain access and parents/students remain blocked with a single edit.
+4. In `src/components/calendar/LessonDetailsDialog.tsx` (or wherever event clicks are handled), ignore clicks on `eventType === 'time_off'` events so no lesson dialog opens for them.
 
 ## Out of scope
 
-- The rest of the calendar page stays open to all signed-in roles (as today).
-- Lesson scheduling stays admin/owner only (`canScheduleLessons` unchanged).
-- Filter permissions unchanged.
+- Teacher View stays admin/owner only — unchanged.
+- Parent and student calendar behaviour stays exactly as it is today.
+- No database changes required.
