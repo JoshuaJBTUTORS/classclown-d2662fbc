@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp, Wand2 } from 'lucide-react';
+import { Calendar, Edit, Save, X, Clock, BookOpen, TrendingUp, Wand2 } from 'lucide-react';
 import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -15,9 +15,6 @@ import { toast } from 'sonner';
 import { SubjectIcon } from './SubjectIcon';
 import { getPastelTone } from './pastelPalette';
 
-import MaterialUpload from './MaterialUpload';
-import MaterialList from './MaterialList';
-import WeeklyMaterials from './WeeklyMaterials';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +55,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const [editForm, setEditForm] = useState({ topic_title: '', description: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('plans');
-  const [materialCounts, setMaterialCounts] = useState<Record<number, number>>({});
   const [rebuildOpen, setRebuildOpen] = useState(false);
 
   const { isAdmin, isOwner, isTutor } = useAuth();
@@ -75,7 +71,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   useEffect(() => {
     if (isOpen && subject) {
       fetchSubjectPlans();
-      fetchMaterialCounts();
     }
   }, [isOpen, subject]);
 
@@ -98,26 +93,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
     }
   };
 
-  const fetchMaterialCounts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('teaching_materials')
-        .select('week_number')
-        .eq('subject', subject);
-
-      if (error) throw error;
-
-      const counts: Record<number, number> = {};
-      data?.forEach(material => {
-        if (material.week_number) {
-          counts[material.week_number] = (counts[material.week_number] || 0) + 1;
-        }
-      });
-      setMaterialCounts(counts);
-    } catch (error) {
-      console.error('Error fetching material counts:', error);
-    }
-  };
 
   const handleEdit = (plan: LessonPlan) => {
     setEditingPlan(plan.id);
@@ -143,7 +118,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
       toast.success('Lesson plan updated successfully');
       setEditingPlan(null);
       fetchSubjectPlans();
-      fetchMaterialCounts();
       onUpdate();
     } catch (error) {
       console.error('Error updating lesson plan:', error);
@@ -180,7 +154,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                   <p className={cn('text-sm opacity-75', tone.text)}>
                     {isStudentOrParent
                       ? `Current week • ${weekRange}`
-                      : 'Weekly plans and teaching materials'}
+                      : 'Weekly plans'}
                   </p>
                   {isStudentOrParent && (
                     <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-medium', tone.chip)}>
@@ -212,22 +186,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-5">
-          <TabsList className="grid w-full grid-cols-2 rounded-full bg-muted p-1">
-            <TabsTrigger
-              value="plans"
-              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Weekly Plans
-            </TabsTrigger>
-            <TabsTrigger
-              value="materials"
-              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Materials
-            </TabsTrigger>
-          </TabsList>
+
 
 
           <TabsContent value="plans" className="space-y-4">
@@ -290,15 +249,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                                       className="rounded-full border-primary/40 bg-primary/10 text-primary text-xs"
                                     >
                                       Assessment Week
-                                    </Badge>
-                                  )}
-                                  {materialCounts[plan.week_number] > 0 && (
-                                    <Badge 
-                                      variant="outline" 
-                                      className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
-                                    >
-                                      <FileText className="h-3 w-3 mr-1" />
-                                      {materialCounts[plan.week_number]} material{materialCounts[plan.week_number] !== 1 ? 's' : ''}
                                     </Badge>
                                   )}
                                 </div>
@@ -366,17 +316,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                               )}
                             </div>
                             
-                            {editingPlan !== plan.id && (
-                              <WeeklyMaterials
-                                subject={subject}
-                                weekNumber={plan.week_number}
-                                readOnly={isStudentOrParent}
-                                onUpdate={() => {
-                                  fetchMaterialCounts();
-                                  onUpdate();
-                                }}
-                              />
-                            )}
                           </div>
                         );
                       })}
@@ -403,34 +342,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
               </div>
             )}
           </TabsContent>
-
-          <TabsContent value="materials" className="space-y-4">
-            {isStudentOrParent ? (
-              <div className="space-y-4">
-                {/* Current week materials only for students/parents */}
-                <WeeklyMaterials
-                  subject={subject}
-                  weekNumber={currentWeek}
-                  readOnly={true}
-                  onUpdate={() => {
-                    fetchMaterialCounts();
-                    onUpdate();
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <MaterialUpload 
-                  subject={subject} 
-                  onUploadSuccess={fetchSubjectPlans}
-                />
-                <MaterialList 
-                  subject={subject}
-                  onUpdate={fetchSubjectPlans}
-                />
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
 
         <RebuildPlanFromPdfDialog
@@ -439,7 +350,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
           onClose={() => setRebuildOpen(false)}
           onCompleted={() => {
             fetchSubjectPlans();
-            fetchMaterialCounts();
             onUpdate();
           }}
         />

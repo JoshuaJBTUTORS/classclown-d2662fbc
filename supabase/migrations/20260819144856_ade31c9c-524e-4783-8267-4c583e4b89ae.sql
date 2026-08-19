@@ -1,0 +1,1 @@
+DELETE FROM public.teaching_materials;

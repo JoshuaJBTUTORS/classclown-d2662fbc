@@ -6099,6 +6099,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_teaching_material_test_names: {
+        Args: { _limit?: number }
+        Returns: {
+          name: string
+        }[]
+      }
       parent_notified_in_cycle: {
         Args: { cycle_id_param: string; parent_id_param: string }
         Returns: boolean

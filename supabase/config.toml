@@ -219,3 +219,6 @@ verify_jwt = false
 
 [functions.tutor-punctuality-monitor]
 verify_jwt = false
+
+[functions.purge-teaching-materials]
+verify_jwt = false
