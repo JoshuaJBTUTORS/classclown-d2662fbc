@@ -371,7 +371,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                   </CardContent>
                 </Card>
 
-                {terms.length === 0 && (
+                {sortedPlans.length === 0 && (
                   <Card className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
                     <CardContent className="py-14 text-center">
                       <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', tone.bg, tone.text)}>
