@@ -403,34 +403,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
               </div>
             )}
           </TabsContent>
-
-          <TabsContent value="materials" className="space-y-4">
-            {isStudentOrParent ? (
-              <div className="space-y-4">
-                {/* Current week materials only for students/parents */}
-                <WeeklyMaterials
-                  subject={subject}
-                  weekNumber={currentWeek}
-                  readOnly={true}
-                  onUpdate={() => {
-                    fetchMaterialCounts();
-                    onUpdate();
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <MaterialUpload 
-                  subject={subject} 
-                  onUploadSuccess={fetchSubjectPlans}
-                />
-                <MaterialList 
-                  subject={subject}
-                  onUpdate={fetchSubjectPlans}
-                />
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
 
         <RebuildPlanFromPdfDialog
@@ -439,7 +411,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
           onClose={() => setRebuildOpen(false)}
           onCompleted={() => {
             fetchSubjectPlans();
-            fetchMaterialCounts();
             onUpdate();
           }}
         />
