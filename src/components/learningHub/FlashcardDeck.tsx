@@ -56,7 +56,7 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ cards }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-muted-foreground">
-          Card {position + 1} of {order.length}
+          Card {order[position] + 1} of {cards.length}
         </span>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={shuffle}>
