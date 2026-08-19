@@ -1,4 +1,4 @@
-import { format, startOfWeek, differenceInWeeks, addWeeks } from 'date-fns';
+import { format, startOfWeek, differenceInWeeks, addWeeks, addDays } from 'date-fns';
 
 export interface AcademicWeekInfo {
   currentWeek: number;
@@ -42,7 +42,7 @@ export function getAcademicWeekForDate(date: Date): AcademicWeekInfo {
   const weekProgress = (currentWeek / 52) * 100;
 
   const weekStart = addWeeks(academicStart, weeksSinceStart);
-  const weekEnd = addWeeks(weekStart, 1);
+  const weekEnd = addDays(weekStart, 6);
   const weekRange = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
 
   const startYear = academicStart.getFullYear();
