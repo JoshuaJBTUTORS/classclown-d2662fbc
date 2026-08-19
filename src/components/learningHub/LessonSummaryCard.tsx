@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
-import { Clock, Users, Video, FileText, User, Play, BookOpen, Calendar, Brain, Loader2 } from 'lucide-react';
+import { Users, Video, FileText, User, Play, BookOpen, Calendar, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import StudentLessonSummary from '@/components/calendar/StudentLessonSummary';
-import GenerateAssessmentFromLessonDialog from './GenerateAssessmentFromLessonDialog';
-import AIAssessmentViewer from './AIAssessmentViewer';
-import TranscriptWarningDialog from './TranscriptWarningDialog';
+import RevisionNotesDialog from './RevisionNotesDialog';
 
 interface LessonSummaryCardProps {
   lesson: {
