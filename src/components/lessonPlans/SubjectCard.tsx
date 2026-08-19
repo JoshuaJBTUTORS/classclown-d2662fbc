@@ -20,7 +20,6 @@ const NOTCH_RADIUS = BUTTON_SIZE / 2 + 8;
 export const SubjectCard: React.FC<SubjectCardProps> = ({
   subject,
   totalPlans,
-  terms,
   weeks,
   lastUpdated,
   onClick,
