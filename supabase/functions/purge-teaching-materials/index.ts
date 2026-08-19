@@ -18,24 +18,51 @@ Deno.serve(async (req) => {
   const started = Date.now();
   let deleted = 0;
 
+  const limit: number = body.limit ?? 1000;
+
   try {
-    while (Date.now() - started < 100_000) {
-      const { data, error } = await supabase.storage
+    if (body.mode === "folders") {
+      // Delete every file inside each top-level folder (excluding the junk `test` folder)
+      const { data: roots, error: rootErr } = await supabase.storage
         .from("teaching-materials")
-        .list(prefix, { limit: 1000 });
-      if (error) throw error;
-      if (!data || data.length === 0) break;
+        .list("", { limit: 1000 });
+      if (rootErr) throw rootErr;
 
-      const paths = data
-        .filter((f) => f.id !== null)
-        .map((f) => (prefix ? `${prefix}/${f.name}` : f.name));
-      if (paths.length === 0) break;
+      for (const root of roots ?? []) {
+        if (root.name === "test") continue;
+        while (Date.now() - started < 120_000) {
+          const { data, error } = await supabase.storage
+            .from("teaching-materials")
+            .list(root.name, { limit: 200 });
+          if (error) throw error;
+          const paths = (data ?? []).filter((f) => f.id !== null).map((f) => `${root.name}/${f.name}`);
+          if (paths.length === 0) break;
+          const { error: delErr } = await supabase.storage
+            .from("teaching-materials")
+            .remove(paths);
+          if (delErr) throw delErr;
+          deleted += paths.length;
+        }
+      }
+    } else {
+      while (Date.now() - started < 100_000) {
+        const { data, error } = await supabase.storage
+          .from("teaching-materials")
+          .list(prefix, { limit });
+        if (error) throw error;
+        if (!data || data.length === 0) break;
 
-      const { error: delErr } = await supabase.storage
-        .from("teaching-materials")
-        .remove(paths);
-      if (delErr) throw delErr;
-      deleted += paths.length;
+        const paths = data
+          .filter((f) => f.id !== null)
+          .map((f) => (prefix ? `${prefix}/${f.name}` : f.name));
+        if (paths.length === 0) break;
+
+        const { error: delErr } = await supabase.storage
+          .from("teaching-materials")
+          .remove(paths);
+        if (delErr) throw delErr;
+        deleted += paths.length;
+      }
     }
 
     const { count } = await supabase
