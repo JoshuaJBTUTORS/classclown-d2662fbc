@@ -10,9 +10,11 @@ interface TutorAvailabilitySlot {
   end_time: string;
 }
 
+export type SlotStatus = 'available' | 'unavailable' | 'time_off';
+
 interface AvailabilityData {
   [tutorId: string]: {
-    [timeSlotKey: string]: boolean;
+    [timeSlotKey: string]: SlotStatus;
   };
 }
 
@@ -60,6 +62,17 @@ export const useTutorAvailability = ({ tutorIds, dateRange, viewType }: UseTutor
 
         if (lessonsError) throw lessonsError;
 
+        // Fetch approved time off overlapping the visible range
+        const { data: timeOff, error: timeOffError } = await supabase
+          .from('time_off_requests')
+          .select('tutor_id, start_date, end_date')
+          .in('tutor_id', tutorIds)
+          .eq('status', 'approved')
+          .lte('start_date', dateRange.end.toISOString())
+          .gte('end_date', dateRange.start.toISOString());
+
+        if (timeOffError) throw timeOffError;
+
         // Generate availability data
         const newAvailabilityData: AvailabilityData = {};
 
@@ -77,6 +90,15 @@ export const useTutorAvailability = ({ tutorIds, dateRange, viewType }: UseTutor
           
           // Get tutor's existing lessons
           const tutorLessons = existingLessons?.filter(lesson => lesson.tutor_id === tutorId) || [];
+
+          // Get tutor's approved time off periods
+          const tutorTimeOff = (timeOff?.filter(t => t.tutor_id === tutorId) || []).map(t => ({
+            start: parseISO(t.start_date),
+            end: parseISO(t.end_date)
+          }));
+
+          const overlapsTimeOff = (start: Date, end: Date) =>
+            tutorTimeOff.some(period => start < period.end && end > period.start);
 
           dates.forEach(date => {
             const dayName = format(date, 'EEEE');
@@ -116,7 +138,9 @@ export const useTutorAvailability = ({ tutorIds, dateRange, viewType }: UseTutor
                   );
                 });
 
-                newAvailabilityData[tutorId][timeSlotKey] = isAvailable && !hasConflict;
+                newAvailabilityData[tutorId][timeSlotKey] = overlapsTimeOff(slotStart, slotEnd)
+                  ? 'time_off'
+                  : (isAvailable && !hasConflict ? 'available' : 'unavailable');
               }
             } else {
               // For week view, check if tutor is available on this day
@@ -130,7 +154,14 @@ export const useTutorAvailability = ({ tutorIds, dateRange, viewType }: UseTutor
               });
 
               // Day is available if tutor has availability rules and no lessons scheduled
-              newAvailabilityData[tutorId][timeSlotKey] = hasAvailability && !hasLessonsOnDay;
+              const dayStart = new Date(date);
+              dayStart.setHours(0, 0, 0, 0);
+              const dayEnd = new Date(date);
+              dayEnd.setHours(23, 59, 59, 999);
+
+              newAvailabilityData[tutorId][timeSlotKey] = overlapsTimeOff(dayStart, dayEnd)
+                ? 'time_off'
+                : (hasAvailability && !hasLessonsOnDay ? 'available' : 'unavailable');
             }
           });
         });
