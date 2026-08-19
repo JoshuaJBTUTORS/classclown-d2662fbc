@@ -198,12 +198,12 @@ const LessonPlans: React.FC = () => {
                   Subjects
                 </h2>
 
-                {groupedSubjects.map((group, groupIndex) => (
+                {groupedSubjects.map((group) => (
                   <SubjectCategorySection
                     key={group.id}
                     label={group.label}
                     count={group.items.length}
-                    isOpen={isGroupOpen(group.id, groupIndex)}
+                    isOpen={isGroupOpen(group.id)}
                     onOpenChange={(open) =>
                       setCollapsedGroups((prev) => ({ ...prev, [group.id]: !open }))
                     }
