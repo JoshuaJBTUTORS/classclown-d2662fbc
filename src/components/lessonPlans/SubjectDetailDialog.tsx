@@ -208,9 +208,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
                   <span className="text-base font-bold">{totalWeeks}</span> weeks
                 </div>
-                <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
-                  <span className="text-base font-bold">{terms.length}</span> terms
-                </div>
               </div>
             </div>
           </div>
