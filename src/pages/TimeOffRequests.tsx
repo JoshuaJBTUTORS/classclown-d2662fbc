@@ -212,14 +212,21 @@ const TimeOffRequests = () => {
         return false;
       }
       
-      // Date range filter
-      const requestDate = new Date(request.created_at);
-      if (startDate && requestDate < startDate) {
-        return false;
+      // Date range filter — match time off periods overlapping the selected range
+      const reqStart = new Date(request.start_date);
+      const reqEnd = new Date(request.end_date || request.start_date);
+
+      if (startDate) {
+        const from = new Date(startDate);
+        from.setHours(0, 0, 0, 0);
+        if (reqEnd < from) return false;
       }
-      if (endDate && requestDate > endDate) {
-        return false;
+      if (endDate) {
+        const to = new Date(endDate);
+        to.setHours(23, 59, 59, 999);
+        if (reqStart > to) return false;
       }
+
       
       return true;
     });
