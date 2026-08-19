@@ -148,7 +148,7 @@ serve(async (req) => {
     const prompt = `You are creating revision flashcards from the transcript of a real tutoring lesson.
 
 Lesson: ${lesson.title} (${lesson.subject})
-Student: ${student?.first_name ?? 'Student'} ${student?.last_name ?? ''}${student?.year_group ? ` — ${student.year_group}` : ''}
+Student: ${student?.first_name ?? 'Student'} ${student?.last_name ?? ''}${student?.grade ? ` — ${student.grade}` : ''}
 Topics covered: ${topics || 'see transcript'}
 
 ${focusBlock}
