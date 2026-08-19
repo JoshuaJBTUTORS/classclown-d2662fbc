@@ -127,9 +127,7 @@ const LessonPlans: React.FC = () => {
     
     if (searchTerm) {
       filtered = filtered.filter(plan =>
-        plan.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        plan.topic_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        plan.week_number.toString().includes(searchTerm)
+        plan.subject.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
