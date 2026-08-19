@@ -180,7 +180,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                   <p className={cn('text-sm opacity-75', tone.text)}>
                     {isStudentOrParent
                       ? `Current week • ${weekRange}`
-                      : 'Weekly plans and teaching materials'}
+                      : 'Weekly plans'}
                   </p>
                   {isStudentOrParent && (
                     <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-medium', tone.chip)}>
