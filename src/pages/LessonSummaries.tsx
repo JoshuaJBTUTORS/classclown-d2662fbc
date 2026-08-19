@@ -238,10 +238,14 @@ const LessonSummaries: React.FC = () => {
         return;
       }
 
-      // Filter out lessons without valid student data
-      const validLessons = data?.filter(lesson => 
-        lesson.lesson_students && lesson.lesson_students.length > 0
-      ) || [];
+      // Filter out lessons without valid student data, and any lesson that
+      // has not finished yet — a future lesson can never have a real summary.
+      const nowMs = Date.now();
+      const validLessons = data?.filter(lesson => {
+        if (!lesson.lesson_students || lesson.lesson_students.length === 0) return false;
+        const endsAt = lesson.end_time ? Date.parse(lesson.end_time) : Date.parse(lesson.start_time);
+        return Number.isFinite(endsAt) && endsAt <= nowMs;
+      }) || [];
 
       setLessons(validLessons);
     } catch (error) {

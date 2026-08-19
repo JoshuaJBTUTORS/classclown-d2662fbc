@@ -68,10 +68,13 @@ serve(async (req) => {
 
     // Store the recording URL in the lessons table
     if (recordingUrl) {
+      // Only lessons that have already started can own a recording — the same
+      // session id may be attached to future occurrences of a reused room.
       const { error: updateError } = await supabaseClient
         .from('lessons')
         .update({ lesson_space_recording_url: recordingUrl })
-        .eq('lesson_space_session_id', sessionId);
+        .eq('lesson_space_session_id', sessionId)
+        .lte('start_time', new Date().toISOString());
 
       if (updateError) {
         console.error('Error updating lesson with recording URL:', updateError);

@@ -81,6 +81,10 @@ serve(async (req) => {
     // would attach the session to an arbitrary occurrence.
     const eventAt = Date.parse(payload?.timestamp ?? payload?.summary?.start ?? "") || Date.now();
     const windowMs = 90 * 60 * 1000;
+    // Never bind a session to an occurrence that has not started yet: rooms are
+    // reused weekly, so a generous forward window would stamp this session onto
+    // future lessons in the same series.
+    const forwardWindowMs = 15 * 60 * 1000;
 
     let lessonRow: any = null;
     if (roomId) {
@@ -89,7 +93,7 @@ serve(async (req) => {
         .select("id, start_time, end_time, lesson_space_webhook_secret, lesson_space_session_id")
         .eq("lesson_space_room_id", roomId)
         .gte("start_time", new Date(eventAt - windowMs).toISOString())
-        .lte("start_time", new Date(eventAt + windowMs).toISOString())
+        .lte("start_time", new Date(eventAt + forwardWindowMs).toISOString())
         .neq("status", "cancelled")
         .order("start_time", { ascending: true });
 
