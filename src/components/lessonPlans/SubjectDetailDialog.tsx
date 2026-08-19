@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp, Wand2 } from 'lucide-react';
 import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
 
@@ -69,14 +68,8 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
     ? lessonPlans.filter(plan => plan.week_number === currentWeek)
     : lessonPlans;
 
-  // Group plans by term
-  const plansByTerm = filteredPlans.reduce((acc, plan) => {
-    if (!acc[plan.term]) acc[plan.term] = [];
-    acc[plan.term].push(plan);
-    return acc;
-  }, {} as Record<string, LessonPlan[]>);
-
-  const terms = Object.keys(plansByTerm).sort();
+  // Sort all plans by week number (seasons/terms removed from display)
+  const sortedPlans = [...filteredPlans].sort((a, b) => a.week_number - b.week_number);
   const canEdit = (isAdmin || isOwner || isTutor) && !isStudentOrParent;
 
   useEffect(() => {
@@ -93,7 +86,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
         .from('lesson_plans')
         .select('*')
         .eq('subject', subject)
-        .order('term', { ascending: true })
         .order('week_number', { ascending: true });
 
       if (error) throw error;
@@ -214,9 +206,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                 <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
                   <span className="text-base font-bold">{totalWeeks}</span> weeks
                 </div>
-                <div className={cn('rounded-full bg-background/60 px-4 py-2 text-center text-xs font-medium', tone.text)}>
-                  <span className="text-base font-bold">{terms.length}</span> terms
-                </div>
               </div>
             </div>
           </div>
@@ -248,149 +237,139 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
               </div>
             ) : (
               <div className="space-y-6">
-                {terms.map((term, termIndex) => {
-                  const termProgress = (plansByTerm[term].length / 12) * 100; // Assuming 12 weeks per term
-                  return (
-                    <Card key={term} className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
-                      <CardHeader className="rounded-t-[var(--radius-soft)] border-b border-border/60">
-                        <CardTitle className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className={cn('flex h-9 w-9 items-center justify-center rounded-2xl', tone.bg, tone.text)}>
-                              <Calendar className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <span className="text-base font-semibold text-foreground">{term}</span>
-                              <div className="mt-1 flex items-center gap-2">
-                                <Progress value={termProgress} className="w-20 h-1" />
-                                <span className="text-xs text-muted-foreground">
-                                  {Math.round(termProgress)}%
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="rounded-full">
-                              {plansByTerm[term].length} week{plansByTerm[term].length !== 1 ? 's' : ''}
-                            </Badge>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </CardTitle>
-                      </CardHeader>
-                    <CardContent className="pt-5">
-                      <div className="grid gap-4">
-                        {plansByTerm[term]
-                          .sort((a, b) => a.week_number - b.week_number)
-                          .map(plan => (
-                             <div key={plan.id} className={cn(
-                               "group relative rounded-2xl p-5 transition-all duration-300",
-                               "bg-muted/50 hover:bg-muted"
-                             )}>
+                <Card className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
+                  <CardHeader className="rounded-t-[var(--radius-soft)] border-b border-border/60">
+                    <CardTitle className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={cn('flex h-9 w-9 items-center justify-center rounded-2xl', tone.bg, tone.text)}>
+                          <Calendar className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <span className="text-base font-semibold text-foreground">Weekly Plans</span>
+                          <p className="text-xs text-muted-foreground">
+                            {sortedPlans.length} week{sortedPlans.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="rounded-full">
+                          {totalWeeks} week{totalWeeks !== 1 ? 's' : ''}
+                        </Badge>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-5">
+                    <div className="grid gap-4">
+                      {sortedPlans.map(plan => (
+                        <div key={plan.id} className={cn(
+                          "group relative rounded-2xl p-5 transition-all duration-300",
+                          "bg-muted/50 hover:bg-muted"
+                        )}>
 
-                               <div className="flex items-start justify-between">
-                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <Badge
-                                        variant="secondary"
-                                        className={cn('rounded-full border-0', tone.bg, tone.text)}
-                                      >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Badge
+                                  variant="secondary"
+                                  className={cn('rounded-full border-0', tone.bg, tone.text)}
+                                >
 
-                                        <Clock className="h-3 w-3 mr-1" />
-                                        Week {plan.week_number}
-                                      </Badge>
-                                      {materialCounts[plan.week_number] > 0 && (
-                                        <Badge 
-                                          variant="outline" 
-                                          className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
-                                        >
-                                          <FileText className="h-3 w-3 mr-1" />
-                                          {materialCounts[plan.week_number]} material{materialCounts[plan.week_number] !== 1 ? 's' : ''}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  
-                                  {editingPlan === plan.id ? (
-                                    <div className="space-y-3">
-                                      <Input
-                                        value={editForm.topic_title}
-                                        onChange={(e) => setEditForm(prev => ({ 
-                                          ...prev, 
-                                          topic_title: e.target.value 
-                                        }))}
-                                        placeholder="Topic title"
-                                      />
-                                      <Textarea
-                                        value={editForm.description}
-                                        onChange={(e) => setEditForm(prev => ({ 
-                                          ...prev, 
-                                          description: e.target.value 
-                                        }))}
-                                        placeholder="Description (optional)"
-                                        rows={3}
-                                      />
-                                      <div className="flex gap-2">
-                                        <Button 
-                                          size="sm" 
-                                          onClick={() => handleSave(plan.id)}
-                                        >
-                                          <Save className="h-4 w-4 mr-1" />
-                                          Save
-                                        </Button>
-                                        <Button 
-                                          size="sm" 
-                                          variant="outline" 
-                                          onClick={handleCancel}
-                                        >
-                                          <X className="h-4 w-4 mr-1" />
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                     <div>
-                                       <h4 className="mb-2 text-lg font-semibold text-foreground">
-                                         {plan.topic_title}
-                                       </h4>
-                                       {plan.description && (
-                                         <p className="text-sm leading-relaxed text-muted-foreground">
-                                           {plan.description}
-                                         </p>
-                                       )}
-                                      </div>
-
-                                   )}
-                                 </div>
-                                 
-                                  {editingPlan !== plan.id && canEdit && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleEdit(plan)}
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                               </div>
-                               
-                                {editingPlan !== plan.id && (
-                                  <WeeklyMaterials
-                                    subject={subject}
-                                    weekNumber={plan.week_number}
-                                    readOnly={isStudentOrParent}
-                                    onUpdate={() => {
-                                      fetchMaterialCounts();
-                                      onUpdate();
-                                    }}
-                                  />
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Week {plan.week_number}
+                                </Badge>
+                                {materialCounts[plan.week_number] > 0 && (
+                                  <Badge 
+                                    variant="outline" 
+                                    className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
+                                  >
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    {materialCounts[plan.week_number]} material{materialCounts[plan.week_number] !== 1 ? 's' : ''}
+                                  </Badge>
                                 )}
-                             </div>
-                  ))}
-                       </div>
-                     </CardContent>
-                   </Card>
-                  );
-                })}
+                              </div>
+                            
+                              {editingPlan === plan.id ? (
+                                <div className="space-y-3">
+                                  <Input
+                                    value={editForm.topic_title}
+                                    onChange={(e) => setEditForm(prev => ({ 
+                                      ...prev, 
+                                      topic_title: e.target.value 
+                                    }))}
+                                    placeholder="Topic title"
+                                  />
+                                  <Textarea
+                                    value={editForm.description}
+                                    onChange={(e) => setEditForm(prev => ({ 
+                                      ...prev, 
+                                      description: e.target.value 
+                                    }))}
+                                    placeholder="Description (optional)"
+                                    rows={3}
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => handleSave(plan.id)}
+                                    >
+                                      <Save className="h-4 w-4 mr-1" />
+                                      Save
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      onClick={handleCancel}
+                                    >
+                                      <X className="h-4 w-4 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <h4 className="mb-2 text-lg font-semibold text-foreground">
+                                    {plan.topic_title}
+                                  </h4>
+                                  {plan.description && (
+                                    <p className="text-sm leading-relaxed text-muted-foreground">
+                                      {plan.description}
+                                    </p>
+                                  )}
+                                </div>
 
-                {terms.length === 0 && (
+                              )}
+                            </div>
+                            
+                            {editingPlan !== plan.id && canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(plan)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {editingPlan !== plan.id && (
+                            <WeeklyMaterials
+                              subject={subject}
+                              weekNumber={plan.week_number}
+                              readOnly={isStudentOrParent}
+                              onUpdate={() => {
+                                fetchMaterialCounts();
+                                onUpdate();
+                              }}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {sortedPlans.length === 0 && (
                   <Card className="rounded-[var(--radius-soft)] border-0 bg-card shadow-[var(--shadow-soft)]">
                     <CardContent className="py-14 text-center">
                       <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', tone.bg, tone.text)}>

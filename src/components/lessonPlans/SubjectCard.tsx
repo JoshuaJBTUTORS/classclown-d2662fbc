@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 interface SubjectCardProps {
   subject: string;
   totalPlans: number;
-  terms: number;
   weeks: number;
   lastUpdated: string;
   onClick: () => void;
@@ -21,7 +20,6 @@ const NOTCH_RADIUS = BUTTON_SIZE / 2 + 8;
 export const SubjectCard: React.FC<SubjectCardProps> = ({
   subject,
   totalPlans,
-  terms,
   weeks,
   lastUpdated,
   onClick,
@@ -78,7 +76,7 @@ export const SubjectCard: React.FC<SubjectCardProps> = ({
             {subject}
           </h3>
           <p className={cn('mt-1.5 text-sm font-medium opacity-70', tone.text)}>
-            {weeks} week{weeks !== 1 ? 's' : ''} · {terms} term{terms !== 1 ? 's' : ''} · {totalPlans} plan
+            {weeks} week{weeks !== 1 ? 's' : ''} · {totalPlans} plan
             {totalPlans !== 1 ? 's' : ''}
           </p>
         </div>

@@ -22,7 +22,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ searchTerm, onClearSearc
 
       <p className="mx-auto mb-8 max-w-md text-sm leading-relaxed text-pastel-sand-foreground/80">
         {isSearchResult
-          ? `Nothing matched "${searchTerm}". Try a different subject, topic or term.`
+          ? `Nothing matched "${searchTerm}". Try a different subject, topic or week.`
           : 'Once lesson plans are added they will appear here, grouped by subject.'}
       </p>
 

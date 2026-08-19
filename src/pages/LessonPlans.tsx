@@ -55,13 +55,11 @@ const LessonPlans: React.FC = () => {
   // Group lesson plans by subject with stats
   const subjectStats = subjects.map(subject => {
     const subjectPlans = lessonPlans.filter(plan => plan.subject === subject);
-    const terms = Array.from(new Set(subjectPlans.map(plan => plan.term)));
     const weeks = Array.from(new Set(subjectPlans.map(plan => plan.week_number))).length;
     
     return {
       subject,
       totalPlans: subjectPlans.length,
-      terms: terms.length,
       weeks,
       lastUpdated: subjectPlans.reduce((latest, plan) => 
         new Date(plan.updated_at) > new Date(latest) ? plan.updated_at : latest, 
@@ -131,7 +129,7 @@ const LessonPlans: React.FC = () => {
       filtered = filtered.filter(plan =>
         plan.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
         plan.topic_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        plan.term.toLowerCase().includes(searchTerm.toLowerCase())
+        plan.week_number.toString().includes(searchTerm)
       );
     }
     
@@ -214,7 +212,6 @@ const LessonPlans: React.FC = () => {
                           key={stats.subject}
                           subject={stats.subject}
                           totalPlans={stats.totalPlans}
-                          terms={stats.terms}
                           weeks={stats.weeks}
                           lastUpdated={stats.lastUpdated}
                           onClick={() => setSelectedSubject(stats.subject)}
