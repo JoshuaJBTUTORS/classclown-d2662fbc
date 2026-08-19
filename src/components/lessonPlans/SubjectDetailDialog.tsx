@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp, Wand2 } from 'lucide-react';
+import { Calendar, Edit, Save, X, Clock, BookOpen, TrendingUp, Wand2 } from 'lucide-react';
 import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -15,9 +15,6 @@ import { toast } from 'sonner';
 import { SubjectIcon } from './SubjectIcon';
 import { getPastelTone } from './pastelPalette';
 
-import MaterialUpload from './MaterialUpload';
-import MaterialList from './MaterialList';
-import WeeklyMaterials from './WeeklyMaterials';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +55,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   const [editForm, setEditForm] = useState({ topic_title: '', description: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('plans');
-  const [materialCounts, setMaterialCounts] = useState<Record<number, number>>({});
   const [rebuildOpen, setRebuildOpen] = useState(false);
 
   const { isAdmin, isOwner, isTutor } = useAuth();
@@ -75,7 +71,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
   useEffect(() => {
     if (isOpen && subject) {
       fetchSubjectPlans();
-      fetchMaterialCounts();
     }
   }, [isOpen, subject]);
 
@@ -123,7 +118,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
       toast.success('Lesson plan updated successfully');
       setEditingPlan(null);
       fetchSubjectPlans();
-      fetchMaterialCounts();
       onUpdate();
     } catch (error) {
       console.error('Error updating lesson plan:', error);
