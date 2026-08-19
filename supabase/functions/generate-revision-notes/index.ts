@@ -131,7 +131,7 @@ serve(async (req) => {
 
     const { data: student } = await admin
       .from('students')
-      .select('first_name, last_name, year_group')
+      .select('first_name, last_name, grade')
       .eq('id', studentId)
       .maybeSingle();
 
