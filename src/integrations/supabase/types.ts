@@ -3006,6 +3006,54 @@ export type Database = {
           },
         ]
       }
+      lesson_revision_notes: {
+        Row: {
+          cards: Json
+          created_at: string
+          generated_at: string
+          id: string
+          lesson_id: string
+          source: string
+          student_id: number
+          updated_at: string
+        }
+        Insert: {
+          cards?: Json
+          created_at?: string
+          generated_at?: string
+          id?: string
+          lesson_id: string
+          source?: string
+          student_id: number
+          updated_at?: string
+        }
+        Update: {
+          cards?: Json
+          created_at?: string
+          generated_at?: string
+          id?: string
+          lesson_id?: string
+          source?: string
+          student_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_revision_notes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_revision_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_student_summaries: {
         Row: {
           ai_summary: string | null
