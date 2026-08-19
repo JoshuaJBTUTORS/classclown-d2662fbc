@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -14,14 +14,18 @@ interface CalendarDisplayProps {
   events: any[];
   onLessonsUpdated: () => void;
   onViewChange?: (viewInfo: { start: Date; end: Date; view: string }) => void;
+  viewType?: string;
 }
 
 const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   isLoading,
   events,
   onLessonsUpdated,
-  onViewChange
+  onViewChange,
+  viewType
 }) => {
+  const calendarRef = useRef<any>(null);
+
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [instanceDetails, setInstanceDetails] = useState<{
     date?: string;
