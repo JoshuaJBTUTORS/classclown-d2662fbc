@@ -168,8 +168,13 @@ export const useCalendarData = ({
 
       if (!isAuthenticated || !userRole || !userEmail) {
         setRawLessons([]);
+        setTimeOffBlocks([]);
         setIsLoading(false);
         return;
+      }
+
+      if (userRole !== 'tutor') {
+        setTimeOffBlocks([]);
       }
 
       try {
