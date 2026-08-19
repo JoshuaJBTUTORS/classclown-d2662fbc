@@ -311,9 +311,38 @@ export const useCalendarData = ({
 
             if (!tutorData) {
               setRawLessons([]);
+              setTimeOffBlocks([]);
               setIsLoading(false);
               return;
             }
+
+            // Fetch approved time off overlapping the visible range
+            try {
+              let timeOffQuery = supabase
+                .from('time_off_requests')
+                .select('id, start_date, end_date, reason')
+                .eq('tutor_id', tutorData.id)
+                .eq('status', 'approved');
+
+              if (startDate && endDate) {
+                timeOffQuery = timeOffQuery
+                  .lte('start_date', endDate.toISOString())
+                  .gte('end_date', startDate.toISOString());
+              }
+
+              const { data: timeOffData, error: timeOffError } = await timeOffQuery;
+
+              if (timeOffError) {
+                console.error('❌ Error fetching time off requests:', timeOffError);
+                setTimeOffBlocks([]);
+              } else {
+                setTimeOffBlocks(timeOffData || []);
+              }
+            } catch (timeOffErr) {
+              console.error('💥 Time off fetch failed:', timeOffErr);
+              setTimeOffBlocks([]);
+            }
+
 
             // Fetch both original lessons and instances for this tutor
             // Exclude demo sessions from tutor view
