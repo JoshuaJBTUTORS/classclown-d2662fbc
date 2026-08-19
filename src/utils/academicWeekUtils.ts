@@ -1,4 +1,4 @@
-import { format, startOfWeek, differenceInWeeks, addWeeks } from 'date-fns';
+import { format, startOfWeek, differenceInWeeks, addWeeks, addDays } from 'date-fns';
 
 export interface AcademicWeekInfo {
   currentWeek: number;
