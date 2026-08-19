@@ -98,26 +98,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
     }
   };
 
-  const fetchMaterialCounts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('teaching_materials')
-        .select('week_number')
-        .eq('subject', subject);
-
-      if (error) throw error;
-
-      const counts: Record<number, number> = {};
-      data?.forEach(material => {
-        if (material.week_number) {
-          counts[material.week_number] = (counts[material.week_number] || 0) + 1;
-        }
-      });
-      setMaterialCounts(counts);
-    } catch (error) {
-      console.error('Error fetching material counts:', error);
-    }
-  };
 
   const handleEdit = (plan: LessonPlan) => {
     setEditingPlan(plan.id);
