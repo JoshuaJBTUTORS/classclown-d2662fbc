@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { Calendar, Edit, Save, X, Upload, Download, Trash2, Clock, BookOpen, FileText, TrendingUp, Wand2 } from 'lucide-react';
 import RebuildPlanFromPdfDialog from './RebuildPlanFromPdfDialog';
 
