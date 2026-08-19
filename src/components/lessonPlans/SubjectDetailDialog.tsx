@@ -212,22 +212,7 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-5">
-          <TabsList className="grid w-full grid-cols-2 rounded-full bg-muted p-1">
-            <TabsTrigger
-              value="plans"
-              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Weekly Plans
-            </TabsTrigger>
-            <TabsTrigger
-              value="materials"
-              className="rounded-full font-medium data-[state=active]:bg-foreground data-[state=active]:text-background"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Materials
-            </TabsTrigger>
-          </TabsList>
+
 
 
           <TabsContent value="plans" className="space-y-4">
