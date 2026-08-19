@@ -36,6 +36,8 @@ export const useCalendarData = ({
   filters 
 }: UseCalendarDataProps) => {
   const [rawLessons, setRawLessons] = useState<any[]>([]);
+  const [timeOffBlocks, setTimeOffBlocks] = useState<any[]>([]);
+  
   
   const [isLoading, setIsLoading] = useState(true);
   
