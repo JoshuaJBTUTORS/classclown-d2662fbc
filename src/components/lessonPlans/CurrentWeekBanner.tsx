@@ -24,25 +24,6 @@ export const CurrentWeekBanner = () => {
           </div>
         </div>
 
-        <div className="w-full space-y-3 lg:w-80">
-          <div className="flex items-center justify-between text-sm text-pastel-sky-foreground">
-            <span className="font-medium">Year progress</span>
-            <span className="opacity-70">
-              {weekInfo.currentWeek} / {weekInfo.totalWeeks} weeks
-            </span>
-          </div>
-
-          <div className="h-2 w-full overflow-hidden rounded-full bg-background/60">
-            <div
-              className="h-full rounded-full bg-pastel-sky-foreground transition-all duration-500"
-              style={{ width: `${Math.min(Math.max(weekInfo.weekProgress, 0), 100)}%` }}
-            />
-          </div>
-
-          <p className="text-xs font-medium text-pastel-sky-foreground/80">
-            {Math.round(weekInfo.weekProgress)}% complete
-          </p>
-        </div>
       </div>
     </div>
   );
