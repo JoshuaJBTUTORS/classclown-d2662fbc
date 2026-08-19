@@ -69,14 +69,8 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
     ? lessonPlans.filter(plan => plan.week_number === currentWeek)
     : lessonPlans;
 
-  // Group plans by term
-  const plansByTerm = filteredPlans.reduce((acc, plan) => {
-    if (!acc[plan.term]) acc[plan.term] = [];
-    acc[plan.term].push(plan);
-    return acc;
-  }, {} as Record<string, LessonPlan[]>);
-
-  const terms = Object.keys(plansByTerm).sort();
+  // Sort all plans by week number (seasons/terms removed from display)
+  const sortedPlans = [...filteredPlans].sort((a, b) => a.week_number - b.week_number);
   const canEdit = (isAdmin || isOwner || isTutor) && !isStudentOrParent;
 
   useEffect(() => {
