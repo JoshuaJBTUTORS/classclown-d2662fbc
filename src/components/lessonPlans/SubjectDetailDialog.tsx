@@ -366,17 +366,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                               )}
                             </div>
                             
-                            {editingPlan !== plan.id && (
-                              <WeeklyMaterials
-                                subject={subject}
-                                weekNumber={plan.week_number}
-                                readOnly={isStudentOrParent}
-                                onUpdate={() => {
-                                  fetchMaterialCounts();
-                                  onUpdate();
-                                }}
-                              />
-                            )}
                           </div>
                         );
                       })}
