@@ -292,15 +292,6 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                                       Assessment Week
                                     </Badge>
                                   )}
-                                  {materialCounts[plan.week_number] > 0 && (
-                                    <Badge 
-                                      variant="outline" 
-                                      className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
-                                    >
-                                      <FileText className="h-3 w-3 mr-1" />
-                                      {materialCounts[plan.week_number]} material{materialCounts[plan.week_number] !== 1 ? 's' : ''}
-                                    </Badge>
-                                  )}
                                 </div>
                               
                                 {editingPlan === plan.id ? (
