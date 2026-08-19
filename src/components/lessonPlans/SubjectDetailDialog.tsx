@@ -261,110 +261,125 @@ const SubjectDetailDialog: React.FC<SubjectDetailDialogProps> = ({
                   </CardHeader>
                   <CardContent className="pt-5">
                     <div className="grid gap-4">
-                      {sortedPlans.map(plan => (
-                        <div key={plan.id} className={cn(
-                          "group relative rounded-2xl p-5 transition-all duration-300",
-                          "bg-muted/50 hover:bg-muted"
-                        )}>
+                      {sortedPlans.map((plan, index) => {
+                        const isAssessment = /assessment/i.test(plan.topic_title);
+                        const prevIsAssessment = index > 0 && /assessment/i.test(sortedPlans[index - 1].topic_title);
 
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-3">
-                                <Badge
-                                  variant="secondary"
-                                  className={cn('rounded-full border-0', tone.bg, tone.text)}
-                                >
+                        return (
+                          <div key={plan.id} className={cn(
+                            "group relative rounded-2xl p-5 transition-all duration-300",
+                            "bg-muted/50 hover:bg-muted",
+                            isAssessment && "my-6 border-2 border-dashed border-primary/30 bg-primary/[0.03] shadow-[var(--shadow-soft)]",
+                            !isAssessment && prevIsAssessment && "mt-6"
+                          )}>
 
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  Week {plan.week_number}
-                                </Badge>
-                                {materialCounts[plan.week_number] > 0 && (
-                                  <Badge 
-                                    variant="outline" 
-                                    className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Badge
+                                    variant="secondary"
+                                    className={cn('rounded-full border-0', tone.bg, tone.text)}
                                   >
-                                    <FileText className="h-3 w-3 mr-1" />
-                                    {materialCounts[plan.week_number]} material{materialCounts[plan.week_number] !== 1 ? 's' : ''}
+
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    Week {plan.week_number}
                                   </Badge>
-                                )}
-                              </div>
-                            
-                              {editingPlan === plan.id ? (
-                                <div className="space-y-3">
-                                  <Input
-                                    value={editForm.topic_title}
-                                    onChange={(e) => setEditForm(prev => ({ 
-                                      ...prev, 
-                                      topic_title: e.target.value 
-                                    }))}
-                                    placeholder="Topic title"
-                                  />
-                                  <Textarea
-                                    value={editForm.description}
-                                    onChange={(e) => setEditForm(prev => ({ 
-                                      ...prev, 
-                                      description: e.target.value 
-                                    }))}
-                                    placeholder="Description (optional)"
-                                    rows={3}
-                                  />
-                                  <div className="flex gap-2">
-                                    <Button 
-                                      size="sm" 
-                                      onClick={() => handleSave(plan.id)}
+                                  {isAssessment && (
+                                    <Badge
+                                      variant="outline"
+                                      className="rounded-full border-primary/40 bg-primary/10 text-primary text-xs"
                                     >
-                                      <Save className="h-4 w-4 mr-1" />
-                                      Save
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
+                                      Assessment Week
+                                    </Badge>
+                                  )}
+                                  {materialCounts[plan.week_number] > 0 && (
+                                    <Badge 
                                       variant="outline" 
-                                      onClick={handleCancel}
+                                      className="text-xs bg-[hsl(var(--medium-green))]/10 text-[hsl(var(--medium-green))] border-[hsl(var(--medium-green))]/30"
                                     >
-                                      <X className="h-4 w-4 mr-1" />
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div>
-                                  <h4 className="mb-2 text-lg font-semibold text-foreground">
-                                    {plan.topic_title}
-                                  </h4>
-                                  {plan.description && (
-                                    <p className="text-sm leading-relaxed text-muted-foreground">
-                                      {plan.description}
-                                    </p>
+                                      <FileText className="h-3 w-3 mr-1" />
+                                      {materialCounts[plan.week_number]} material{materialCounts[plan.week_number] !== 1 ? 's' : ''}
+                                    </Badge>
                                   )}
                                 </div>
+                              
+                                {editingPlan === plan.id ? (
+                                  <div className="space-y-3">
+                                    <Input
+                                      value={editForm.topic_title}
+                                      onChange={(e) => setEditForm(prev => ({ 
+                                        ...prev, 
+                                        topic_title: e.target.value 
+                                      }))}
+                                      placeholder="Topic title"
+                                    />
+                                    <Textarea
+                                      value={editForm.description}
+                                      onChange={(e) => setEditForm(prev => ({ 
+                                        ...prev, 
+                                        description: e.target.value 
+                                      }))}
+                                      placeholder="Description (optional)"
+                                      rows={3}
+                                    />
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => handleSave(plan.id)}
+                                      >
+                                        <Save className="h-4 w-4 mr-1" />
+                                        Save
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={handleCancel}
+                                      >
+                                        <X className="h-4 w-4 mr-1" />
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <h4 className="mb-2 text-lg font-semibold text-foreground">
+                                      {plan.topic_title}
+                                    </h4>
+                                    {plan.description && (
+                                      <p className="text-sm leading-relaxed text-muted-foreground">
+                                        {plan.description}
+                                      </p>
+                                    )}
+                                  </div>
 
+                                )}
+                              </div>
+                              
+                              {editingPlan !== plan.id && canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(plan)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
                               )}
                             </div>
                             
-                            {editingPlan !== plan.id && canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEdit(plan)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                            {editingPlan !== plan.id && (
+                              <WeeklyMaterials
+                                subject={subject}
+                                weekNumber={plan.week_number}
+                                readOnly={isStudentOrParent}
+                                onUpdate={() => {
+                                  fetchMaterialCounts();
+                                  onUpdate();
+                                }}
+                              />
                             )}
                           </div>
-                          
-                          {editingPlan !== plan.id && (
-                            <WeeklyMaterials
-                              subject={subject}
-                              weekNumber={plan.week_number}
-                              readOnly={isStudentOrParent}
-                              onUpdate={() => {
-                                fetchMaterialCounts();
-                                onUpdate();
-                              }}
-                            />
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
