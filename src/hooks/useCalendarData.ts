@@ -138,8 +138,26 @@ export const useCalendarData = ({
       calendarEvents.push(...lessonEvents);
     }
 
+    if (timeOffBlocks && timeOffBlocks.length > 0) {
+      const timeOffEvents = timeOffBlocks.map((request: any) => ({
+        id: `time-off-${request.id}`,
+        title: request.reason ? `Time off — ${request.reason}` : 'Time off',
+        start: convertUTCToUK(request.start_date).toISOString(),
+        end: convertUTCToUK(request.end_date).toISOString(),
+        className: 'calendar-event time-off-event',
+        editable: false,
+        extendedProps: {
+          eventType: 'time_off',
+          reason: request.reason || null,
+          userRole,
+        }
+      }));
+
+      calendarEvents.push(...timeOffEvents);
+    }
+
     return calendarEvents;
-  }, [rawLessons, userRole, completionData, attendanceStatusData]);
+  }, [rawLessons, timeOffBlocks, userRole, completionData, attendanceStatusData]);
 
   useEffect(() => {
     const fetchEvents = async () => {
