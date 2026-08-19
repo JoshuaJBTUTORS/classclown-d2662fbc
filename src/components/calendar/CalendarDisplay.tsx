@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -14,14 +14,18 @@ interface CalendarDisplayProps {
   events: any[];
   onLessonsUpdated: () => void;
   onViewChange?: (viewInfo: { start: Date; end: Date; view: string }) => void;
+  viewType?: string;
 }
 
 const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   isLoading,
   events,
   onLessonsUpdated,
-  onViewChange
+  onViewChange,
+  viewType
 }) => {
+  const calendarRef = useRef<any>(null);
+
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [instanceDetails, setInstanceDetails] = useState<{
     date?: string;
@@ -137,6 +141,16 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     }
   };
 
+  // Apply external view changes (month/week/day buttons) to the calendar
+  useEffect(() => {
+    if (!viewType) return;
+    const api = calendarRef.current?.getApi?.();
+    if (!api) return;
+    if (api.view?.type !== viewType) {
+      api.changeView(viewType);
+    }
+  }, [viewType, isLoading]);
+
   const renderEventContent = (eventInfo: any) => {
     return (
       <div className="calendar-event-content">
@@ -154,13 +168,15 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           </div>
         ) : (
           <FullCalendar
+            ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             headerToolbar={{
               left: 'prev,next today',
               center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+              right: ''
             }}
-            initialView="timeGridWeek"
+            initialView={viewType || 'timeGridWeek'}
+
             events={allEvents}
             eventContent={renderEventContent}
             eventClick={handleEventClick}
