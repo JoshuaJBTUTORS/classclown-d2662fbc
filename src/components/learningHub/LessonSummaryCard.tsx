@@ -179,7 +179,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
               <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-cyan-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
             </Button>
             
-            {canSeeAssessmentButton && (
+            {hasStudents && (
               <Button
                 variant="outline"
                 size="lg"
@@ -188,19 +188,14 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
                   "shadow-md hover:shadow-lg transition-all duration-300",
                   "hover:bg-white/90 hover:scale-105"
                 )}
-                 onClick={handleAssessmentClick}
-                 disabled={isCheckingTranscript}
-               >
-                 <div className="flex items-center gap-2 relative z-10">
-                   <div className="p-1 rounded-full bg-purple-100 group-hover/btn:bg-purple-200 transition-colors">
-                     {isCheckingTranscript ? (
-                       <Loader2 className="h-4 w-4 text-purple-600 animate-spin" />
-                     ) : (
-                       <Brain className="h-4 w-4 text-purple-600" />
-                     )}
-                   </div>
-                   <span className="font-medium text-gray-700">{getAssessmentButtonText()}</span>
-                 </div>
+                onClick={() => setShowRevisionNotes(true)}
+              >
+                <div className="flex items-center gap-2 relative z-10">
+                  <div className="p-1 rounded-full bg-purple-100 group-hover/btn:bg-purple-200 transition-colors">
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="font-medium text-gray-700">Revision Notes</span>
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
               </Button>
             )}
