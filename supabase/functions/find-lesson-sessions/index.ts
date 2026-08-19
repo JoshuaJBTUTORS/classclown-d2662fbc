@@ -107,6 +107,16 @@ serve(async (req) => {
       };
 
       try {
+        // A lesson that has not started yet cannot own a LessonSpace session.
+        // Rooms are reused weekly, so without this guard a past session gets
+        // stamped onto future occurrences of the same series.
+        if (Date.parse(lesson.start_time) > Date.now()) {
+          console.log(`Skipping future lesson ${lesson.id} (${lesson.start_time})`);
+          result.error = 'lesson_not_started';
+          results.push(result);
+          continue;
+        }
+
         // Skip if session ID already exists (unless the caller forces re-selection)
         if (lesson.lesson_space_session_id && !force) {
           console.log(`Session ID already exists for lesson ${lesson.id}: ${lesson.lesson_space_session_id}`);
