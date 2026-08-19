@@ -333,7 +333,9 @@ const Calendar = () => {
                   events={events} 
                   onLessonsUpdated={handleRefresh}
                   onViewChange={handleViewChange}
+                  viewType={currentViewType}
                 />
+
               </TabsContent>
 
               {canUseTeacherView && (
