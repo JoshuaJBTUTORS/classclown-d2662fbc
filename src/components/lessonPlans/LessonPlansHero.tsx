@@ -34,7 +34,7 @@ export const LessonPlansHero: React.FC<LessonPlansHeroProps> = ({
         <div className="relative max-w-xl">
           <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search subjects, topics or terms..."
+            placeholder="Search subjects, topics or weeks..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className={cn(
