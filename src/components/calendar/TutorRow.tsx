@@ -20,7 +20,7 @@ interface TutorRowProps {
   viewType: 'teacherWeek' | 'teacherDay';
   onEventClick?: (event: any) => void;
   availabilityData?: {
-    [timeSlotKey: string]: boolean;
+    [timeSlotKey: string]: 'available' | 'unavailable' | 'time_off';
   };
 }
 
@@ -115,7 +115,7 @@ const TutorRow: React.FC<TutorRowProps> = ({
             ? `${format(slot.date, 'yyyy-MM-dd')}-${parseInt(slot.time.split(':')[0])}`
             : format(slot.date, 'yyyy-MM-dd');
           
-          const isAvailable = availabilityData?.[availabilityKey] || false;
+          const slotStatus = availabilityData?.[availabilityKey] || 'unavailable';
           
           return (
             <div
@@ -124,12 +124,14 @@ const TutorRow: React.FC<TutorRowProps> = ({
             >
               {slotEvents.length === 0 ? (
                 <div className={`h-full flex items-center justify-center rounded-md transition-colors ${
-                  isAvailable 
-                    ? 'bg-green-100 text-green-800 border border-green-200' 
-                    : 'text-muted-foreground'
+                  slotStatus === 'time_off'
+                    ? 'bg-red-100 text-red-800 border border-red-200'
+                    : slotStatus === 'available'
+                      ? 'bg-green-100 text-green-800 border border-green-200'
+                      : 'text-muted-foreground'
                 }`}>
                   <span className="text-xs font-medium">
-                    {isAvailable ? 'Available' : 'Unavailable'}
+                    {slotStatus === 'time_off' ? 'Time off' : slotStatus === 'available' ? 'Available' : 'Unavailable'}
                   </span>
                 </div>
               ) : (
