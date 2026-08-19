@@ -141,6 +141,16 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     }
   };
 
+  // Apply external view changes (month/week/day buttons) to the calendar
+  useEffect(() => {
+    if (!viewType) return;
+    const api = calendarRef.current?.getApi?.();
+    if (!api) return;
+    if (api.view?.type !== viewType) {
+      api.changeView(viewType);
+    }
+  }, [viewType, isLoading]);
+
   const renderEventContent = (eventInfo: any) => {
     return (
       <div className="calendar-event-content">
@@ -158,13 +168,15 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
           </div>
         ) : (
           <FullCalendar
+            ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             headerToolbar={{
               left: 'prev,next today',
               center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay'
+              right: ''
             }}
-            initialView="timeGridWeek"
+            initialView={viewType || 'timeGridWeek'}
+
             events={allEvents}
             eventContent={renderEventContent}
             eventClick={handleEventClick}
