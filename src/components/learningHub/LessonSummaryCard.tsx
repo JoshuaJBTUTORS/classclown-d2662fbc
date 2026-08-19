@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
-import { Clock, Users, Video, FileText, User, Play, BookOpen, Calendar, Brain, Loader2 } from 'lucide-react';
+import { Users, Video, FileText, User, Play, BookOpen, Calendar, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import StudentLessonSummary from '@/components/calendar/StudentLessonSummary';
-import GenerateAssessmentFromLessonDialog from './GenerateAssessmentFromLessonDialog';
-import AIAssessmentViewer from './AIAssessmentViewer';
-import TranscriptWarningDialog from './TranscriptWarningDialog';
+import RevisionNotesDialog from './RevisionNotesDialog';
 
 interface LessonSummaryCardProps {
   lesson: {
@@ -38,106 +34,13 @@ interface LessonSummaryCardProps {
 }
 
 const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
-  const { isAdmin, isOwner, isTutor } = useAuth();
   const [showRecording, setShowRecording] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [showGenerateAssessment, setShowGenerateAssessment] = useState(false);
-  const [showAssessmentViewer, setShowAssessmentViewer] = useState(false);
-  const [showTranscriptWarning, setShowTranscriptWarning] = useState(false);
-  const [publishedAssessments, setPublishedAssessments] = useState<any[]>([]);
-  const [hasPublishedAssessments, setHasPublishedAssessments] = useState(false);
-  const [transcriptStatus, setTranscriptStatus] = useState<'processing' | 'completed' | 'not_found' | 'error' | null>(null);
-  const [isCheckingTranscript, setIsCheckingTranscript] = useState(false);
+  const [showRevisionNotes, setShowRevisionNotes] = useState(false);
   const lessonDate = parseISO(lesson.start_time);
 
   const hasRecording = lesson.lesson_space_recording_url || lesson.lesson_space_session_id;
-  const canGenerateAssessment = isAdmin || isOwner || isTutor;
-  const canSeeAssessmentButton = canGenerateAssessment || hasPublishedAssessments;
-
-  // Fetch published assessments for this lesson
-  useEffect(() => {
-    const fetchPublishedAssessments = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('ai_assessments')
-          .select('*')
-          .eq('lesson_id', lesson.id)
-          .eq('status', 'published');
-
-        if (error) {
-          console.error('Error fetching assessments:', error);
-          return;
-        }
-
-        setPublishedAssessments(data || []);
-        setHasPublishedAssessments((data || []).length > 0);
-      } catch (error) {
-        console.error('Error fetching assessments:', error);
-      }
-    };
-
-    fetchPublishedAssessments();
-  }, [lesson.id]);
-
-  const checkTranscriptStatus = async () => {
-    setIsCheckingTranscript(true);
-    try {
-      const { data, error } = await supabase
-        .from('lesson_transcriptions')
-        .select('transcription_status')
-        .eq('lesson_id', lesson.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      if (data) {
-        setTranscriptStatus(data.transcription_status as 'processing' | 'completed' | 'not_found' | 'error');
-      } else {
-        setTranscriptStatus('not_found');
-      }
-    } catch (error) {
-      console.error('Error checking transcript status:', error);
-      setTranscriptStatus('error');
-    } finally {
-      setIsCheckingTranscript(false);
-    }
-  };
-
-  const handleAssessmentClick = async () => {
-    if (hasPublishedAssessments) {
-      setShowAssessmentViewer(true);
-    } else if (canGenerateAssessment) {
-      // Check transcript status first
-      await checkTranscriptStatus();
-    }
-  };
-
-  // Use useEffect to handle the logic after transcript status is checked
-  useEffect(() => {
-    if (transcriptStatus && canGenerateAssessment && !hasPublishedAssessments) {
-      // If transcript is ready, proceed directly
-      if (transcriptStatus === 'completed') {
-        setShowGenerateAssessment(true);
-      } else {
-        // Show warning dialog for processing, not_found, or error states
-        setShowTranscriptWarning(true);
-      }
-      // Reset transcript status to avoid repeated triggers
-      setTranscriptStatus(null);
-    }
-  }, [transcriptStatus, canGenerateAssessment, hasPublishedAssessments]);
-
-  const handleContinueWithoutTranscript = () => {
-    setShowTranscriptWarning(false);
-    setShowGenerateAssessment(true);
-  };
-
-  const getAssessmentButtonText = () => {
-    if (canGenerateAssessment) {
-      return 'Assessment';
-    }
-    return 'Take Assessment';
-  };
+  const hasStudents = (lesson.lesson_students || []).length > 0;
 
   // Generate a subtle pastel gradient based on subject
   const getSubjectGradient = (subject: string) => {
@@ -234,7 +137,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
           <div className="flex-1 min-h-[1rem]" />
           <div className={cn(
             "grid gap-3",
-            canSeeAssessmentButton ? "grid-cols-3" : "grid-cols-2"
+            hasStudents ? "grid-cols-3" : "grid-cols-2"
           )}>
             <Button
               variant="outline"
@@ -276,7 +179,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
               <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-cyan-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
             </Button>
             
-            {canSeeAssessmentButton && (
+            {hasStudents && (
               <Button
                 variant="outline"
                 size="lg"
@@ -285,19 +188,14 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
                   "shadow-md hover:shadow-lg transition-all duration-300",
                   "hover:bg-white/90 hover:scale-105"
                 )}
-                 onClick={handleAssessmentClick}
-                 disabled={isCheckingTranscript}
-               >
-                 <div className="flex items-center gap-2 relative z-10">
-                   <div className="p-1 rounded-full bg-purple-100 group-hover/btn:bg-purple-200 transition-colors">
-                     {isCheckingTranscript ? (
-                       <Loader2 className="h-4 w-4 text-purple-600 animate-spin" />
-                     ) : (
-                       <Brain className="h-4 w-4 text-purple-600" />
-                     )}
-                   </div>
-                   <span className="font-medium text-gray-700">{getAssessmentButtonText()}</span>
-                 </div>
+                onClick={() => setShowRevisionNotes(true)}
+              >
+                <div className="flex items-center gap-2 relative z-10">
+                  <div className="p-1 rounded-full bg-purple-100 group-hover/btn:bg-purple-200 transition-colors">
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="font-medium text-gray-700">Revision Notes</span>
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
               </Button>
             )}
@@ -357,45 +255,12 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Transcript Warning Dialog */}
-      <TranscriptWarningDialog
-        isOpen={showTranscriptWarning}
-        onClose={() => setShowTranscriptWarning(false)}
-        onContinueAnyway={handleContinueWithoutTranscript}
-        transcriptStatus={transcriptStatus || 'error'}
-      />
-
-      {/* Generate Assessment Modal */}
-      <GenerateAssessmentFromLessonDialog
-        isOpen={showGenerateAssessment}
-        onClose={() => setShowGenerateAssessment(false)}
-        onSuccess={() => {
-          // Refresh assessments after generation
-          const fetchPublishedAssessments = async () => {
-            const { data } = await supabase
-              .from('ai_assessments')
-              .select('*')
-              .eq('lesson_id', lesson.id)
-              .eq('status', 'published');
-            setPublishedAssessments(data || []);
-            setHasPublishedAssessments((data || []).length > 0);
-          };
-          fetchPublishedAssessments();
-        }}
+      {/* Revision Notes Modal */}
+      <RevisionNotesDialog
+        isOpen={showRevisionNotes}
+        onClose={() => setShowRevisionNotes(false)}
         lesson={lesson}
       />
-
-      {/* Assessment Viewer Modal */}
-      {hasPublishedAssessments && publishedAssessments.length > 0 && showAssessmentViewer && (
-        <Dialog open={showAssessmentViewer} onOpenChange={() => setShowAssessmentViewer(false)}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <AIAssessmentViewer
-              assessmentId={publishedAssessments[0].id}
-              embedded={true}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   );
 };
