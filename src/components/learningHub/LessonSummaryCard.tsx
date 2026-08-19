@@ -260,45 +260,12 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Transcript Warning Dialog */}
-      <TranscriptWarningDialog
-        isOpen={showTranscriptWarning}
-        onClose={() => setShowTranscriptWarning(false)}
-        onContinueAnyway={handleContinueWithoutTranscript}
-        transcriptStatus={transcriptStatus || 'error'}
-      />
-
-      {/* Generate Assessment Modal */}
-      <GenerateAssessmentFromLessonDialog
-        isOpen={showGenerateAssessment}
-        onClose={() => setShowGenerateAssessment(false)}
-        onSuccess={() => {
-          // Refresh assessments after generation
-          const fetchPublishedAssessments = async () => {
-            const { data } = await supabase
-              .from('ai_assessments')
-              .select('*')
-              .eq('lesson_id', lesson.id)
-              .eq('status', 'published');
-            setPublishedAssessments(data || []);
-            setHasPublishedAssessments((data || []).length > 0);
-          };
-          fetchPublishedAssessments();
-        }}
+      {/* Revision Notes Modal */}
+      <RevisionNotesDialog
+        isOpen={showRevisionNotes}
+        onClose={() => setShowRevisionNotes(false)}
         lesson={lesson}
       />
-
-      {/* Assessment Viewer Modal */}
-      {hasPublishedAssessments && publishedAssessments.length > 0 && showAssessmentViewer && (
-        <Dialog open={showAssessmentViewer} onOpenChange={() => setShowAssessmentViewer(false)}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <AIAssessmentViewer
-              assessmentId={publishedAssessments[0].id}
-              embedded={true}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   );
 };
