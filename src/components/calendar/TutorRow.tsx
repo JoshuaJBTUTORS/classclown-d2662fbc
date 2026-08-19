@@ -20,7 +20,7 @@ interface TutorRowProps {
   viewType: 'teacherWeek' | 'teacherDay';
   onEventClick?: (event: any) => void;
   availabilityData?: {
-    [timeSlotKey: string]: boolean;
+    [timeSlotKey: string]: 'available' | 'unavailable' | 'time_off';
   };
 }
 
