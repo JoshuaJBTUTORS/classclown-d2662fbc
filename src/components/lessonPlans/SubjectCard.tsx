@@ -75,10 +75,6 @@ export const SubjectCard: React.FC<SubjectCardProps> = ({
           <h3 className={cn('font-heading text-2xl font-extrabold leading-tight tracking-tight', tone.text)}>
             {subject}
           </h3>
-          <p className={cn('mt-1.5 text-sm font-medium opacity-70', tone.text)}>
-            {weeks} week{weeks !== 1 ? 's' : ''} · {totalPlans} plan
-            {totalPlans !== 1 ? 's' : ''}
-          </p>
         </div>
       </div>
 
