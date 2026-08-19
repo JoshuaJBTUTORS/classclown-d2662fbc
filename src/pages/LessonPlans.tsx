@@ -13,7 +13,7 @@ import { groupSubjects } from '@/components/lessonPlans/subjectGroups';
 import { LessonPlansLoadingSkeleton } from '@/components/lessonPlans/LoadingSkeleton';
 import { EmptyState } from '@/components/lessonPlans/EmptyState';
 import { getAcademicWeekInfo } from '@/utils/academicWeekUtils';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 import { cn } from '@/lib/utils';
 
 
@@ -83,13 +83,12 @@ const LessonPlans: React.FC = () => {
     [visibleSubjectStats]
   );
 
-  const isMobile = useIsMobile();
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
-  const isGroupOpen = (groupId: string, index: number) => {
+  const isGroupOpen = (groupId: string) => {
     if (searchTerm.trim()) return true;
     if (groupId in collapsedGroups) return !collapsedGroups[groupId];
-    return isMobile ? index === 0 : true;
+    return false;
   };
 
   // Calculate total weeks across all subjects
@@ -199,12 +198,12 @@ const LessonPlans: React.FC = () => {
                   Subjects
                 </h2>
 
-                {groupedSubjects.map((group, groupIndex) => (
+                {groupedSubjects.map((group) => (
                   <SubjectCategorySection
                     key={group.id}
                     label={group.label}
                     count={group.items.length}
-                    isOpen={isGroupOpen(group.id, groupIndex)}
+                    isOpen={isGroupOpen(group.id)}
                     onOpenChange={(open) =>
                       setCollapsedGroups((prev) => ({ ...prev, [group.id]: !open }))
                     }
