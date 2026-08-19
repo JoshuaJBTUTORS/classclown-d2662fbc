@@ -212,7 +212,6 @@ const LessonPlans: React.FC = () => {
                           key={stats.subject}
                           subject={stats.subject}
                           totalPlans={stats.totalPlans}
-                          terms={stats.terms}
                           weeks={stats.weeks}
                           lastUpdated={stats.lastUpdated}
                           onClick={() => setSelectedSubject(stats.subject)}
