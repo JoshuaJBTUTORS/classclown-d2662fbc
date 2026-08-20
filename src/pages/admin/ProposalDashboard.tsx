@@ -10,8 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminProposalSidebar } from '@/components/admin/AdminProposalSidebar';
-import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail } from 'lucide-react';
+import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import ExtendOfferDialog from '@/components/proposals/ExtendOfferDialog';
+import { resolveDiscountDeadline } from '@/components/proposals/discountDeadline';
 
 interface Proposal {
   id: string;
