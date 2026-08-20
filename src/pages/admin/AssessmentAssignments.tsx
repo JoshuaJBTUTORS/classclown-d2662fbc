@@ -85,6 +85,14 @@ const AssessmentAssignments = () => {
   const [activeTab, setActiveTab] = useState('assessments');
   const [previewAssessmentId, setPreviewAssessmentId] = useState<string | null>(null);
   const [refreshConfirmId, setRefreshConfirmId] = useState<string | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{
+    assessmentId: string;
+    userId: string;
+    title?: string;
+    studentName?: string;
+  } | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
+
 
   // Fetch all assignments
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
