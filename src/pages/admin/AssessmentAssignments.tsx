@@ -72,6 +72,12 @@ import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmen
 import MarkSubmissionDialog from '@/components/assessments/MarkSubmissionDialog';
 import { Progress } from '@/components/ui/progress';
 import { getLatestSessionId, markSessionToCompletion } from '@/services/assessmentMarkingService';
+import {
+  getUnsubmittedAttempts,
+  submitOnBehalf,
+  resetAssignmentToAssigned,
+  UnsubmittedAttempt,
+} from '@/services/unsubmittedAttemptsService';
 
 const AssessmentAssignments = () => {
   const queryClient = useQueryClient();
