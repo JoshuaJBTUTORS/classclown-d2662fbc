@@ -31,6 +31,7 @@ interface Proposal {
   agreed_at: string;
   completed_at: string;
   created_at: string;
+  discount_deadline?: string | null;
 }
 
 export default function ProposalDashboard() {
