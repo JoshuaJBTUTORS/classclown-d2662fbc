@@ -70,6 +70,7 @@ import CreateAssessmentDialog from '@/components/learningHub/CreateAssessmentDia
 import { AssessmentPreviewDialog } from '@/components/assessments/AssessmentPreviewDialog';
 import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmentDialog';
 import MarkSubmissionDialog from '@/components/assessments/MarkSubmissionDialog';
+import ReviewedSubmissionCard from '@/components/assessments/ReviewedSubmissionCard';
 import { Progress } from '@/components/ui/progress';
 import { getLatestSessionId, markSessionToCompletion } from '@/services/assessmentMarkingService';
 import {
