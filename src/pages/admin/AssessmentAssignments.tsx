@@ -69,6 +69,9 @@ import Navbar from '@/components/navigation/Navbar';
 import CreateAssessmentDialog from '@/components/learningHub/CreateAssessmentDialog';
 import { AssessmentPreviewDialog } from '@/components/assessments/AssessmentPreviewDialog';
 import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmentDialog';
+import MarkSubmissionDialog from '@/components/assessments/MarkSubmissionDialog';
+import { Progress } from '@/components/ui/progress';
+import { getLatestSessionId, markSessionToCompletion } from '@/services/assessmentMarkingService';
 
 const AssessmentAssignments = () => {
   const queryClient = useQueryClient();
@@ -85,6 +88,14 @@ const AssessmentAssignments = () => {
   const [activeTab, setActiveTab] = useState('assessments');
   const [previewAssessmentId, setPreviewAssessmentId] = useState<string | null>(null);
   const [refreshConfirmId, setRefreshConfirmId] = useState<string | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{
+    assessmentId: string;
+    userId: string;
+    title?: string;
+    studentName?: string;
+  } | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
+
 
   // Fetch all assignments
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
@@ -195,6 +206,37 @@ const AssessmentAssignments = () => {
     setSelectedStudents([]);
     setDueDate('');
     setNotes('');
+  };
+
+  const getStudentName = (userId: string) => {
+    const profile = users?.find(u => u.id === userId);
+    return profile ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim() || 'Unknown student' : 'Unknown student';
+  };
+
+  // Marks every submitted attempt for the current filter, one student at a time.
+  const markAllSubmissions = async () => {
+    const targets = filterAssignments('submitted');
+    if (!targets.length) return;
+    setBatchProgress({ done: 0, total: targets.length });
+    let failed = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const assignment = targets[i];
+      try {
+        const sessionId = await getLatestSessionId(assignment.assessment_id, assignment.assigned_to);
+        if (sessionId) await markSessionToCompletion(sessionId);
+      } catch (error: any) {
+        failed++;
+        console.error('Batch marking failed for assignment', assignment.id, error?.message);
+      }
+      setBatchProgress({ done: i + 1, total: targets.length });
+    }
+    setBatchProgress(null);
+    queryClient.invalidateQueries({ queryKey: ['all-assignments'] });
+    if (failed) {
+      toast.warning(`Marked ${targets.length - failed} of ${targets.length} submissions (${failed} failed)`);
+    } else {
+      toast.success(`Marked ${targets.length} submissions`);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -340,7 +382,7 @@ const AssessmentAssignments = () => {
               {assignment.assessment?.title || 'Untitled Assessment'}
             </CardTitle>
             <CardDescription>
-              {assignment.assessment?.subject} • {assignment.assessment?.exam_board}
+              {getStudentName(assignment.assigned_to)} • {assignment.assessment?.subject} • {assignment.assessment?.exam_board}
             </CardDescription>
           </div>
           {getStatusBadge(assignment.status)}
@@ -358,6 +400,21 @@ const AssessmentAssignments = () => {
             )}
           </div>
           <div className="flex gap-2">
+            {(assignment.status === 'submitted' || assignment.status === 'reviewed' || assignment.status === 'in_progress') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReviewTarget({
+                  assessmentId: assignment.assessment_id,
+                  userId: assignment.assigned_to,
+                  title: assignment.assessment?.title,
+                  studentName: getStudentName(assignment.assigned_to),
+                })}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View & Mark
+              </Button>
+            )}
             {assignment.status === 'submitted' && (
               <Button 
                 size="sm" 
@@ -379,6 +436,7 @@ const AssessmentAssignments = () => {
       </CardContent>
     </Card>
   );
+
 
   return (
     <div className="flex h-screen bg-background">
@@ -488,6 +546,26 @@ const AssessmentAssignments = () => {
                 </TabsContent>
 
                 <TabsContent value="submitted" className="space-y-4">
+                  {filterAssignments('submitted').length > 0 && (
+                    <div className="flex items-center gap-3 rounded-lg border p-3">
+                      <Button size="sm" onClick={markAllSubmissions} disabled={!!batchProgress}>
+                        {batchProgress ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-2" />
+                        )}
+                        Mark all submissions with AI
+                      </Button>
+                      {batchProgress && (
+                        <div className="flex-1 flex items-center gap-3">
+                          <Progress value={(batchProgress.done / batchProgress.total) * 100} className="h-2 flex-1" />
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {batchProgress.done}/{batchProgress.total}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {filterAssignments('submitted').length ? (
                     filterAssignments('submitted').map(renderAssignmentCard)
                   ) : (
@@ -524,6 +602,17 @@ const AssessmentAssignments = () => {
           </div>
         </main>
       </div>
+
+      {reviewTarget && (
+        <MarkSubmissionDialog
+          open={!!reviewTarget}
+          onOpenChange={(open) => !open && setReviewTarget(null)}
+          assessmentId={reviewTarget.assessmentId}
+          userId={reviewTarget.userId}
+          assessmentTitle={reviewTarget.title}
+          studentName={reviewTarget.studentName}
+        />
+      )}
 
       {/* Assign Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>

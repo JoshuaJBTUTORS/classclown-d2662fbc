@@ -562,11 +562,12 @@ export const aiAssessmentService = {
 
   // Mark all answers in a session using AI
   async markAnswers(sessionId: string): Promise<void> {
-    const { data, error } = await supabase.functions.invoke('ai-mark-assessment', {
+    const { data, error } = await supabase.functions.invoke('mark-assessment-session', {
       body: { sessionId }
     });
 
     if (error) throw error;
+    if (data?.error) throw new Error(data.error);
     return data;
   },
 
