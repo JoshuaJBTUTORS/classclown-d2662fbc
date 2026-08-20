@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Filter, Users, GraduationCap, BookOpen, ChevronsUpDown, Check, UserCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { Tutor } from '@/types/tutor';
@@ -209,13 +211,15 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
-              <Command>
+              <Command shouldFilter={false}>
                 <div className="relative">
-                  <CommandInput
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    autoFocus
                     placeholder="Search students..."
                     value={studentSearch}
-                    onValueChange={setStudentSearch}
-                    className="pr-8"
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="pl-9 pr-8 border-0 border-b rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   {studentSearch && (
                     <button
@@ -298,13 +302,15 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
-              <Command>
+              <Command shouldFilter={false}>
                 <div className="relative">
-                  <CommandInput
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    autoFocus
                     placeholder="Search tutors..."
                     value={tutorSearch}
-                    onValueChange={setTutorSearch}
-                    className="pr-8"
+                    onChange={(e) => setTutorSearch(e.target.value)}
+                    className="pl-9 pr-8 border-0 border-b rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   {tutorSearch && (
                     <button
@@ -387,13 +393,15 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
-              <Command>
+              <Command shouldFilter={false}>
                 <div className="relative">
-                  <CommandInput
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    autoFocus
                     placeholder="Search parents..."
                     value={parentSearch}
-                    onValueChange={setParentSearch}
-                    className="pr-8"
+                    onChange={(e) => setParentSearch(e.target.value)}
+                    className="pl-9 pr-8 border-0 border-b rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   {parentSearch && (
                     <button
@@ -476,13 +484,15 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
-              <Command>
+              <Command shouldFilter={false}>
                 <div className="relative">
-                  <CommandInput
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    autoFocus
                     placeholder="Search subjects..."
                     value={subjectSearch}
-                    onValueChange={setSubjectSearch}
-                    className="pr-8"
+                    onChange={(e) => setSubjectSearch(e.target.value)}
+                    className="pl-9 pr-8 border-0 border-b rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   {subjectSearch && (
                     <button
