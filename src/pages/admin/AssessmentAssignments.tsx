@@ -72,6 +72,12 @@ import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmen
 import MarkSubmissionDialog from '@/components/assessments/MarkSubmissionDialog';
 import { Progress } from '@/components/ui/progress';
 import { getLatestSessionId, markSessionToCompletion } from '@/services/assessmentMarkingService';
+import {
+  getUnsubmittedAttempts,
+  submitOnBehalf,
+  resetAssignmentToAssigned,
+  UnsubmittedAttempt,
+} from '@/services/unsubmittedAttemptsService';
 
 const AssessmentAssignments = () => {
   const queryClient = useQueryClient();
@@ -200,6 +206,121 @@ const AssessmentAssignments = () => {
       toast.success('Marked as reviewed');
     },
   });
+
+  // Attempts that hold answers but were never submitted (student forgot to finish).
+  const { data: unsubmitted, isLoading: unsubmittedLoading } = useQuery({
+    queryKey: ['unsubmitted-attempts'],
+    queryFn: getUnsubmittedAttempts,
+  });
+
+  const refreshQueues = () => {
+    queryClient.invalidateQueries({ queryKey: ['all-assignments'] });
+    queryClient.invalidateQueries({ queryKey: ['unsubmitted-attempts'] });
+  };
+
+  // Closes the attempt on the student's behalf and immediately AI-marks it.
+  const submitOnBehalfMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      await submitOnBehalf(sessionId);
+      await markSessionToCompletion(sessionId);
+    },
+    onSuccess: () => {
+      refreshQueues();
+      toast.success('Attempt submitted and marked');
+    },
+    onError: (error: any) => {
+      refreshQueues();
+      toast.error(error?.message || 'Failed to submit attempt');
+    },
+  });
+
+  const resetAssignmentMutation = useMutation({
+    mutationFn: (assignmentId: string) => resetAssignmentToAssigned(assignmentId),
+    onSuccess: () => {
+      refreshQueues();
+      toast.success('Assignment reset — the student can start again');
+    },
+    onError: (error: any) => toast.error(error?.message || 'Failed to reset assignment'),
+  });
+
+  const filterUnsubmitted = (): UnsubmittedAttempt[] => {
+    const list = unsubmitted || [];
+    if (!searchTerm) return list;
+    const term = searchTerm.toLowerCase();
+    return list.filter(
+      a =>
+        a.assessmentTitle?.toLowerCase().includes(term) ||
+        a.subject?.toLowerCase().includes(term) ||
+        getStudentName(a.userId).toLowerCase().includes(term),
+    );
+  };
+
+  const renderUnsubmittedCard = (attempt: UnsubmittedAttempt) => {
+    const busy = submitOnBehalfMutation.isPending && submitOnBehalfMutation.variables === attempt.sessionId;
+    return (
+      <Card key={attempt.sessionId}>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-base">{attempt.assessmentTitle}</CardTitle>
+              <CardDescription>
+                {getStudentName(attempt.userId)}
+                {attempt.subject ? ` · ${attempt.subject}` : ''}
+              </CardDescription>
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-muted-foreground">
+                <Badge variant="outline">
+                  {attempt.answered}
+                  {attempt.totalQuestions ? `/${attempt.totalQuestions}` : ''} answered
+                </Badge>
+                <Badge variant="secondary">
+                  {attempt.sessionStatus === 'completed' ? 'Finished, not filed' : 'Left open'}
+                </Badge>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  Last activity{' '}
+                  {attempt.lastActivityAt
+                    ? format(new Date(attempt.lastActivityAt), 'd MMM yyyy, HH:mm')
+                    : format(new Date(attempt.startedAt), 'd MMM yyyy, HH:mm')}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setReviewTarget({
+                    assessmentId: attempt.assessmentId,
+                    userId: attempt.userId,
+                    title: attempt.assessmentTitle,
+                    studentName: getStudentName(attempt.userId),
+                  })
+                }
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View answers
+              </Button>
+              <Button size="sm" disabled={busy} onClick={() => submitOnBehalfMutation.mutate(attempt.sessionId)}>
+                {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                Submit &amp; mark
+              </Button>
+              {attempt.assignmentId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={resetAssignmentMutation.isPending}
+                  onClick={() => resetAssignmentMutation.mutate(attempt.assignmentId!)}
+                >
+                  Reset to assigned
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  };
+
 
   const resetForm = () => {
     setSelectedAssessment('');
@@ -518,6 +639,9 @@ const AssessmentAssignments = () => {
                   <TabsTrigger value="submitted">
                     Pending Review ({filterAssignments('submitted').length})
                   </TabsTrigger>
+                  <TabsTrigger value="unsubmitted">
+                    Not Submitted ({filterUnsubmitted().length})
+                  </TabsTrigger>
                   <TabsTrigger value="in_progress">In Progress ({filterAssignments('in_progress').length})</TabsTrigger>
                   <TabsTrigger value="reviewed">Reviewed ({filterAssignments('reviewed').length})</TabsTrigger>
                 </TabsList>
@@ -575,6 +699,25 @@ const AssessmentAssignments = () => {
                     </div>
                   )}
                 </TabsContent>
+
+                <TabsContent value="unsubmitted" className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Attempts with real answers that never reached the submitted state — usually a student who
+                    forgot to press submit. Submitting on their behalf files the attempt and runs AI marking.
+                  </p>
+                  {unsubmittedLoading ? (
+                    <Skeleton className="h-24 w-full" />
+                  ) : filterUnsubmitted().length ? (
+                    filterUnsubmitted().map(renderUnsubmittedCard)
+                  ) : (
+                    <div className="text-center py-12">
+                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nothing stranded — every attempt with answers is filed</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+
 
                 <TabsContent value="in_progress" className="space-y-4">
                   {filterAssignments('in_progress').length ? (
