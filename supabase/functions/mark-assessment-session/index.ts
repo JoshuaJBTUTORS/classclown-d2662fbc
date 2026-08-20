@@ -191,15 +191,25 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ success: false, error: "Missing authorization header" }, 401);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) return json({ success: false, error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "").trim();
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    let markedById: string | null = null;
 
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-    const isAdmin = roles?.some((r: any) => r.role === "admin" || r.role === "owner");
-    if (!isAdmin) return json({ success: false, error: "Admin or owner role required" }, 403);
+    if (token && token === serviceRoleKey) {
+      // Internal/admin tooling call — no end user to attribute the marking to.
+      markedById = null;
+    } else {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser(token);
+      if (authError || !user) return json({ success: false, error: "Unauthorized" }, 401);
+
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      const isAdmin = roles?.some((r: any) => r.role === "admin" || r.role === "owner");
+      if (!isAdmin) return json({ success: false, error: "Admin or owner role required" }, 403);
+      markedById = user.id;
+    }
 
     const { sessionId, remark = false } = await req.json();
     if (!sessionId) return json({ success: false, error: "sessionId is required" }, 400);
@@ -261,7 +271,7 @@ serve(async (req) => {
             confidence_score: 1,
             marking_breakdown: { blank: true, max_marks: question.marks_available, marked_at: now },
             marked_at: now,
-            marked_by: user.id,
+            marked_by: markedById,
           })
           .eq("id", response.id);
         marked++;
@@ -288,7 +298,7 @@ serve(async (req) => {
               marked_at: now,
             },
             marked_at: now,
-            marked_by: user.id,
+            marked_by: markedById,
           })
           .eq("id", response.id);
         marked++;
