@@ -10,8 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminProposalSidebar } from '@/components/admin/AdminProposalSidebar';
-import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail } from 'lucide-react';
+import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import ExtendOfferDialog from '@/components/proposals/ExtendOfferDialog';
+import { resolveDiscountDeadline } from '@/components/proposals/discountDeadline';
 
 interface Proposal {
   id: string;
@@ -29,6 +31,7 @@ interface Proposal {
   agreed_at: string;
   completed_at: string;
   created_at: string;
+  discount_deadline?: string | null;
 }
 
 export default function ProposalDashboard() {
@@ -38,6 +41,7 @@ export default function ProposalDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [extendTarget, setExtendTarget] = useState<Proposal | null>(null);
 
   useEffect(() => {
     loadProposals();
@@ -302,6 +306,21 @@ export default function ProposalDashboard() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setExtendTarget(proposal)}
+                              title={`Extend discounted rate (ends ${format(
+                                new Date(resolveDiscountDeadline(proposal)),
+                                'd MMM yyyy, HH:mm'
+                              )})`}
+                            >
+                              <Clock
+                                className={`h-4 w-4 ${
+                                  resolveDiscountDeadline(proposal) <= Date.now() ? 'text-destructive' : ''
+                                }`}
+                              />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => navigate(`/admin/proposals/edit/${proposal.id}`)}
                               title="Edit proposal"
                             >
@@ -351,6 +370,12 @@ export default function ProposalDashboard() {
           </div>
         </div>
       </div>
+      <ExtendOfferDialog
+        open={!!extendTarget}
+        onOpenChange={(open) => !open && setExtendTarget(null)}
+        proposal={extendTarget}
+        onExtended={loadProposals}
+      />
     </SidebarProvider>
   );
 }

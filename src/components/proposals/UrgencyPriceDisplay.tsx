@@ -3,20 +3,18 @@ import { Clock, Zap } from 'lucide-react';
 
 interface UrgencyPriceDisplayProps {
   price: number;
-  createdAt: string;
+  /** ISO string or epoch ms for when the discounted rate ends. */
+  deadline: string | number;
 }
 
-export default function UrgencyPriceDisplay({ price, createdAt }: UrgencyPriceDisplayProps) {
+export default function UrgencyPriceDisplay({ price, deadline }: UrgencyPriceDisplayProps) {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const calculateTimeRemaining = () => {
-      const createdTime = new Date(createdAt).getTime();
-      const now = new Date().getTime();
-      const twentyFourHours = 24 * 60 * 60 * 1000;
-      const deadline = createdTime + twentyFourHours;
-      const remaining = deadline - now;
+      const deadlineMs = typeof deadline === 'number' ? deadline : new Date(deadline).getTime();
+      const remaining = deadlineMs - Date.now();
 
       if (remaining <= 0) {
         setIsExpired(true);
@@ -31,7 +29,7 @@ export default function UrgencyPriceDisplay({ price, createdAt }: UrgencyPriceDi
     const interval = setInterval(calculateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [createdAt]);
+  }, [deadline]);
 
   const formatTime = (ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60));

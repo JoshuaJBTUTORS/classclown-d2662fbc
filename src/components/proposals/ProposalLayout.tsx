@@ -6,6 +6,7 @@ import { Check, Mail, Phone, Printer, PlayCircle, BookOpen, Clock, Menu, Chevron
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import jbLogo from '@/assets/jb-tutors-logo.png';
+import { resolveDiscountDeadline } from './discountDeadline';
 
 const INTRO_VIDEO_URL = 'https://share.descript.com/embed/GAcvB7aW73w';
 const CONTACT_EMAIL = 'enquiries@classbeyondacademy.io';
@@ -40,6 +41,7 @@ interface Proposal {
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
   created_at: string;
+  discount_deadline?: string | null;
   daily_homework_opt_in: boolean;
   agreed_at?: string | null;
 }
@@ -59,8 +61,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   const [active, setActive] = useState('overview');
   const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
-  // 24h countdown from proposal creation
-  const deadline = useMemo(() => new Date(proposal.created_at).getTime() + 24 * 60 * 60 * 1000, [proposal.created_at]);
+  // Discount countdown: explicit deadline if set, otherwise 24h from creation
+  const deadline = useMemo(() => resolveDiscountDeadline(proposal), [proposal.created_at, proposal.discount_deadline]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
