@@ -1,0 +1,1 @@
+ALTER TABLE public.lesson_proposals ADD COLUMN IF NOT EXISTS discount_deadline timestamptz;

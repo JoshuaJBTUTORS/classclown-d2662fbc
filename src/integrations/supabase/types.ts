@@ -2920,6 +2920,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           daily_homework_opt_in: boolean | null
+          discount_deadline: string | null
           discount_extended_until: string | null
           id: string
           internal_notes: string | null
@@ -2948,6 +2949,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           daily_homework_opt_in?: boolean | null
+          discount_deadline?: string | null
           discount_extended_until?: string | null
           id?: string
           internal_notes?: string | null
@@ -2976,6 +2978,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           daily_homework_opt_in?: boolean | null
+          discount_deadline?: string | null
           discount_extended_until?: string | null
           id?: string
           internal_notes?: string | null
