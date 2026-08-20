@@ -707,34 +707,44 @@ const AssessmentAssignments = () => {
                 </TabsContent>
 
                 <TabsContent value="submitted" className="space-y-4">
-                  {filterAssignments('submitted').length > 0 && (
-                    <div className="flex items-center gap-3 rounded-lg border p-3">
-                      <Button size="sm" onClick={markAllSubmissions} disabled={!!batchProgress}>
-                        {batchProgress ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4 mr-2" />
+                  {(() => {
+                    const submittedAssignments = sortAssignmentsNewestFirst(
+                      filterAssignments('submitted'),
+                      'submitted_at'
+                    );
+                    return (
+                      <>
+                        {submittedAssignments.length > 0 && (
+                          <div className="flex items-center gap-3 rounded-lg border p-3">
+                            <Button size="sm" onClick={markAllSubmissions} disabled={!!batchProgress}>
+                              {batchProgress ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-4 w-4 mr-2" />
+                              )}
+                              Mark all submissions with AI
+                            </Button>
+                            {batchProgress && (
+                              <div className="flex-1 flex items-center gap-3">
+                                <Progress value={(batchProgress.done / batchProgress.total) * 100} className="h-2 flex-1" />
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                  {batchProgress.done}/{batchProgress.total}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         )}
-                        Mark all submissions with AI
-                      </Button>
-                      {batchProgress && (
-                        <div className="flex-1 flex items-center gap-3">
-                          <Progress value={(batchProgress.done / batchProgress.total) * 100} className="h-2 flex-1" />
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {batchProgress.done}/{batchProgress.total}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {filterAssignments('submitted').length ? (
-                    filterAssignments('submitted').map(renderAssignmentCard)
-                  ) : (
-                    <div className="text-center py-12">
-                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No submissions pending review</p>
-                    </div>
-                  )}
+                        {submittedAssignments.length ? (
+                          submittedAssignments.map(renderAssignmentCard)
+                        ) : (
+                          <div className="text-center py-12">
+                            <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-muted-foreground">No submissions pending review</p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </TabsContent>
 
                 <TabsContent value="unsubmitted" className="space-y-4">
