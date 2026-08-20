@@ -782,14 +782,20 @@ const AssessmentAssignments = () => {
                     Marked papers. Click a card to expand the full breakdown — every question, the
                     student's answer, marks awarded and the AI feedback.
                   </p>
-                  {filterAssignments('reviewed').length ? (
-                    filterAssignments('reviewed').map(renderReviewedCard)
-                  ) : (
-                    <div className="text-center py-12">
-                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No reviewed assessments</p>
-                    </div>
-                  )}
+                  {(() => {
+                    const reviewedAssignments = sortAssignmentsNewestFirst(
+                      filterAssignments('reviewed'),
+                      'reviewed_at'
+                    );
+                    return reviewedAssignments.length ? (
+                      reviewedAssignments.map(renderReviewedCard)
+                    ) : (
+                      <div className="text-center py-12">
+                        <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No reviewed assessments</p>
+                      </div>
+                    );
+                  })()}
                 </TabsContent>
               </Tabs>
             )}
