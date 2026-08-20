@@ -340,7 +340,7 @@ const AssessmentAssignments = () => {
               {assignment.assessment?.title || 'Untitled Assessment'}
             </CardTitle>
             <CardDescription>
-              {assignment.assessment?.subject} • {assignment.assessment?.exam_board}
+              {getStudentName(assignment.assigned_to)} • {assignment.assessment?.subject} • {assignment.assessment?.exam_board}
             </CardDescription>
           </div>
           {getStatusBadge(assignment.status)}
@@ -358,6 +358,21 @@ const AssessmentAssignments = () => {
             )}
           </div>
           <div className="flex gap-2">
+            {(assignment.status === 'submitted' || assignment.status === 'reviewed' || assignment.status === 'in_progress') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReviewTarget({
+                  assessmentId: assignment.assessment_id,
+                  userId: assignment.assigned_to,
+                  title: assignment.assessment?.title,
+                  studentName: getStudentName(assignment.assigned_to),
+                })}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View & Mark
+              </Button>
+            )}
             {assignment.status === 'submitted' && (
               <Button 
                 size="sm" 
@@ -379,6 +394,7 @@ const AssessmentAssignments = () => {
       </CardContent>
     </Card>
   );
+
 
   return (
     <div className="flex h-screen bg-background">
