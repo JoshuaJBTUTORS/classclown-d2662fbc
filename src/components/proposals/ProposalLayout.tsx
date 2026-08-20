@@ -6,6 +6,7 @@ import { Check, Mail, Phone, Printer, PlayCircle, BookOpen, Clock, Menu, Chevron
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import jbLogo from '@/assets/jb-tutors-logo.png';
+import { resolveDiscountDeadline } from './discountDeadline';
 
 const INTRO_VIDEO_URL = 'https://share.descript.com/embed/GAcvB7aW73w';
 const CONTACT_EMAIL = 'enquiries@classbeyondacademy.io';
