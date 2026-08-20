@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
 import MetaPixelTracker from '@/components/analytics/MetaPixelTracker';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -212,6 +212,8 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route path="admin/assessment-assignments" element={<Navigate to="/assessment-assignments" replace />} />
+
                   <Route path="lesson-summaries" element={<LessonSummaries />} />
                   <Route 
                     path="earnings" 
