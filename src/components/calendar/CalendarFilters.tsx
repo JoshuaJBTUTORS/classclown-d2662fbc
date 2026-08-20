@@ -210,10 +210,25 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
               <Command>
-                <CommandInput 
-                  placeholder="Search students..." 
-                  onInput={(e) => setStudentSearch(e.currentTarget.value)}
-                />
+                <div className="relative">
+                  <CommandInput
+                    placeholder="Search students..."
+                    value={studentSearch}
+                    onValueChange={setStudentSearch}
+                    className="pr-8"
+                  />
+                  {studentSearch && (
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setStudentSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                      aria-label="Clear student search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <CommandList>
                   <CommandEmpty>No students found.</CommandEmpty>
                   <CommandGroup>
@@ -284,10 +299,25 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
               <Command>
-                <CommandInput 
-                  placeholder="Search tutors..." 
-                  onInput={(e) => setTutorSearch(e.currentTarget.value)}
-                />
+                <div className="relative">
+                  <CommandInput
+                    placeholder="Search tutors..."
+                    value={tutorSearch}
+                    onValueChange={setTutorSearch}
+                    className="pr-8"
+                  />
+                  {tutorSearch && (
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setTutorSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                      aria-label="Clear tutor search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <CommandList>
                   <CommandEmpty>No tutors found.</CommandEmpty>
                   <CommandGroup>
@@ -358,10 +388,25 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
               <Command>
-                <CommandInput 
-                  placeholder="Search parents..." 
-                  onInput={(e) => setParentSearch(e.currentTarget.value)}
-                />
+                <div className="relative">
+                  <CommandInput
+                    placeholder="Search parents..."
+                    value={parentSearch}
+                    onValueChange={setParentSearch}
+                    className="pr-8"
+                  />
+                  {parentSearch && (
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setParentSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                      aria-label="Clear parent search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <CommandList>
                   <CommandEmpty>No parents found.</CommandEmpty>
                   <CommandGroup>
@@ -432,10 +477,25 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
             </PopoverTrigger>
             <PopoverContent className="w-full p-0" align="start">
               <Command>
-                <CommandInput 
-                  placeholder="Search subjects..." 
-                  onInput={(e) => setSubjectSearch(e.currentTarget.value)}
-                />
+                <div className="relative">
+                  <CommandInput
+                    placeholder="Search subjects..."
+                    value={subjectSearch}
+                    onValueChange={setSubjectSearch}
+                    className="pr-8"
+                  />
+                  {subjectSearch && (
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setSubjectSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                      aria-label="Clear subject search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <CommandList>
                   <CommandEmpty>No subjects found.</CommandEmpty>
                   <CommandGroup>
