@@ -69,6 +69,9 @@ import Navbar from '@/components/navigation/Navbar';
 import CreateAssessmentDialog from '@/components/learningHub/CreateAssessmentDialog';
 import { AssessmentPreviewDialog } from '@/components/assessments/AssessmentPreviewDialog';
 import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmentDialog';
+import MarkSubmissionDialog from '@/components/assessments/MarkSubmissionDialog';
+import { Progress } from '@/components/ui/progress';
+import { getLatestSessionId, markSessionToCompletion } from '@/services/assessmentMarkingService';
 
 const AssessmentAssignments = () => {
   const queryClient = useQueryClient();
@@ -543,6 +546,26 @@ const AssessmentAssignments = () => {
                 </TabsContent>
 
                 <TabsContent value="submitted" className="space-y-4">
+                  {filterAssignments('submitted').length > 0 && (
+                    <div className="flex items-center gap-3 rounded-lg border p-3">
+                      <Button size="sm" onClick={markAllSubmissions} disabled={!!batchProgress}>
+                        {batchProgress ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-2" />
+                        )}
+                        Mark all submissions with AI
+                      </Button>
+                      {batchProgress && (
+                        <div className="flex-1 flex items-center gap-3">
+                          <Progress value={(batchProgress.done / batchProgress.total) * 100} className="h-2 flex-1" />
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {batchProgress.done}/{batchProgress.total}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {filterAssignments('submitted').length ? (
                     filterAssignments('submitted').map(renderAssignmentCard)
                   ) : (
@@ -579,6 +602,17 @@ const AssessmentAssignments = () => {
           </div>
         </main>
       </div>
+
+      {reviewTarget && (
+        <MarkSubmissionDialog
+          open={!!reviewTarget}
+          onOpenChange={(open) => !open && setReviewTarget(null)}
+          assessmentId={reviewTarget.assessmentId}
+          userId={reviewTarget.userId}
+          assessmentTitle={reviewTarget.title}
+          studentName={reviewTarget.studentName}
+        />
+      )}
 
       {/* Assign Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
