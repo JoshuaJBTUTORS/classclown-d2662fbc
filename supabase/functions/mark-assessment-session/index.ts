@@ -138,7 +138,8 @@ async function markOne(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4.1-2025-04-14",
+        model: "gpt-5.6-luna",
+        reasoning_effort: "none",
         response_format: { type: "json_object" },
         messages: [
           {
