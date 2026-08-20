@@ -700,6 +700,25 @@ const AssessmentAssignments = () => {
                   )}
                 </TabsContent>
 
+                <TabsContent value="unsubmitted" className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Attempts with real answers that never reached the submitted state — usually a student who
+                    forgot to press submit. Submitting on their behalf files the attempt and runs AI marking.
+                  </p>
+                  {unsubmittedLoading ? (
+                    <Skeleton className="h-24 w-full" />
+                  ) : filterUnsubmitted().length ? (
+                    filterUnsubmitted().map(renderUnsubmittedCard)
+                  ) : (
+                    <div className="text-center py-12">
+                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nothing stranded — every attempt with answers is filed</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+
+
                 <TabsContent value="in_progress" className="space-y-4">
                   {filterAssignments('in_progress').length ? (
                     filterAssignments('in_progress').map(renderAssignmentCard)
