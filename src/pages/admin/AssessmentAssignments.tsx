@@ -374,20 +374,31 @@ const AssessmentAssignments = () => {
 
   const filterAssignments = (status?: string) => {
     let filtered = assignments || [];
-    
+
     if (status) {
       filtered = filtered.filter(a => a.status === status);
     }
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(a => 
+      filtered = filtered.filter(a =>
         a.assessment?.title?.toLowerCase().includes(term) ||
         a.assessment?.subject?.toLowerCase().includes(term)
       );
     }
-    
+
     return filtered;
+  };
+
+  const sortAssignmentsNewestFirst = (
+    list: AssessmentAssignment[],
+    dateField: 'submitted_at' | 'reviewed_at' | 'created_at' | 'updated_at'
+  ) => {
+    return [...list].sort((a, b) => {
+      const aDate = a[dateField] ? new Date(a[dateField]!).getTime() : 0;
+      const bDate = b[dateField] ? new Date(b[dateField]!).getTime() : 0;
+      return bDate - aDate;
+    });
   };
 
   const filterAssessments = () => {
