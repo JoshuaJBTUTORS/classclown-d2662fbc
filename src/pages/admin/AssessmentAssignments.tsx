@@ -732,8 +732,12 @@ const AssessmentAssignments = () => {
                 </TabsContent>
 
                 <TabsContent value="reviewed" className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Marked papers. Click a card to expand the full breakdown — every question, the
+                    student's answer, marks awarded and the AI feedback.
+                  </p>
                   {filterAssignments('reviewed').length ? (
-                    filterAssignments('reviewed').map(renderAssignmentCard)
+                    filterAssignments('reviewed').map(renderReviewedCard)
                   ) : (
                     <div className="text-center py-12">
                       <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
