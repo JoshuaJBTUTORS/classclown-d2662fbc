@@ -370,6 +370,12 @@ export default function ProposalDashboard() {
           </div>
         </div>
       </div>
+      <ExtendOfferDialog
+        open={!!extendTarget}
+        onOpenChange={(open) => !open && setExtendTarget(null)}
+        proposal={extendTarget}
+        onExtended={loadProposals}
+      />
     </SidebarProvider>
   );
 }
