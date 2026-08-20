@@ -59,8 +59,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   const [active, setActive] = useState('overview');
   const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
-  // 24h countdown from proposal creation
-  const deadline = useMemo(() => new Date(proposal.created_at).getTime() + 24 * 60 * 60 * 1000, [proposal.created_at]);
+  // Discount countdown: explicit deadline if set, otherwise 24h from creation
+  const deadline = useMemo(() => resolveDiscountDeadline(proposal), [proposal.created_at, proposal.discount_deadline]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
