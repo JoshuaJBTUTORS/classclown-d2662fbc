@@ -205,6 +205,37 @@ const AssessmentAssignments = () => {
     setNotes('');
   };
 
+  const getStudentName = (userId: string) => {
+    const profile = users?.find(u => u.id === userId);
+    return profile ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim() || 'Unknown student' : 'Unknown student';
+  };
+
+  // Marks every submitted attempt for the current filter, one student at a time.
+  const markAllSubmissions = async () => {
+    const targets = filterAssignments('submitted');
+    if (!targets.length) return;
+    setBatchProgress({ done: 0, total: targets.length });
+    let failed = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const assignment = targets[i];
+      try {
+        const sessionId = await getLatestSessionId(assignment.assessment_id, assignment.assigned_to);
+        if (sessionId) await markSessionToCompletion(sessionId);
+      } catch (error: any) {
+        failed++;
+        console.error('Batch marking failed for assignment', assignment.id, error?.message);
+      }
+      setBatchProgress({ done: i + 1, total: targets.length });
+    }
+    setBatchProgress(null);
+    queryClient.invalidateQueries({ queryKey: ['all-assignments'] });
+    if (failed) {
+      toast.warning(`Marked ${targets.length - failed} of ${targets.length} submissions (${failed} failed)`);
+    } else {
+      toast.success(`Marked ${targets.length} submissions`);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const config: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string }> = {
       assigned: { variant: 'secondary', label: 'Assigned' },
