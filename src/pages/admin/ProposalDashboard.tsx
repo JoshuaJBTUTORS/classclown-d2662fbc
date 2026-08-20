@@ -41,6 +41,7 @@ export default function ProposalDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [extendTarget, setExtendTarget] = useState<Proposal | null>(null);
 
   useEffect(() => {
     loadProposals();
