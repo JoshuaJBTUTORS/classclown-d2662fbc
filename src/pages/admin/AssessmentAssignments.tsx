@@ -639,6 +639,9 @@ const AssessmentAssignments = () => {
                   <TabsTrigger value="submitted">
                     Pending Review ({filterAssignments('submitted').length})
                   </TabsTrigger>
+                  <TabsTrigger value="unsubmitted">
+                    Not Submitted ({filterUnsubmitted().length})
+                  </TabsTrigger>
                   <TabsTrigger value="in_progress">In Progress ({filterAssignments('in_progress').length})</TabsTrigger>
                   <TabsTrigger value="reviewed">Reviewed ({filterAssignments('reviewed').length})</TabsTrigger>
                 </TabsList>
