@@ -320,11 +320,12 @@ serve(async (req) => {
       .eq("id", sessionId);
 
     const remaining = (allResponses ?? []).filter((r: any) => !r.marked_at).length;
-    const done = remaining === 0 || marked + failures.length >= pending.length;
+    // Stop the client loop when nothing is left, or when this pass made no progress.
+    const done = remaining === 0 || marked === 0;
 
     return json({
       success: true,
-      done: remaining === 0 ? true : done && failures.length > 0 ? true : remaining === 0,
+      done,
       marked,
       skipped,
       remaining,
