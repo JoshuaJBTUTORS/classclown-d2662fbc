@@ -559,6 +559,31 @@ const AssessmentAssignments = () => {
     </Card>
   );
 
+  // Reviewed papers expand in place to show answers, marks and AI feedback.
+  const renderReviewedCard = (assignment: AssessmentAssignment) => (
+    <ReviewedSubmissionCard
+      key={assignment.id}
+      assignmentId={assignment.id}
+      assessmentId={assignment.assessment_id}
+      userId={assignment.assigned_to}
+      assessmentTitle={assignment.assessment?.title}
+      subject={assignment.assessment?.subject}
+      examBoard={assignment.assessment?.exam_board}
+      studentName={getStudentName(assignment.assigned_to)}
+      submittedAt={assignment.submitted_at}
+      reviewedAt={assignment.reviewed_at}
+      onOpenMarking={() =>
+        setReviewTarget({
+          assessmentId: assignment.assessment_id,
+          userId: assignment.assigned_to,
+          title: assignment.assessment?.title,
+          studentName: getStudentName(assignment.assigned_to),
+        })
+      }
+      onDelete={() => deleteAssignmentMutation.mutate(assignment.id)}
+    />
+  );
+
 
   return (
     <div className="flex h-screen bg-background">
