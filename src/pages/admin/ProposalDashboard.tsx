@@ -306,6 +306,21 @@ export default function ProposalDashboard() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setExtendTarget(proposal)}
+                              title={`Extend discounted rate (ends ${format(
+                                new Date(resolveDiscountDeadline(proposal)),
+                                'd MMM yyyy, HH:mm'
+                              )})`}
+                            >
+                              <Clock
+                                className={`h-4 w-4 ${
+                                  resolveDiscountDeadline(proposal) <= Date.now() ? 'text-destructive' : ''
+                                }`}
+                              />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => navigate(`/admin/proposals/edit/${proposal.id}`)}
                               title="Edit proposal"
                             >
