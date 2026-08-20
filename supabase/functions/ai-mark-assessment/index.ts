@@ -120,7 +120,7 @@ serve(async (req) => {
 
     // Prepare the age-appropriate marking prompt
     const markingPrompt = `
-You are an expert teacher marking a student's answer. Please analyze the following with AGE-APPROPRIATE feedback:
+You are an expert teacher marking a student's answer. Please analyze the following with AGE-APPROPRIATE feedback and mark LENIENTLY.
 
 ASSESSMENT CONTEXT:
 - Subject: ${assessment?.subject || 'General'}
@@ -136,6 +136,14 @@ QUESTION DETAILS:
 - Keywords: ${JSON.stringify(question.keywords)}
 
 STUDENT ANSWER: ${studentAnswer}
+
+LENIENT MARKING RULES — APPLY STRICTLY:
+1. Award partial marks generously for any correct reasoning, method step, working, or understanding shown — even if the final answer is wrong.
+2. Accept equivalent answers and alternative valid approaches. Do not insist on one exact phrasing unless the question explicitly requires it.
+3. Give the student the benefit of the doubt. If the answer is partially right or shows effort in the right direction, award marks rather than withholding them.
+4. Do not penalise spelling, grammar, punctuation, or handwriting unless the question specifically tests those skills (e.g., English spelling test).
+5. For maths: award method marks even when the final answer is incorrect. For science: reward correct concepts and explanations even if terminology is imperfect.
+6. Only award 0 marks if the answer is completely blank, irrelevant, or shows no relevant understanding.
 
 FEEDBACK GUIDELINES FOR THIS AGE GROUP:
 - Tone: ${guidelines.tone}
@@ -168,7 +176,7 @@ IMPORTANT FEEDBACK REQUIREMENTS:
 7. Match the subject-specific focus guidelines
 8. End feedback on an encouraging note that motivates further learning
 
-Focus on understanding, effort, and providing constructive guidance that builds confidence.`;
+Focus on understanding, effort, and providing constructive guidance that builds confidence. Mark generously.`;
 
     // Call OpenAI API
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -182,7 +190,7 @@ Focus on understanding, effort, and providing constructive guidance that builds 
         messages: [
           {
             role: 'system',
-            content: 'You are an expert teacher who provides detailed, constructive feedback on student answers. Always respond with valid JSON in the exact format requested.'
+            content: 'You are an expert teacher who provides detailed, constructive feedback on student answers. Mark leniently and generously: award partial marks for correct reasoning, method, or understanding even if the final answer is wrong. Accept equivalent answers and give students the benefit of the doubt. Always respond with valid JSON in the exact format requested.'
           },
           {
             role: 'user',
