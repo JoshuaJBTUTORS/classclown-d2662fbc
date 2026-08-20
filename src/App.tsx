@@ -212,6 +212,8 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route path="admin/assessment-assignments" element={<Navigate to="/assessment-assignments" replace />} />
+
                   <Route path="lesson-summaries" element={<LessonSummaries />} />
                   <Route 
                     path="earnings" 
