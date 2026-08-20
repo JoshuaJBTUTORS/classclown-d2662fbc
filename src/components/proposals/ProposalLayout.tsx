@@ -41,6 +41,7 @@ interface Proposal {
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
   created_at: string;
+  discount_deadline?: string | null;
   daily_homework_opt_in: boolean;
   agreed_at?: string | null;
 }
