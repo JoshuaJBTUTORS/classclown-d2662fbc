@@ -374,20 +374,31 @@ const AssessmentAssignments = () => {
 
   const filterAssignments = (status?: string) => {
     let filtered = assignments || [];
-    
+
     if (status) {
       filtered = filtered.filter(a => a.status === status);
     }
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(a => 
+      filtered = filtered.filter(a =>
         a.assessment?.title?.toLowerCase().includes(term) ||
         a.assessment?.subject?.toLowerCase().includes(term)
       );
     }
-    
+
     return filtered;
+  };
+
+  const sortAssignmentsNewestFirst = (
+    list: AssessmentAssignment[],
+    dateField: 'submitted_at' | 'reviewed_at' | 'created_at' | 'updated_at'
+  ) => {
+    return [...list].sort((a, b) => {
+      const aDate = a[dateField] ? new Date(a[dateField]!).getTime() : 0;
+      const bDate = b[dateField] ? new Date(b[dateField]!).getTime() : 0;
+      return bDate - aDate;
+    });
   };
 
   const filterAssessments = () => {
@@ -696,34 +707,44 @@ const AssessmentAssignments = () => {
                 </TabsContent>
 
                 <TabsContent value="submitted" className="space-y-4">
-                  {filterAssignments('submitted').length > 0 && (
-                    <div className="flex items-center gap-3 rounded-lg border p-3">
-                      <Button size="sm" onClick={markAllSubmissions} disabled={!!batchProgress}>
-                        {batchProgress ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4 mr-2" />
+                  {(() => {
+                    const submittedAssignments = sortAssignmentsNewestFirst(
+                      filterAssignments('submitted'),
+                      'submitted_at'
+                    );
+                    return (
+                      <>
+                        {submittedAssignments.length > 0 && (
+                          <div className="flex items-center gap-3 rounded-lg border p-3">
+                            <Button size="sm" onClick={markAllSubmissions} disabled={!!batchProgress}>
+                              {batchProgress ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-4 w-4 mr-2" />
+                              )}
+                              Mark all submissions with AI
+                            </Button>
+                            {batchProgress && (
+                              <div className="flex-1 flex items-center gap-3">
+                                <Progress value={(batchProgress.done / batchProgress.total) * 100} className="h-2 flex-1" />
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                  {batchProgress.done}/{batchProgress.total}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         )}
-                        Mark all submissions with AI
-                      </Button>
-                      {batchProgress && (
-                        <div className="flex-1 flex items-center gap-3">
-                          <Progress value={(batchProgress.done / batchProgress.total) * 100} className="h-2 flex-1" />
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {batchProgress.done}/{batchProgress.total}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {filterAssignments('submitted').length ? (
-                    filterAssignments('submitted').map(renderAssignmentCard)
-                  ) : (
-                    <div className="text-center py-12">
-                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No submissions pending review</p>
-                    </div>
-                  )}
+                        {submittedAssignments.length ? (
+                          submittedAssignments.map(renderAssignmentCard)
+                        ) : (
+                          <div className="text-center py-12">
+                            <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-muted-foreground">No submissions pending review</p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </TabsContent>
 
                 <TabsContent value="unsubmitted" className="space-y-4">
@@ -761,14 +782,20 @@ const AssessmentAssignments = () => {
                     Marked papers. Click a card to expand the full breakdown — every question, the
                     student's answer, marks awarded and the AI feedback.
                   </p>
-                  {filterAssignments('reviewed').length ? (
-                    filterAssignments('reviewed').map(renderReviewedCard)
-                  ) : (
-                    <div className="text-center py-12">
-                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No reviewed assessments</p>
-                    </div>
-                  )}
+                  {(() => {
+                    const reviewedAssignments = sortAssignmentsNewestFirst(
+                      filterAssignments('reviewed'),
+                      'reviewed_at'
+                    );
+                    return reviewedAssignments.length ? (
+                      reviewedAssignments.map(renderReviewedCard)
+                    ) : (
+                      <div className="text-center py-12">
+                        <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No reviewed assessments</p>
+                      </div>
+                    );
+                  })()}
                 </TabsContent>
               </Tabs>
             )}
