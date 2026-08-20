@@ -70,6 +70,7 @@ import CreateAssessmentDialog from '@/components/learningHub/CreateAssessmentDia
 import { AssessmentPreviewDialog } from '@/components/assessments/AssessmentPreviewDialog';
 import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmentDialog';
 import MarkSubmissionDialog from '@/components/assessments/MarkSubmissionDialog';
+import ReviewedSubmissionCard from '@/components/assessments/ReviewedSubmissionCard';
 import { Progress } from '@/components/ui/progress';
 import { getLatestSessionId, markSessionToCompletion } from '@/services/assessmentMarkingService';
 import {
@@ -558,6 +559,31 @@ const AssessmentAssignments = () => {
     </Card>
   );
 
+  // Reviewed papers expand in place to show answers, marks and AI feedback.
+  const renderReviewedCard = (assignment: AssessmentAssignment) => (
+    <ReviewedSubmissionCard
+      key={assignment.id}
+      assignmentId={assignment.id}
+      assessmentId={assignment.assessment_id}
+      userId={assignment.assigned_to}
+      assessmentTitle={assignment.assessment?.title}
+      subject={assignment.assessment?.subject}
+      examBoard={assignment.assessment?.exam_board}
+      studentName={getStudentName(assignment.assigned_to)}
+      submittedAt={assignment.submitted_at}
+      reviewedAt={assignment.reviewed_at}
+      onOpenMarking={() =>
+        setReviewTarget({
+          assessmentId: assignment.assessment_id,
+          userId: assignment.assigned_to,
+          title: assignment.assessment?.title,
+          studentName: getStudentName(assignment.assigned_to),
+        })
+      }
+      onDelete={() => deleteAssignmentMutation.mutate(assignment.id)}
+    />
+  );
+
 
   return (
     <div className="flex h-screen bg-background">
@@ -731,8 +757,12 @@ const AssessmentAssignments = () => {
                 </TabsContent>
 
                 <TabsContent value="reviewed" className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Marked papers. Click a card to expand the full breakdown — every question, the
+                    student's answer, marks awarded and the AI feedback.
+                  </p>
                   {filterAssignments('reviewed').length ? (
-                    filterAssignments('reviewed').map(renderAssignmentCard)
+                    filterAssignments('reviewed').map(renderReviewedCard)
                   ) : (
                     <div className="text-center py-12">
                       <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
