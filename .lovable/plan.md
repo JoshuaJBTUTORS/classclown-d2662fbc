@@ -1,53 +1,54 @@
-# Fix: onboarding doesn't attach the child or move them from trial to active
+# Fix the existing trial-to-active onboarding conversion
 
-## What actually happened with Glory Anthony
+## Confirmed issue
 
-Checked the live data:
+The existing `create-parent-account` function is already intended to convert trial students to active. For Glory Anthony, the live records show:
 
-- Proposal `Glory Anthony / gloryenorgieanthony@gmail.com` is `completed` and already linked to a parent user.
-- The parent **was** created: `parents` row exists (Glory Anthony, gloryenorgieanthony@gmail.com), created 21 Aug.
-- The child exists as a trial student: student id 918, "Glory Anthony", email **gloryirhene2015@gmail.com**, `parent_id = null`, `status = trial`.
+- Parent account was created successfully from the proposal.
+- Proposal email: `gloryenorgieanthony@gmail.com`.
+- Trial student email: `gloryirhene2015@gmail.com`.
+- Both records use the same phone number.
+- Student 918 remains unlinked with `status = trial`, `account_type = trial`, and `trial_status = pending`.
 
-So the parent side worked. The child never attached because the onboarding function only finds students whose **email exactly matches the parent's email** (or who already sit under a duplicate parent row with that email). The trial was booked with a different email (`gloryirhene2015@gmail.com`, though the phone `+447857290548` matches the proposal phone), so:
+The existing function currently:
 
-- 0 students linked
-- 0 students activated
-- nothing ever moves from trial to active
+1. Finds the student only by matching the proposal/parent email or an existing parent link, so Glory was never selected because the emails differ.
+2. For selected students, changes only `status` to `active`; it does not convert `account_type` from `trial` to `regular` or clear `trial_status`.
 
-This affects every client whose trial was booked under a different email address than the one on the proposal — it is not specific to this record.
+## Changes
 
-## What to build
+### 1. Correct the existing matching logic
 
-### 1. Add a "Link child" section to Step 1 of onboarding
+Update `create-parent-account` to find the existing trial student using:
 
-After the proposal is chosen (before/at the point of creating the parent account):
+1. Exact normalized email match.
+2. Exact normalized phone match when the email differs.
+3. Existing `parent_id` association.
 
-- Show suggested existing students, matched by, in order: same email, **same normalised phone number**, similar name. Each suggestion shows name, email, phone, current status, so the admin can confirm it is the right child.
-- Allow searching all students by name/email/phone if no suggestion fits.
-- Allow creating a brand-new child (first name, last name, optional email/phone) when no student record exists.
-- Multi-select, so siblings can be attached in one go.
-- Attaching is required to finish Step 1 unless the admin explicitly ticks "no child record yet".
+Phone matching will ignore spaces, punctuation, and UK `+44` versus leading `0` formatting. Name matching will not automatically change records, avoiding accidental links between people with similar names.
 
-### 2. Pass the chosen children to the backend
+### 2. Complete the trial-to-active conversion
 
-`create-parent-account` gains an optional `student_ids` list and an optional `new_students` list:
+For every matched family student that is currently a trial, update the existing record in one operation:
 
-- `student_ids`: set `parent_id` to the new parent row, then activate them.
-- `new_students`: insert into `students` with `parent_id` set and `status = 'active'`, `account_type = 'regular'`.
-- Keep the existing email-based matching as an extra safety net, and add phone matching (digits-only comparison, ignoring spaces and `+44` vs `0` prefixes).
-- Activation rule stays the same: students on `trial` or blank status become `active`, and `trial_status` is cleared.
-- Response reports linked / created / activated counts so the UI can surface exactly what happened.
+- `parent_id` → newly created/reused parent row
+- `status` → `active`
+- `account_type` → `regular`
+- `trial_status` → cleared
 
-### 3. Make failures visible
+Then re-read the records and fail the onboarding request visibly if any matched student remains marked as trial in any of those fields.
 
-Currently a run that links nothing still shows a green "Parent account created" toast. Change Step 1 to show a clear warning line when `linkedStudents + createdStudents === 0`, telling the admin no child was attached and to attach one before scheduling lessons.
+### 3. Report the result accurately
 
-### 4. Repair the Glory Anthony record
+Return and display the number of students linked and fully converted. Do not show onboarding Step 1 as successfully complete when no student was matched; instead show a clear message that the parent was created but no trial child could be converted.
 
-One-off data fix as part of this work: link student 918 to the Glory Anthony parent row and set status `active`, `account_type` `regular`.
+### 4. Repair Glory Anthony
 
-## Technical notes
+Run the corrected conversion for the existing records, linking student 918 to parent `f555a824-6454-40f4-9548-68834fcaa0bd`, setting the student to active/regular, and clearing the pending trial state. Verify the persisted values afterward.
 
-- Files: `src/pages/Onboarding.tsx` (Step 1 UI + payload), `supabase/functions/create-parent-account/index.ts` (student_ids / new_students handling, phone matching, richer response).
-- Phone normalisation: strip non-digits, drop leading `44`/`0`, compare last 10 digits.
-- Step 3's "check lessons" already queries students by `parent_id`, so it starts working once the child is attached.
+## Files and data
+
+- Update `supabase/functions/create-parent-account/index.ts`.
+- Update the Step 1 result handling in `src/pages/Onboarding.tsx`.
+- No schema change is needed.
+- Apply a one-off data update to the existing Glory Anthony student record after the code fix.
