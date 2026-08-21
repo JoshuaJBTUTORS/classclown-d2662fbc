@@ -208,9 +208,45 @@ serve(async (req) => {
       studentsViaStale = data || [];
     }
 
+    // 3c. Any UNLINKED student whose phone matches the parent's phone
+    // (covers trials booked with a different email address).
+    const phoneKey = (value: unknown): string => {
+      let digits = String(value ?? '').replace(/\D/g, '');
+      if (digits.startsWith('00')) digits = digits.slice(2);
+      if (digits.startsWith('44')) digits = digits.slice(2);
+      while (digits.startsWith('0')) digits = digits.slice(1);
+      return digits;
+    };
+
+    const parentPhoneKey = phoneKey(phone);
+    let studentsByPhone: any[] = [];
+    if (parentPhoneKey.length >= 9) {
+      const { data: unlinkedStudents, error: phoneLookupErr } = await supabaseAdmin
+        .from('students')
+        .select('id, parent_id, phone, email')
+        .is('parent_id', null)
+        .not('phone', 'is', null);
+
+      if (phoneLookupErr) {
+        console.error('student phone lookup error:', phoneLookupErr);
+      } else {
+        studentsByPhone = (unlinkedStudents || []).filter(
+          (s: any) => phoneKey(s.phone) === parentPhoneKey
+        );
+        if (studentsByPhone.length > 0) {
+          console.log(
+            'Matched student(s) by phone:',
+            studentsByPhone.map((s: any) => `${s.id} (${s.email ?? 'no email'})`)
+          );
+        }
+      }
+    }
+
     const toLink = new Map<number, { id: number; parent_id: string | null }>();
     (studentsByEmail || []).forEach((s: any) => toLink.set(s.id, s));
     studentsViaStale.forEach((s: any) => toLink.set(s.id, s));
+    studentsByPhone.forEach((s: any) => toLink.set(s.id, { id: s.id, parent_id: s.parent_id }));
+
 
     const idsNeedingUpdate = Array.from(toLink.values())
       .filter((s) => s.parent_id !== parentId)
