@@ -1,54 +1,51 @@
-# Fix the existing trial-to-active onboarding conversion
+# Share trial bookings and completed proposals with another Lovable project
 
-## Confirmed issue
+A read-only API on this CRM that the other project pulls from, protected by an API key.
 
-The existing `create-parent-account` function is already intended to convert trial students to active. For Glory Anthony, the live records show:
+## What gets shared
 
-- Parent account was created successfully from the proposal.
-- Proposal email: `gloryenorgieanthony@gmail.com`.
-- Trial student email: `gloryirhene2015@gmail.com`.
-- Both records use the same phone number.
-- Student 918 remains unlinked with `status = trial`, `account_type = trial`, and `trial_status = pending`.
+**Trial bookings** (from `trial_bookings`)
+- Parent name, child name, email, phone
+- Subject name, year group, preferred date/time, lesson time
+- Status, booking source, referral code, message
+- Created/updated timestamps
 
-The existing function currently:
+**Completed proposals** (from `lesson_proposals`, status = `completed`)
+- Recipient name, email, phone
+- Subject, lesson type, price per lesson, payment cycle, contract term
+- Lesson times (weekly session schedule)
+- Deal size, calculated from the proposal:
+  - sessions per week = number of entries in lesson times
+  - weekly value = price per lesson x sessions per week
+  - monthly value = weekly value x 4.33
+  - contract value = monthly value x contract length (month-to-month = 1, 3 months = 3, 12 months = 12)
+- Completed/agreed/created timestamps
 
-1. Finds the student only by matching the proposal/parent email or an existing parent link, so Glory was never selected because the emails differ.
-2. For selected students, changes only `status` to `active`; it does not convert `account_type` from `trial` to `regular` or clear `trial_status`.
+## How the other project fetches it
 
-## Changes
+One new endpoint: `crm-data-feed`.
 
-### 1. Correct the existing matching logic
+- `GET /crm-data-feed?type=trial_bookings&since=<ISO timestamp>&limit=100`
+- `GET /crm-data-feed?type=proposals&since=<ISO timestamp>&limit=100`
+- `GET /crm-data-feed?type=all&since=...` returns both lists in one response
 
-Update `create-parent-account` to find the existing trial student using:
+Rules:
+- Requires header `x-api-key` matching a secret stored in this project. Requests without it get 401.
+- `since` filters on the record's last change (updated/completed time) so the other project can poll incrementally and never miss or duplicate records.
+- Results sorted oldest-to-newest with a `next_since` cursor in the response, plus `has_more`.
+- Default limit 100, maximum 500.
+- CORS enabled so a browser-side call from the other project works.
 
-1. Exact normalized email match.
-2. Exact normalized phone match when the email differs.
-3. Existing `parent_id` association.
+Because records are returned the moment they exist, a poll right after a booking or a proposal completion returns it immediately — effectively real-time from the consumer's side, with no data lost if their app is down.
 
-Phone matching will ignore spaces, punctuation, and UK `+44` versus leading `0` formatting. Name matching will not automatically change records, avoiding accidental links between people with similar names.
+## Technical details
 
-### 2. Complete the trial-to-active conversion
+- New edge function `supabase/functions/crm-data-feed/index.ts`, running with the service role and doing its own API-key check (no Supabase JWT required from the caller).
+- New secret `CRM_FEED_API_KEY` — I will generate it and you share it with the other project.
+- Subject names resolved by joining `subjects`; year group resolved by joining `year_groups`.
+- Deal size computed in the function, so the other project receives ready-made `weekly_value`, `monthly_value`, `contract_months`, and `contract_value` fields in GBP.
+- No database changes and no changes to existing app screens.
 
-For every matched family student that is currently a trial, update the existing record in one operation:
+## After it is built
 
-- `parent_id` → newly created/reused parent row
-- `status` → `active`
-- `account_type` → `regular`
-- `trial_status` → cleared
-
-Then re-read the records and fail the onboarding request visibly if any matched student remains marked as trial in any of those fields.
-
-### 3. Report the result accurately
-
-Return and display the number of students linked and fully converted. Do not show onboarding Step 1 as successfully complete when no student was matched; instead show a clear message that the parent was created but no trial child could be converted.
-
-### 4. Repair Glory Anthony
-
-Run the corrected conversion for the existing records, linking student 918 to parent `f555a824-6454-40f4-9548-68834fcaa0bd`, setting the student to active/regular, and clearing the pending trial state. Verify the persisted values afterward.
-
-## Files and data
-
-- Update `supabase/functions/create-parent-account/index.ts`.
-- Update the Step 1 result handling in `src/pages/Onboarding.tsx`.
-- No schema change is needed.
-- Apply a one-off data update to the existing Glory Anthony student record after the code fix.
+I will call the endpoint here to confirm both feeds return real data, then give you the exact URL, key, and a sample response to hand to the other project.
