@@ -38,8 +38,8 @@ function computeDealSize(proposal: any) {
     sessions_per_week: sessionsPerWeek,
     weekly_value: round2(weekly),
     monthly_value: round2(monthly),
-    contract_months: 10,
-    contract_value: round2(monthly * 10),
+    contract_months: 8,
+    contract_value: round2(monthly * 8),
   };
 }
 
