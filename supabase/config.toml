@@ -222,3 +222,6 @@ verify_jwt = false
 
 [functions.purge-teaching-materials]
 verify_jwt = false
+
+[functions.crm-data-feed]
+verify_jwt = false
