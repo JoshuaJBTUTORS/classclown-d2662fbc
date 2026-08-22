@@ -32,15 +32,14 @@ function computeDealSize(proposal: any) {
   const sessionsPerWeek = times.length || 1;
   const weekly = price * sessionsPerWeek;
   const monthly = weekly * WEEKS_PER_MONTH;
-  const months = contractMonths(proposal.contract_term);
   return {
     currency: "GBP",
     price_per_lesson: price,
     sessions_per_week: sessionsPerWeek,
     weekly_value: round2(weekly),
     monthly_value: round2(monthly),
-    contract_months: months,
-    contract_value: round2(monthly * months),
+    contract_months: 10,
+    contract_value: round2(monthly * 10),
   };
 }
 
