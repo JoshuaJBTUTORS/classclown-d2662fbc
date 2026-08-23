@@ -92,14 +92,21 @@ export const ReviewedSubmissionCard: React.FC<ReviewedSubmissionCardProps> = ({
   const responses = data?.responses ?? [];
   const responseByQuestion = new Map(responses.map((r) => [r.question_id, r]));
 
+  // Only questions the student genuinely attempted count towards the score
+  const attemptedQuestions = questions.filter((q: any) => {
+    const r = responseByQuestion.get(q.id);
+    return !!r?.student_answer?.trim();
+  });
+
   const totalAvailable =
-    questions.reduce((s, q: any) => s + (Number(q.marks_available) || 0), 0) ||
-    Number(session?.total_marks_available) ||
-    0;
-  const totalAchieved = responses.length
-    ? responses.reduce((s, r) => s + (Number(r.marks_awarded) || 0), 0)
-    : Number(session?.total_marks_achieved) || 0;
+    attemptedQuestions.reduce((s, q: any) => s + (Number(q.marks_available) || 0), 0) || 0;
+  const totalAchieved = attemptedQuestions.reduce(
+    (s, q: any) => s + (Number(responseByQuestion.get(q.id)?.marks_awarded) || 0),
+    0
+  );
   const percentage = totalAvailable > 0 ? Math.round((totalAchieved / totalAvailable) * 100) : 0;
+  const skippedCount = questions.length - attemptedQuestions.length;
+
 
   const gradeLabel =
     percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : percentage >= 40 ? 'Developing' : 'Needs work';
@@ -162,12 +169,20 @@ export const ReviewedSubmissionCard: React.FC<ReviewedSubmissionCardProps> = ({
                   </span>
                 </div>
                 <Progress value={percentage} className="h-2" />
-                <Badge variant={percentage >= 60 ? 'default' : 'secondary'}>{gradeLabel}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={percentage >= 60 ? 'default' : 'secondary'}>{gradeLabel}</Badge>
+                  {skippedCount > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {skippedCount} unattempted question{skippedCount === 1 ? '' : 's'} excluded
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-3">
-                {questions.map((question: any) => {
+                {attemptedQuestions.map((question: any) => {
                   const response = responseByQuestion.get(question.id);
+
                   return (
                     <div key={question.id} className="rounded-lg border p-4 space-y-2">
                       <div className="flex items-start justify-between gap-3">
