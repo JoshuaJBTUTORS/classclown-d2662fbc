@@ -1323,6 +1323,48 @@ async function studentSnapshot(input: string) {
       .gte("created_at", iso(ago56)),
   ]);
 
+  // Assessments may be assigned to the STUDENT's account or to the PARENT's account
+  // (depending on how the family's accounts are set up), so check both.
+  const parentUserId = (parentRes as any)?.data?.user_id ?? null;
+  if (parentUserId && parentUserId !== student.user_id) {
+    const { data: parentAssignments } = await service
+      .from("assessment_assignments")
+      .select(
+        "id, assessment_id, status, due_date, submitted_at, reviewed_at, ai_assessments(title, subject, exam_board, total_marks)",
+      )
+      .eq("assigned_to", parentUserId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    const existing = new Set(((assignmentsRes as any).data ?? []).map((a: any) => a.id));
+    (assignmentsRes as any).data = [
+      ...(((assignmentsRes as any).data ?? []).map((a: any) => ({ ...a, assigned_to_account: "student" }))),
+      ...((parentAssignments ?? [])
+        .filter((a: any) => !existing.has(a.id))
+        .map((a: any) => ({ ...a, assigned_to_account: "parent" }))),
+    ];
+  }
+
+  // Sessions can also sit under the parent's user_id when the parent account took the exam.
+  if (parentUserId && parentUserId !== student.user_id) {
+    const assignedAssessmentIds = Array.from(
+      new Set((((assignmentsRes as any).data ?? []) as any[]).map((a: any) => a.assessment_id).filter(Boolean)),
+    );
+    if (assignedAssessmentIds.length) {
+      const { data: parentSessions } = await service
+        .from("assessment_sessions")
+        .select("id, assessment_id, status, attempt_number, time_taken_minutes, started_at, completed_at")
+        .eq("user_id", parentUserId)
+        .in("assessment_id", assignedAssessmentIds)
+        .order("started_at", { ascending: false })
+        .limit(25);
+      const seen = new Set((((sessionsRes as any).data ?? []) as any[]).map((s: any) => s.id));
+      (sessionsRes as any).data = [
+        ...(((sessionsRes as any).data ?? []) as any[]),
+        ...((parentSessions ?? []).filter((s: any) => !seen.has(s.id))),
+      ];
+    }
+  }
+
   const lessonIds = (linkRes.data ?? []).map((r: any) => r.lesson_id);
 
   const [attendanceRes, pastLessonsRes, upcomingRes, hwRes] = await Promise.all([
