@@ -1283,7 +1283,7 @@ async function studentSnapshot(input: string) {
     student.parent_id
       ? service
           .from("parents")
-          .select("first_name, last_name, email, phone, whatsapp_number, account_type")
+          .select("user_id, first_name, last_name, email, phone, whatsapp_number, account_type")
           .eq("id", student.parent_id)
           .maybeSingle()
       : Promise.resolve({ data: null } as any),
