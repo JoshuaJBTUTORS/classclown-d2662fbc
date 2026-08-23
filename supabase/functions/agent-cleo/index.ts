@@ -322,6 +322,10 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
     if (name === "tutor_snapshot") {
       return JSON.stringify(await tutorSnapshot(String(args.tutor ?? "")));
     }
+    if (name === "student_snapshot") {
+      return JSON.stringify(await studentSnapshot(String(args.student ?? "")));
+    }
+
     return JSON.stringify({ ok: false, error: `Unknown tool: ${name}` });
   } catch (e) {
     const message = (e as Error).message;
