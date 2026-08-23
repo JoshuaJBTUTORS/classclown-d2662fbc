@@ -169,12 +169,20 @@ export const ReviewedSubmissionCard: React.FC<ReviewedSubmissionCardProps> = ({
                   </span>
                 </div>
                 <Progress value={percentage} className="h-2" />
-                <Badge variant={percentage >= 60 ? 'default' : 'secondary'}>{gradeLabel}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={percentage >= 60 ? 'default' : 'secondary'}>{gradeLabel}</Badge>
+                  {skippedCount > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {skippedCount} unattempted question{skippedCount === 1 ? '' : 's'} excluded
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-3">
-                {questions.map((question: any) => {
+                {attemptedQuestions.map((question: any) => {
                   const response = responseByQuestion.get(question.id);
+
                   return (
                     <div key={question.id} className="rounded-lg border p-4 space-y-2">
                       <div className="flex items-start justify-between gap-3">
