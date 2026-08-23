@@ -209,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setParentProfile(parentData);
         
         // If user is a parent, fetch primary student's name
-        if (roleData?.role === 'parent') {
+        if (resolvedRole === 'parent') {
           const { data: studentData } = await supabase
             .from('students')
             .select('first_name')
