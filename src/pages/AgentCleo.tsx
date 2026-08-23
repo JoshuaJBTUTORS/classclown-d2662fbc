@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AudioRecorder } from '@/utils/audioRecorder';
@@ -808,7 +808,7 @@ const AgentCleo: React.FC = () => {
 
         <div className="px-2">
           <button onClick={newChat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors">
-            <Sparkles className="w-4 h-4" />
+            <MessageSquare className="w-4 h-4" />
             New chat
           </button>
           <button
