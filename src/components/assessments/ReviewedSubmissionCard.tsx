@@ -92,14 +92,21 @@ export const ReviewedSubmissionCard: React.FC<ReviewedSubmissionCardProps> = ({
   const responses = data?.responses ?? [];
   const responseByQuestion = new Map(responses.map((r) => [r.question_id, r]));
 
+  // Only questions the student genuinely attempted count towards the score
+  const attemptedQuestions = questions.filter((q: any) => {
+    const r = responseByQuestion.get(q.id);
+    return !!r?.student_answer?.trim();
+  });
+
   const totalAvailable =
-    questions.reduce((s, q: any) => s + (Number(q.marks_available) || 0), 0) ||
-    Number(session?.total_marks_available) ||
-    0;
-  const totalAchieved = responses.length
-    ? responses.reduce((s, r) => s + (Number(r.marks_awarded) || 0), 0)
-    : Number(session?.total_marks_achieved) || 0;
+    attemptedQuestions.reduce((s, q: any) => s + (Number(q.marks_available) || 0), 0) || 0;
+  const totalAchieved = attemptedQuestions.reduce(
+    (s, q: any) => s + (Number(responseByQuestion.get(q.id)?.marks_awarded) || 0),
+    0
+  );
   const percentage = totalAvailable > 0 ? Math.round((totalAchieved / totalAvailable) * 100) : 0;
+  const skippedCount = questions.length - attemptedQuestions.length;
+
 
   const gradeLabel =
     percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : percentage >= 40 ? 'Developing' : 'Needs work';
