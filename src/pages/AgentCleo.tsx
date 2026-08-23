@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Sparkles, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AudioRecorder } from '@/utils/audioRecorder';
@@ -127,6 +127,7 @@ const TOOL_LABELS: Record<string, string> = {
   run_sql: 'Running query…',
   propose_lesson: 'Preparing lesson…',
   propose_lesson_edit: 'Preparing lesson changes…',
+  open_page: 'Opening page…',
 
 };
 
@@ -609,6 +610,14 @@ const AgentCleo: React.FC = () => {
                 ? { ...m, proposals: [...(m.proposals ?? []), entry], toolStatus: null }
                 : m,
             ));
+          } else if (ev.type === 'navigate') {
+            const target = String(ev.path || '');
+            if (target.startsWith('/')) {
+              setMessages((prev) => prev.map((m) =>
+                m.id === assistantId ? { ...m, toolStatus: null } : m,
+              ));
+              setTimeout(() => navigate(target), 400);
+            }
           } else if (ev.type === 'tool_error') {
 
             setMessages((prev) => prev.map((m) =>
@@ -800,6 +809,13 @@ const AgentCleo: React.FC = () => {
           <button onClick={newChat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors">
             <Sparkles className="w-4 h-4" />
             New chat
+          </button>
+          <button
+            onClick={() => navigate('/calendar')}
+            className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Open CRM
           </button>
         </div>
 
