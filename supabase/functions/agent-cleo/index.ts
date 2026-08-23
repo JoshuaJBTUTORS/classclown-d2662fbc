@@ -79,6 +79,45 @@ STUDENTS (progress, lesson summaries, assessment results, homework):
 - Supporting tables: \`lesson_attendance\`, \`homework\` + \`homework_completion_status\`, \`lesson_revision_notes\` (flashcards), \`school_progress\` (uploaded reports and mock results), \`topic_requests\`.
 - Results are sensitive: report them when asked, and never mix in or volunteer another family's data.
 
+NAVIGATING THE CRM (opening pages):
+- Agent Cleo is the landing page for admins and owners, so users will ask you to "open", "go to" or "take me to" a page. Use the \`open_page\` tool — it navigates the user's browser straight there.
+- Match the request to the closest route below. If nothing matches well, say so instead of guessing a URL.
+- You may pass a specific record path when you have resolved a real id (e.g. \`/students-list/42\`, \`/admin/proposals/<uuid>/view\`).
+- After calling \`open_page\`, reply with one short sentence confirming what you opened.
+- Routes:
+  /calendar — Calendar, all scheduled lessons
+  /admin-dashboard — Admin dashboard, KPIs and monthly stats
+  /goals — Goals
+  /admin-earnings — Admin earnings
+  /admin/revenue-expansion — Revenue expansion
+  /students — Students (people management)
+  /students-list — Students list (admin) ; /students-list/<id> for one student
+  /onboarding — Onboard a new client
+  /tutors — Tutors
+  /staff — Staff
+  /lessons — Lessons
+  /lesson-plans — Lesson plans
+  /lesson-planning — Lesson planning
+  /lesson-summaries — Lesson summaries
+  /homework — Homework
+  /assessment-center — Assessment centre
+  /assessment-assignments — Assessment assignments (marking, pending review, reviewed)
+  /progress — Progress
+  /school-progress — School progress
+  /reports — Reports
+  /trial-bookings — Trial bookings
+  /referrals — Referrals
+  /admin/proposals — Proposals dashboard
+  /admin/proposals/create — Create a proposal
+  /admin/proposals/signed — Signed proposals
+  /admin/sent-offers — Sent tutor offers
+  /admin/live-sessions — Live sessions tracker
+  /admin/recurring-lessons — Recurring lessons
+  /admin/lessonspace-replay — LessonSpace replays
+  /time-off-requests — Time off requests
+  /topic-requests — Topic requests
+  /hub-access — Hub access management
+  /settings — Settings
 
 
 WHEN A TOOL FAILS (failure recovery protocol):
@@ -161,6 +200,24 @@ const tools = [
     },
   },
   {
+    type: "function",
+    function: {
+      name: "open_page",
+      description:
+        "Navigate the user's browser to a page in the CRM. Use when the user asks to open / go to / show a page. Pass an app path starting with '/' taken from the routes list in your instructions.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "App path, e.g. /calendar or /students-list/42" },
+          label: { type: "string", description: "Human-friendly page name, e.g. 'Calendar'" },
+        },
+        required: ["path"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+
     type: "function",
     function: {
       name: "student_snapshot",
@@ -1078,7 +1135,29 @@ Deno.serve(async (req) => {
               let parsedArgs: Record<string, unknown> = {};
               try { parsedArgs = JSON.parse(call.args || "{}"); } catch {}
 
+              if (call.name === "open_page") {
+                const rawPath = String((parsedArgs as any).path ?? "").trim();
+                const path = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+                const label = String((parsedArgs as any).label ?? path);
+                if (!/^\/[A-Za-z0-9\-_/:.]*$/.test(path)) {
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({ ok: false, error: `Invalid path: ${rawPath}` }),
+                  });
+                  continue;
+                }
+                send({ type: "navigate", path, label });
+                messages.push({
+                  role: "tool",
+                  tool_call_id: call.id!,
+                  content: JSON.stringify({ ok: true, opened: path, note: "The user is being taken to this page now. Reply with one short sentence confirming it." }),
+                });
+                continue;
+              }
+
               if (call.name === "propose_lesson") {
+
                 const built = await buildLessonProposal(parsedArgs as Record<string, any>);
                 if (built.ok) {
                   send({ type: "proposal", proposal: built.proposal });

@@ -20,6 +20,11 @@ const AuthRedirect = () => {
       return <Navigate to="/heycleo" replace />;
     }
     
+    // Admins and owners land on Agent Cleo
+    if (userRole === 'admin' || userRole === 'owner') {
+      return <Navigate to="/agent-cleo" replace />;
+    }
+
     // Other authenticated users: check feature flag
     if (hasCleoHubAccess) {
       return <Navigate to="/heycleo" replace />;
