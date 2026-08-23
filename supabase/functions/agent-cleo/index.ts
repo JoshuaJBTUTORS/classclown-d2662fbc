@@ -1135,7 +1135,29 @@ Deno.serve(async (req) => {
               let parsedArgs: Record<string, unknown> = {};
               try { parsedArgs = JSON.parse(call.args || "{}"); } catch {}
 
+              if (call.name === "open_page") {
+                const rawPath = String((parsedArgs as any).path ?? "").trim();
+                const path = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+                const label = String((parsedArgs as any).label ?? path);
+                if (!/^\/[A-Za-z0-9\-_/:.]*$/.test(path)) {
+                  messages.push({
+                    role: "tool",
+                    tool_call_id: call.id!,
+                    content: JSON.stringify({ ok: false, error: `Invalid path: ${rawPath}` }),
+                  });
+                  continue;
+                }
+                send({ type: "navigate", path, label });
+                messages.push({
+                  role: "tool",
+                  tool_call_id: call.id!,
+                  content: JSON.stringify({ ok: true, opened: path, note: "The user is being taken to this page now. Reply with one short sentence confirming it." }),
+                });
+                continue;
+              }
+
               if (call.name === "propose_lesson") {
+
                 const built = await buildLessonProposal(parsedArgs as Record<string, any>);
                 if (built.ok) {
                   send({ type: "proposal", proposal: built.proposal });
