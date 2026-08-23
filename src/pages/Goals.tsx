@@ -9,25 +9,19 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
-const TRIAL_GOAL = 1800;
-const LESSONS_GOAL = 2500;
-const AVG_GROUP_GOAL = 3.5;
-const PROPOSALS_GOAL = 390;
-const CUSTOMERS_GOAL = 400;
-const CUSTOMERS_SETTING_KEY = 'customers_count';
-
-// Fixed campaign window
-const GOAL_START = new Date('2026-07-01T00:00:00Z');
-const GOAL_DEADLINE = new Date('2027-01-31T23:59:59Z');
-
-type Status = 'achieved' | 'on-track' | 'behind' | 'not-achieved';
-
-const statusLabel: Record<Status, string> = {
-  'achieved': 'Achieved',
-  'on-track': 'On track',
-  'behind': 'Behind',
-  'not-achieved': 'Not achieved',
-};
+import {
+  TRIAL_GOAL,
+  LESSONS_GOAL,
+  AVG_GROUP_GOAL,
+  PROPOSALS_GOAL,
+  CUSTOMERS_GOAL,
+  CUSTOMERS_SETTING_KEY,
+  GOAL_START,
+  GOAL_DEADLINE,
+  computeStatus,
+  goalStatusLabel as statusLabel,
+  type GoalStatus as Status,
+} from '@/lib/goals';
 
 // Pastel, non-green status pills
 const statusClass: Record<Status, string> = {
@@ -45,17 +39,6 @@ const cardPalettes = [
   { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'text-amber-500', bar: 'bg-amber-400' },
   { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'text-rose-500', bar: 'bg-rose-400' },
 ];
-
-function computeStatus(current: number, target: number): Status {
-  if (current >= target) return 'achieved';
-  const now = new Date();
-  if (now > GOAL_DEADLINE) return 'not-achieved';
-  if (now < GOAL_START) return 'on-track';
-  const total = GOAL_DEADLINE.getTime() - GOAL_START.getTime();
-  const elapsed = now.getTime() - GOAL_START.getTime();
-  const expected = target * (elapsed / total);
-  return current < 0.9 * expected ? 'behind' : 'on-track';
-}
 
 interface GoalCardProps {
   title: string;
