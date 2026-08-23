@@ -66,6 +66,19 @@ TUTORS (working hours, pay, subjects, time off):
 - Pay rates are sensitive. Report them when the user asks about pay or cost; never volunteer them in unrelated answers.
 - Cross-check clashes yourself: a tutor is unavailable if the slot is outside their weekly availability, falls inside approved time off, or overlaps an existing lesson.
 
+STUDENTS (progress, lesson summaries, assessment results, homework):
+- \`student_snapshot\` is the fastest way to answer any question about ONE student. It returns profile + parent contact, attendance for 90 days, the last 10 lesson summaries (what went well / areas for improvement / topics / engagement), recurring weakness themes, every assessment assignment with attempted-only scores and the weakest questions with AI feedback, homework completion for 8 weeks, and upcoming lessons. Use it before writing SQL about a named student.
+- \`students\`: \`id\` is an INTEGER, plus \`user_id\` (auth uuid) and \`parent_id\` → \`parents\`. Some tables key off \`student_id\` (integer), others off the user uuid — resolve BOTH before querying.
+- \`lesson_student_summaries\`: the per-lesson AI summary — \`what_went_well\`, \`areas_for_improvement\`, \`topics_covered\`, \`engagement_level\`/\`engagement_score\`, \`confidence_score\`, \`homework_brief\`, \`attendance_status\`. Richest source for "how is this student doing".
+- \`student_lesson_insights\`: denormalised dashboard mirror (subject, lesson_title, week_start_date, \`is_meaningful\`). Use it for trends over time; use the summaries table for narrative text.
+- ABSENCE RULE: when \`attendance_status\` shows the student missed the lesson, engagement and confidence scores are meaningless. Report it as missed — never as low engagement.
+- \`assessment_assignments\`: \`assigned_to\` is the student's USER UUID (not students.id). \`status\` is 'pending' / 'submitted' / 'reviewed', with \`submitted_at\` and \`reviewed_at\`. Join \`ai_assessments\` for title, subject, exam_board, total_marks.
+- \`assessment_sessions\`: one attempt — \`total_marks_achieved\`, \`total_marks_available\`, \`attempt_number\`, \`time_taken_minutes\`, \`status\`.
+- \`student_responses\` → \`assessment_questions\`: per-question \`student_answer\`, \`marks_awarded\`, \`ai_feedback\`, \`marks_available\`. BLANK answers are SKIPPED questions and are EXCLUDED from the percentage — score attempted questions only and report the skipped count separately, so your numbers match the /assessment-assignments UI.
+- \`assessment_improvements\`: stored \`weak_topics\` and \`improvement_summary\` for a session — prefer it over re-deriving weaknesses.
+- Supporting tables: \`lesson_attendance\`, \`homework\` + \`homework_completion_status\`, \`lesson_revision_notes\` (flashcards), \`school_progress\` (uploaded reports and mock results), \`topic_requests\`.
+- Results are sensitive: report them when asked, and never mix in or volunteer another family's data.
+
 
 
 WHEN A TOOL FAILS (failure recovery protocol):
@@ -148,6 +161,23 @@ const tools = [
     },
   },
   {
+    type: "function",
+    function: {
+      name: "student_snapshot",
+      description:
+        "Everything about one student in a single call: profile and parent contact, attendance over the last 90 days, the last 10 lesson summaries (topics, engagement, what went well, areas for improvement), recurring weakness themes, all assessment assignments with attempted-only scores, percentages, skipped counts and the weakest questions with AI feedback, homework completion over 8 weeks, and upcoming lessons for the next 14 days. Pass a name, an integer student id or a user uuid. If the name is ambiguous it returns the matching candidates instead.",
+      parameters: {
+        type: "object",
+        properties: {
+          student: { type: "string", description: "Student name, integer students.id, or user uuid" },
+        },
+        required: ["student"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+
     type: "function",
     function: {
       name: "propose_lesson",
@@ -292,6 +322,10 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
     if (name === "tutor_snapshot") {
       return JSON.stringify(await tutorSnapshot(String(args.tutor ?? "")));
     }
+    if (name === "student_snapshot") {
+      return JSON.stringify(await studentSnapshot(String(args.student ?? "")));
+    }
+
     return JSON.stringify({ ok: false, error: `Unknown tool: ${name}` });
   } catch (e) {
     const message = (e as Error).message;
@@ -1173,4 +1207,335 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+/* ------------------------------------------------------------------ *
+ * Student knowledge: progress, summaries, assessments, homework
+ * ------------------------------------------------------------------ */
+
+async function resolveStudent(input: string) {
+  const term = input.trim();
+  if (!term) return [] as any[];
+
+  if (/^\d+$/.test(term)) {
+    const { data } = await service.from("students").select("*").eq("id", Number(term)).maybeSingle();
+    return data ? [data] : [];
+  }
+  if (/^[0-9a-f-]{36}$/i.test(term)) {
+    const { data } = await service.from("students").select("*").eq("user_id", term);
+    return data ?? [];
+  }
+
+  const like = `%${term}%`;
+  const { data } = await service
+    .from("students")
+    .select("*")
+    .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like}`);
+  let rows = data ?? [];
+
+  if (rows.length > 1 && term.includes(" ")) {
+    const [first, ...rest] = term.split(/\s+/);
+    const last = rest.join(" ").toLowerCase();
+    const exact = rows.filter(
+      (s: any) =>
+        (s.first_name ?? "").toLowerCase() === first.toLowerCase() &&
+        (s.last_name ?? "").toLowerCase() === last,
+    );
+    if (exact.length) rows = exact;
+  }
+  return rows;
+}
+
+const blank = (v: unknown) => !String(v ?? "").trim();
+
+/**
+ * Full picture of one student: attendance, lesson summaries, weaknesses,
+ * assessment results (attempted questions only) and homework completion.
+ */
+async function studentSnapshot(input: string) {
+  const candidates = await resolveStudent(input);
+  if (!candidates.length) {
+    return { ok: false, error: `No student matched "${input}". Search public.students with ILIKE to find the right name.` };
+  }
+  if (candidates.length > 1) {
+    return {
+      ok: false,
+      ambiguous: true,
+      error: `${candidates.length} students match "${input}". Ask the user which one they mean.`,
+      candidates: candidates.map((s: any) => ({
+        id: s.id,
+        name: `${s.first_name ?? ""} ${s.last_name ?? ""}`.trim(),
+        email: s.email,
+        grade: s.grade,
+        status: s.status,
+      })),
+    };
+  }
+
+  const student: any = candidates[0];
+  const now = new Date();
+  const iso = (d: Date) => d.toISOString();
+  const ago90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const ago56 = new Date(now.getTime() - 56 * 24 * 60 * 60 * 1000);
+  const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+  const [parentRes, linkRes, summariesRes, assignmentsRes, sessionsRes, hwStatusRes] = await Promise.all([
+    student.parent_id
+      ? service
+          .from("parents")
+          .select("first_name, last_name, email, phone, whatsapp_number, account_type")
+          .eq("id", student.parent_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null } as any),
+    service.from("lesson_students").select("lesson_id").eq("student_id", student.id),
+    service
+      .from("lesson_student_summaries")
+      .select(
+        "lesson_id, topics_covered, what_went_well, areas_for_improvement, engagement_level, engagement_score, confidence_score, attendance_status, homework_brief, created_at, lessons(title, subject, start_time)",
+      )
+      .eq("student_id", student.id)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    student.user_id
+      ? service
+          .from("assessment_assignments")
+          .select(
+            "id, assessment_id, status, due_date, submitted_at, reviewed_at, ai_assessments(title, subject, exam_board, total_marks)",
+          )
+          .eq("assigned_to", student.user_id)
+          .order("created_at", { ascending: false })
+          .limit(25)
+      : Promise.resolve({ data: [] } as any),
+    service
+      .from("assessment_sessions")
+      .select("id, assessment_id, status, attempt_number, time_taken_minutes, started_at, completed_at")
+      .or(
+        [`student_id.eq.${student.id}`, student.user_id ? `user_id.eq.${student.user_id}` : ""]
+          .filter(Boolean)
+          .join(","),
+      )
+      .order("started_at", { ascending: false })
+      .limit(25),
+    service
+      .from("homework_completion_status")
+      .select("homework_id, status, created_at")
+      .eq("student_id", student.id)
+      .gte("created_at", iso(ago56)),
+  ]);
+
+  const lessonIds = (linkRes.data ?? []).map((r: any) => r.lesson_id);
+
+  const [attendanceRes, pastLessonsRes, upcomingRes, hwRes] = await Promise.all([
+    service
+      .from("lesson_attendance")
+      .select("attendance_status, lesson_id, created_at, lessons(title, subject, start_time)")
+      .eq("student_id", student.id)
+      .gte("created_at", iso(ago90)),
+    Promise.resolve({ data: null } as any),
+    lessonIds.length
+      ? service
+          .from("lessons")
+          .select("id, title, subject, start_time, status, tutors(first_name, last_name)")
+          .in("id", lessonIds.slice(0, 400))
+          .gte("start_time", iso(now))
+          .lte("start_time", iso(in14))
+          .order("start_time", { ascending: true })
+      : Promise.resolve({ data: [] } as any),
+    lessonIds.length
+      ? service
+          .from("homework")
+          .select("id, title, due_date, created_at")
+          .in("lesson_id", lessonIds.slice(0, 400))
+          .gte("created_at", iso(ago56))
+      : Promise.resolve({ data: [] } as any),
+  ]);
+  void pastLessonsRes;
+
+  // ---- attendance -------------------------------------------------
+  const attendance = (attendanceRes.data ?? []).map((a: any) => ({
+    status: a.attendance_status,
+    lesson: a.lessons?.title ?? null,
+    subject: a.lessons?.subject ?? null,
+    when: a.lessons?.start_time ? londonParts(a.lessons.start_time).label : null,
+  }));
+  const attended = attendance.filter((a) => /present|attended|late/i.test(String(a.status))).length;
+  const missed = attendance.filter((a) => /absent|missed|no.?show/i.test(String(a.status)));
+
+  // ---- lesson summaries & weakness themes -------------------------
+  const summaries = (summariesRes.data ?? []).map((s: any) => {
+    const absent = /absent|missed|no.?show/i.test(String(s.attendance_status ?? ""));
+    return {
+      lesson: s.lessons?.title ?? null,
+      subject: s.lessons?.subject ?? null,
+      when: s.lessons?.start_time ? londonParts(s.lessons.start_time).label : null,
+      attendance_status: s.attendance_status,
+      attended: !absent,
+      topics: s.topics_covered ?? [],
+      what_went_well: absent ? null : s.what_went_well,
+      areas_for_improvement: absent ? null : s.areas_for_improvement,
+      engagement_level: absent ? null : s.engagement_level,
+      engagement_score: absent ? null : s.engagement_score,
+      confidence_score: absent ? null : s.confidence_score,
+      homework_brief: s.homework_brief ?? null,
+      note: absent ? "Student missed this lesson — engagement/confidence not meaningful." : undefined,
+    };
+  });
+
+  const themeCounts = new Map<string, number>();
+  for (const s of summaries) {
+    const text = String(s.areas_for_improvement ?? "").toLowerCase();
+    for (const word of text.split(/[^a-z]+/)) {
+      if (word.length < 5) continue;
+      themeCounts.set(word, (themeCounts.get(word) ?? 0) + 1);
+    }
+  }
+  const recurring_weakness_themes = Array.from(themeCounts.entries())
+    .filter(([, n]) => n >= 3)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([term, count]) => ({ term, mentions: count }));
+
+  // ---- assessments ------------------------------------------------
+  const sessions = sessionsRes.data ?? [];
+  const sessionIds = sessions.map((s: any) => s.id);
+
+  let responsesBySession = new Map<string, any[]>();
+  if (sessionIds.length) {
+    const { data: responses } = await service
+      .from("student_responses")
+      .select(
+        "session_id, student_answer, marks_awarded, ai_feedback, assessment_questions(question_number, question_text, marks_available)",
+      )
+      .in("session_id", sessionIds);
+    for (const r of responses ?? []) {
+      const list = responsesBySession.get(r.session_id) ?? [];
+      list.push(r);
+      responsesBySession.set(r.session_id, list);
+    }
+  }
+
+  const { data: improvements } = sessionIds.length
+    ? await service
+        .from("assessment_improvements")
+        .select("session_id, weak_topics, improvement_summary")
+        .in("session_id", sessionIds)
+    : ({ data: [] } as any);
+
+  const assignments = assignmentsRes.data ?? [];
+  const assessments = sessions.map((sess: any) => {
+    const rows = responsesBySession.get(sess.id) ?? [];
+    const attempted = rows.filter((r: any) => !blank(r.student_answer));
+    const skipped = rows.length - attempted.length;
+    const achieved = attempted.reduce((n: number, r: any) => n + (r.marks_awarded ?? 0), 0);
+    const available = attempted.reduce(
+      (n: number, r: any) => n + (r.assessment_questions?.marks_available ?? 0),
+      0,
+    );
+    const assignment = assignments.find((a: any) => a.assessment_id === sess.assessment_id);
+    const improvement = (improvements ?? []).find((i: any) => i.session_id === sess.id);
+
+    const weakest = attempted
+      .filter((r: any) => (r.marks_awarded ?? 0) < (r.assessment_questions?.marks_available ?? 0))
+      .sort(
+        (a: any, b: any) =>
+          (a.marks_awarded ?? 0) / Math.max(1, a.assessment_questions?.marks_available ?? 1) -
+          (b.marks_awarded ?? 0) / Math.max(1, b.assessment_questions?.marks_available ?? 1),
+      )
+      .slice(0, 5)
+      .map((r: any) => ({
+        question_number: r.assessment_questions?.question_number ?? null,
+        question: String(r.assessment_questions?.question_text ?? "").slice(0, 300),
+        marks: `${r.marks_awarded ?? 0}/${r.assessment_questions?.marks_available ?? 0}`,
+        student_answer: String(r.student_answer ?? "").slice(0, 300),
+        ai_feedback: r.ai_feedback ?? null,
+      }));
+
+    return {
+      session_id: sess.id,
+      title: assignment?.ai_assessments?.title ?? null,
+      subject: assignment?.ai_assessments?.subject ?? null,
+      exam_board: assignment?.ai_assessments?.exam_board ?? null,
+      assignment_status: assignment?.status ?? null,
+      session_status: sess.status,
+      attempt_number: sess.attempt_number,
+      submitted_at: assignment?.submitted_at ?? sess.completed_at ?? null,
+      reviewed_at: assignment?.reviewed_at ?? null,
+      time_taken_minutes: sess.time_taken_minutes,
+      questions_total: rows.length,
+      questions_attempted: attempted.length,
+      questions_skipped: skipped,
+      marks_achieved: achieved,
+      marks_available_attempted: available,
+      percentage_attempted_only: available > 0 ? Math.round((achieved / available) * 100) : null,
+      weak_topics: improvement?.weak_topics ?? null,
+      improvement_summary: improvement?.improvement_summary ?? null,
+      weakest_questions: weakest,
+    };
+  });
+
+  const outstanding = assignments
+    .filter((a: any) => a.status !== "reviewed" && !a.submitted_at)
+    .map((a: any) => ({
+      title: a.ai_assessments?.title ?? null,
+      subject: a.ai_assessments?.subject ?? null,
+      status: a.status,
+      due_date: a.due_date,
+    }));
+
+  // ---- homework ---------------------------------------------------
+  const hwAssigned = (hwRes.data ?? []).length;
+  const hwStatuses = hwStatusRes.data ?? [];
+  const hwCompleted = hwStatuses.filter((h: any) => /complete|done|yes/i.test(String(h.status))).length;
+
+  return {
+    ok: true,
+    student: {
+      id: student.id,
+      user_id: student.user_id,
+      name: `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim(),
+      email: student.email,
+      phone: student.phone,
+      grade: student.grade,
+      subjects: student.subjects,
+      status: student.status,
+      account_type: student.account_type,
+      trial_status: student.trial_status,
+    },
+    parent: parentRes.data
+      ? {
+          name: `${parentRes.data.first_name ?? ""} ${parentRes.data.last_name ?? ""}`.trim(),
+          email: parentRes.data.email,
+          phone: parentRes.data.phone ?? parentRes.data.whatsapp_number,
+          account_type: parentRes.data.account_type,
+        }
+      : null,
+    attendance_last_90_days: {
+      records: attendance.length,
+      attended,
+      missed: missed.length,
+      missed_lessons: missed.slice(0, 10),
+    },
+    recent_lesson_summaries: summaries,
+    recurring_weakness_themes,
+    assessments,
+    outstanding_assessments: outstanding,
+    homework_last_8_weeks: {
+      assigned: hwAssigned,
+      marked_complete: hwCompleted,
+      completion_rate_percent: hwAssigned > 0 ? Math.round((hwCompleted / hwAssigned) * 100) : null,
+    },
+    upcoming_lessons_next_14_days: (upcomingRes.data ?? []).map((l: any) => ({
+      id: l.id,
+      title: l.title,
+      subject: l.subject,
+      status: l.status,
+      tutor: l.tutors ? `${l.tutors.first_name ?? ""} ${l.tutors.last_name ?? ""}`.trim() : null,
+      london: londonParts(l.start_time).label,
+      start_time_utc: l.start_time,
+    })),
+    notes: [
+      "Assessment percentages count ATTEMPTED questions only — blank answers are reported as skipped.",
+      "Lessons the student missed have engagement/confidence suppressed; report them as missed.",
+    ],
+  };
 }
