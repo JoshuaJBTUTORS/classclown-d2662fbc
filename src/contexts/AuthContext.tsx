@@ -137,15 +137,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Fetch primary role
-      const { data: roleData, error: roleError } = await supabase
+      // Fetch all roles and resolve the highest-privilege one.
+      // This avoids falling back to Calendar when an admin/owner role
+      // exists but isn't marked as is_primary.
+      const { data: allRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('is_primary', true)
-        .maybeSingle();
+        .select('role, is_primary')
+        .eq('user_id', userId);
 
-      if (roleError) throw roleError;
+      if (rolesError) throw rolesError;
+
+      const rolePriority: AppRole[] = [
+        'owner',
+        'admin',
+        'tutor',
+        'parent',
+        'student',
+        'learning_hub_only'
+      ];
+
+      let resolvedRole: AppRole | null = null;
+
+      if (allRoles && allRoles.length > 0) {
+        const primary = allRoles.find(r => r.is_primary);
+        if (primary) {
+          resolvedRole = primary.role as AppRole;
+        } else {
+          // Pick highest-privilege role when no primary is set
+          const sorted = allRoles.sort(
+            (a, b) => rolePriority.indexOf(a.role as AppRole) - rolePriority.indexOf(b.role as AppRole)
+          );
+          resolvedRole = sorted[0].role as AppRole;
+        }
+      }
 
       // Fetch parent profile if user is a parent or learning hub user
       const { data: parentData, error: parentError } = await supabase
@@ -159,8 +183,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setHasCleoHubAccess((profileData as any).has_cleo_hub_access ?? false);
       }
 
-      if (roleData) {
-        setUserRole(roleData.role as AppRole);
+      if (resolvedRole) {
+        setUserRole(resolvedRole);
       } else if (user) {
         // If no role found, create default based on whether they have parent profile
         const defaultRole = parentData ? 'learning_hub_only' : 'student';
@@ -172,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: defaultRole,
               is_primary: true
             });
-            
+
           if (!insertError) {
             setUserRole(defaultRole);
           }
