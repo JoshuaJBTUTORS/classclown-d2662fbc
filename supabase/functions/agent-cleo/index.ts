@@ -1498,6 +1498,7 @@ async function studentSnapshot(input: string) {
       subject: assignment?.ai_assessments?.subject ?? null,
       exam_board: assignment?.ai_assessments?.exam_board ?? null,
       assignment_status: assignment?.status ?? null,
+      assigned_to_account: assignment?.assigned_to_account ?? "student",
       session_status: sess.status,
       attempt_number: sess.attempt_number,
       submitted_at: assignment?.submitted_at ?? sess.completed_at ?? null,
