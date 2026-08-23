@@ -72,7 +72,7 @@ STUDENTS (progress, lesson summaries, assessment results, homework):
 - \`lesson_student_summaries\`: the per-lesson AI summary — \`what_went_well\`, \`areas_for_improvement\`, \`topics_covered\`, \`engagement_level\`/\`engagement_score\`, \`confidence_score\`, \`homework_brief\`, \`attendance_status\`. Richest source for "how is this student doing".
 - \`student_lesson_insights\`: denormalised dashboard mirror (subject, lesson_title, week_start_date, \`is_meaningful\`). Use it for trends over time; use the summaries table for narrative text.
 - ABSENCE RULE: when \`attendance_status\` shows the student missed the lesson, engagement and confidence scores are meaningless. Report it as missed — never as low engagement.
-- \`assessment_assignments\`: \`assigned_to\` is the student's USER UUID (not students.id). \`status\` is 'pending' / 'submitted' / 'reviewed', with \`submitted_at\` and \`reviewed_at\`. Join \`ai_assessments\` for title, subject, exam_board, total_marks.
+- \`assessment_assignments\`: \`assigned_to\` is a USER UUID — and depending on the family's account setup that can be the STUDENT's user_id OR the PARENT's user_id (most are parent-assigned). ALWAYS check both: resolve \`students.user_id\` and \`parents.user_id\` (via \`students.parent_id\`) and query \`assigned_to IN (both)\`. Same for \`assessment_sessions.user_id\`. \`student_snapshot\` already does this and tags each result with \`assigned_to_account\`. \`status\` is 'pending' / 'submitted' / 'reviewed', with \`submitted_at\` and \`reviewed_at\`. Join \`ai_assessments\` for title, subject, exam_board, total_marks.
 - \`assessment_sessions\`: one attempt — \`total_marks_achieved\`, \`total_marks_available\`, \`attempt_number\`, \`time_taken_minutes\`, \`status\`.
 - \`student_responses\` → \`assessment_questions\`: per-question \`student_answer\`, \`marks_awarded\`, \`ai_feedback\`, \`marks_available\`. BLANK answers are SKIPPED questions and are EXCLUDED from the percentage — score attempted questions only and report the skipped count separately, so your numbers match the /assessment-assignments UI.
 - \`assessment_improvements\`: stored \`weak_topics\` and \`improvement_summary\` for a session — prefer it over re-deriving weaknesses.
@@ -1283,7 +1283,7 @@ async function studentSnapshot(input: string) {
     student.parent_id
       ? service
           .from("parents")
-          .select("first_name, last_name, email, phone, whatsapp_number, account_type")
+          .select("user_id, first_name, last_name, email, phone, whatsapp_number, account_type")
           .eq("id", student.parent_id)
           .maybeSingle()
       : Promise.resolve({ data: null } as any),
@@ -1322,6 +1322,48 @@ async function studentSnapshot(input: string) {
       .eq("student_id", student.id)
       .gte("created_at", iso(ago56)),
   ]);
+
+  // Assessments may be assigned to the STUDENT's account or to the PARENT's account
+  // (depending on how the family's accounts are set up), so check both.
+  const parentUserId = (parentRes as any)?.data?.user_id ?? null;
+  if (parentUserId && parentUserId !== student.user_id) {
+    const { data: parentAssignments } = await service
+      .from("assessment_assignments")
+      .select(
+        "id, assessment_id, status, due_date, submitted_at, reviewed_at, ai_assessments(title, subject, exam_board, total_marks)",
+      )
+      .eq("assigned_to", parentUserId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    const existing = new Set(((assignmentsRes as any).data ?? []).map((a: any) => a.id));
+    (assignmentsRes as any).data = [
+      ...(((assignmentsRes as any).data ?? []).map((a: any) => ({ ...a, assigned_to_account: "student" }))),
+      ...((parentAssignments ?? [])
+        .filter((a: any) => !existing.has(a.id))
+        .map((a: any) => ({ ...a, assigned_to_account: "parent" }))),
+    ];
+  }
+
+  // Sessions can also sit under the parent's user_id when the parent account took the exam.
+  if (parentUserId && parentUserId !== student.user_id) {
+    const assignedAssessmentIds = Array.from(
+      new Set((((assignmentsRes as any).data ?? []) as any[]).map((a: any) => a.assessment_id).filter(Boolean)),
+    );
+    if (assignedAssessmentIds.length) {
+      const { data: parentSessions } = await service
+        .from("assessment_sessions")
+        .select("id, assessment_id, status, attempt_number, time_taken_minutes, started_at, completed_at")
+        .eq("user_id", parentUserId)
+        .in("assessment_id", assignedAssessmentIds)
+        .order("started_at", { ascending: false })
+        .limit(25);
+      const seen = new Set((((sessionsRes as any).data ?? []) as any[]).map((s: any) => s.id));
+      (sessionsRes as any).data = [
+        ...(((sessionsRes as any).data ?? []) as any[]),
+        ...((parentSessions ?? []).filter((s: any) => !seen.has(s.id))),
+      ];
+    }
+  }
 
   const lessonIds = (linkRes.data ?? []).map((r: any) => r.lesson_id);
 
@@ -1456,6 +1498,7 @@ async function studentSnapshot(input: string) {
       subject: assignment?.ai_assessments?.subject ?? null,
       exam_board: assignment?.ai_assessments?.exam_board ?? null,
       assignment_status: assignment?.status ?? null,
+      assigned_to_account: assignment?.assigned_to_account ?? "student",
       session_status: sess.status,
       attempt_number: sess.attempt_number,
       submitted_at: assignment?.submitted_at ?? sess.completed_at ?? null,
