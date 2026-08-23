@@ -138,7 +138,7 @@ const DailySnapshot: React.FC = () => {
           value={data.proposalsThisWeek}
           sub={`This week · ${fmt(data.proposalsToday)} today`}
           loading={loading}
-          onClick={() => navigate('/admin/signed-proposals')}
+          onClick={() => navigate('/admin/proposals/signed')}
         />
       </div>
 
