@@ -202,6 +202,24 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "open_page",
+      description:
+        "Navigate the user's browser to a page in the CRM. Use when the user asks to open / go to / show a page. Pass an app path starting with '/' taken from the routes list in your instructions.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "App path, e.g. /calendar or /students-list/42" },
+          label: { type: "string", description: "Human-friendly page name, e.g. 'Calendar'" },
+        },
+        required: ["path"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+
+    type: "function",
+    function: {
       name: "student_snapshot",
       description:
         "Everything about one student in a single call: profile and parent contact, attendance over the last 90 days, the last 10 lesson summaries (topics, engagement, what went well, areas for improvement), recurring weakness themes, all assessment assignments with attempted-only scores, percentages, skipped counts and the weakest questions with AI feedback, homework completion over 8 weeks, and upcoming lessons for the next 14 days. Pass a name, an integer student id or a user uuid. If the name is ambiguous it returns the matching candidates instead.",
