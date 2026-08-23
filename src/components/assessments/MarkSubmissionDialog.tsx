@@ -87,9 +87,17 @@ export const MarkSubmissionDialog: React.FC<MarkSubmissionDialogProps> = ({
   const responseByQuestion = new Map(responses.map((r) => [r.question_id, r]));
 
   const unmarkedCount = responses.filter((r) => !r.marked_at).length;
-  const totalAvailable = questions.reduce((s, q: any) => s + (Number(q.marks_available) || 0), 0);
-  const totalAchieved = responses.reduce((s, r) => s + (Number(r.marks_awarded) || 0), 0);
+  // Score only counts questions the student genuinely attempted
+  const attemptedQuestions = questions.filter((q: any) =>
+    !!responseByQuestion.get(q.id)?.student_answer?.trim()
+  );
+  const totalAvailable = attemptedQuestions.reduce((s, q: any) => s + (Number(q.marks_available) || 0), 0);
+  const totalAchieved = attemptedQuestions.reduce(
+    (s, q: any) => s + (Number(responseByQuestion.get(q.id)?.marks_awarded) || 0),
+    0
+  );
   const markedCount = responses.length - unmarkedCount;
+
 
   const runMarking = async (remark: boolean) => {
     if (!session) return;
