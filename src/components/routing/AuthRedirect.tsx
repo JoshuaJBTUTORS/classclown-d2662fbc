@@ -5,7 +5,10 @@ import LandingPage from '@/pages/LandingPage';
 const AuthRedirect = () => {
   const { user, userRole, hasCleoHubAccess, loading } = useAuth();
 
-  if (loading) {
+  // Wait for role resolution as well as session resolution. Previously the
+  // root route briefly saw an authenticated user with no role and redirected
+  // permanently to Calendar before the role query completed.
+  if (loading || (user && !userRole)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>

@@ -159,16 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let resolvedRole: AppRole | null = null;
 
       if (allRoles && allRoles.length > 0) {
-        const primary = allRoles.find(r => r.is_primary);
-        if (primary) {
-          resolvedRole = primary.role as AppRole;
-        } else {
-          // Pick highest-privilege role when no primary is set
-          const sorted = allRoles.sort(
-            (a, b) => rolePriority.indexOf(a.role as AppRole) - rolePriority.indexOf(b.role as AppRole)
-          );
-          resolvedRole = sorted[0].role as AppRole;
-        }
+        // Always use the highest-privilege role. An older lower-privilege
+        // primary role must not hide a later admin/owner assignment.
+        const sorted = [...allRoles].sort(
+          (a, b) => rolePriority.indexOf(a.role as AppRole) - rolePriority.indexOf(b.role as AppRole)
+        );
+        resolvedRole = sorted[0].role as AppRole;
       }
 
       // Fetch parent profile if user is a parent or learning hub user
@@ -236,11 +232,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && newSession?.user) {
+          setLoading(true);
           setTimeout(() => {
-            fetchUserData(newSession.user.id);
-            toast({
-              title: "Signed in successfully",
-              description: `Welcome ${newSession.user.email || 'back'}!`,
+            void fetchUserData(newSession.user.id).finally(() => {
+              setLoading(false);
+              toast({
+                title: "Signed in successfully",
+                description: `Welcome ${newSession.user.email || 'back'}!`,
+              });
             });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
@@ -262,12 +261,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
-        fetchUserData(existingSession.user.id);
+        await fetchUserData(existingSession.user.id);
       }
       
       setLoading(false);
