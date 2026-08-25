@@ -98,6 +98,23 @@ export const useLessonCompletion = (lessonIds: string[]) => {
           'Homework Data Fetch'
         );
 
+        // Fetch submitted lesson resources in batches
+        const resourcesData = await processBatches(
+          stableLessonIds,
+          async (batch: string[]) => {
+            const { data, error } = await supabase
+              .from('lesson_resources')
+              .select('lesson_id')
+              .in('lesson_id', batch);
+
+            if (error) throw error;
+            return data || [];
+          },
+          'Lesson Resources Fetch'
+        );
+
+
+
         // Fetch lesson student data in batches
         const lessonStudentData = await processBatches(
           stableLessonIds,
