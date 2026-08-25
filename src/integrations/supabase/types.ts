@@ -2149,6 +2149,75 @@ export type Database = {
           },
         ]
       }
+      heycleo_homework_completion: {
+        Row: {
+          assessment_type: string | null
+          assigned_at: string | null
+          assignment_id: string
+          completed: boolean | null
+          due_date: string | null
+          homework_id: string | null
+          marks_available: number | null
+          marks_awarded: number | null
+          percentage: number | null
+          source_updated_at: string | null
+          started: boolean | null
+          started_at: string | null
+          status: string | null
+          student_id: string | null
+          subject: string | null
+          submitted_at: string | null
+          synced_at: string
+          title: string | null
+          tutor_id: string | null
+          year_group: string | null
+        }
+        Insert: {
+          assessment_type?: string | null
+          assigned_at?: string | null
+          assignment_id: string
+          completed?: boolean | null
+          due_date?: string | null
+          homework_id?: string | null
+          marks_available?: number | null
+          marks_awarded?: number | null
+          percentage?: number | null
+          source_updated_at?: string | null
+          started?: boolean | null
+          started_at?: string | null
+          status?: string | null
+          student_id?: string | null
+          subject?: string | null
+          submitted_at?: string | null
+          synced_at?: string
+          title?: string | null
+          tutor_id?: string | null
+          year_group?: string | null
+        }
+        Update: {
+          assessment_type?: string | null
+          assigned_at?: string | null
+          assignment_id?: string
+          completed?: boolean | null
+          due_date?: string | null
+          homework_id?: string | null
+          marks_available?: number | null
+          marks_awarded?: number | null
+          percentage?: number | null
+          source_updated_at?: string | null
+          started?: boolean | null
+          started_at?: string | null
+          status?: string | null
+          student_id?: string | null
+          subject?: string | null
+          submitted_at?: string | null
+          synced_at?: string
+          title?: string | null
+          tutor_id?: string | null
+          year_group?: string | null
+        }
+        Relationships: []
+      }
       heycleo_homework_completions: {
         Row: {
           accuracy_percentage: number | null
@@ -2220,6 +2289,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      heycleo_students: {
+        Row: {
+          education_level: string | null
+          email: string | null
+          exam_month: string | null
+          exam_year: number | null
+          first_name: string | null
+          last_name: string | null
+          live_tuition_since: string | null
+          school_id: string | null
+          source_created_at: string | null
+          source_updated_at: string | null
+          student_id: string
+          synced_at: string
+          target_grade: Json | null
+          tutor_ids: string[] | null
+          working_grade: Json | null
+          year_group: string | null
+        }
+        Insert: {
+          education_level?: string | null
+          email?: string | null
+          exam_month?: string | null
+          exam_year?: number | null
+          first_name?: string | null
+          last_name?: string | null
+          live_tuition_since?: string | null
+          school_id?: string | null
+          source_created_at?: string | null
+          source_updated_at?: string | null
+          student_id: string
+          synced_at?: string
+          target_grade?: Json | null
+          tutor_ids?: string[] | null
+          working_grade?: Json | null
+          year_group?: string | null
+        }
+        Update: {
+          education_level?: string | null
+          email?: string | null
+          exam_month?: string | null
+          exam_year?: number | null
+          first_name?: string | null
+          last_name?: string | null
+          live_tuition_since?: string | null
+          school_id?: string | null
+          source_created_at?: string | null
+          source_updated_at?: string | null
+          student_id?: string
+          synced_at?: string
+          target_grade?: Json | null
+          tutor_ids?: string[] | null
+          working_grade?: Json | null
+          year_group?: string | null
+        }
+        Relationships: []
+      }
+      heycleo_sync_state: {
+        Row: {
+          last_error: string | null
+          last_run_at: string | null
+          last_server_time: string | null
+          last_status: string | null
+          resource: string
+          rows_synced: number | null
+        }
+        Insert: {
+          last_error?: string | null
+          last_run_at?: string | null
+          last_server_time?: string | null
+          last_status?: string | null
+          resource: string
+          rows_synced?: number | null
+        }
+        Update: {
+          last_error?: string | null
+          last_run_at?: string | null
+          last_server_time?: string | null
+          last_status?: string | null
+          resource?: string
+          rows_synced?: number | null
+        }
+        Relationships: []
       }
       homework: {
         Row: {
