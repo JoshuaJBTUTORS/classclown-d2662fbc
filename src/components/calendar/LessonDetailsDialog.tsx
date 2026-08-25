@@ -454,10 +454,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       setIsDeleting(false);
     }
   };
-  if (!lessonId) return null;
-
   // Filter out null student records to prevent crashes
   const validStudents = lesson?.lesson_students?.filter(enrollment => enrollment && enrollment.student && enrollment.student.id) || [];
+
+  // Last week's HeyCleo homework completion for these students
+  const { statuses: homeworkStatuses, summary: homeworkSummary } = useHeyCleoHomeworkStatus(
+    validStudents.map((e: any) => e.student?.id).filter((id: any) => typeof id === 'number')
+  );
+
+  if (!lessonId) return null;
+
 
   const buildFallbackPrefill = (): ProposalPrefill => {
     const student = validStudents[0]?.student;
