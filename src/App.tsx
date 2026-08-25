@@ -263,6 +263,15 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="admin/heycleo-data"
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <HeyCleoData />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   <Route 
                     path="admin/proposals" 
                     element={
