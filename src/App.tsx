@@ -84,6 +84,8 @@ import HubAccessManagement from './pages/admin/HubAccessManagement';
 import AssessmentCenter from './pages/AssessmentCenter';
 import AssessmentTake from './pages/AssessmentTake';
 import AssessmentAssignments from './pages/admin/AssessmentAssignments';
+import HeyCleoData from './pages/admin/HeyCleoData';
+
 import Unauthorized from './pages/Unauthorized';
 import AgentCleo from './pages/AgentCleo';
 
