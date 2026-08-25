@@ -112,7 +112,10 @@ export function useLiveLessonAlert() {
           lesson_students!inner(student_id)
         `)
         .in('lesson_students.student_id', studentIds)
-        .eq('status', 'approved')
+        // Normal lessons remain `scheduled` while they are upcoming/live.
+        // `approved` is retained for older records and `in_progress` for sessions
+        // whose status is advanced when the classroom opens.
+        .in('status', ['scheduled', 'in_progress', 'approved'])
         .gte('end_time', now.toISOString())          // not yet finished
         .lte('start_time', soonStart.toISOString())  // starting within 10 min or already started
         .order('start_time', { ascending: true });
