@@ -310,7 +310,7 @@ const filterCompletedLessons = (lessons: any[], completionData: any): CompletedL
     // Check completion criteria
     if (!enrolledStudents || enrolledStudents.size === 0) return false;
 
-    if (!hasHomework) return false;
+    if (!hasHomework && !hasResources) return false;
     if (!attendanceStudents || attendanceStudents.size === 0) return false;
 
     // Check if all enrolled students have attendance
