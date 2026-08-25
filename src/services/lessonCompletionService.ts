@@ -270,11 +270,12 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
 
 // Helper function to filter completed lessons based on completion data
 const filterCompletedLessons = (lessons: any[], completionData: any): CompletedLessonData[] => {
-  const { studentsData, homeworkData, attendanceData } = completionData;
+  const { studentsData, homeworkData, resourcesData, attendanceData } = completionData;
 
   // Group data by lesson_id for efficient lookup
   const lessonStudentsMap = new Map<string, Set<number>>();
   const homeworkLessons = new Set<string>();
+  const resourceLessons = new Set<string>();
   const attendanceMap = new Map<string, Set<number>>();
 
   studentsData.data?.forEach((item: any) => {
@@ -286,6 +287,10 @@ const filterCompletedLessons = (lessons: any[], completionData: any): CompletedL
 
   homeworkData.data?.forEach((item: any) => {
     homeworkLessons.add(item.lesson_id);
+  });
+
+  resourcesData?.data?.forEach((item: any) => {
+    resourceLessons.add(item.lesson_id);
   });
 
   attendanceData.data?.forEach((item: any) => {
@@ -300,9 +305,11 @@ const filterCompletedLessons = (lessons: any[], completionData: any): CompletedL
     const enrolledStudents = lessonStudentsMap.get(lesson.id);
     const attendanceStudents = attendanceMap.get(lesson.id);
     const hasHomework = homeworkLessons.has(lesson.id);
+    const hasResources = resourceLessons.has(lesson.id);
 
     // Check completion criteria
     if (!enrolledStudents || enrolledStudents.size === 0) return false;
+
     if (!hasHomework) return false;
     if (!attendanceStudents || attendanceStudents.size === 0) return false;
 
