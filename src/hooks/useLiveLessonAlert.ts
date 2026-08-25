@@ -141,25 +141,51 @@ export function useLiveLessonAlert() {
     }
   }, [userRole, user?.email]);
 
-  // Immediate fetch + polling
+  // Immediate fetch on load / role resolution + polling
   useEffect(() => {
     if (userRole !== 'student' && userRole !== 'parent') {
       setActiveLesson(null);
       return;
     }
+    // Fire straight away on mount / page load, then again shortly after in case
+    // the session/role was still settling on the first attempt.
     fetchLiveLessons();
+    const kick = setTimeout(() => fetchLiveLessons(), 1500);
     const interval = setInterval(fetchLiveLessons, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(kick);
+      clearInterval(interval);
+    };
   }, [fetchLiveLessons, userRole]);
 
-  // Re-check dismissed state on visibility change (e.g. user returns to tab)
+  // Re-check on sign-in / token refresh so the popup appears right after login
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+        // defer to avoid running inside the auth callback
+        setTimeout(() => fetchLiveLessons(), 0);
+      }
+      if (event === 'SIGNED_OUT') {
+        setActiveLesson(null);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [fetchLiveLessons]);
+
+  // Re-check on tab visibility change and window focus (e.g. user returns to tab)
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') fetchLiveLessons();
     };
+    const onFocus = () => fetchLiveLessons();
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [fetchLiveLessons]);
+
 
   const dismiss = useCallback((lessonId: string, snoozeMinutes?: number) => {
     const entries = readDismissed().filter(e => e.lessonId !== lessonId);
