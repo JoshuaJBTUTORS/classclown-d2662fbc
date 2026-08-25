@@ -96,7 +96,6 @@ export function useLiveLessonAlert() {
       }
 
       const now = new Date();
-      const windowStart = new Date(now.getTime() - 2 * 60 * 60 * 1000); // within last 2h (still live)
       const soonStart = new Date(now.getTime() + SOON_WINDOW_MIN * 60 * 1000);
 
       const { data: lessons, error: lessonError } = await supabase
@@ -109,7 +108,8 @@ export function useLiveLessonAlert() {
           end_time,
           is_group,
           status,
-          tutor:tutors(first_name, last_name)
+          tutor:tutors(first_name, last_name),
+          lesson_students!inner(student_id)
         `)
         .in('lesson_students.student_id', studentIds)
         .eq('status', 'approved')
