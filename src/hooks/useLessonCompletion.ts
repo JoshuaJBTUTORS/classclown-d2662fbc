@@ -138,8 +138,9 @@ export const useLessonCompletion = (lessonIds: string[]) => {
           const studentCount = lessonStudentData.filter(ls => ls.lesson_id === lessonId).length;
           const attendanceCount = attendanceData.filter(att => att.lesson_id === lessonId).length;
           const hasHomework = homeworkData.some(hw => hw.lesson_id === lessonId);
+          const hasResources = resourcesData.some((r: any) => r.lesson_id === lessonId);
 
-          const isCompleted = studentCount > 0 && attendanceCount === studentCount && hasHomework;
+          const isCompleted = studentCount > 0 && attendanceCount === studentCount && (hasHomework || hasResources);
           
           if (isCompleted) completedLessons++;
 
@@ -147,8 +148,10 @@ export const useLessonCompletion = (lessonIds: string[]) => {
             isCompleted,
             attendanceCount,
             totalStudents: studentCount,
-            hasHomework
+            hasHomework,
+            hasResources
           };
+
         });
         
         setCompletionData(newCompletionData);
