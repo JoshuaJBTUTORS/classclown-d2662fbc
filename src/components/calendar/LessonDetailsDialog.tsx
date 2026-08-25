@@ -739,18 +739,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                   {isTeacherRole && <Button variant="outline" onClick={() => {
-                      if (homeworkStatus.exists) {
-                        // Edit existing homework — go straight to dialog
-                        setIsHomeworkDialogOpen(true);
-                      } else {
-                        // New homework — show completion check first
-                        setIsCompletionCheckOpen(true);
-                      }
-                    }} className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      {homeworkStatus.exists ? 'Edit Homework' : 'Set Homework'}
+                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2">
+                      <FileUp className="h-4 w-4" />
+                      Submit Resources
                     </Button>}
+
                     
                     {/* Process Lesson Button - Only for specific GCSE Maths lesson */}
                     {isTargetGCSELesson && (
