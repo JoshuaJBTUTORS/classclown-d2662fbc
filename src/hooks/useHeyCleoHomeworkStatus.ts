@@ -27,8 +27,9 @@ export function useHeyCleoHomeworkStatus(studentIds: number[]) {
     queryKey: ['heycleo-homework-status', ids],
     enabled: ids.length > 0,
     staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<Record<number, HeyCleoHomeworkStatus>> => {
+    queryFn: async (): Promise<{ statuses: Record<number, HeyCleoHomeworkStatus>; links: Record<number, string> }> => {
       const result: Record<number, HeyCleoHomeworkStatus> = {};
+      const links: Record<number, string> = {};
       ids.forEach((id) => {
         result[id] = {
           state: 'no_data',
@@ -45,7 +46,7 @@ export function useHeyCleoHomeworkStatus(studentIds: number[]) {
         .select('id, email, parent_id')
         .in('id', ids);
       if (studentsError) throw studentsError;
-      if (!students?.length) return result;
+      if (!students?.length) return { statuses: result, links };
 
       const parentIds = [...new Set(students.map((s) => s.parent_id).filter(Boolean))] as string[];
 
@@ -93,7 +94,10 @@ export function useHeyCleoHomeworkStatus(studentIds: number[]) {
       });
 
       const heycleoIds = [...new Set(linked.values())];
-      if (!heycleoIds.length) return result;
+      linked.forEach((heycleoId, crmId) => {
+        links[crmId] = heycleoId;
+      });
+      if (!heycleoIds.length) return { statuses: result, links };
 
       const { data: homework, error: hwError } = await supabase
         .from('heycleo_homework_completion')
@@ -124,17 +128,19 @@ export function useHeyCleoHomeworkStatus(studentIds: number[]) {
         };
       });
 
-      return result;
+      return { statuses: result, links };
     },
   });
 
-  const statuses = query.data ?? {};
+  const statuses = query.data?.statuses ?? {};
+  const links = query.data?.links ?? {};
   const values = Object.values(statuses);
   const withData = values.filter((s) => s.state !== 'no_data');
   const completed = withData.filter((s) => s.state === 'completed').length;
 
   return {
     statuses,
+    links,
     summary: withData.length ? { completed, total: withData.length } : null,
     isLoading: query.isLoading,
   };

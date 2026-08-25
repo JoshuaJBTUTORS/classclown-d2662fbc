@@ -7,6 +7,7 @@ import type { HeyCleoHomeworkStatus } from '@/hooks/useHeyCleoHomeworkStatus';
 
 interface Props {
   status?: HeyCleoHomeworkStatus;
+  onClick?: () => void;
 }
 
 const config = {
@@ -32,7 +33,7 @@ const config = {
   },
 } as const;
 
-const HomeworkStatusChip: React.FC<Props> = ({ status }) => {
+const HomeworkStatusChip: React.FC<Props> = ({ status, onClick }) => {
   const state = status?.state ?? 'no_data';
   const { label, className, Icon } = config[state];
 
@@ -40,10 +41,22 @@ const HomeworkStatusChip: React.FC<Props> = ({ status }) => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant="outline" className={`text-xs cursor-default ${className}`}>
-            <Icon className="h-3 w-3 mr-1" />
-            {label}
-          </Badge>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+            className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          >
+            <Badge
+              variant="outline"
+              className={`text-xs cursor-pointer transition-opacity hover:opacity-80 ${className}`}
+            >
+              <Icon className="h-3 w-3 mr-1" />
+              {label}
+            </Badge>
+          </button>
         </TooltipTrigger>
         <TooltipContent className="max-w-[240px]">
           {state === 'no_data' ? (
