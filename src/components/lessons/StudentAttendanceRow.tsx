@@ -10,6 +10,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Clock, UserCheck, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAttendanceManager } from '@/hooks/useAttendanceManager';
+import HomeworkStatusChip from '@/components/lessons/HomeworkStatusChip';
+import type { HeyCleoHomeworkStatus } from '@/hooks/useHeyCleoHomeworkStatus';
 
 interface Student {
   id: number;
@@ -26,7 +28,9 @@ interface StudentAttendanceRowProps {
     tutor?: { first_name: string; last_name: string };
   };
   isStudent?: boolean;
+  homeworkStatus?: HeyCleoHomeworkStatus;
 }
+
 
 const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   student,
