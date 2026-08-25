@@ -16,8 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
-import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
-import HomeworkCompletionCheckDialog from '@/components/homework/HomeworkCompletionCheckDialog';
+import SubmitResourcesDialog from '@/components/lessons/SubmitResourcesDialog';
+import { useLessonResources } from '@/hooks/useLessonResources';
+
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
