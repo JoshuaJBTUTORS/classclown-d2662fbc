@@ -61,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   },
         {
           icon: Calendar,
-          label: 'Calendar',
+          label: 'Cleo Calendar',
           href: '/calendar',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
