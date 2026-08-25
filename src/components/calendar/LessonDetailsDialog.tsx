@@ -661,12 +661,18 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                           {lesson.lesson_students.length - validStudents.length} missing data
                         </Badge>}
                     </h3>
+                    {homeworkSummary && (
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {homeworkSummary.completed} of {homeworkSummary.total} completed last week's homework
+                      </p>
+                    )}
                     <div className="space-y-3">
-                      {validStudents.map((enrollment: any, index: number) => <StudentAttendanceRow key={enrollment.student?.id || index} student={enrollment.student} lessonId={lesson.id} lessonData={{
-                  title: lesson.title,
-                  start_time: displayStartTime,
-                  tutor: lesson.tutor
-                }} isStudent={!isTeacherRole} />)}
+                      {validStudents.map((enrollment: any, index: number) => <StudentAttendanceRow key={enrollment.student?.id || index} student={enrollment.student} lessonId={lesson.id} homeworkStatus={homeworkStatuses[enrollment.student?.id]} lessonData={{
+                   title: lesson.title,
+                   start_time: displayStartTime,
+                   tutor: lesson.tutor
+                 }} isStudent={!isTeacherRole} />)}
+
                     </div>
                   </CardContent>
                 </Card>}
