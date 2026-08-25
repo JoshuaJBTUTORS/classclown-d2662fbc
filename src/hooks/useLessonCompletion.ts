@@ -8,8 +8,10 @@ interface LessonCompletionData {
     attendanceCount: number;
     totalStudents: number;
     hasHomework: boolean;
+    hasResources: boolean;
   };
 }
+
 
 const BATCH_SIZE = 50; // Process 50 lessons at a time to avoid URL length limits
 
@@ -96,6 +98,23 @@ export const useLessonCompletion = (lessonIds: string[]) => {
           'Homework Data Fetch'
         );
 
+        // Fetch submitted lesson resources in batches
+        const resourcesData = await processBatches(
+          stableLessonIds,
+          async (batch: string[]) => {
+            const { data, error } = await supabase
+              .from('lesson_resources')
+              .select('lesson_id')
+              .in('lesson_id', batch);
+
+            if (error) throw error;
+            return data || [];
+          },
+          'Lesson Resources Fetch'
+        );
+
+
+
         // Fetch lesson student data in batches
         const lessonStudentData = await processBatches(
           stableLessonIds,
@@ -119,8 +138,9 @@ export const useLessonCompletion = (lessonIds: string[]) => {
           const studentCount = lessonStudentData.filter(ls => ls.lesson_id === lessonId).length;
           const attendanceCount = attendanceData.filter(att => att.lesson_id === lessonId).length;
           const hasHomework = homeworkData.some(hw => hw.lesson_id === lessonId);
+          const hasResources = resourcesData.some((r: any) => r.lesson_id === lessonId);
 
-          const isCompleted = studentCount > 0 && attendanceCount === studentCount && hasHomework;
+          const isCompleted = studentCount > 0 && attendanceCount === studentCount && (hasHomework || hasResources);
           
           if (isCompleted) completedLessons++;
 
@@ -128,8 +148,10 @@ export const useLessonCompletion = (lessonIds: string[]) => {
             isCompleted,
             attendanceCount,
             totalStudents: studentCount,
-            hasHomework
+            hasHomework,
+            hasResources
           };
+
         });
         
         setCompletionData(newCompletionData);

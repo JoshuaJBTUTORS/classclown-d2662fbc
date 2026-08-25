@@ -26,15 +26,16 @@ export const isLessonCompleted = async (lessonId: string): Promise<boolean> => {
       return false;
     }
 
-    // Check if homework exists
-    const { data: homework } = await supabase
-      .from('homework')
-      .select('id')
-      .eq('lesson_id', lessonId);
+    // Check if homework or submitted resources exist
+    const [{ data: homework }, { data: resources }] = await Promise.all([
+      supabase.from('homework').select('id').eq('lesson_id', lessonId),
+      supabase.from('lesson_resources').select('id').eq('lesson_id', lessonId),
+    ]);
 
-    if (!homework || homework.length === 0) {
+    if ((!homework || homework.length === 0) && (!resources || resources.length === 0)) {
       return false;
     }
+
 
     // Check if all students have attendance marked
     const { data: attendanceData } = await supabase
@@ -211,6 +212,7 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
     return {
       studentsData: { data: [] },
       homeworkData: { data: [] },
+      resourcesData: { data: [] },
       attendanceData: { data: [] }
     };
   }
@@ -219,16 +221,21 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
     const chunks = chunkArray(lessonIds, 200);
     let allStudentsData: any[] = [];
     let allHomeworkData: any[] = [];
+    let allResourcesData: any[] = [];
     let allAttendanceData: any[] = [];
     
     for (const chunk of chunks) {
-      const [studentsResult, homeworkResult, attendanceResult] = await Promise.all([
+      const [studentsResult, homeworkResult, resourcesResult, attendanceResult] = await Promise.all([
         supabase
           .from('lesson_students')
           .select('lesson_id, student_id')
           .in('lesson_id', chunk),
         supabase
           .from('homework')
+          .select('lesson_id')
+          .in('lesson_id', chunk),
+        supabase
+          .from('lesson_resources')
           .select('lesson_id')
           .in('lesson_id', chunk),
         supabase
@@ -239,16 +246,19 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
 
       if (studentsResult.error) throw studentsResult.error;
       if (homeworkResult.error) throw homeworkResult.error;
+      if (resourcesResult.error) throw resourcesResult.error;
       if (attendanceResult.error) throw attendanceResult.error;
 
       allStudentsData.push(...(studentsResult.data || []));
       allHomeworkData.push(...(homeworkResult.data || []));
+      allResourcesData.push(...(resourcesResult.data || []));
       allAttendanceData.push(...(attendanceResult.data || []));
     }
 
     return {
       studentsData: { data: allStudentsData },
       homeworkData: { data: allHomeworkData },
+      resourcesData: { data: allResourcesData },
       attendanceData: { data: allAttendanceData }
     };
   } catch (error) {
@@ -257,13 +267,15 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
   }
 };
 
+
 // Helper function to filter completed lessons based on completion data
 const filterCompletedLessons = (lessons: any[], completionData: any): CompletedLessonData[] => {
-  const { studentsData, homeworkData, attendanceData } = completionData;
+  const { studentsData, homeworkData, resourcesData, attendanceData } = completionData;
 
   // Group data by lesson_id for efficient lookup
   const lessonStudentsMap = new Map<string, Set<number>>();
   const homeworkLessons = new Set<string>();
+  const resourceLessons = new Set<string>();
   const attendanceMap = new Map<string, Set<number>>();
 
   studentsData.data?.forEach((item: any) => {
@@ -275,6 +287,10 @@ const filterCompletedLessons = (lessons: any[], completionData: any): CompletedL
 
   homeworkData.data?.forEach((item: any) => {
     homeworkLessons.add(item.lesson_id);
+  });
+
+  resourcesData?.data?.forEach((item: any) => {
+    resourceLessons.add(item.lesson_id);
   });
 
   attendanceData.data?.forEach((item: any) => {
@@ -289,10 +305,12 @@ const filterCompletedLessons = (lessons: any[], completionData: any): CompletedL
     const enrolledStudents = lessonStudentsMap.get(lesson.id);
     const attendanceStudents = attendanceMap.get(lesson.id);
     const hasHomework = homeworkLessons.has(lesson.id);
+    const hasResources = resourceLessons.has(lesson.id);
 
     // Check completion criteria
     if (!enrolledStudents || enrolledStudents.size === 0) return false;
-    if (!hasHomework) return false;
+
+    if (!hasHomework && !hasResources) return false;
     if (!attendanceStudents || attendanceStudents.size === 0) return false;
 
     // Check if all enrolled students have attendance
