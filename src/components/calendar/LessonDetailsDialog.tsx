@@ -424,12 +424,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     // Refresh lesson data when attendance is updated
     fetchLesson();
   };
-  const handleHomeworkSuccess = () => {
-    // Refresh lesson data when homework is assigned
-    fetchLesson();
-    setIsHomeworkDialogOpen(false);
-    toast.success('Homework assigned successfully!');
-  };
+
+
   const handleEditSuccess = () => {
     // Refresh lesson data when lesson is updated
     fetchLesson();
