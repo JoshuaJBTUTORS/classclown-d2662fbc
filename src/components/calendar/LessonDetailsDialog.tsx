@@ -460,7 +460,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const validStudents = lesson?.lesson_students?.filter(enrollment => enrollment && enrollment.student && enrollment.student.id) || [];
 
   // Last week's HeyCleo homework completion for these students
-  const { statuses: homeworkStatuses, summary: homeworkSummary } = useHeyCleoHomeworkStatus(
+  const { statuses: homeworkStatuses, links: homeworkLinks, summary: homeworkSummary } = useHeyCleoHomeworkStatus(
     validStudents.map((e: any) => e.student?.id).filter((id: any) => typeof id === 'number')
   );
 
