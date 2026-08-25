@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage';
 
 const AuthRedirect = () => {
-  const { user, userRole, hasCleoHubAccess, loading } = useAuth();
+  const { user, userRole, loading } = useAuth();
 
   // Wait for role resolution as well as session resolution. Previously the
   // root route briefly saw an authenticated user with no role and redirected
