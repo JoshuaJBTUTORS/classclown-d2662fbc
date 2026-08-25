@@ -814,33 +814,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       {/* Edit Lesson Dialog - Only for admins/owners */}
       {canEditLesson && <EditLessonForm isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSuccess={handleEditSuccess} lessonId={lessonId} />}
 
-      {/* Homework Completion Check Dialog */}
-      {isCompletionCheckOpen && lesson && (
-        <HomeworkCompletionCheckDialog
-          isOpen={isCompletionCheckOpen}
-          onClose={() => setIsCompletionCheckOpen(false)}
-          onComplete={() => {
-            setIsCompletionCheckOpen(false);
-            setIsHomeworkDialogOpen(true);
-          }}
+      {/* Submit Resources Dialog */}
+      {isResourcesDialogOpen && lesson && (
+        <SubmitResourcesDialog
+          isOpen={isResourcesDialogOpen}
+          onClose={() => setIsResourcesDialogOpen(false)}
           lessonId={lesson.id}
-          students={validStudents.map((e: any) => e.student).filter(Boolean)}
+          onSuccess={refetchResources}
         />
       )}
 
-      {/* Homework Assignment Dialog */}
-      {isHomeworkDialogOpen && lesson && <AssignHomeworkDialog isOpen={isHomeworkDialogOpen} onClose={() => setIsHomeworkDialogOpen(false)} onSuccess={handleHomeworkSuccess} preSelectedLessonId={lesson.id} preloadedLessonData={lesson} editingHomework={homeworkStatus.homework ? {
-      id: homeworkStatus.homework.id,
-      title: homeworkStatus.homework.title,
-      description: homeworkStatus.homework.description,
-      lesson_id: homeworkStatus.homework.lesson_id,
-      due_date: homeworkStatus.homework.due_date ? new Date(homeworkStatus.homework.due_date) : undefined,
-      attachment_url: homeworkStatus.homework.attachment_url,
-      attachment_type: homeworkStatus.homework.attachment_type,
-      additional_resources_required: (homeworkStatus.homework as any).additional_resources_required || false,
-      additional_resources_url: (homeworkStatus.homework as any).additional_resources_url || undefined,
-      additional_resources_type: (homeworkStatus.homework as any).additional_resources_type || undefined,
-    } : undefined} />}
 
       <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
         <DialogContent className="max-w-md">
