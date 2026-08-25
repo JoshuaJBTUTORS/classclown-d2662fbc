@@ -350,7 +350,7 @@ serve(async (req) => {
               subject: todayIso,
               email: logKey,
               status: "sent",
-              message: variant,
+              sent_at: new Date().toISOString(),
             });
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -361,7 +361,7 @@ serve(async (req) => {
               subject: todayIso,
               email: logKey,
               status: "failed",
-              message: variant,
+              error_message: variant,
             });
           }
         }
@@ -396,7 +396,8 @@ serve(async (req) => {
             subject: todayIso,
             email: logKey,
             status: result.success ? "sent" : "failed",
-            message: variant,
+            sent_at: result.success ? new Date().toISOString() : null,
+            error_message: result.success ? null : `${variant}: ${result.error ?? "failed"}`,
           });
         }
       }
