@@ -22,19 +22,14 @@ const AuthRedirect = () => {
     if (userRole === 'learning_hub_only') {
       return <Navigate to="/heycleo" replace />;
     }
-    
+
     // Admins and owners land on Agent Cleo
     if (userRole === 'admin' || userRole === 'owner') {
       return <Navigate to="/agent-cleo" replace />;
     }
 
-    // Other authenticated users: check feature flag
-    if (hasCleoHubAccess) {
-      return <Navigate to="/heycleo" replace />;
-    } else {
-      // Users without Cleo hub access go to Calendar
-      return <Navigate to="/calendar" replace />;
-    }
+    // All other authenticated users (parents, students, tutors) go to Calendar
+    return <Navigate to="/calendar" replace />;
   }
 
   // If user is not authenticated, show landing page
