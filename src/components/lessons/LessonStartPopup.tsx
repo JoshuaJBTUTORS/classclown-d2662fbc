@@ -83,7 +83,7 @@ export const LessonStartPopup: React.FC = () => {
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
             <span className="text-lg leading-none" aria-hidden="true">🎁</span>
             <p className="text-sm text-amber-900">
-              <span className="font-semibold">Did you know?</span> You could be £100 richer! Invite a friend and you both earn £100. <span className="font-medium underline cursor-pointer" onClick={() => navigate('/referrals')}>Learn more</span>
+              <span className="font-semibold">Did you know?</span> You could be £100 richer! Invite a friend and you both earn £100. <span className="font-medium underline cursor-pointer" onClick={() => navigate('/refer')}>Learn more</span>
             </p>
           </div>
 
