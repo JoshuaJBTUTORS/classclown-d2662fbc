@@ -23,6 +23,8 @@ import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
 import LessonPlanCard from './LessonPlanCard';
 import TranscriptProposalDialog, { ProposalPrefill } from './TranscriptProposalDialog';
+import { useHeyCleoHomeworkStatus } from '@/hooks/useHeyCleoHomeworkStatus';
+
 
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
 interface LessonDetailsDialogProps {
