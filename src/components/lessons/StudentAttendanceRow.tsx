@@ -36,8 +36,10 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   student,
   lessonId,
   lessonData,
-  isStudent = false
+  isStudent = false,
+  homeworkStatus
 }) => {
+
   const { markAttendance, sendLateNotification, getAttendanceData, isUpdating, isSendingNotification } = useAttendanceManager();
   const [attendanceStatus, setAttendanceStatus] = useState<string>('pending');
   const [lastMarked, setLastMarked] = useState<string | null>(null);
