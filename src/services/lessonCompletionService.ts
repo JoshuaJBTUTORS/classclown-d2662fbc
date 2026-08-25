@@ -212,6 +212,7 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
     return {
       studentsData: { data: [] },
       homeworkData: { data: [] },
+      resourcesData: { data: [] },
       attendanceData: { data: [] }
     };
   }
@@ -220,16 +221,21 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
     const chunks = chunkArray(lessonIds, 200);
     let allStudentsData: any[] = [];
     let allHomeworkData: any[] = [];
+    let allResourcesData: any[] = [];
     let allAttendanceData: any[] = [];
     
     for (const chunk of chunks) {
-      const [studentsResult, homeworkResult, attendanceResult] = await Promise.all([
+      const [studentsResult, homeworkResult, resourcesResult, attendanceResult] = await Promise.all([
         supabase
           .from('lesson_students')
           .select('lesson_id, student_id')
           .in('lesson_id', chunk),
         supabase
           .from('homework')
+          .select('lesson_id')
+          .in('lesson_id', chunk),
+        supabase
+          .from('lesson_resources')
           .select('lesson_id')
           .in('lesson_id', chunk),
         supabase
@@ -240,16 +246,19 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
 
       if (studentsResult.error) throw studentsResult.error;
       if (homeworkResult.error) throw homeworkResult.error;
+      if (resourcesResult.error) throw resourcesResult.error;
       if (attendanceResult.error) throw attendanceResult.error;
 
       allStudentsData.push(...(studentsResult.data || []));
       allHomeworkData.push(...(homeworkResult.data || []));
+      allResourcesData.push(...(resourcesResult.data || []));
       allAttendanceData.push(...(attendanceResult.data || []));
     }
 
     return {
       studentsData: { data: allStudentsData },
       homeworkData: { data: allHomeworkData },
+      resourcesData: { data: allResourcesData },
       attendanceData: { data: allAttendanceData }
     };
   } catch (error) {
@@ -257,6 +266,7 @@ export const getCompletionDataForLessons = async (lessonIds: string[]) => {
     throw error;
   }
 };
+
 
 // Helper function to filter completed lessons based on completion data
 const filterCompletedLessons = (lessons: any[], completionData: any): CompletedLessonData[] => {
