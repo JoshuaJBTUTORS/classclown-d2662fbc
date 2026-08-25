@@ -134,14 +134,16 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
       <div className="flex items-center gap-3">
         <div>
           <p className="font-medium">{studentName}</p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             {getStatusBadge()}
+            <HomeworkStatusChip status={homeworkStatus} />
             {lastMarked && (
               <span className="text-xs text-muted-foreground">
                 {new Date(lastMarked).toLocaleTimeString()}
               </span>
             )}
           </div>
+
         </div>
       </div>
 
