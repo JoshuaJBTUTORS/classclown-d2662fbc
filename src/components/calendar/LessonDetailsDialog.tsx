@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play, Send, ClipboardCheck, Check, ChevronsUpDown } from 'lucide-react';
+import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play, Send, ClipboardCheck, Check, ChevronsUpDown, FileUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -16,8 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VideoConferenceLink from '@/components/lessons/VideoConferenceLink';
 import StudentAttendanceRow from '@/components/lessons/StudentAttendanceRow';
-import AssignHomeworkDialog from '@/components/homework/AssignHomeworkDialog';
-import HomeworkCompletionCheckDialog from '@/components/homework/HomeworkCompletionCheckDialog';
+import SubmitResourcesDialog from '@/components/lessons/SubmitResourcesDialog';
+import { useLessonResources } from '@/hooks/useLessonResources';
+
 import EditLessonForm from '@/components/lessons/EditLessonForm';
 import DeleteLessonDialog from '@/components/lessons/DeleteLessonDialog';
 import StudentLessonSummary from './StudentLessonSummary';
@@ -51,8 +52,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [isHomeworkDialogOpen, setIsHomeworkDialogOpen] = useState(false);
-  const [isCompletionCheckOpen, setIsCompletionCheckOpen] = useState(false);
+  const [isResourcesDialogOpen, setIsResourcesDialogOpen] = useState(false);
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -423,12 +424,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     // Refresh lesson data when attendance is updated
     fetchLesson();
   };
-  const handleHomeworkSuccess = () => {
-    // Refresh lesson data when homework is assigned
-    fetchLesson();
-    setIsHomeworkDialogOpen(false);
-    toast.success('Homework assigned successfully!');
-  };
+
+
   const handleEditSuccess = () => {
     // Refresh lesson data when lesson is updated
     fetchLesson();
@@ -463,6 +460,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const { statuses: homeworkStatuses, links: homeworkLinks, summary: homeworkSummary } = useHeyCleoHomeworkStatus(
     validStudents.map((e: any) => e.student?.id).filter((id: any) => typeof id === 'number')
   );
+
+  // Resources submitted for this lesson
+  const { resources: lessonResources, refetch: refetchResources } = useLessonResources(lessonId);
+  const hasResources = lessonResources.length > 0;
+
+
 
   if (!lessonId) return null;
 
@@ -544,18 +547,21 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                         <div className="flex items-center gap-3">
-                          {homeworkStatus.exists ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
+                          {hasResources ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
                           <div>
-                            <p className="font-medium text-sm">Set Homework</p>
+                            <p className="font-medium text-sm">Submit Resources</p>
                             <p className="text-xs text-muted-foreground">
-                              {homeworkStatus.exists ? "Homework assigned" : "No homework assigned yet"}
+                              {hasResources
+                                ? `${lessonResources.length} resource${lessonResources.length === 1 ? '' : 's'} submitted`
+                                : 'No resources submitted yet'}
                             </p>
                           </div>
                         </div>
-                        <Badge variant={homeworkStatus.exists ? "default" : "secondary"}>
-                          {homeworkStatus.exists ? "Complete" : "Pending"}
+                        <Badge variant={hasResources ? "default" : "secondary"}>
+                          {hasResources ? "Complete" : "Pending"}
                         </Badge>
                       </div>
+
                     </div>
                   </CardContent>
                 </Card>}
@@ -739,18 +745,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                   {isTeacherRole && <Button variant="outline" onClick={() => {
-                      if (homeworkStatus.exists) {
-                        // Edit existing homework — go straight to dialog
-                        setIsHomeworkDialogOpen(true);
-                      } else {
-                        // New homework — show completion check first
-                        setIsCompletionCheckOpen(true);
-                      }
-                    }} className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      {homeworkStatus.exists ? 'Edit Homework' : 'Set Homework'}
+                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2">
+                      <FileUp className="h-4 w-4" />
+                      Submit Resources
                     </Button>}
+
                     
                     {/* Process Lesson Button - Only for specific GCSE Maths lesson */}
                     {isTargetGCSELesson && (
@@ -814,33 +813,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       {/* Edit Lesson Dialog - Only for admins/owners */}
       {canEditLesson && <EditLessonForm isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSuccess={handleEditSuccess} lessonId={lessonId} />}
 
-      {/* Homework Completion Check Dialog */}
-      {isCompletionCheckOpen && lesson && (
-        <HomeworkCompletionCheckDialog
-          isOpen={isCompletionCheckOpen}
-          onClose={() => setIsCompletionCheckOpen(false)}
-          onComplete={() => {
-            setIsCompletionCheckOpen(false);
-            setIsHomeworkDialogOpen(true);
-          }}
+      {/* Submit Resources Dialog */}
+      {isResourcesDialogOpen && lesson && (
+        <SubmitResourcesDialog
+          isOpen={isResourcesDialogOpen}
+          onClose={() => setIsResourcesDialogOpen(false)}
           lessonId={lesson.id}
-          students={validStudents.map((e: any) => e.student).filter(Boolean)}
+          onSuccess={refetchResources}
         />
       )}
 
-      {/* Homework Assignment Dialog */}
-      {isHomeworkDialogOpen && lesson && <AssignHomeworkDialog isOpen={isHomeworkDialogOpen} onClose={() => setIsHomeworkDialogOpen(false)} onSuccess={handleHomeworkSuccess} preSelectedLessonId={lesson.id} preloadedLessonData={lesson} editingHomework={homeworkStatus.homework ? {
-      id: homeworkStatus.homework.id,
-      title: homeworkStatus.homework.title,
-      description: homeworkStatus.homework.description,
-      lesson_id: homeworkStatus.homework.lesson_id,
-      due_date: homeworkStatus.homework.due_date ? new Date(homeworkStatus.homework.due_date) : undefined,
-      attachment_url: homeworkStatus.homework.attachment_url,
-      attachment_type: homeworkStatus.homework.attachment_type,
-      additional_resources_required: (homeworkStatus.homework as any).additional_resources_required || false,
-      additional_resources_url: (homeworkStatus.homework as any).additional_resources_url || undefined,
-      additional_resources_type: (homeworkStatus.homework as any).additional_resources_type || undefined,
-    } : undefined} />}
 
       <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
         <DialogContent className="max-w-md">
