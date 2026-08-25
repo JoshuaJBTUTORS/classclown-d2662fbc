@@ -544,18 +544,21 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
                       <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                         <div className="flex items-center gap-3">
-                          {homeworkStatus.exists ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
+                          {hasResources ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
                           <div>
-                            <p className="font-medium text-sm">Set Homework</p>
+                            <p className="font-medium text-sm">Submit Resources</p>
                             <p className="text-xs text-muted-foreground">
-                              {homeworkStatus.exists ? "Homework assigned" : "No homework assigned yet"}
+                              {hasResources
+                                ? `${lessonResources.length} resource${lessonResources.length === 1 ? '' : 's'} submitted`
+                                : 'No resources submitted yet'}
                             </p>
                           </div>
                         </div>
-                        <Badge variant={homeworkStatus.exists ? "default" : "secondary"}>
-                          {homeworkStatus.exists ? "Complete" : "Pending"}
+                        <Badge variant={hasResources ? "default" : "secondary"}>
+                          {hasResources ? "Complete" : "Pending"}
                         </Badge>
                       </div>
+
                     </div>
                   </CardContent>
                 </Card>}
