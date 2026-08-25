@@ -10,6 +10,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Clock, UserCheck, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAttendanceManager } from '@/hooks/useAttendanceManager';
+import HomeworkStatusChip from '@/components/lessons/HomeworkStatusChip';
+import type { HeyCleoHomeworkStatus } from '@/hooks/useHeyCleoHomeworkStatus';
 
 interface Student {
   id: number;
@@ -26,14 +28,18 @@ interface StudentAttendanceRowProps {
     tutor?: { first_name: string; last_name: string };
   };
   isStudent?: boolean;
+  homeworkStatus?: HeyCleoHomeworkStatus;
 }
+
 
 const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   student,
   lessonId,
   lessonData,
-  isStudent = false
+  isStudent = false,
+  homeworkStatus
 }) => {
+
   const { markAttendance, sendLateNotification, getAttendanceData, isUpdating, isSendingNotification } = useAttendanceManager();
   const [attendanceStatus, setAttendanceStatus] = useState<string>('pending');
   const [lastMarked, setLastMarked] = useState<string | null>(null);
@@ -128,14 +134,16 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
       <div className="flex items-center gap-3">
         <div>
           <p className="font-medium">{studentName}</p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             {getStatusBadge()}
+            <HomeworkStatusChip status={homeworkStatus} />
             {lastMarked && (
               <span className="text-xs text-muted-foreground">
                 {new Date(lastMarked).toLocaleTimeString()}
               </span>
             )}
           </div>
+
         </div>
       </div>
 
