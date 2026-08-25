@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, UserCheck, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAttendanceManager } from '@/hooks/useAttendanceManager';
 import HomeworkStatusChip from '@/components/lessons/HomeworkStatusChip';
+import HomeworkDetailPanel from '@/components/lessons/HomeworkDetailPanel';
 import type { HeyCleoHomeworkStatus } from '@/hooks/useHeyCleoHomeworkStatus';
 
 interface Student {
@@ -29,6 +30,7 @@ interface StudentAttendanceRowProps {
   };
   isStudent?: boolean;
   homeworkStatus?: HeyCleoHomeworkStatus;
+  heycleoStudentId?: string | null;
 }
 
 
@@ -37,12 +39,14 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   lessonId,
   lessonData,
   isStudent = false,
-  homeworkStatus
+  homeworkStatus,
+  heycleoStudentId
 }) => {
 
   const { markAttendance, sendLateNotification, getAttendanceData, isUpdating, isSendingNotification } = useAttendanceManager();
   const [attendanceStatus, setAttendanceStatus] = useState<string>('pending');
   const [lastMarked, setLastMarked] = useState<string | null>(null);
+  const [homeworkPanelOpen, setHomeworkPanelOpen] = useState(false);
 
   // Handle null student data gracefully
   if (!student || !student.id) {
@@ -136,7 +140,7 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
           <p className="font-medium">{studentName}</p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             {getStatusBadge()}
-            <HomeworkStatusChip status={homeworkStatus} />
+            <HomeworkStatusChip status={homeworkStatus} onClick={() => setHomeworkPanelOpen(true)} />
             {lastMarked && (
               <span className="text-xs text-muted-foreground">
                 {new Date(lastMarked).toLocaleTimeString()}
