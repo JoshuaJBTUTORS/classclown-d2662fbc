@@ -134,6 +134,7 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
   };
 
   return (
+    <>
     <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
       <div className="flex items-center gap-3">
         <div>
@@ -208,6 +209,13 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
         </div>
       )}
     </div>
+    <HomeworkDetailPanel
+      open={homeworkPanelOpen}
+      onOpenChange={setHomeworkPanelOpen}
+      studentName={studentName}
+      heycleoStudentId={heycleoStudentId}
+    />
+    </>
   );
 };
 

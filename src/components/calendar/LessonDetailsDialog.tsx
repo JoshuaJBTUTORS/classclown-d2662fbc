@@ -667,7 +667,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       </p>
                     )}
                     <div className="space-y-3">
-                      {validStudents.map((enrollment: any, index: number) => <StudentAttendanceRow key={enrollment.student?.id || index} student={enrollment.student} lessonId={lesson.id} homeworkStatus={homeworkStatuses[enrollment.student?.id]} lessonData={{
+                      {validStudents.map((enrollment: any, index: number) => <StudentAttendanceRow key={enrollment.student?.id || index} student={enrollment.student} lessonId={lesson.id} homeworkStatus={homeworkStatuses[enrollment.student?.id]} heycleoStudentId={homeworkLinks[enrollment.student?.id]} lessonData={{
                    title: lesson.title,
                    start_time: displayStartTime,
                    tutor: lesson.tutor
