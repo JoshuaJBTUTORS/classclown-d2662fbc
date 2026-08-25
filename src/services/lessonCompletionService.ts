@@ -26,15 +26,16 @@ export const isLessonCompleted = async (lessonId: string): Promise<boolean> => {
       return false;
     }
 
-    // Check if homework exists
-    const { data: homework } = await supabase
-      .from('homework')
-      .select('id')
-      .eq('lesson_id', lessonId);
+    // Check if homework or submitted resources exist
+    const [{ data: homework }, { data: resources }] = await Promise.all([
+      supabase.from('homework').select('id').eq('lesson_id', lessonId),
+      supabase.from('lesson_resources').select('id').eq('lesson_id', lessonId),
+    ]);
 
-    if (!homework || homework.length === 0) {
+    if ((!homework || homework.length === 0) && (!resources || resources.length === 0)) {
       return false;
     }
+
 
     // Check if all students have attendance marked
     const { data: attendanceData } = await supabase
