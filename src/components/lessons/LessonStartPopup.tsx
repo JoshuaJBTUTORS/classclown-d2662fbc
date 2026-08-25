@@ -53,7 +53,18 @@ export const LessonStartPopup: React.FC = () => {
         </DialogHeader>
 
         <div className="space-y-3 py-2">
+          <div className="rounded-lg border border-mint-200 bg-mint-50/60 p-3 flex items-start gap-2">
+            <span className="text-lg leading-none" aria-hidden="true">👋</span>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Message from Cleo:</span>{' '}
+              {hasStarted
+                ? 'Your lesson is live right now — hop in and say hello to your tutor!'
+                : 'Your lesson is about to begin — get comfy and join when you\u2019re ready!'}
+            </p>
+          </div>
+
           <div className="rounded-lg border border-mint-200 bg-mint-50 p-4 space-y-2">
+
             <p className="font-semibold text-foreground text-center">{activeLesson.title}</p>
             {activeLesson.subject && (
               <p className="text-sm text-muted-foreground text-center">{activeLesson.subject}</p>
