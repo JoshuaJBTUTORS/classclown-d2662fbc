@@ -52,8 +52,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [isHomeworkDialogOpen, setIsHomeworkDialogOpen] = useState(false);
-  const [isCompletionCheckOpen, setIsCompletionCheckOpen] = useState(false);
+  const [isResourcesDialogOpen, setIsResourcesDialogOpen] = useState(false);
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
