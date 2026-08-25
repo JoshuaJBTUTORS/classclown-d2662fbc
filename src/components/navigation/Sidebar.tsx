@@ -67,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         },
         {
           icon: GraduationCap,
-          label: 'Lesson Plans',
+          label: 'Cleo Lesson Plans',
           href: '/lesson-plans',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
         },
@@ -79,13 +79,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         },
         {
           icon: ClipboardCheck,
-          label: 'Assessment Center',
+          label: 'Cleo Assessment Center',
           href: '/assessment-center',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
         {
           icon: Video,
-          label: 'Lesson Summaries',
+          label: 'Cleo Lesson Summaries',
           href: '/lesson-summaries',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
