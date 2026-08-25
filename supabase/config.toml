@@ -225,3 +225,7 @@ verify_jwt = false
 
 [functions.crm-data-feed]
 verify_jwt = false
+
+[functions.heycleo-pull]
+verify_jwt = false
+

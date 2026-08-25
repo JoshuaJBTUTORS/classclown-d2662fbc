@@ -190,6 +190,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner'],
         },
         {
+          icon: BookOpen,
+          label: 'HeyCleo Data',
+          href: '/admin/heycleo-data',
+          roles: ['admin', 'owner'],
+        },
+
+        {
           icon: DollarSign,
           label: 'Earnings',
           href: '/earnings',
