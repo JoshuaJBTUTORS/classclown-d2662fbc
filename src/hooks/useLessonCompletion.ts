@@ -8,8 +8,10 @@ interface LessonCompletionData {
     attendanceCount: number;
     totalStudents: number;
     hasHomework: boolean;
+    hasResources: boolean;
   };
 }
+
 
 const BATCH_SIZE = 50; // Process 50 lessons at a time to avoid URL length limits
 
