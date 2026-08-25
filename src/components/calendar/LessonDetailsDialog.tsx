@@ -461,6 +461,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
     validStudents.map((e: any) => e.student?.id).filter((id: any) => typeof id === 'number')
   );
 
+  // Resources submitted for this lesson
+  const { resources: lessonResources, refetch: refetchResources } = useLessonResources(lessonId);
+  const hasResources = lessonResources.length > 0;
+
+
+
   if (!lessonId) return null;
 
 
