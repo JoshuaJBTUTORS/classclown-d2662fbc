@@ -70,7 +70,7 @@ function sleep(ms: number) {
 
 function normalisePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
-  const trimmed = String(phone).trim();
+  const trimmed = String(phone).replace(/[\s()-]/g, "").trim();
   if (!trimmed) return null;
   return whatsappService.formatPhoneNumber(trimmed);
 }
