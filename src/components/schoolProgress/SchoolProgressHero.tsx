@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
-import type { Student } from '@/services/schoolProgressService';
+import type { Student } from '@/types/student';
 
 interface SchoolProgressHeroProps {
   documentCount: number;
