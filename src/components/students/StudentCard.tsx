@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpRight, MoreHorizontal, Star } from 'lucide-react';
+import { ArrowUpRight, MoreHorizontal } from 'lucide-react';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
 import { cn } from '@/lib/utils';
@@ -78,14 +78,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       </div>
 
       <div className="relative flex h-full min-h-[236px] flex-col justify-between p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-background shadow-[var(--shadow-soft)]">
-            <Star className={cn('h-5 w-5', tone.text)} strokeWidth={2} />
-            {student.hasLogin && (
-              <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-foreground ring-2 ring-background" />
-            )}
-          </div>
-
+        <div className="flex items-start justify-end gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
