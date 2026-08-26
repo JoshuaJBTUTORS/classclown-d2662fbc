@@ -653,10 +653,11 @@ const Students = () => {
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                     ))}
+                 </TableBody>
+               </Table>
+              )}
+              
               
               {/* Pagination */}
               {totalPages > 1 && (
@@ -688,8 +689,8 @@ const Students = () => {
                   </Pagination>
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
+          
           
           {(isAdmin || isOwner) && (
             <>
