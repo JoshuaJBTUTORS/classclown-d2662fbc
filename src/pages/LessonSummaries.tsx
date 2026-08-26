@@ -442,7 +442,12 @@ const LessonSummaries: React.FC = () => {
                     >
                       Previous
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((n) => n === 1 || n === totalPages || Math.abs(n - currentPage) <= 2)
+                      .flatMap((n, i, arr) => (i > 0 && n - arr[i - 1] > 1 ? ['gap-' + n, n] : [n]))
+                      .map((n) => typeof n === 'string' ? (
+                        <span key={n} className="px-1 text-muted-foreground">…</span>
+                      ) : (
                       <button
                         key={n}
                         type="button"
