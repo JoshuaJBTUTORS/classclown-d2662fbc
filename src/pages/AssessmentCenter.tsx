@@ -1,30 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { assessmentAssignmentService, AssessmentAssignment } from '@/services/assessmentAssignmentService';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  FileText, 
-  Clock, 
-  Calendar, 
-  CheckCircle2, 
-  AlertCircle,
-  Play,
-  Eye
-} from 'lucide-react';
-import { format, isPast, isWithinInterval, addDays } from 'date-fns';
+import { FileText, Search } from 'lucide-react';
+import { isWithinInterval, addDays } from 'date-fns';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
+import { AssessmentHero } from '@/components/assessments/AssessmentHero';
+import { AssessmentCard } from '@/components/assessments/AssessmentCard';
+import { cn } from '@/lib/utils';
 
 const AssessmentCenter = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: assignments, isLoading } = useQuery({
     queryKey: ['student-assignments', user?.id],
@@ -32,70 +25,31 @@ const AssessmentCenter = () => {
     enabled: !!user,
   });
 
-  const getStatusBadge = (assignment: AssessmentAssignment) => {
-    const statusConfig = {
-      assigned: { label: 'Assigned', variant: 'secondary' as const, icon: FileText },
-      in_progress: { label: 'In Progress', variant: 'default' as const, icon: Clock },
-      submitted: { label: 'Submitted', variant: 'outline' as const, icon: CheckCircle2 },
-      reviewed: { label: 'Reviewed', variant: 'default' as const, icon: CheckCircle2 },
-    };
-
-    const config = statusConfig[assignment.status];
-    const Icon = config.icon;
-
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
+  const visibleAssignments = useMemo(() => {
+    if (!assignments) return [];
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return assignments;
+    return assignments.filter((a) =>
+      [a.assessment?.title, a.assessment?.subject, a.assessment?.exam_board]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(term))
     );
-  };
-
-  const getDueDateBadge = (dueDate?: string) => {
-    if (!dueDate) return null;
-
-    const due = new Date(dueDate);
-    const now = new Date();
-    const isOverdue = isPast(due);
-    const isDueSoon = isWithinInterval(due, { start: now, end: addDays(now, 3) });
-
-    if (isOverdue) {
-      return (
-        <Badge variant="destructive" className="flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" />
-          Overdue
-        </Badge>
-      );
-    }
-
-    if (isDueSoon) {
-      return (
-        <Badge variant="secondary" className="flex items-center gap-1 bg-amber-100 text-amber-800">
-          <Clock className="h-3 w-3" />
-          Due Soon
-        </Badge>
-      );
-    }
-
-    return null;
-  };
+  }, [assignments, searchTerm]);
 
   const filterAssignments = (status: string) => {
-    if (!assignments) return [];
-    
     switch (status) {
       case 'pending':
-        return assignments.filter(a => a.status === 'assigned' || a.status === 'in_progress');
+        return visibleAssignments.filter(a => a.status === 'assigned' || a.status === 'in_progress');
       case 'completed':
-        return assignments.filter(a => a.status === 'submitted' || a.status === 'reviewed');
+        return visibleAssignments.filter(a => a.status === 'submitted' || a.status === 'reviewed');
       case 'due-soon':
-        return assignments.filter(a => {
+        return visibleAssignments.filter(a => {
           if (!a.due_date || a.status === 'submitted' || a.status === 'reviewed') return false;
           const due = new Date(a.due_date);
           return isWithinInterval(due, { start: new Date(), end: addDays(new Date(), 7) });
         });
       default:
-        return assignments;
+        return visibleAssignments;
     }
   };
 
@@ -103,159 +57,100 @@ const AssessmentCenter = () => {
     navigate(`/assessment-center/${assignment.id}/take`);
   };
 
-  const renderAssignmentCard = (assignment: AssessmentAssignment) => (
-    <Card key={assignment.id} className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg">
-              {assignment.assessment?.title || 'Untitled Assessment'}
-            </CardTitle>
-            <CardDescription>
-              {assignment.assessment?.subject} • {assignment.assessment?.exam_board}
-              {assignment.assessment?.year && ` • ${assignment.assessment.year}`}
-            </CardDescription>
-          </div>
-          <div className="flex flex-col gap-2 items-end">
-            {getStatusBadge(assignment)}
-            {getDueDateBadge(assignment.due_date)}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            {assignment.assessment?.total_marks && (
-              <span className="flex items-center gap-1">
-                <FileText className="h-4 w-4" />
-                {assignment.assessment.total_marks} marks
-              </span>
-            )}
-            {assignment.assessment?.time_limit_minutes && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {assignment.assessment.time_limit_minutes} mins
-              </span>
-            )}
-            {assignment.due_date && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Due: {format(new Date(assignment.due_date), 'dd MMM yyyy')}
-              </span>
-            )}
-          </div>
-          
-          {(assignment.status === 'assigned' || assignment.status === 'in_progress') && (
-            <Button onClick={() => handleStartAssessment(assignment)}>
-              <Play className="h-4 w-4 mr-2" />
-              {assignment.status === 'in_progress' ? 'Continue' : 'Start'}
-            </Button>
-          )}
-          
-          {(assignment.status === 'submitted' || assignment.status === 'reviewed') && (
-            <Button variant="outline" onClick={() => handleStartAssessment(assignment)}>
-              <Eye className="h-4 w-4 mr-2" />
-              View Submission
-            </Button>
-          )}
-        </div>
-
-        {assignment.notes && (
-          <p className="mt-3 text-sm text-muted-foreground border-t pt-3">
-            <strong>Instructions:</strong> {assignment.notes}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+  const tabTriggerClass = cn(
+    'rounded-full px-5 py-2.5 text-sm font-medium text-muted-foreground',
+    'data-[state=active]:bg-foreground data-[state=active]:text-background',
+    'data-[state=active]:shadow-[var(--shadow-soft)] transition-colors'
   );
 
   const renderEmptyState = (message: string) => (
-    <div className="text-center py-12">
-      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-      <h3 className="text-lg font-medium text-muted-foreground">{message}</h3>
+    <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-10 text-center shadow-[var(--shadow-soft)] sm:p-14">
+      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-background/70 text-pastel-sand-foreground">
+        {searchTerm ? <Search className="h-7 w-7" /> : <FileText className="h-7 w-7" />}
+      </div>
+      <h3 className="font-heading text-2xl font-extrabold tracking-tight text-pastel-sand-foreground">
+        {searchTerm ? 'No results found' : message}
+      </h3>
+      {searchTerm && (
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-pastel-sand-foreground/80">
+          Nothing matched "{searchTerm}". Try a different assessment, subject or exam board.
+        </p>
+      )}
     </div>
   );
+
+  const renderGrid = (items: AssessmentAssignment[], emptyMessage: string) =>
+    items.length ? (
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((assignment, index) => (
+          <AssessmentCard
+            key={assignment.id}
+            assignment={assignment}
+            index={index}
+            onClick={() => handleStartAssessment(assignment)}
+          />
+        ))}
+      </div>
+    ) : (
+      renderEmptyState(emptyMessage)
+    );
 
   return (
     <div className="flex h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
+
+      <div className="flex flex-1 flex-col overflow-hidden">
         <Navbar toggleSidebar={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold">Assessment Center</h1>
-              <p className="text-muted-foreground mt-1">
-                Complete your assigned assessments and track your progress
-              </p>
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+            <AssessmentHero
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              pendingCount={filterAssignments('pending').length}
+              dueSoonCount={filterAssignments('due-soon').length}
+              completedCount={filterAssignments('completed').length}
+            />
+
+            <div className="mt-8">
+              {isLoading ? (
+                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <Skeleton key={i} className="h-[248px] rounded-[var(--radius-soft)]" />
+                  ))}
+                </div>
+              ) : (
+                <Tabs defaultValue="all" className="space-y-6">
+                  <TabsList className="h-auto flex-wrap gap-2 rounded-full bg-card p-2 shadow-[var(--shadow-soft)]">
+                    <TabsTrigger value="all" className={tabTriggerClass}>
+                      All ({visibleAssignments.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="pending" className={tabTriggerClass}>
+                      Pending ({filterAssignments('pending').length})
+                    </TabsTrigger>
+                    <TabsTrigger value="due-soon" className={tabTriggerClass}>
+                      Due soon ({filterAssignments('due-soon').length})
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className={tabTriggerClass}>
+                      Completed ({filterAssignments('completed').length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="all">
+                    {renderGrid(visibleAssignments, 'No assessments assigned yet')}
+                  </TabsContent>
+                  <TabsContent value="pending">
+                    {renderGrid(filterAssignments('pending'), 'No pending assessments')}
+                  </TabsContent>
+                  <TabsContent value="due-soon">
+                    {renderGrid(filterAssignments('due-soon'), 'No assessments due soon')}
+                  </TabsContent>
+                  <TabsContent value="completed">
+                    {renderGrid(filterAssignments('completed'), 'No completed assessments')}
+                  </TabsContent>
+                </Tabs>
+              )}
             </div>
-
-            {isLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i}>
-                    <CardHeader>
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-10 w-full" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Tabs defaultValue="all" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="all">
-                    All ({assignments?.length || 0})
-                  </TabsTrigger>
-                  <TabsTrigger value="pending">
-                    Pending ({filterAssignments('pending').length})
-                  </TabsTrigger>
-                  <TabsTrigger value="due-soon">
-                    Due Soon ({filterAssignments('due-soon').length})
-                  </TabsTrigger>
-                  <TabsTrigger value="completed">
-                    Completed ({filterAssignments('completed').length})
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="all" className="space-y-4">
-                  {assignments?.length ? (
-                    assignments.map(renderAssignmentCard)
-                  ) : (
-                    renderEmptyState('No assessments assigned yet')
-                  )}
-                </TabsContent>
-
-                <TabsContent value="pending" className="space-y-4">
-                  {filterAssignments('pending').length ? (
-                    filterAssignments('pending').map(renderAssignmentCard)
-                  ) : (
-                    renderEmptyState('No pending assessments')
-                  )}
-                </TabsContent>
-
-                <TabsContent value="due-soon" className="space-y-4">
-                  {filterAssignments('due-soon').length ? (
-                    filterAssignments('due-soon').map(renderAssignmentCard)
-                  ) : (
-                    renderEmptyState('No assessments due soon')
-                  )}
-                </TabsContent>
-
-                <TabsContent value="completed" className="space-y-4">
-                  {filterAssignments('completed').length ? (
-                    filterAssignments('completed').map(renderAssignmentCard)
-                  ) : (
-                    renderEmptyState('No completed assessments')
-                  )}
-                </TabsContent>
-              </Tabs>
-            )}
           </div>
         </main>
       </div>
