@@ -279,6 +279,7 @@ export default function SchoolProgressPage() {
                 showStudentName={userRole === 'admin' || userRole === 'owner'}
                 studentName={getStudentName(progress.student_id)}
               />
+              </div>
             ))}
           </div>
         )}
