@@ -557,106 +557,46 @@ const Students = () => {
                   </p>
                 </div>
               ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/60 hover:bg-transparent">
-                    <TableHead>Client Name</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
-                    {!isParent && (
-                      <TableHead className="hidden lg:table-cell">Parent</TableHead>
-                    )}
-                    <TableHead className="hidden md:table-cell">Subjects</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentStudents.map((student) => (
-                      <TableRow key={student.id} className="border-border/40 transition-colors hover:bg-muted/40">
-                        <TableCell>
-                          <div className="font-medium">
-                            {student.first_name} {student.last_name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {student.user_id ? '🔐 Has Login' : '👤 Parent Managed'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {student.email || <span className="text-muted-foreground/70">Not provided</span>}
-                        </TableCell>
-                        {!isParent && (
-                          <TableCell className="hidden lg:table-cell">
-                            <div className="text-sm">
-                              <div className="font-medium">
-                                {student.parentName}
-                              </div>
-                              {student.parentEmail && (
-                                <div className="text-muted-foreground">{student.parentEmail}</div>
-                              )}
-                            </div>
-                          </TableCell>
-                        )}
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex flex-wrap gap-1">
-                            {typeof student.subjects === 'string' && student.subjects ? 
-                              student.subjects.split(',').map((subject, index) => (
-                                <Badge key={index} variant="outline" className="rounded-full text-xs">
-                                  {subject.trim()}
-                                </Badge>
-                              )) : 
-                              Array.isArray(student.subjects) && student.subjects.length > 0 ?
-                              student.subjects.map((subject, index) => (
-                                <Badge key={index} variant="outline" className="rounded-full text-xs">
-                                  {subject}
-                                </Badge>
-                              )) :
-                              <span className="text-muted-foreground text-sm">None</span>
-                            }
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(student.status)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                Actions
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Options</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleViewClick(student)}>
-                                View Profile
-                              </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditClick(student)}>
-                          Edit Student
-                        </DropdownMenuItem>
-                              {(isAdmin || isOwner) && student.parent_id && (
-                                <DropdownMenuItem onClick={() => handleEditParentClick(student)}>
-                                  Edit Parent
-                                </DropdownMenuItem>
-                              )}
-                              {(isAdmin || isOwner) && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteClick(student)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    Delete Client
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                     ))}
-                 </TableBody>
-               </Table>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {currentStudents.map((student, index) => {
+                    const subjects =
+                      typeof student.subjects === 'string' && student.subjects
+                        ? student.subjects.split(',').map((s) => s.trim()).filter(Boolean)
+                        : Array.isArray(student.subjects)
+                          ? (student.subjects as string[])
+                          : [];
+
+                    return (
+                      <StudentCard
+                        key={student.id}
+                        index={index}
+                        showParent={!isParent}
+                        student={{
+                          id: student.id,
+                          name: `${student.first_name} ${student.last_name}`.trim(),
+                          email: student.email,
+                          parentName: student.parentName,
+                          parentEmail: student.parentEmail,
+                          status: student.status,
+                          subjects,
+                          hasLogin: Boolean(student.user_id),
+                        }}
+                        onOpen={() => handleViewClick(student)}
+                        onEdit={() => handleEditClick(student)}
+                        onEditParent={
+                          (isAdmin || isOwner) && student.parent_id
+                            ? () => handleEditParentClick(student)
+                            : undefined
+                        }
+                        onDelete={
+                          isAdmin || isOwner ? () => handleDeleteClick(student) : undefined
+                        }
+                      />
+                    );
+                  })}
+                </div>
               )}
+              
               
               
               {/* Pagination */}
