@@ -5,13 +5,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Upload, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getPastelTone } from "@/components/lessonPlans/pastelPalette";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/navigation/Navbar";
 import Sidebar from "@/components/navigation/Sidebar";
-import PageTitle from "@/components/ui/PageTitle";
+import { SchoolProgressHero } from "@/components/schoolProgress/SchoolProgressHero";
 import { SchoolProgressCard } from "@/components/schoolProgress/SchoolProgressCard";
 import { SchoolProgressUpload } from "@/components/schoolProgress/SchoolProgressUpload";
 import { SchoolProgressViewer } from "@/components/schoolProgress/SchoolProgressViewer";
@@ -218,64 +215,15 @@ export default function SchoolProgressPage() {
       <div className="flex-1 flex flex-col">
         <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <div className="flex-1 p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <PageTitle 
-              title="School Progress" 
-              subtitle="Upload and view report cards, mock exam results, and other school documents"
-            />
-            
-            {(userRole === 'student' || userRole === 'parent') && currentStudent && (
-              <Button onClick={() => setShowUpload(!showUpload)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Upload Document
-              </Button>
-            )}
-          </div>
-
-          {/* Student picker — shown when the account has more than one child */}
-          {userRole === 'parent' && allStudents.length > 1 && currentStudent && (
-            <div className="flex items-center gap-3">
-              <span className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Viewing
-              </span>
-              <Select
-                value={String(currentStudent.id)}
-                onValueChange={(value) => {
-                  const next = allStudents.find((s) => String(s.id) === value);
-                  if (next) setCurrentStudent(next);
-                }}
-              >
-                <SelectTrigger
-                  className={cn(
-                    'h-11 w-auto min-w-[180px] gap-2 rounded-full border-none px-5',
-                    'font-heading text-sm font-bold shadow-[var(--shadow-soft)]',
-                    'transition-shadow hover:shadow-[var(--shadow-soft-lg)] focus:ring-2 focus:ring-ring',
-                    getPastelTone(`${currentStudent.first_name} ${currentStudent.last_name || ''}`.trim()).bg,
-                    getPastelTone(`${currentStudent.first_name} ${currentStudent.last_name || ''}`.trim()).text
-                  )}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
-                  {allStudents.map((s) => {
-                    const name = `${s.first_name} ${s.last_name || ''}`.trim();
-                    const tone = getPastelTone(name || String(s.id));
-                    return (
-                      <SelectItem
-                        key={s.id}
-                        value={String(s.id)}
-                        className="rounded-xl focus:bg-muted"
-                      >
-                        <span className={cn('rounded-full px-3 py-1 text-xs font-bold', tone.bg, tone.text)}>
-                          {name}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <SchoolProgressHero
+            documentCount={filteredProgress.length}
+            canUpload={userRole === 'student' || userRole === 'parent'}
+            showUpload={showUpload}
+            onToggleUpload={() => setShowUpload(!showUpload)}
+            students={userRole === 'parent' ? allStudents : []}
+            currentStudent={currentStudent}
+            onStudentChange={setCurrentStudent}
+          />
 
         {/* Upload Form */}
         {showUpload && currentStudent && (
@@ -317,9 +265,13 @@ export default function SchoolProgressPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProgress.map((progress) => (
-              <SchoolProgressCard
+            {filteredProgress.map((progress, index) => (
+              <div
                 key={progress.id}
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 60}ms` }}
+              >
+              <SchoolProgressCard
                 progress={progress}
                 onView={handleView}
                 onDownload={handleDownload}
@@ -327,6 +279,7 @@ export default function SchoolProgressPage() {
                 showStudentName={userRole === 'admin' || userRole === 'owner'}
                 studentName={getStudentName(progress.student_id)}
               />
+              </div>
             ))}
           </div>
         )}
