@@ -1,28 +1,75 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { Clock, Video, Bell } from 'lucide-react';
 import { useLiveLessonAlert } from '@/hooks/useLiveLessonAlert';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import LessonConsentDialog from './LessonConsentDialog';
 
 export const LessonStartPopup: React.FC = () => {
   const navigate = useNavigate();
   const { activeLesson, dismiss } = useLiveLessonAlert();
+  const { user, userRole, isAdmin, isOwner, isTutor } = useAuth();
+  const [showConsent, setShowConsent] = useState(false);
+  const [studentName, setStudentName] = useState('Student');
 
   if (!activeLesson) return null;
 
   const startTime = parseISO(activeLesson.start_time);
   const now = new Date();
   const hasStarted = startTime <= now;
+  const isTeacherRole = isTutor || isAdmin || isOwner;
 
   const tutorName = activeLesson.tutor
     ? `${activeLesson.tutor.first_name} ${activeLesson.tutor.last_name}`.trim()
     : null;
 
-  const handleJoin = () => {
+  const goToRoom = () => {
     dismiss(activeLesson.id);
-    navigate(`/join-lesson/${activeLesson.id}`);
+    navigate(`/video-room/${activeLesson.id}`);
+  };
+
+  const handleJoin = async () => {
+    // Same route as the calendar "Launch Room" flow
+    if (isTeacherRole) {
+      goToRoom();
+      return;
+    }
+
+    // Students/parents see the same recording-consent step as the calendar
+    try {
+      if (userRole === 'student') {
+        const { data } = await supabase
+          .from('students')
+          .select('first_name, last_name')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        if (data) setStudentName(`${data.first_name} ${data.last_name}`.trim());
+      } else if (userRole === 'parent') {
+        const { data: parent } = await supabase
+          .from('parents')
+          .select('id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        if (parent) {
+          const { data: rows } = await supabase
+            .from('lesson_students')
+            .select('student:students(first_name, last_name, parent_id)')
+            .eq('lesson_id', activeLesson.id);
+          const child = rows?.find((r: any) => r.student?.parent_id === parent.id);
+          if (child?.student) {
+            setStudentName(`${child.student.first_name} ${child.student.last_name}`.trim());
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error resolving student name for consent dialog:', e);
+    }
+
+    setShowConsent(true);
   };
 
   const handleSnooze = () => {
@@ -32,6 +79,23 @@ export const LessonStartPopup: React.FC = () => {
   const handleDismiss = () => {
     dismiss(activeLesson.id);
   };
+
+  if (showConsent) {
+    return (
+      <LessonConsentDialog
+        isOpen={true}
+        onClose={() => setShowConsent(false)}
+        onAccept={goToRoom}
+        lesson={{
+          title: activeLesson.title,
+          start_time: activeLesson.start_time,
+          tutor: activeLesson.tutor,
+        }}
+        studentName={studentName}
+      />
+    );
+  }
+
 
   return (
     <Dialog open={true} onOpenChange={(open) => { if (!open) handleDismiss(); }}>
