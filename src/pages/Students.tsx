@@ -418,16 +418,28 @@ const Students = () => {
     switch (status) {
       case 'trial':
         return (
-          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+          <Badge variant="outline" className="rounded-full border-0 bg-pastel-butter px-3 py-1 text-pastel-butter-foreground">
             Trial
           </Badge>
         );
       case 'active':
-        return <Badge variant="default">Active</Badge>;
+        return (
+          <Badge variant="outline" className="rounded-full border-0 bg-pastel-mint px-3 py-1 text-pastel-mint-foreground">
+            Active
+          </Badge>
+        );
       case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
+        return (
+          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
+            Inactive
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return (
+          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
+            {status}
+          </Badge>
+        );
     }
   };
 
@@ -437,30 +449,35 @@ const Students = () => {
       <div className="flex flex-col flex-1 w-full">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-6">
-            <div className="flex flex-col mb-4 md:mb-0">
-              <PageTitle 
-                title={isParent ? "My Children" : "Clients"} 
-                subtitle={isParent ? "Manage your children's profiles" : "Manage client accounts and family relationships"}
-                className="mb-2"
-              />
-            </div>
-            <div className="flex gap-2">
-              {(isAdmin || isOwner) && (
-                <Button variant="outline" onClick={() => navigate('/onboarding')} className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Cleo Onboarding
-                </Button>
-              )}
-              {(isAdmin || isOwner) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add New
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+          <div className="mx-auto w-full max-w-7xl space-y-6">
+          <StudentsHero
+            title={isParent ? 'My Children' : 'Clients'}
+            searchTerm={searchQuery}
+            onSearchChange={setSearchQuery}
+            totalCount={students.length}
+            activeCount={students.filter((s) => s.status === 'active').length}
+            trialCount={students.filter((s) => s.status === 'trial').length}
+            actions={
+              <>
+                {(isAdmin || isOwner) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/onboarding')}
+                    className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Cleo Onboarding
+                  </Button>
+                )}
+                {(isAdmin || isOwner) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]">
+                        <Plus className="h-4 w-4" />
+                        Add New
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem 
                       onClick={() => setIsAddFamilyDialogOpen(true)}
