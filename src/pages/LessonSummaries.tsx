@@ -332,6 +332,9 @@ const LessonSummaries: React.FC = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [lessons]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredLessons.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedLessons = filteredLessons.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
