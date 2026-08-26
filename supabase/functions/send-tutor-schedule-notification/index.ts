@@ -13,6 +13,7 @@ const corsHeaders = {
 // Quiet period: a tutor is only emailed once no further change has been
 // queued for them in the last 30 minutes.
 const COOLDOWN_MINUTES = 30;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,19 +27,29 @@ serve(async (req) => {
     );
 
     let dryRun = false;
+    let tutorId: string | null = null;
     try {
       const body = await req.json();
       dryRun = body?.dryRun === true;
+      tutorId = typeof body?.tutorId === "string" ? body.tutorId : null;
     } catch (_e) {
-      // no body, treat as live run
+      // Invalid or missing JSON is handled by validation below.
+    }
+
+    if (!tutorId || !UUID_PATTERN.test(tutorId)) {
+      return new Response(
+        JSON.stringify({ error: "A valid tutorId is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const { data: pending, error: pendingError } = await supabase
       .from("tutor_schedule_notifications")
       .select("id, tutor_id, change_type, queued_at")
+      .eq("tutor_id", tutorId)
       .is("sent_at", null)
       .order("queued_at", { ascending: true })
-      .limit(5000);
+      .limit(1000);
 
     if (pendingError) throw pendingError;
 
@@ -49,27 +60,11 @@ serve(async (req) => {
       );
     }
 
-    // Group by tutor
-    const byTutor = new Map<
-      string,
-      { ids: string[]; added: number; removed: number; latest: number }
-    >();
-
-    for (const row of pending) {
-      const entry = byTutor.get(row.tutor_id) || { ids: [], added: 0, removed: 0, latest: 0 };
-      entry.ids.push(row.id);
-      if (row.change_type === "added") entry.added += 1;
-      else entry.removed += 1;
-      const ts = new Date(row.queued_at).getTime();
-      if (ts > entry.latest) entry.latest = ts;
-      byTutor.set(row.tutor_id, entry);
-    }
-
     const cutoff = Date.now() - COOLDOWN_MINUTES * 60 * 1000;
-    const ready = [...byTutor.entries()].filter(([, e]) => e.latest <= cutoff);
-    const waiting = byTutor.size - ready.length;
+    const readyRows = pending.filter((row) => new Date(row.queued_at).getTime() <= cutoff);
+    const waiting = pending.length - readyRows.length;
 
-    if (ready.length === 0) {
+    if (readyRows.length === 0) {
       return new Response(
         JSON.stringify({
           success: true,
@@ -82,89 +77,72 @@ serve(async (req) => {
       );
     }
 
-    const tutorIds = ready.map(([tutorId]) => tutorId);
     const { data: tutors, error: tutorsError } = await supabase
       .from("tutors")
       .select("id, first_name, last_name, email")
-      .in("id", tutorIds);
+      .eq("id", tutorId)
+      .limit(1);
 
     if (tutorsError) throw tutorsError;
 
-    const tutorMap = new Map((tutors || []).map((t) => [t.id, t]));
-
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const resend = resendKey ? new Resend(resendKey) : null;
+    const tutor = tutors?.[0];
+    const tutorName = tutor?.first_name || "there";
+    const email = tutor?.email || null;
+    const ids = readyRows.map((row) => row.id);
+    const added = readyRows.filter((row) => row.change_type === "added").length;
+    const removed = readyRows.filter((row) => row.change_type === "removed").length;
 
-    const results: Array<Record<string, unknown>> = [];
-
-    for (const [tutorId, entry] of ready) {
-      const tutor = tutorMap.get(tutorId);
-      const tutorName = tutor ? tutor.first_name : "there";
-      const email = tutor?.email || null;
-
-      if (!email) {
-        console.log(`Tutor ${tutorId} has no email on file, marking queue rows as handled`);
-        if (!dryRun) {
-          await supabase
-            .from("tutor_schedule_notifications")
-            .update({ sent_at: new Date().toISOString() })
-            .in("id", entry.ids);
-        }
-        results.push({ tutorId, skipped: "no email", changes: entry.ids.length });
-        continue;
-      }
-
-      if (dryRun) {
-        results.push({
-          tutorId,
-          email,
-          added: entry.added,
-          removed: entry.removed,
-          changes: entry.ids.length,
-          wouldSend: true,
-        });
-        continue;
-      }
-
-      try {
-        const html = await renderAsync(
-          React.createElement(TutorScheduleUpdateEmail, {
-            tutorName,
-            addedCount: entry.added,
-            removedCount: entry.removed,
-          })
-        );
-
-        if (!resend) throw new Error("RESEND_API_KEY is not configured");
-
-        await resend.emails.send({
-          from: "Class Beyond <enquiries@classbeyondacademy.io>",
-          to: [email],
-          subject: "Your teaching schedule has been updated",
-          html,
-        });
-
+    if (!email) {
+      console.log(`Tutor ${tutorId} has no email on file, marking queue rows as handled`);
+      if (!dryRun) {
         await supabase
           .from("tutor_schedule_notifications")
           .update({ sent_at: new Date().toISOString() })
-          .in("id", entry.ids);
-
-        console.log(`Schedule update email sent to ${email} covering ${entry.ids.length} changes`);
-        results.push({
-          tutorId,
-          email,
-          added: entry.added,
-          removed: entry.removed,
-          sent: true,
-        });
-      } catch (err) {
-        console.error(`Failed to email tutor ${tutorId}:`, err);
-        results.push({ tutorId, email, sent: false, error: String(err) });
+          .in("id", ids);
       }
+      return new Response(
+        JSON.stringify({ success: true, dryRun, tutorId, skipped: "no email", changes: ids.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
+    if (dryRun) {
+      return new Response(
+        JSON.stringify({ success: true, dryRun, tutorId, email, added, removed, changes: ids.length, waiting, wouldSend: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const html = await renderAsync(
+      React.createElement(TutorScheduleUpdateEmail, {
+        tutorName,
+        addedCount: added,
+        removedCount: removed,
+      })
+    );
+
+    if (!resend) throw new Error("RESEND_API_KEY is not configured");
+
+    await resend.emails.send({
+      from: "Class Beyond <enquiries@classbeyondacademy.io>",
+      to: [email],
+      subject: "Your teaching schedule has been updated",
+      html,
+    });
+
+    const { error: updateError } = await supabase
+      .from("tutor_schedule_notifications")
+      .update({ sent_at: new Date().toISOString() })
+      .in("id", ids);
+
+    if (updateError) throw updateError;
+
+    console.log(`Schedule update email sent to ${email} covering ${ids.length} changes`);
+
     return new Response(
-      JSON.stringify({ success: true, dryRun, waiting, results }),
+      JSON.stringify({ success: true, dryRun, tutorId, email, added, removed, sent: true, waiting }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
