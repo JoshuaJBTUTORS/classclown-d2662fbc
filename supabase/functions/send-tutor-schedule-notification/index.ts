@@ -38,8 +38,20 @@ serve(async (req) => {
 
     const token = authorization.slice("Bearer ".length);
     const apiKey = req.headers.get("apikey");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const isScheduledCaller = Boolean(apiKey && token === apiKey && token === anonKey);
+    let scheduledClaims: { ref?: string; role?: string } | null = null;
+    try {
+      const encodedPayload = token.split(".")[1];
+      const base64 = encodedPayload?.replace(/-/g, "+").replace(/_/g, "/");
+      scheduledClaims = base64 ? JSON.parse(atob(base64)) : null;
+    } catch (_error) {
+      scheduledClaims = null;
+    }
+    const isScheduledCaller = Boolean(
+      apiKey &&
+      token === apiKey &&
+      scheduledClaims?.role === "anon" &&
+      scheduledClaims?.ref === "sjxbxkpegcnnfjbsxazo"
+    );
     if (!isScheduledCaller) {
       const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
       if (claimsError || !claimsData?.claims) {
