@@ -265,9 +265,13 @@ export default function SchoolProgressPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProgress.map((progress) => (
-              <SchoolProgressCard
+            {filteredProgress.map((progress, index) => (
+              <div
                 key={progress.id}
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 60}ms` }}
+              >
+              <SchoolProgressCard
                 progress={progress}
                 onView={handleView}
                 onDownload={handleDownload}
