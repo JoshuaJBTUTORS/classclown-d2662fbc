@@ -15,9 +15,6 @@ const studentFullName = (s: Student) => `${s.first_name} ${s.last_name || ''}`.t
 
 export const SchoolProgressHero: React.FC<SchoolProgressHeroProps> = ({
   documentCount,
-  canUpload,
-  showUpload,
-  onToggleUpload,
   students,
   currentStudent,
   onStudentChange,
