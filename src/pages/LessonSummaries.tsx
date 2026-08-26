@@ -42,7 +42,7 @@ const LessonSummaries: React.FC = () => {
   const [studentFilter, setStudentFilter] = useState('all');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 5;
+  const PAGE_SIZE = 6;
 
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
