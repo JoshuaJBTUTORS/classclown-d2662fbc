@@ -431,30 +431,30 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                   {!didNotAttend && (summary.engagement_score || summary.confidence_score || summary.participation_time_percentage) && (
                     <div className={cn('grid grid-cols-3 gap-4 rounded-2xl p-5', activeTone.bg)}>
                       {summary.engagement_score && (
-                        <div className="text-center">
-                          <div className={`text-lg font-semibold ${getScoreColor(summary.engagement_score)}`}>
+                        <div className={cn('text-center', activeTone.text)}>
+                          <div className={`font-heading text-2xl font-extrabold ${getScoreColor(summary.engagement_score)}`}>
                             {summary.engagement_score}/10
                           </div>
-                          <div className="text-xs text-muted-foreground mb-1">Engagement</div>
-                          <Progress value={summary.engagement_score * 10} className="h-1" />
+                          <div className="mb-1 text-xs font-medium opacity-70">Engagement</div>
+                          <Progress value={summary.engagement_score * 10} className="h-1.5 bg-background/60" />
                         </div>
                       )}
                       {summary.confidence_score && (
-                        <div className="text-center">
-                          <div className={`text-lg font-semibold ${getScoreColor(summary.confidence_score)}`}>
+                        <div className={cn('text-center', activeTone.text)}>
+                          <div className={`font-heading text-2xl font-extrabold ${getScoreColor(summary.confidence_score)}`}>
                             {summary.confidence_score}/10
                           </div>
-                          <div className="text-xs text-muted-foreground mb-1">Confidence</div>
-                          <Progress value={summary.confidence_score * 10} className="h-1" />
+                          <div className="mb-1 text-xs font-medium opacity-70">Confidence</div>
+                          <Progress value={summary.confidence_score * 10} className="h-1.5 bg-background/60" />
                         </div>
                       )}
                       {summary.participation_time_percentage && (
-                        <div className="text-center">
-                          <div className="text-lg font-semibold text-blue-600">
+                        <div className={cn('text-center', activeTone.text)}>
+                          <div className="font-heading text-2xl font-extrabold">
                             {Math.round(summary.participation_time_percentage)}%
                           </div>
-                          <div className="text-xs text-muted-foreground mb-1">Speaking Time</div>
-                          <Progress value={summary.participation_time_percentage} className="h-1" />
+                          <div className="mb-1 text-xs font-medium opacity-70">Speaking Time</div>
+                          <Progress value={summary.participation_time_percentage} className="h-1.5 bg-background/60" />
                         </div>
                       )}
                     </div>
