@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
-import PageTitle from '@/components/ui/PageTitle';
+import StudentsHero from '@/components/students/StudentsHero';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Search, Upload, ChevronDown, Users, UserPlus, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -417,16 +418,28 @@ const Students = () => {
     switch (status) {
       case 'trial':
         return (
-          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+          <Badge variant="outline" className="rounded-full border-0 bg-pastel-butter px-3 py-1 text-pastel-butter-foreground">
             Trial
           </Badge>
         );
       case 'active':
-        return <Badge variant="default">Active</Badge>;
+        return (
+          <Badge variant="outline" className="rounded-full border-0 bg-pastel-mint px-3 py-1 text-pastel-mint-foreground">
+            Active
+          </Badge>
+        );
       case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
+        return (
+          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
+            Inactive
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return (
+          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
+            {status}
+          </Badge>
+        );
     }
   };
 
@@ -436,30 +449,35 @@ const Students = () => {
       <div className="flex flex-col flex-1 w-full">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-6">
-            <div className="flex flex-col mb-4 md:mb-0">
-              <PageTitle 
-                title={isParent ? "My Children" : "Clients"} 
-                subtitle={isParent ? "Manage your children's profiles" : "Manage client accounts and family relationships"}
-                className="mb-2"
-              />
-            </div>
-            <div className="flex gap-2">
-              {(isAdmin || isOwner) && (
-                <Button variant="outline" onClick={() => navigate('/onboarding')} className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Cleo Onboarding
-                </Button>
-              )}
-              {(isAdmin || isOwner) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add New
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+          <div className="mx-auto w-full max-w-7xl space-y-6">
+          <StudentsHero
+            title={isParent ? 'My Children' : 'Clients'}
+            searchTerm={searchQuery}
+            onSearchChange={setSearchQuery}
+            totalCount={students.length}
+            activeCount={students.filter((s) => s.status === 'active').length}
+            trialCount={students.filter((s) => s.status === 'trial').length}
+            actions={
+              <>
+                {(isAdmin || isOwner) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/onboarding')}
+                    className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Cleo Onboarding
+                  </Button>
+                )}
+                {(isAdmin || isOwner) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]">
+                        <Plus className="h-4 w-4" />
+                        Add New
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem 
                       onClick={() => setIsAddFamilyDialogOpen(true)}
@@ -505,34 +523,43 @@ const Students = () => {
                       Bulk Import
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </div>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <CardTitle>{isParent ? "Children" : "Client List"}</CardTitle>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search clients or parents..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
+                  </DropdownMenu>
+                )}
+              </>
+            }
+          />
+
+          <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft)] sm:p-6">
               <div className="mb-4 text-sm text-muted-foreground">
                 Showing {currentStudents.length} of {totalItems} {isParent ? "children" : "clients"}
                 {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
               </div>
+              {isLoading ? (
+                <div className="space-y-3 py-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : currentStudents.length === 0 ? (
+                <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-10 text-center sm:p-14">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-background/70 text-pastel-sand-foreground">
+                    {searchQuery ? <Search className="h-7 w-7" /> : <Users className="h-7 w-7" />}
+                  </div>
+                  <h3 className="mb-3 font-heading text-2xl font-bold tracking-tight text-pastel-sand-foreground">
+                    {searchQuery ? 'No results found' : isParent ? 'No children yet' : 'No clients yet'}
+                  </h3>
+                  <p className="mx-auto max-w-md text-sm leading-relaxed text-pastel-sand-foreground/80">
+                    {searchQuery
+                      ? `Nothing matched "${searchQuery}". Try a different name, email, or subject.`
+                      : isParent
+                        ? "Your children's profiles will appear here."
+                        : 'Add your first client to get started.'}
+                  </p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-border/60 hover:bg-transparent">
                     <TableHead>Client Name</TableHead>
                     <TableHead className="hidden md:table-cell">Email</TableHead>
                     {!isParent && (
@@ -544,32 +571,18 @@ const Students = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-10">
-                        Loading clients...
-                      </TableCell>
-                    </TableRow>
-                  ) : currentStudents.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-10">
-                        {searchQuery ? 'No clients found matching your search.' : 
-                         isParent ? 'No children found.' : 'No clients found. Add your first client to get started.'}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentStudents.map((student) => (
-                      <TableRow key={student.id}>
+                  {currentStudents.map((student) => (
+                      <TableRow key={student.id} className="border-border/40 transition-colors hover:bg-muted/40">
                         <TableCell>
                           <div className="font-medium">
                             {student.first_name} {student.last_name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {student.user_id ? '🔐 Has Login' : '👤 Parent Managed'}
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {student.email || <span className="text-gray-400">Not provided</span>}
+                          {student.email || <span className="text-muted-foreground/70">Not provided</span>}
                         </TableCell>
                         {!isParent && (
                           <TableCell className="hidden lg:table-cell">
@@ -578,7 +591,7 @@ const Students = () => {
                                 {student.parentName}
                               </div>
                               {student.parentEmail && (
-                                <div className="text-gray-500">{student.parentEmail}</div>
+                                <div className="text-muted-foreground">{student.parentEmail}</div>
                               )}
                             </div>
                           </TableCell>
@@ -587,13 +600,13 @@ const Students = () => {
                           <div className="flex flex-wrap gap-1">
                             {typeof student.subjects === 'string' && student.subjects ? 
                               student.subjects.split(',').map((subject, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
+                                <Badge key={index} variant="outline" className="rounded-full text-xs">
                                   {subject.trim()}
                                 </Badge>
                               )) : 
                               Array.isArray(student.subjects) && student.subjects.length > 0 ?
                               student.subjects.map((subject, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
+                                <Badge key={index} variant="outline" className="rounded-full text-xs">
                                   {subject}
                                 </Badge>
                               )) :
