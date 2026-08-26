@@ -27,13 +27,10 @@ export const AssessmentHero: React.FC<AssessmentHeroProps> = ({
 }) => {
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
+      <div>
         <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
           Assessment Center
         </h1>
-        <p className="text-muted-foreground">
-          Complete your assigned assessments and track your progress
-        </p>
       </div>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
