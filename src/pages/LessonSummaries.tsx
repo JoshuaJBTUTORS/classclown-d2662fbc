@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen } from 'lucide-react';
 import LessonSummaryCard from '@/components/learningHub/LessonSummaryCard';
 import { LessonSummariesHero } from '@/components/lessonPlans/LessonSummariesHero';
-import { format, parseISO, subDays } from 'date-fns';
+import { parseISO, subDays } from 'date-fns';
 import Sidebar from '@/components/navigation/Sidebar';
 import Navbar from '@/components/navigation/Navbar';
 import { toast } from 'sonner';
