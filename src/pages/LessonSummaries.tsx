@@ -417,14 +417,49 @@ const LessonSummaries: React.FC = () => {
             ) : (
               <div className="space-y-6">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Showing {filteredLessons.length} of {lessons.length} lessons
+                  Showing {pagedLessons.length} of {filteredLessons.length} lessons
                 </p>
 
-                <div className="grid gap-6">
-                  {filteredLessons.map((lesson) => (
+                <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                  {pagedLessons.map((lesson) => (
                     <LessonSummaryCard key={lesson.id} lesson={lesson} />
                   ))}
                 </div>
+
+                {totalPages > 1 && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="h-11 rounded-full bg-card px-5 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setPage(n)}
+                        className={
+                          n === page
+                            ? 'h-11 w-11 rounded-full bg-foreground text-sm font-bold text-background shadow-[var(--shadow-soft)]'
+                            : 'h-11 w-11 rounded-full bg-card text-sm font-medium text-foreground shadow-[var(--shadow-soft)]'
+                        }
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="h-11 rounded-full bg-card px-5 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
