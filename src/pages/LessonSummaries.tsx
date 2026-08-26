@@ -41,6 +41,8 @@ const LessonSummaries: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('last-30-days');
   const [studentFilter, setStudentFilter] = useState('all');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 5;
 
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
@@ -50,6 +52,7 @@ const LessonSummaries: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
+    setPage(1);
   }, [lessons, searchTerm, subjectFilter, dateFilter, studentFilter]);
 
   const fetchLessons = async () => {
