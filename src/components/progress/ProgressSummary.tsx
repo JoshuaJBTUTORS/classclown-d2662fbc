@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { paymentService } from '@/services/paymentService';
+import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 
 interface ProgressSummaryProps {
   filters: {
