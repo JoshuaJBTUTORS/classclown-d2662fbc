@@ -73,14 +73,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({ assignment, onCl
       </div>
 
       <div className="relative flex h-full min-h-[248px] flex-col gap-4 p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-background shadow-[var(--shadow-soft)]">
-            <FileText className={cn('h-5 w-5', tone.text)} strokeWidth={2} />
-            {isOverdue && (
-              <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-destructive ring-2 ring-background" />
-            )}
-          </div>
-
+        <div className="flex items-start justify-end gap-3">
           <div className="flex flex-wrap justify-end gap-2">
             <span className={chip}>
               <StatusIcon className="h-3 w-3" />
@@ -111,18 +104,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({ assignment, onCl
         </div>
 
         <div className="mt-auto flex flex-wrap gap-2 pr-16">
-          {assessment?.total_marks != null && (
-            <span className={chip}>
-              <FileText className="h-3 w-3" />
-              {assessment.total_marks} marks
-            </span>
-          )}
-          {assessment?.time_limit_minutes != null && (
-            <span className={chip}>
-              <Clock className="h-3 w-3" />
-              {assessment.time_limit_minutes} mins
-            </span>
-          )}
           {due && (
             <span className={chip}>
               <Calendar className="h-3 w-3" />
