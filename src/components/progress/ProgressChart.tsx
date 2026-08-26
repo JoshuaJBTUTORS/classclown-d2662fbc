@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
-import { toast } from 'sonner';
 import { BookOpen } from 'lucide-react';
+import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 
 interface ProgressChartProps {
   filters: {
