@@ -35,7 +35,6 @@ import Referrals from './pages/Referrals';
 
 import TrialBooking from './pages/TrialBooking';
 import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
-import StudentJoinPage from './components/lessons/StudentJoinPage';
 import VideoRoom from './pages/VideoRoom';
 import ReferFriend from './pages/ReferFriend';
 import Blog from './pages/Blog';
@@ -425,14 +424,6 @@ function App() {
                     }
                   />
                 </Route>
-                <Route
-                  path="/join-lesson/:lessonId"
-                  element={
-                    <ProtectedRoute>
-                      <StudentJoinPage />
-                    </ProtectedRoute>
-                  }
-                />
                 
                 {/* Video room route */}
                 <Route 
