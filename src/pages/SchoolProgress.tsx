@@ -246,17 +246,28 @@ export default function SchoolProgressPage() {
 
         {/* Progress Grid */}
         {filteredProgress.length === 0 ? (
-          <div className="text-center py-12">
-            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No documents found</h3>
-            <p className="text-muted-foreground mb-4">
-              {progressData.length === 0 
-                ? "Start by uploading your first school progress document"
-                : "Try adjusting your search or filter criteria"
-              }
+          <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center rounded-[1.5rem] border-2 border-dashed border-border/70 bg-muted/30 px-6 py-12 text-center">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-pastel-sky">
+              <Upload className="h-7 w-7 text-pastel-sky-foreground" />
+            </div>
+            <h3 className="font-heading text-2xl font-extrabold tracking-tight">No documents yet</h3>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
+              {progressData.length === 0
+                ? "Upload report cards, mock exam results and other school documents to keep everything in one place."
+                : "Try adjusting your search or filter criteria."}
             </p>
+            {(userRole === 'student' || userRole === 'parent') && progressData.length === 0 && (
+              <Button
+                onClick={() => setShowUpload(true)}
+                className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-6 text-background hover:bg-foreground/90"
+              >
+                <Upload className="h-4 w-4" />
+                Upload Document
+              </Button>
+            )}
           </div>
         ) : (
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProgress.map((progress, index) => (
               <div
