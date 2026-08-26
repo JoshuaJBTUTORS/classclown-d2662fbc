@@ -48,6 +48,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
   const [loading, setLoading] = useState(true);
   const [hasAssessmentAccess, setHasAssessmentAccess] = useState(false);
   const { user } = useAuth();
+  const { data: heycleo } = useHeyCleoProgress(filters.selectedStudents);
 
   useEffect(() => {
     checkAssessmentAccess();
