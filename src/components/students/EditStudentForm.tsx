@@ -156,15 +156,29 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
     }
   };
 
+  const fullName = `${student?.first_name || ''} ${student?.last_name || ''}`.trim();
+  const tone = getPastelTone(fullName || String(student?.id || 'student'));
+
+  const inputClasses =
+    'h-11 rounded-xl border-none bg-muted/60 shadow-none focus-visible:ring-2 focus-visible:ring-ring';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Edit Student Details</DialogTitle>
-          <DialogDescription>
-            Update the student's information as needed.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[600px] overflow-hidden rounded-[var(--radius-soft)] border-none p-0 shadow-[var(--shadow-soft-lg)]">
+        {/* Pastel hero band */}
+        <div className={cn('relative overflow-hidden p-6 pb-5', tone.bg)}>
+          <ScribbleStroke className="pointer-events-none absolute -top-4 right-0 w-[55%] text-background" />
+          <div className="relative">
+            <DialogTitle className={cn('font-heading text-3xl font-extrabold leading-tight tracking-tight', tone.text)}>
+              Edit Student
+            </DialogTitle>
+            <DialogDescription className={cn('mt-1 text-sm opacity-70', tone.text)}>
+              Update {fullName || 'this student'}&apos;s details below.
+            </DialogDescription>
+          </div>
+        </div>
+
+        <div className="p-6 pt-5">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
