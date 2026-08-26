@@ -240,14 +240,12 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Brain className="h-4 w-4 animate-pulse" />
-            <span className="text-sm">Loading AI lesson summaries...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-[var(--radius-soft,1.5rem)] bg-muted/40 p-6">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <NotebookPen className="h-4 w-4 animate-pulse" />
+          <span className="text-sm font-medium">Loading Cleo lesson summaries…</span>
+        </div>
+      </div>
     );
   }
 
@@ -299,15 +297,17 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-3">
+      <Card className="rounded-[var(--radius-soft,1.5rem)] border-0 bg-transparent shadow-none">
+        <CardHeader className="pb-3 px-1">
           <CardTitle className="flex items-center justify-between text-base">
             <div className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              AI Lesson Summaries
-              <Badge variant="secondary" className="ml-2">
+              <span className={cn('flex h-8 w-8 items-center justify-center rounded-full', activeTone.bg, activeTone.text)}>
+                <NotebookPen className="h-4 w-4" />
+              </span>
+              <span className="font-heading font-extrabold tracking-tight">Cleo Lesson Summary</span>
+              <span className={cn('ml-1 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium', activeTone.bg, activeTone.text)}>
                 {visibleSummaries.length} {visibleSummaries.length === 1 ? 'Summary' : 'Summaries'}
-              </Badge>
+              </span>
             </div>
             
             {/* Assessment Actions */}
