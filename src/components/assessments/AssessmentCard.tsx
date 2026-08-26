@@ -104,18 +104,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({ assignment, onCl
         </div>
 
         <div className="mt-auto flex flex-wrap gap-2 pr-16">
-          {assessment?.total_marks != null && (
-            <span className={chip}>
-              <FileText className="h-3 w-3" />
-              {assessment.total_marks} marks
-            </span>
-          )}
-          {assessment?.time_limit_minutes != null && (
-            <span className={chip}>
-              <Clock className="h-3 w-3" />
-              {assessment.time_limit_minutes} mins
-            </span>
-          )}
           {due && (
             <span className={chip}>
               <Calendar className="h-3 w-3" />
