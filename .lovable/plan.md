@@ -1,29 +1,42 @@
-# Verify the tutor schedule notification delivery
+# Fix HeyCleo homework not showing on the calendar
 
-## What I found
+## What's happening
 
-The original lesson creation was skipped because its start time was already 28 seconds in the past when it was saved. However, moving it to 13:00 UTC and changing the tutor at 11:58 UTC did trigger the notification system correctly.
+The calendar chip only appears when a CRM student can be matched to a HeyCleo account. Today matching is automatic and email-only:
 
-Checks made:
+1. CRM student email matches a HeyCleo account email, or
+2. the student's parent email matches — but **only if that parent has exactly one child in the CRM**.
 
-- A `removed` notification is queued for Joshua Ekundayo.
-- An `added` notification is queued for Britney Lawrence.
-- The trigger `trg_queue_tutor_schedule_change` is present and enabled on lessons.
-- Two active one-off jobs were created, one for each tutor, scheduled for 12:29 UTC (1:29 PM London).
-- There is no leftover repeating cron job for tutor notifications, only the unrelated punctuality monitor.
+Rizwana Arshad is a real example. Her HeyCleo account is registered under the parent email `arshad57@hotmail.co.uk`, and that parent has two CRM children (Emaan and Inayah), neither of whom has their own email. Rule 2 refuses to guess which child owns the account, so both children fall back to "no data" and nothing shows on the calendar.
 
-Nothing has been emailed yet because the required 30-minute quiet period has not elapsed. The current state is correct.
+This is not a one-off: 181 active CRM students sit in families where the parent email matches a HeyCleo account but there is more than one sibling. Matching on the child's first name only rescues 9 of them, because HeyCleo accounts are usually registered in the parent's name. The remaining families can only be resolved by a human deciding which child (or children) the HeyCleo account belongs to.
 
-## Verification
+## The fix
 
-1. Allow the scheduled jobs to run at 12:29 UTC (1:29 PM London).
-2. Confirm both queue rows receive a `sent_at` timestamp.
-3. Confirm the temporary jobs remove themselves after invoking the edge function.
-4. Check the edge-function logs and email delivery result if either row remains unsent.
+**1. Store an explicit link**
 
-## Technical details
+Add an optional HeyCleo account reference on the CRM student record. When set, it always wins over the automatic email guess.
 
-- No code or database change is currently required.
-- Queue time: `2026-08-26 11:58:57 UTC`.
-- Scheduled send time: `2026-08-26 12:29 UTC`.
-- The one-minute scheduling buffer prevents the job running slightly before the full 30-minute cooldown has elapsed.
+**2. Widen automatic matching (safe cases only)**
+
+- Keep the direct student-email match.
+- Keep the single-child parent-email match.
+- Add a child-name match: if the parent email matches a HeyCleo account whose first name equals the child's first name, link it.
+- For remaining multi-sibling families, stay unlinked but mark them as "needs linking" instead of silently showing nothing.
+
+**3. Give admins a way to link**
+
+On the HeyCleo data page, add an "Unlinked students" view listing every CRM student in a family whose parent email matches a HeyCleo account but who has no resolved link. Each row has a picker of candidate HeyCleo accounts (family matches first, then a searchable list of all accounts) to set or clear the link.
+
+**4. Surface the state on the calendar**
+
+In the lesson dialog, students that are unlinked show a neutral "Not linked to HeyCleo" chip rather than nothing, so tutors can tell the difference between "no homework data" and "no account connected".
+
+## Technical notes
+
+- Migration: `students.heycleo_student_id uuid` (nullable, indexed) referencing `heycleo_students.student_id`; grants and RLS follow the existing `students` policies. Staff-only writes.
+- `src/hooks/useHeyCleoHomeworkStatus.ts`: resolution order becomes explicit link → student email → parent email (single child) → parent email + first-name match; return a `needsLinking` set alongside `statuses`/`links`.
+- `src/hooks/useHeyCleoStudents.ts`: extend to expose account first/last name for the picker.
+- New `src/components/heycleo/LinkHeyCleoStudentDialog.tsx` plus an "Unlinked" tab in `src/pages/admin/HeyCleoData.tsx`.
+- `HomeworkStatusChip.tsx` / `StudentAttendanceRow.tsx`: add the `not_linked` chip state; existing side-panel behaviour unchanged.
+- The hourly HeyCleo pull and the homework nudge job are untouched; the nudge job keeps using its own linking rules unless you want it switched to the explicit link too.
