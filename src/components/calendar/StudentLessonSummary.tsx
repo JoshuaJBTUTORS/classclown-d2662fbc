@@ -536,26 +536,26 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                   )}
 
                   {summary.student_contributions && (
-                    <div className="p-3 bg-background rounded-lg border">
-                      <h4 className="font-medium text-sm mb-2 flex items-center">
-                        <MessageCircle className="h-4 w-4 mr-2 text-blue-600" />
+                    <div className="rounded-2xl bg-pastel-sky p-5 text-pastel-sky-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2 flex items-center">
+                        <MessageCircle className="h-4 w-4 mr-2" />
                         Student Contributions
                       </h4>
-                      <p className="text-sm text-muted-foreground">{summary.student_contributions}</p>
+                      <p className="text-sm opacity-80 leading-relaxed">{summary.student_contributions}</p>
                     </div>
                   )}
 
                   {summary.what_went_well && (
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <h4 className="font-medium text-sm mb-2 text-green-800">What Went Well</h4>
-                      <p className="text-sm text-green-700">{summary.what_went_well}</p>
+                    <div className="rounded-2xl bg-pastel-mint p-5 text-pastel-mint-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2">What Went Well</h4>
+                      <p className="text-sm opacity-80 leading-relaxed">{summary.what_went_well}</p>
                     </div>
                   )}
 
                   {summary.areas_for_improvement && (
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <h4 className="font-medium text-sm mb-2 text-amber-800">Areas for Improvement</h4>
-                      <p className="text-sm text-amber-700">{summary.areas_for_improvement}</p>
+                    <div className="rounded-2xl bg-pastel-butter p-5 text-pastel-butter-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2">Areas for Improvement</h4>
+                      <p className="text-sm opacity-80 leading-relaxed">{summary.areas_for_improvement}</p>
                     </div>
                   )}
                 </div>
