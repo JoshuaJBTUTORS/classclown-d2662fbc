@@ -376,10 +376,10 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                         {didNotAttend ? (
                           <Badge
                             variant="secondary"
-                            className={`text-xs ${
+                            className={`text-xs rounded-full border-0 ${
                               summary.attendance_status === 'excused'
-                                ? 'bg-slate-100 text-slate-700 border-slate-200'
-                                : 'bg-amber-100 text-amber-800 border-amber-200'
+                                ? 'bg-pastel-sand text-pastel-sand-foreground'
+                                : 'bg-pastel-butter text-pastel-butter-foreground'
                             }`}
                           >
                             {summary.attendance_status === 'excused' ? 'Excused absence' : 'Did not attend'}
@@ -389,19 +389,19 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                             {summary.engagement_level && (
                               <Badge
                                 variant="secondary"
-                                className={`text-xs ${getEngagementColor(summary.engagement_level)}`}
+                                className={`text-xs rounded-full border-0 ${getEngagementColor(summary.engagement_level)}`}
                               >
                                 {summary.engagement_level} Engagement
                               </Badge>
                             )}
                             {summary.engagement_score && (
-                              <Badge variant={getScoreBadgeVariant(summary.engagement_score)} className="text-xs">
+                              <Badge variant={getScoreBadgeVariant(summary.engagement_score)} className="text-xs rounded-full">
                                 <TrendingUp className="h-3 w-3 mr-1" />
                                 {summary.engagement_score}/10
                               </Badge>
                             )}
                             {summary.confidence_score && (
-                              <Badge variant={getScoreBadgeVariant(summary.confidence_score)} className="text-xs">
+                              <Badge variant={getScoreBadgeVariant(summary.confidence_score)} className="text-xs rounded-full">
                                 <Brain className="h-3 w-3 mr-1" />
                                 {summary.confidence_score}/10
                               </Badge>
@@ -429,7 +429,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                 <div className="pl-7 space-y-3">
                   {/* Engagement Metrics Summary — hidden when student didn't attend */}
                   {!didNotAttend && (summary.engagement_score || summary.confidence_score || summary.participation_time_percentage) && (
-                    <div className="grid grid-cols-3 gap-4 p-3 bg-slate-50 rounded-lg border">
+                    <div className={cn('grid grid-cols-3 gap-4 rounded-2xl p-5', activeTone.bg)}>
                       {summary.engagement_score && (
                         <div className="text-center">
                           <div className={`text-lg font-semibold ${getScoreColor(summary.engagement_score)}`}>
