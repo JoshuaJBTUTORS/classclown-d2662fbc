@@ -32,7 +32,7 @@ export const SchoolProgressHero: React.FC<SchoolProgressHeroProps> = ({
     : null;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[1.5rem] bg-pastel-butter px-6 py-8 shadow-[var(--shadow-soft)] sm:px-10 sm:py-10">
+    <div className="relative w-full overflow-hidden rounded-[1.5rem] bg-pastel-butter px-6 py-6 shadow-[var(--shadow-soft)] sm:px-10 sm:py-7">
       <ScribbleStroke className="pointer-events-none absolute -right-6 -top-10 h-48 w-72 text-foreground/15" />
 
       <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
