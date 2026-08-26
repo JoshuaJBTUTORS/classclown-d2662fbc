@@ -24,6 +24,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/student';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
+import { cn } from '@/lib/utils';
 
 interface EditStudentFormProps {
   student: Student;
