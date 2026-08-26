@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, RotateCcw, Shuffle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import { PastelTone } from '@/components/lessonPlans/pastelPalette';
 
 export interface RevisionCard {
   front: string;
@@ -13,15 +13,13 @@ export interface RevisionCard {
 
 interface FlashcardDeckProps {
   cards: RevisionCard[];
+  tone?: PastelTone;
 }
 
-const difficultyStyles: Record<string, string> = {
-  easy: 'bg-emerald-100 text-emerald-700',
-  medium: 'bg-amber-100 text-amber-700',
-  hard: 'bg-rose-100 text-rose-700',
-};
+const pillClass =
+  'inline-flex h-11 items-center gap-2 rounded-full bg-muted/50 px-5 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0';
 
-const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ cards }) => {
+const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ cards, tone }) => {
   const [order, setOrder] = useState<number[]>(() => cards.map((_, i) => i));
   const [position, setPosition] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -54,17 +52,17 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ cards }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">
-          Card {order[position] + 1} of {cards.length}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="inline-flex h-9 items-center rounded-full bg-muted/50 px-4 text-xs font-medium text-muted-foreground">
+          Card {position + 1} of {order.length}
         </span>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={shuffle}>
-            <Shuffle className="h-4 w-4 mr-1.5" /> Shuffle
-          </Button>
-          <Button variant="ghost" size="sm" onClick={restart}>
-            <RotateCcw className="h-4 w-4 mr-1.5" /> Restart
-          </Button>
+          <button type="button" className={pillClass} onClick={shuffle}>
+            <Shuffle className="h-4 w-4" /> Shuffle
+          </button>
+          <button type="button" className={pillClass} onClick={restart}>
+            <RotateCcw className="h-4 w-4" /> Restart
+          </button>
         </div>
       </div>
 
@@ -72,43 +70,47 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ cards }) => {
         type="button"
         onClick={() => setFlipped((f) => !f)}
         className={cn(
-          'w-full text-left rounded-3xl p-8 min-h-[240px] flex flex-col justify-between',
-          'border shadow-sm transition-colors duration-300',
-          flipped ? 'bg-primary/5 border-primary/30' : 'bg-card border-border hover:bg-accent/40'
+          'relative flex min-h-[240px] w-full flex-col justify-between overflow-hidden rounded-[var(--radius-soft,1.5rem)] p-8 text-left',
+          'shadow-[var(--shadow-soft)] transition-shadow hover:shadow-[var(--shadow-soft-lg)]',
+          flipped ? 'bg-card' : cn(tone?.bg || 'bg-muted/40', tone?.text)
         )}
       >
-        <div className="flex items-center gap-2 flex-wrap">
+        <ScribbleStroke className="pointer-events-none absolute -right-8 -top-10 h-40 w-64 text-current opacity-[0.12]" />
+
+        <div className="relative flex flex-wrap items-center gap-2">
           {current.focus_area && (
-            <Badge variant="secondary" className="rounded-full">{current.focus_area}</Badge>
+            <span className="rounded-full bg-background/70 px-3 py-1 text-xs font-medium shadow-[var(--shadow-soft)]">
+              {current.focus_area}
+            </span>
           )}
           {current.difficulty && (
-            <Badge
-              className={cn(
-                'rounded-full border-0 capitalize',
-                difficultyStyles[String(current.difficulty).toLowerCase()] || 'bg-muted text-muted-foreground'
-              )}
-            >
+            <span className="rounded-full bg-background/70 px-3 py-1 text-xs font-medium capitalize shadow-[var(--shadow-soft)]">
               {current.difficulty}
-            </Badge>
+            </span>
           )}
         </div>
 
-        <p className={cn('text-lg leading-relaxed my-6', flipped ? 'text-foreground' : 'font-semibold text-foreground')}>
+        <p className={cn('relative my-6 text-lg leading-relaxed', !flipped && 'font-semibold')}>
           {flipped ? current.back : current.front}
         </p>
 
-        <span className="text-xs text-muted-foreground">
+        <span className="relative text-xs opacity-70">
           {flipped ? 'Click to see the question' : 'Click to reveal the answer'}
         </span>
       </button>
 
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={() => go(-1)} disabled={position === 0}>
-          <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-        </Button>
-        <Button variant="outline" onClick={() => go(1)} disabled={position === order.length - 1}>
-          Next <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+        <button type="button" className={pillClass} onClick={() => go(-1)} disabled={position === 0}>
+          <ChevronLeft className="h-4 w-4" /> Previous
+        </button>
+        <button
+          type="button"
+          className={pillClass}
+          onClick={() => go(1)}
+          disabled={position === order.length - 1}
+        >
+          Next <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );
