@@ -1,11 +1,17 @@
-# Remove the Upload Document button (School Progress)
+# School Progress header: pastel box + black Upload button
 
-The hero pill button was already removed. A second "Upload Document" button still exists in the empty state of `src/pages/SchoolProgress.tsx` (lines 256–261), shown when a student/parent has no documents. The user still sees an Upload Document button, so remove this one too so no Upload Document button remains anywhere on `/school-progress`.
+Bring back the hero header as a rounded pastel box with the scribble ("tiger stripe") motif, but in a non-green pastel tone, and restore the Upload Document button as a black pill.
 
 ## Change
-- In `src/pages/SchoolProgress.tsx`, delete the empty-state `{(userRole === 'student' || userRole === 'parent') && currentStudent && (...)}` block (lines 256–261) containing the "Upload Document" `<Button>`.
-- Leave the `showUpload` state and the `SchoolProgressUpload` form intact (not in scope — only the button is requested for removal). No other UI changes.
+- **`src/components/schoolProgress/SchoolProgressHero.tsx`**: restore the rounded pastel box header.
+  - Wrapper: `rounded-[1.5rem] bg-pastel-butter` (warm yellow, not green) with `shadow-[var(--shadow-soft)]` and `overflow-hidden`.
+  - `ScribbleStroke` accent in the top-right corner (`text-foreground/15`) — the "tiger stripe" motif.
+  - Heading + subtitle in `text-pastel-butter-foreground`; document count as a `bg-background/70` stat pill.
+  - Keep the pastel student picker (hashed tone per child).
+  - **Upload Document button**: `bg-foreground text-background` black pill with `Plus` icon, lifts on hover. (Not green.)
+- **`src/pages/SchoolProgress.tsx`**: restore the props passed to `SchoolProgressHero` (`canUpload`, `showUpload`, `onToggleUpload`) that were removed in the previous edit.
+- No data or logic changes; the empty-state Upload button and the upload form stay as-is.
 
 ## Verify
 - Build passes.
-- Navigate to `/school-progress` as a parent with no documents: no Upload Document button is visible.
+- `/school-progress`: header is a warm pastel box with scribble motif; Upload Document button is black, not green.
