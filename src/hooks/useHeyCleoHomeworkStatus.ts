@@ -50,22 +50,18 @@ export function useHeyCleoHomeworkStatus(studentIds: number[]) {
 
       const parentIds = [...new Set(students.map((s) => s.parent_id).filter(Boolean))] as string[];
 
-      // Parent emails + sibling counts (parent email is only usable when unique to one child)
+      // Parent emails (a family's HeyCleo account is shared by all their children)
       const parentEmails = new Map<string, string>();
-      const siblingCount = new Map<string, number>();
       if (parentIds.length) {
-        const [{ data: parents }, { data: siblings }] = await Promise.all([
-          supabase.from('parents').select('id, email').in('id', parentIds),
-          supabase.from('students').select('id, parent_id').in('parent_id', parentIds),
-        ]);
+        const { data: parents } = await supabase
+          .from('parents')
+          .select('id, email')
+          .in('id', parentIds);
         (parents ?? []).forEach((p) => {
           if (p.email) parentEmails.set(p.id, norm(p.email));
         });
-        (siblings ?? []).forEach((s) => {
-          if (!s.parent_id) return;
-          siblingCount.set(s.parent_id, (siblingCount.get(s.parent_id) ?? 0) + 1);
-        });
       }
+
 
       const { data: heycleoStudents, error: hcError } = await supabase
         .from('heycleo_students')
