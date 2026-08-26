@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/navigation/Navbar';
 import Sidebar from '@/components/navigation/Sidebar';
 import StudentsHero from '@/components/students/StudentsHero';
+import StudentCard from '@/components/students/StudentCard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Search, Upload, ChevronDown, Users, UserPlus, User } from 'lucide-react';
@@ -529,7 +530,7 @@ const Students = () => {
             }
           />
 
-          <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft)] sm:p-6">
+          <div className="space-y-6">
               <div className="mb-4 text-sm text-muted-foreground">
                 Showing {currentStudents.length} of {totalItems} {isParent ? "children" : "clients"}
                 {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
