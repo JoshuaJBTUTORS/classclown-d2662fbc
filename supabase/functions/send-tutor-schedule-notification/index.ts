@@ -37,8 +37,10 @@ serve(async (req) => {
     }
 
     const token = authorization.slice("Bearer ".length);
+    const apiKey = req.headers.get("apikey");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (token !== anonKey) {
+    const isScheduledCaller = Boolean(apiKey && token === apiKey && token === anonKey);
+    if (!isScheduledCaller) {
       const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
       if (claimsError || !claimsData?.claims) {
         return new Response(
