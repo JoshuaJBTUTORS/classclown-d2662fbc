@@ -217,9 +217,6 @@ export default function SchoolProgressPage() {
         <div className="flex-1 p-8 space-y-6">
           <SchoolProgressHero
             documentCount={filteredProgress.length}
-            canUpload={userRole === 'student' || userRole === 'parent'}
-            showUpload={showUpload}
-            onToggleUpload={() => setShowUpload(!showUpload)}
             students={userRole === 'parent' ? allStudents : []}
             currentStudent={currentStudent}
             onStudentChange={setCurrentStudent}
