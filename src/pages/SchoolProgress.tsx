@@ -218,64 +218,15 @@ export default function SchoolProgressPage() {
       <div className="flex-1 flex flex-col">
         <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <div className="flex-1 p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <PageTitle 
-              title="School Progress" 
-              subtitle="Upload and view report cards, mock exam results, and other school documents"
-            />
-            
-            {(userRole === 'student' || userRole === 'parent') && currentStudent && (
-              <Button onClick={() => setShowUpload(!showUpload)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Upload Document
-              </Button>
-            )}
-          </div>
-
-          {/* Student picker — shown when the account has more than one child */}
-          {userRole === 'parent' && allStudents.length > 1 && currentStudent && (
-            <div className="flex items-center gap-3">
-              <span className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Viewing
-              </span>
-              <Select
-                value={String(currentStudent.id)}
-                onValueChange={(value) => {
-                  const next = allStudents.find((s) => String(s.id) === value);
-                  if (next) setCurrentStudent(next);
-                }}
-              >
-                <SelectTrigger
-                  className={cn(
-                    'h-11 w-auto min-w-[180px] gap-2 rounded-full border-none px-5',
-                    'font-heading text-sm font-bold shadow-[var(--shadow-soft)]',
-                    'transition-shadow hover:shadow-[var(--shadow-soft-lg)] focus:ring-2 focus:ring-ring',
-                    getPastelTone(`${currentStudent.first_name} ${currentStudent.last_name || ''}`.trim()).bg,
-                    getPastelTone(`${currentStudent.first_name} ${currentStudent.last_name || ''}`.trim()).text
-                  )}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
-                  {allStudents.map((s) => {
-                    const name = `${s.first_name} ${s.last_name || ''}`.trim();
-                    const tone = getPastelTone(name || String(s.id));
-                    return (
-                      <SelectItem
-                        key={s.id}
-                        value={String(s.id)}
-                        className="rounded-xl focus:bg-muted"
-                      >
-                        <span className={cn('rounded-full px-3 py-1 text-xs font-bold', tone.bg, tone.text)}>
-                          {name}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <SchoolProgressHero
+            documentCount={filteredProgress.length}
+            canUpload={userRole === 'student' || userRole === 'parent'}
+            showUpload={showUpload}
+            onToggleUpload={() => setShowUpload(!showUpload)}
+            students={userRole === 'parent' ? allStudents : []}
+            currentStudent={currentStudent}
+            onStudentChange={setCurrentStudent}
+          />
 
         {/* Upload Form */}
         {showUpload && currentStudent && (
