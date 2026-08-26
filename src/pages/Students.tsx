@@ -770,6 +770,7 @@ const Students = () => {
             onClose={() => setIsAddParentOnlyDialogOpen(false)}
             onSuccess={fetchStudents}
           />
+          </div>
         </main>
       </div>
     </>
