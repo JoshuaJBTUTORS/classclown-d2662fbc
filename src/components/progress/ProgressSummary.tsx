@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { paymentService } from '@/services/paymentService';
+import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 
 interface ProgressSummaryProps {
   filters: {
@@ -48,6 +49,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
   const [loading, setLoading] = useState(true);
   const [hasAssessmentAccess, setHasAssessmentAccess] = useState(false);
   const { user } = useAuth();
+  const { data: heycleo } = useHeyCleoProgress(filters.selectedStudents);
 
   useEffect(() => {
     checkAssessmentAccess();
@@ -321,7 +323,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
   const statCards = [
     {
       title: "Homework Average",
-      value: `${stats.averageScore}%`,
+      value: `${heycleo.averageScore ?? stats.averageScore}%`,
       icon: BookOpen,
       color: "text-blue-600",
       bgColor: "bg-blue-50"
@@ -356,7 +358,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     },
     {
       title: "Total Homework",
-      value: stats.totalHomework.toString(),
+      value: (heycleo.totalHomework || stats.totalHomework).toString(),
       icon: BookOpen,
       color: "text-orange-600",
       bgColor: "bg-orange-50"
