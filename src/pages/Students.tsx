@@ -523,27 +523,13 @@ const Students = () => {
                       Bulk Import
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </div>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <CardTitle>{isParent ? "Children" : "Client List"}</CardTitle>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search clients or parents..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
+                  </DropdownMenu>
+                )}
+              </>
+            }
+          />
+
+          <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft)] sm:p-6">
               <div className="mb-4 text-sm text-muted-foreground">
                 Showing {currentStudents.length} of {totalItems} {isParent ? "children" : "clients"}
                 {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
