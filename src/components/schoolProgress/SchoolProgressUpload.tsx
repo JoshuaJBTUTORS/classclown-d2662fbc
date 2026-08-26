@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Upload, FileText, Image, X } from "lucide-react";
 import { toast } from "sonner";
+import { ScribbleStroke } from "@/components/lessonPlans/ScribbleStroke";
 import { schoolProgressService } from "@/services/schoolProgressService";
+
+const fieldClass = "h-12 rounded-full border-none bg-muted/50 px-5 focus-visible:ring-2 focus-visible:ring-ring";
+
 const uploadSchema = z.object({
   file: z.instanceof(File).refine(file => file.size <= 10 * 1024 * 1024, "File size must be less than 10MB").refine(file => ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type), "Only PDF and image files are allowed"),
   student_id: z.number(),
