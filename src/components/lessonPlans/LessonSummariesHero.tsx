@@ -32,12 +32,6 @@ const pillTrigger = cn(
   'focus:ring-2 focus:ring-ring focus:ring-offset-0'
 );
 
-const StatPill: React.FC<{ label: string; value: number; tone: string }> = ({ label, value, tone }) => (
-  <div className={cn('rounded-full px-5 py-2.5 shadow-[var(--shadow-soft)]', tone)}>
-    <span className="font-heading text-lg font-extrabold tracking-tight">{value}</span>
-    <span className="ml-2 text-sm opacity-80">{label}</span>
-  </div>
-);
 
 export const LessonSummariesHero: React.FC<LessonSummariesHeroProps> = ({
   searchTerm,
