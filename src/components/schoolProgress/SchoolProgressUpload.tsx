@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Upload, FileText, Image, X } from "lucide-react";
 import { toast } from "sonner";
+import { ScribbleStroke } from "@/components/lessonPlans/ScribbleStroke";
 import { schoolProgressService } from "@/services/schoolProgressService";
+
+const fieldClass = "h-12 rounded-full border-none bg-muted/50 px-5 focus-visible:ring-2 focus-visible:ring-ring";
+
 const uploadSchema = z.object({
   file: z.instanceof(File).refine(file => file.size <= 10 * 1024 * 1024, "File size must be less than 10MB").refine(file => ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type), "Only PDF and image files are allowed"),
   student_id: z.number(),
@@ -91,27 +94,34 @@ export function SchoolProgressUpload({
     }
   };
   const getFileIcon = (file: File) => {
-    return file.type === 'application/pdf' ? <FileText className="h-8 w-8 text-red-500" /> : <Image className="h-8 w-8 text-blue-500" />;
+    return file.type === 'application/pdf' ? <FileText className="h-5 w-5 text-pastel-blush-foreground" /> : <Image className="h-5 w-5 text-pastel-blush-foreground" />;
   };
-  return <Card>
-      <CardHeader>
-        <CardTitle>Upload School Progress</CardTitle>
-        <CardDescription>
-          Upload report cards, mock exam results, or other school progress documents
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+  return <div className="overflow-hidden rounded-[1.5rem] border-none bg-card shadow-[var(--shadow-soft-lg)]">
+      <div className="relative overflow-hidden bg-pastel-sky px-6 py-6 sm:px-8">
+        <ScribbleStroke className="pointer-events-none absolute -right-6 -top-10 h-40 w-64 text-foreground/15" />
+        <div className="relative space-y-1">
+          <h2 className="font-heading text-2xl font-extrabold tracking-tight text-pastel-sky-foreground sm:text-3xl">
+            Upload School Progress
+          </h2>
+          <p className="text-sm text-pastel-sky-foreground/75">
+            Upload report cards, mock exam results, or other school progress documents
+          </p>
+        </div>
+      </div>
+      <div className="px-6 py-6 sm:px-8">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* File Upload Area */}
             <div className="space-y-2">
-              <Label>File Upload</Label>
-              {!selectedFile ? <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
-                  <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+              <Label className="font-heading text-sm font-bold">File Upload</Label>
+              {!selectedFile ? <div className={`rounded-[1.25rem] border-2 border-dashed p-10 text-center transition-colors ${dragActive ? 'border-foreground/40 bg-pastel-butter/60' : 'border-foreground/15 bg-muted/40 hover:border-foreground/30'}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-pastel-mint">
+                    <Upload className="h-6 w-6 text-pastel-mint-foreground" />
+                  </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">
+                    <p className="font-heading text-sm font-bold">
                       Drop your file here, or{" "}
-                      <Label htmlFor="file-upload" className="text-primary cursor-pointer hover:underline">
+                      <Label htmlFor="file-upload" className="cursor-pointer font-heading font-bold underline decoration-2 underline-offset-4">
                         browse
                       </Label>
                     </p>
@@ -120,18 +130,20 @@ export function SchoolProgressUpload({
                     </p>
                   </div>
                   <Input id="file-upload" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} className="hidden" />
-                </div> : <div className="border rounded-lg p-4">
+                </div> : <div className="rounded-[1.25rem] bg-muted/50 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {getFileIcon(selectedFile)}
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pastel-blush">
+                        {getFileIcon(selectedFile)}
+                      </div>
                       <div>
-                        <p className="font-medium text-sm">{selectedFile.name}</p>
+                        <p className="font-heading text-sm font-bold">{selectedFile.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
                     </div>
-                    <Button type="button" variant="ghost" size="sm" onClick={removeFile}>
+                    <Button type="button" variant="ghost" size="icon" className="rounded-full" onClick={removeFile}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -142,17 +154,17 @@ export function SchoolProgressUpload({
             <FormField control={form.control} name="file_type" render={({
             field
           }) => <FormItem>
-                  <FormLabel>File Type</FormLabel>
+                  <FormLabel className="font-heading text-sm font-bold">File Type</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className={fieldClass}>
                         <SelectValue placeholder="Select file type" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="report_card">Report Card</SelectItem>
-                      <SelectItem value="mock_exam">Mock Exam</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                    <SelectContent className="rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
+                      <SelectItem value="report_card" className="rounded-xl">Report Card</SelectItem>
+                      <SelectItem value="mock_exam" className="rounded-xl">Mock Exam</SelectItem>
+                      <SelectItem value="other" className="rounded-xl">Other</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -163,10 +175,11 @@ export function SchoolProgressUpload({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormLabel className="font-heading text-sm font-bold">Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Enter a description for this document..."
+                      className="min-h-[110px] rounded-[1.25rem] border-none bg-muted/50 px-5 py-4 focus-visible:ring-2 focus-visible:ring-ring"
                       {...field}
                     />
                   </FormControl>
@@ -175,15 +188,15 @@ export function SchoolProgressUpload({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="academic_year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Academic Year (Optional)</FormLabel>
+                    <FormLabel className="font-heading text-sm font-bold">Academic Year (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., 2023-2024" {...field} />
+                      <Input placeholder="e.g., 2023-2024" className={fieldClass} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -195,9 +208,9 @@ export function SchoolProgressUpload({
                 name="term"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Term (Optional)</FormLabel>
+                    <FormLabel className="font-heading text-sm font-bold">Term (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Autumn, Spring" {...field} />
+                      <Input placeholder="e.g., Autumn, Spring" className={fieldClass} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -205,15 +218,15 @@ export function SchoolProgressUpload({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="subject"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Subject (Optional)</FormLabel>
+                    <FormLabel className="font-heading text-sm font-bold">Subject (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Mathematics, English" {...field} />
+                      <Input placeholder="e.g., Mathematics, English" className={fieldClass} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -225,9 +238,9 @@ export function SchoolProgressUpload({
                 name="grade_achieved"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Grade Achieved (Optional)</FormLabel>
+                    <FormLabel className="font-heading text-sm font-bold">Grade Achieved (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., A*, 9, 85%" {...field} />
+                      <Input placeholder="e.g., A*, 9, 85%" className={fieldClass} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -235,16 +248,20 @@ export function SchoolProgressUpload({
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
-              {onCancel && <Button type="button" variant="outline" onClick={onCancel}>
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
+              {onCancel && <button type="button" onClick={onCancel} className="inline-flex h-12 items-center rounded-full bg-muted px-6 font-heading text-sm font-bold text-foreground transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]">
                   Cancel
-                </Button>}
-              <Button type="submit" disabled={!selectedFile || isUploading} className="min-w-[100px]">
+                </button>}
+              <button
+                type="submit"
+                disabled={!selectedFile || isUploading}
+                className="inline-flex h-12 min-w-[140px] items-center justify-center rounded-full bg-foreground px-6 font-heading text-sm font-bold text-background shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft-lg)] disabled:pointer-events-none disabled:opacity-40"
+              >
                 {isUploading ? "Uploading..." : "Upload"}
-              </Button>
+              </button>
             </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>;
+      </div>
+    </div>;
 }
