@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
 import { Users, Video, FileText, User, Play, BookOpen, Calendar, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
 import StudentLessonSummary from '@/components/calendar/StudentLessonSummary';
 import RevisionNotesDialog from './RevisionNotesDialog';
 
