@@ -437,7 +437,7 @@ const LessonSummaries: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
+                      disabled={currentPage === 1}
                       className="h-11 rounded-full bg-card px-5 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] disabled:opacity-40"
                     >
                       Previous
@@ -448,7 +448,7 @@ const LessonSummaries: React.FC = () => {
                         type="button"
                         onClick={() => setPage(n)}
                         className={
-                          n === page
+                          n === currentPage
                             ? 'h-11 w-11 rounded-full bg-foreground text-sm font-bold text-background shadow-[var(--shadow-soft)]'
                             : 'h-11 w-11 rounded-full bg-card text-sm font-medium text-foreground shadow-[var(--shadow-soft)]'
                         }
@@ -459,7 +459,7 @@ const LessonSummaries: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
+                      disabled={currentPage === totalPages}
                       className="h-11 rounded-full bg-card px-5 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] disabled:opacity-40"
                     >
                       Next
