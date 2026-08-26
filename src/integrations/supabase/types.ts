@@ -6319,6 +6319,10 @@ export type Database = {
         Args: { p_lesson_id: string; p_scope: string }
         Returns: Json
       }
+      dispatch_tutor_schedule_notification: {
+        Args: { p_job_name: string; p_tutor_id: string }
+        Returns: undefined
+      }
       extend_recurring_lessons: { Args: never; Returns: undefined }
       generate_future_school_progress_cycles: {
         Args: never
@@ -6389,6 +6393,10 @@ export type Database = {
       parent_notified_in_cycle: {
         Args: { cycle_id_param: string; parent_id_param: string }
         Returns: boolean
+      }
+      schedule_tutor_notification: {
+        Args: { p_tutor_id: string }
+        Returns: undefined
       }
       toggle_cleo_hub_access: {
         Args: { enable_access: boolean; target_user_id: string }
