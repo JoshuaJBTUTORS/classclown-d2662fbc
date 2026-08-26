@@ -290,6 +290,13 @@ const LessonSummaries: React.FC = () => {
       );
     }
 
+    // Apply student filter
+    if (studentFilter !== 'all') {
+      filtered = filtered.filter(lesson =>
+        lesson.lesson_students?.some(ls => String(ls.student?.id) === studentFilter)
+      );
+    }
+
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(lesson =>
@@ -310,6 +317,22 @@ const LessonSummaries: React.FC = () => {
       .sort();
     return subjects;
   };
+
+  const studentOptions = React.useMemo(() => {
+    const map = new Map<string, string>();
+    lessons.forEach(lesson => {
+      lesson.lesson_students?.forEach(ls => {
+        const student = ls.student;
+        if (!student?.id) return;
+        const name = `${student.first_name || ''} ${student.last_name || ''}`.trim();
+        if (name) map.set(String(student.id), name);
+      });
+    });
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [lessons]);
+
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
