@@ -58,7 +58,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
           tone.text
         )}
       >
-        <BookOpen className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rotate-12 opacity-[0.07]" />
+        <ScribbleStroke className="pointer-events-none absolute -right-6 -top-8 h-40 w-64 text-current opacity-[0.12]" />
 
         <div className="relative flex flex-col gap-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
