@@ -4,8 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ChevronDown, ChevronRight, User, Clock, Brain, FileText, Loader2, TrendingUp, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Clock, Brain, FileText, Loader2, TrendingUp, MessageCircle, NotebookPen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { getPastelTone, type PastelTone } from '@/components/lessonPlans/pastelPalette';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
@@ -73,9 +75,10 @@ interface StudentLessonSummaryProps {
       };
     }>;
   };
+  tone?: PastelTone;
 }
 
-const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, students, lesson }) => {
+const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, students, lesson, tone }) => {
   const [summaries, setSummaries] = useState<StudentSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
@@ -87,6 +90,8 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
   const { userRole, isAdmin, isOwner, isTutor } = useAuth();
 
   const isTeacherRole = isTutor || isAdmin || isOwner;
+
+  const activeTone = tone ?? getPastelTone(lesson?.subject || lesson?.title || 'lesson');
 
   useEffect(() => {
     if (lessonId && students.length > 0) {
@@ -235,14 +240,12 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Brain className="h-4 w-4 animate-pulse" />
-            <span className="text-sm">Loading AI lesson summaries...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-[var(--radius-soft,1.5rem)] bg-muted/40 p-6">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <NotebookPen className="h-4 w-4 animate-pulse" />
+          <span className="text-sm font-medium">Loading Cleo lesson summaries…</span>
+        </div>
+      </div>
     );
   }
 
@@ -294,15 +297,17 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-3">
+      <Card className="rounded-[var(--radius-soft,1.5rem)] border-0 bg-transparent shadow-none">
+        <CardHeader className="pb-3 px-1">
           <CardTitle className="flex items-center justify-between text-base">
             <div className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              AI Lesson Summaries
-              <Badge variant="secondary" className="ml-2">
+              <span className={cn('flex h-8 w-8 items-center justify-center rounded-full', activeTone.bg, activeTone.text)}>
+                <NotebookPen className="h-4 w-4" />
+              </span>
+              <span className="font-heading font-extrabold tracking-tight">Cleo Lesson Summary</span>
+              <span className={cn('ml-1 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium', activeTone.bg, activeTone.text)}>
                 {visibleSummaries.length} {visibleSummaries.length === 1 ? 'Summary' : 'Summaries'}
-              </Badge>
+              </span>
             </div>
             
             {/* Assessment Actions */}
@@ -313,7 +318,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                   size="sm"
                   onClick={() => setShowGenerateAssessment(true)}
                   disabled={!lesson}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-full"
                 >
                   <FileText className="h-4 w-4" />
                   Generate Assessment
@@ -328,7 +333,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                       variant="default"
                       size="sm"
                       onClick={() => handleTakeAssessment(assessment.id)}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-full"
                     >
                       <FileText className="h-4 w-4" />
                       Take Assessment
@@ -346,7 +351,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
             </div>
           </CardTitle>
         </CardHeader>
-      <CardContent className="p-4 pt-0">
+      <CardContent className="p-1 pt-0">
         <div className="space-y-3">
           {visibleSummaries.map((summary) => {
             const didNotAttend =
@@ -358,9 +363,11 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
               onOpenChange={() => toggleExpanded(summary.id)}
             >
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between rounded-2xl bg-muted/40 p-4 transition-colors hover:bg-muted/60 cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className={cn('flex h-9 w-9 items-center justify-center rounded-full', activeTone.bg, activeTone.text)}>
+                      <User className="h-4 w-4" />
+                    </span>
                     <div>
                       <p className="font-medium text-sm">
                         {summary.student?.first_name} {summary.student?.last_name}
@@ -369,10 +376,10 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                         {didNotAttend ? (
                           <Badge
                             variant="secondary"
-                            className={`text-xs ${
+                            className={`text-xs rounded-full border-0 ${
                               summary.attendance_status === 'excused'
-                                ? 'bg-slate-100 text-slate-700 border-slate-200'
-                                : 'bg-amber-100 text-amber-800 border-amber-200'
+                                ? 'bg-pastel-sand text-pastel-sand-foreground'
+                                : 'bg-pastel-butter text-pastel-butter-foreground'
                             }`}
                           >
                             {summary.attendance_status === 'excused' ? 'Excused absence' : 'Did not attend'}
@@ -382,19 +389,19 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                             {summary.engagement_level && (
                               <Badge
                                 variant="secondary"
-                                className={`text-xs ${getEngagementColor(summary.engagement_level)}`}
+                                className={`text-xs rounded-full border-0 ${getEngagementColor(summary.engagement_level)}`}
                               >
                                 {summary.engagement_level} Engagement
                               </Badge>
                             )}
                             {summary.engagement_score && (
-                              <Badge variant={getScoreBadgeVariant(summary.engagement_score)} className="text-xs">
+                              <Badge variant={getScoreBadgeVariant(summary.engagement_score)} className="text-xs rounded-full">
                                 <TrendingUp className="h-3 w-3 mr-1" />
                                 {summary.engagement_score}/10
                               </Badge>
                             )}
                             {summary.confidence_score && (
-                              <Badge variant={getScoreBadgeVariant(summary.confidence_score)} className="text-xs">
+                              <Badge variant={getScoreBadgeVariant(summary.confidence_score)} className="text-xs rounded-full">
                                 <Brain className="h-3 w-3 mr-1" />
                                 {summary.confidence_score}/10
                               </Badge>
@@ -422,32 +429,32 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                 <div className="pl-7 space-y-3">
                   {/* Engagement Metrics Summary — hidden when student didn't attend */}
                   {!didNotAttend && (summary.engagement_score || summary.confidence_score || summary.participation_time_percentage) && (
-                    <div className="grid grid-cols-3 gap-4 p-3 bg-slate-50 rounded-lg border">
+                    <div className={cn('grid grid-cols-3 gap-4 rounded-2xl p-5', activeTone.bg)}>
                       {summary.engagement_score && (
-                        <div className="text-center">
-                          <div className={`text-lg font-semibold ${getScoreColor(summary.engagement_score)}`}>
+                        <div className={cn('text-center', activeTone.text)}>
+                          <div className={`font-heading text-2xl font-extrabold ${getScoreColor(summary.engagement_score)}`}>
                             {summary.engagement_score}/10
                           </div>
-                          <div className="text-xs text-muted-foreground mb-1">Engagement</div>
-                          <Progress value={summary.engagement_score * 10} className="h-1" />
+                          <div className="mb-1 text-xs font-medium opacity-70">Engagement</div>
+                          <Progress value={summary.engagement_score * 10} className="h-1.5 bg-background/60" />
                         </div>
                       )}
                       {summary.confidence_score && (
-                        <div className="text-center">
-                          <div className={`text-lg font-semibold ${getScoreColor(summary.confidence_score)}`}>
+                        <div className={cn('text-center', activeTone.text)}>
+                          <div className={`font-heading text-2xl font-extrabold ${getScoreColor(summary.confidence_score)}`}>
                             {summary.confidence_score}/10
                           </div>
-                          <div className="text-xs text-muted-foreground mb-1">Confidence</div>
-                          <Progress value={summary.confidence_score * 10} className="h-1" />
+                          <div className="mb-1 text-xs font-medium opacity-70">Confidence</div>
+                          <Progress value={summary.confidence_score * 10} className="h-1.5 bg-background/60" />
                         </div>
                       )}
                       {summary.participation_time_percentage && (
-                        <div className="text-center">
-                          <div className="text-lg font-semibold text-blue-600">
+                        <div className={cn('text-center', activeTone.text)}>
+                          <div className="font-heading text-2xl font-extrabold">
                             {Math.round(summary.participation_time_percentage)}%
                           </div>
-                          <div className="text-xs text-muted-foreground mb-1">Speaking Time</div>
-                          <Progress value={summary.participation_time_percentage} className="h-1" />
+                          <div className="mb-1 text-xs font-medium opacity-70">Speaking Time</div>
+                          <Progress value={summary.participation_time_percentage} className="h-1.5 bg-background/60" />
                         </div>
                       )}
                     </div>
@@ -455,20 +462,23 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
 
                   {summary.ai_summary && (
-                    <div className="p-3 bg-background rounded-lg border">
-                      <h4 className="font-medium text-sm mb-2">AI Summary</h4>
-                      <p className="text-sm text-muted-foreground">{summary.ai_summary}</p>
+                    <div className="rounded-2xl bg-muted/40 p-5">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2">Cleo Summary</h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{summary.ai_summary}</p>
                     </div>
                   )}
 
                   {summary.topics_covered && summary.topics_covered.length > 0 && (
-                    <div className="p-3 bg-background rounded-lg border">
-                      <h4 className="font-medium text-sm mb-2">Topics Covered</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <div className="rounded-2xl bg-muted/40 p-5">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-3">Topics Covered</h4>
+                      <div className="flex flex-wrap gap-2">
                         {summary.topics_covered.map((topic, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                          <span
+                            key={index}
+                            className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-medium', activeTone.bg, activeTone.text)}
+                          >
                             {topic}
-                          </Badge>
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -476,8 +486,8 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
                   {/* Confidence Indicators */}
                   {summary.confidence_indicators && Object.keys(summary.confidence_indicators).length > 0 && (
-                    <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <h4 className="font-medium text-sm mb-3 text-purple-900 flex items-center">
+                    <div className="rounded-2xl bg-pastel-lilac p-5 text-pastel-lilac-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-3 flex items-center">
                         <Brain className="h-4 w-4 mr-2" />
                         Confidence Analysis
                       </h4>
@@ -526,26 +536,26 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                   )}
 
                   {summary.student_contributions && (
-                    <div className="p-3 bg-background rounded-lg border">
-                      <h4 className="font-medium text-sm mb-2 flex items-center">
-                        <MessageCircle className="h-4 w-4 mr-2 text-blue-600" />
+                    <div className="rounded-2xl bg-pastel-sky p-5 text-pastel-sky-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2 flex items-center">
+                        <MessageCircle className="h-4 w-4 mr-2" />
                         Student Contributions
                       </h4>
-                      <p className="text-sm text-muted-foreground">{summary.student_contributions}</p>
+                      <p className="text-sm opacity-80 leading-relaxed">{summary.student_contributions}</p>
                     </div>
                   )}
 
                   {summary.what_went_well && (
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <h4 className="font-medium text-sm mb-2 text-green-800">What Went Well</h4>
-                      <p className="text-sm text-green-700">{summary.what_went_well}</p>
+                    <div className="rounded-2xl bg-pastel-mint p-5 text-pastel-mint-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2">What Went Well</h4>
+                      <p className="text-sm opacity-80 leading-relaxed">{summary.what_went_well}</p>
                     </div>
                   )}
 
                   {summary.areas_for_improvement && (
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <h4 className="font-medium text-sm mb-2 text-amber-800">Areas for Improvement</h4>
-                      <p className="text-sm text-amber-700">{summary.areas_for_improvement}</p>
+                    <div className="rounded-2xl bg-pastel-butter p-5 text-pastel-butter-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2">Areas for Improvement</h4>
+                      <p className="text-sm opacity-80 leading-relaxed">{summary.areas_for_improvement}</p>
                     </div>
                   )}
                 </div>

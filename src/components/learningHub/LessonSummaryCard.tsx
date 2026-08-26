@@ -176,6 +176,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
           <DialogHero eyebrow="Student summaries" icon={<FileText className="h-3.5 w-3.5" />} />
           <div className="bg-card px-6 py-6 sm:px-8">
             <StudentLessonSummary
+              tone={tone}
               lessonId={lesson.id}
               students={lesson.lesson_students}
               lesson={lesson}
