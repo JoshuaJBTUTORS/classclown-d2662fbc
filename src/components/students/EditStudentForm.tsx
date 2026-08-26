@@ -24,6 +24,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/student';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
+import { cn } from '@/lib/utils';
 
 interface EditStudentFormProps {
   student: Student;
@@ -156,15 +159,29 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
     }
   };
 
+  const fullName = `${student?.first_name || ''} ${student?.last_name || ''}`.trim();
+  const tone = getPastelTone(fullName || String(student?.id || 'student'));
+
+  const inputClasses =
+    'h-11 rounded-xl border-none bg-muted/60 shadow-none focus-visible:ring-2 focus-visible:ring-ring';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Edit Student Details</DialogTitle>
-          <DialogDescription>
-            Update the student's information as needed.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[600px] overflow-hidden rounded-[var(--radius-soft)] border-none p-0 shadow-[var(--shadow-soft-lg)]">
+        {/* Pastel hero band */}
+        <div className={cn('relative overflow-hidden p-6 pb-5', tone.bg)}>
+          <ScribbleStroke className="pointer-events-none absolute -top-4 right-0 w-[55%] text-background" />
+          <div className="relative">
+            <DialogTitle className={cn('font-heading text-3xl font-extrabold leading-tight tracking-tight', tone.text)}>
+              Edit Student
+            </DialogTitle>
+            <DialogDescription className={cn('mt-1 text-sm opacity-70', tone.text)}>
+              Update {fullName || 'this student'}&apos;s details below.
+            </DialogDescription>
+          </div>
+        </div>
+
+        <div className="p-6 pt-5">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -173,9 +190,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="First Name" {...field} />
+                      <Input placeholder="First Name" className={inputClasses} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -187,9 +204,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Last Name" {...field} />
+                      <Input placeholder="Last Name" className={inputClasses} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -202,9 +219,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Email" {...field} />
+                    <Input placeholder="Email" className={inputClasses} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,9 +233,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               name="studentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Student ID</FormLabel>
+                  <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">Student ID</FormLabel>
                   <FormControl>
-                    <Input placeholder="Student ID" {...field} />
+                    <Input placeholder="Student ID" className={inputClasses} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -230,9 +247,9 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               name="subjects"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subjects</FormLabel>
+                  <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">Subjects</FormLabel>
                   <FormControl>
-                    <Input placeholder="Subjects (comma-separated)" {...field} />
+                    <Input placeholder="Subjects (comma-separated)" className={inputClasses} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -244,13 +261,13 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">Status</FormLabel>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11 rounded-xl border-none bg-muted/60 shadow-none focus:ring-2 focus:ring-ring">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         <SelectItem value="trial">Trial</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
@@ -263,21 +280,27 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
               )}
             />
 
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
                 disabled={loading}
+                className="rounded-full border-none bg-muted/60 shadow-none hover:bg-muted"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-soft-lg)]"
+              >
                 {loading ? "Updating..." : "Update Student"}
               </Button>
             </div>
           </form>
         </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
