@@ -321,7 +321,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
   const statCards = [
     {
       title: "Homework Average",
-      value: `${stats.averageScore}%`,
+      value: `${heycleo.averageScore ?? stats.averageScore}%`,
       icon: BookOpen,
       color: "text-blue-600",
       bgColor: "bg-blue-50"
