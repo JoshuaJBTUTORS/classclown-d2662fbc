@@ -573,7 +573,8 @@ const Students = () => {
                         index={index}
                         showParent={!isParent}
                         student={{
-                          id: student.id,
+                          id: String(student.id),
+
                           name: `${student.first_name} ${student.last_name}`.trim(),
                           email: student.email,
                           parentName: student.parentName,
