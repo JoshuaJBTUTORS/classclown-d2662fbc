@@ -91,6 +91,8 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
   const isTeacherRole = isTutor || isAdmin || isOwner;
 
+  const activeTone = tone ?? getPastelTone(lesson?.subject || lesson?.title || 'lesson');
+
   useEffect(() => {
     if (lessonId && students.length > 0) {
       fetchSummaries();
