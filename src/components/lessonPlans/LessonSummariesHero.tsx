@@ -1,10 +1,15 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Search, Video, Play, Clock, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
+
+export interface SummaryStudentOption {
+  id: string;
+  name: string;
+}
 
 interface LessonSummariesHeroProps {
   searchTerm: string;
@@ -13,11 +18,20 @@ interface LessonSummariesHeroProps {
   onSubjectFilterChange: (value: string) => void;
   dateFilter: string;
   onDateFilterChange: (value: string) => void;
+  studentFilter?: string;
+  onStudentFilterChange?: (value: string) => void;
+  students?: SummaryStudentOption[];
   onRefresh: () => void;
   uniqueSubjects: string[];
   totalLessons: number;
   filteredCount: number;
 }
+
+const pillTrigger = cn(
+  'h-11 w-full gap-2 rounded-full border-none bg-background/70 px-5 sm:w-auto sm:min-w-[160px]',
+  'font-heading text-sm font-bold text-pastel-sky-foreground shadow-[var(--shadow-soft)]',
+  'transition-shadow hover:shadow-[var(--shadow-soft-lg)] focus:ring-2 focus:ring-ring'
+);
 
 export const LessonSummariesHero: React.FC<LessonSummariesHeroProps> = ({
   searchTerm,
@@ -26,136 +40,121 @@ export const LessonSummariesHero: React.FC<LessonSummariesHeroProps> = ({
   onSubjectFilterChange,
   dateFilter,
   onDateFilterChange,
+  studentFilter = 'all',
+  onStudentFilterChange,
+  students = [],
   onRefresh,
   uniqueSubjects,
   totalLessons,
   filteredCount
 }) => {
-  return (
-    <div className="relative overflow-hidden">
-      {/* Background with animated gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/10 via-[hsl(var(--medium-blue))]/5 to-[hsl(var(--light-green))]/10" />
-      
-      {/* Floating decoration elements */}
-      <div className="absolute top-6 right-12 opacity-20 animate-pulse">
-        <Video className="h-8 w-8 text-[hsl(var(--medium-blue))]" />
-      </div>
-      <div className="absolute bottom-8 left-16 opacity-15 animate-pulse" style={{ animationDelay: '1s' }}>
-        <Play className="h-12 w-12 text-[hsl(var(--light-green))]" />
-      </div>
-      <div className="absolute top-16 left-1/3 opacity-10 animate-pulse" style={{ animationDelay: '2s' }}>
-        <Clock className="h-6 w-6 text-[hsl(var(--deep-purple-blue))]" />
-      </div>
+  const showStudentFilter = students.length > 1 && !!onStudentFilterChange;
+  const activeStudent = students.find((s) => s.id === studentFilter);
+  const activeTone = activeStudent ? getPastelTone(activeStudent.name) : null;
 
-      <div className="relative z-10 p-8 md:p-12">
-        {/* Main Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-playfair font-bold text-[hsl(var(--deep-purple-blue))] mb-4">
+  return (
+    <div className="relative w-full overflow-hidden rounded-[1.5rem] bg-pastel-sky px-6 py-6 shadow-[var(--shadow-soft)] sm:px-10 sm:py-7">
+      <ScribbleStroke className="pointer-events-none absolute -right-6 -top-10 h-48 w-72 text-foreground/15" />
+
+      <div className="relative space-y-5">
+        <div className="space-y-3">
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-pastel-sky-foreground sm:text-4xl lg:text-5xl">
             Lesson Summaries
           </h1>
-          <p className="text-lg text-[hsl(var(--medium-blue))]/80 max-w-2xl mx-auto leading-relaxed">
-            View lesson recordings and AI-generated student summaries to track progress and engagement
+          <p className="max-w-xl text-sm text-pastel-sky-foreground/75 sm:text-base">
+            Lesson recordings and AI-written summaries, all in one place.
           </p>
-        </div>
 
-        {/* Search and Filters */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search Bar */}
-            <div className="flex-1 relative group">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--medium-blue))]/60 h-5 w-5 group-focus-within:text-[hsl(var(--deep-purple-blue))] transition-colors" />
-              <Input
-                placeholder="Search lessons, subjects, or tutors..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className={cn(
-                  "pl-12 pr-4 py-4 text-lg rounded-xl border-0",
-                  "bg-white/80 backdrop-blur-sm shadow-[var(--shadow-elegant)]",
-                  "focus:bg-white/95 focus:shadow-[var(--shadow-glow)]",
-                  "placeholder:text-[hsl(var(--medium-blue))]/50",
-                  "transition-all duration-300"
-                )}
-              />
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[hsl(var(--deep-purple-blue))]/20 via-[hsl(var(--medium-blue))]/20 to-[hsl(var(--light-green))]/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
-            </div>
-            
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Select value={subjectFilter} onValueChange={onSubjectFilterChange}>
-                <SelectTrigger className="w-full sm:w-48 h-12 rounded-xl bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-card)]">
-                  <SelectValue placeholder="Filter by subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Subjects</SelectItem>
-                  {uniqueSubjects.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={dateFilter} onValueChange={onDateFilterChange}>
-                <SelectTrigger className="w-full sm:w-48 h-12 rounded-xl bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-card)]">
-                  <SelectValue placeholder="Filter by date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="last-7-days">Last 7 Days</SelectItem>
-                  <SelectItem value="last-30-days">Last 30 Days</SelectItem>
-                  <SelectItem value="last-90-days">Last 90 Days</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button 
-                variant="outline" 
-                onClick={onRefresh}
-                className="h-12 px-6 rounded-xl bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)]"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="rounded-full bg-background/70 px-4 py-2 text-sm text-pastel-sky-foreground/75 shadow-[var(--shadow-soft)]">
+              <span className="font-heading font-extrabold text-pastel-sky-foreground">{totalLessons}</span>
+              <span className="ml-2">recordings</span>
+            </span>
+            <span className="rounded-full bg-background/70 px-4 py-2 text-sm text-pastel-sky-foreground/75 shadow-[var(--shadow-soft)]">
+              <span className="font-heading font-extrabold text-pastel-sky-foreground">{filteredCount}</span>
+              <span className="ml-2">shown</span>
+            </span>
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)] transition-all duration-300">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--deep-purple-blue))]/20 to-[hsl(var(--medium-blue))]/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Video className="h-6 w-6 text-[hsl(var(--deep-purple-blue))]" />
-              </div>
-              <div className="text-3xl font-bold text-[hsl(var(--deep-purple-blue))] mb-1 font-playfair">
-                {totalLessons}
-              </div>
-              <div className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">Total Recordings</div>
-            </CardContent>
-          </Card>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-pastel-sky-foreground/50" />
+            <Input
+              placeholder="Search lessons, subjects, or tutors..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className={cn(
+                'h-11 rounded-full border-none bg-background/70 pl-12 pr-5 text-sm',
+                'text-pastel-sky-foreground shadow-[var(--shadow-soft)]',
+                'placeholder:text-pastel-sky-foreground/50 focus-visible:ring-2 focus-visible:ring-ring'
+              )}
+            />
+          </div>
 
-          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)] transition-all duration-300">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--medium-blue))]/20 to-[hsl(var(--light-green))]/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Search className="h-6 w-6 text-[hsl(var(--medium-blue))]" />
-              </div>
-              <div className="text-3xl font-bold text-[hsl(var(--deep-purple-blue))] mb-1 font-playfair">
-                {filteredCount}
-              </div>
-              <div className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">Filtered Results</div>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            {showStudentFilter && (
+              <Select value={studentFilter} onValueChange={onStudentFilterChange}>
+                <SelectTrigger
+                  className={cn(pillTrigger, activeTone?.bg, activeTone?.text)}
+                >
+                  <SelectValue placeholder="All students" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
+                  <SelectItem value="all" className="rounded-xl focus:bg-muted">All students</SelectItem>
+                  {students.map((student) => {
+                    const tone = getPastelTone(student.name);
+                    return (
+                      <SelectItem key={student.id} value={student.id} className="rounded-xl focus:bg-muted">
+                        <span className={cn('rounded-full px-3 py-1 text-xs font-bold', tone.bg, tone.text)}>
+                          {student.name}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            )}
 
-          <Card className="bg-white/60 backdrop-blur-sm border-0 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)] transition-all duration-300">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--light-green))]/20 to-[hsl(var(--medium-green))]/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Play className="h-6 w-6 text-[hsl(var(--medium-green))]" />
-              </div>
-              <div className="text-3xl font-bold text-[hsl(var(--deep-purple-blue))] mb-1 font-playfair">
-                {uniqueSubjects.length}
-              </div>
-              <div className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">Active Subjects</div>
-            </CardContent>
-          </Card>
+            <Select value={subjectFilter} onValueChange={onSubjectFilterChange}>
+              <SelectTrigger className={pillTrigger}>
+                <SelectValue placeholder="All subjects" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
+                <SelectItem value="all" className="rounded-xl focus:bg-muted">All subjects</SelectItem>
+                {uniqueSubjects.map((subject) => (
+                  <SelectItem key={subject} value={subject} className="rounded-xl focus:bg-muted">
+                    {subject}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={dateFilter} onValueChange={onDateFilterChange}>
+              <SelectTrigger className={pillTrigger}>
+                <SelectValue placeholder="All time" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
+                <SelectItem value="all" className="rounded-xl focus:bg-muted">All time</SelectItem>
+                <SelectItem value="last-7-days" className="rounded-xl focus:bg-muted">Last 7 days</SelectItem>
+                <SelectItem value="last-30-days" className="rounded-xl focus:bg-muted">Last 30 days</SelectItem>
+                <SelectItem value="last-90-days" className="rounded-xl focus:bg-muted">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <button
+              onClick={onRefresh}
+              className={cn(
+                'inline-flex h-11 items-center justify-center gap-2 rounded-full px-6',
+                'bg-foreground font-heading text-sm font-bold text-background',
+                'shadow-[var(--shadow-soft)] transition-all duration-300',
+                'hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft-lg)]'
+              )}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
     </div>
