@@ -462,20 +462,23 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
 
                   {summary.ai_summary && (
-                    <div className="p-3 bg-background rounded-lg border">
-                      <h4 className="font-medium text-sm mb-2">AI Summary</h4>
-                      <p className="text-sm text-muted-foreground">{summary.ai_summary}</p>
+                    <div className="rounded-2xl bg-muted/40 p-5">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-2">Cleo Summary</h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{summary.ai_summary}</p>
                     </div>
                   )}
 
                   {summary.topics_covered && summary.topics_covered.length > 0 && (
-                    <div className="p-3 bg-background rounded-lg border">
-                      <h4 className="font-medium text-sm mb-2">Topics Covered</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <div className="rounded-2xl bg-muted/40 p-5">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-3">Topics Covered</h4>
+                      <div className="flex flex-wrap gap-2">
                         {summary.topics_covered.map((topic, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                          <span
+                            key={index}
+                            className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-medium', activeTone.bg, activeTone.text)}
+                          >
                             {topic}
-                          </Badge>
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -483,8 +486,8 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
 
                   {/* Confidence Indicators */}
                   {summary.confidence_indicators && Object.keys(summary.confidence_indicators).length > 0 && (
-                    <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <h4 className="font-medium text-sm mb-3 text-purple-900 flex items-center">
+                    <div className="rounded-2xl bg-pastel-lilac p-5 text-pastel-lilac-foreground">
+                      <h4 className="font-heading font-extrabold tracking-tight text-sm mb-3 flex items-center">
                         <Brain className="h-4 w-4 mr-2" />
                         Confidence Analysis
                       </h4>
