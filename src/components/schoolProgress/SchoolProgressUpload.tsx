@@ -94,7 +94,7 @@ export function SchoolProgressUpload({
     }
   };
   const getFileIcon = (file: File) => {
-    return file.type === 'application/pdf' ? <FileText className="h-8 w-8 text-red-500" /> : <Image className="h-8 w-8 text-blue-500" />;
+    return file.type === 'application/pdf' ? <FileText className="h-5 w-5 text-pastel-blush-foreground" /> : <Image className="h-5 w-5 text-pastel-blush-foreground" />;
   };
   return <div className="overflow-hidden rounded-[1.5rem] border-none bg-card shadow-[var(--shadow-soft-lg)]">
       <div className="relative overflow-hidden bg-pastel-sky px-6 py-6 sm:px-8">
