@@ -76,7 +76,7 @@ export default function SchoolProgressPage() {
             
             if (studentsData) {
               setAllStudents(studentsData);
-              if (studentsData.length === 1) {
+              if (studentsData.length >= 1) {
                 setCurrentStudent(studentsData[0]);
               }
             }
