@@ -5,6 +5,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Upload, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getPastelTone } from "@/components/lessonPlans/pastelPalette";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/navigation/Navbar";
 import Sidebar from "@/components/navigation/Sidebar";
@@ -27,6 +30,7 @@ export default function SchoolProgressPage() {
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userInfoLoaded, setUserInfoLoaded] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -76,7 +80,7 @@ export default function SchoolProgressPage() {
             
             if (studentsData) {
               setAllStudents(studentsData);
-              if (studentsData.length === 1) {
+              if (studentsData.length >= 1) {
                 setCurrentStudent(studentsData[0]);
               }
             }
@@ -95,6 +99,7 @@ export default function SchoolProgressPage() {
           }
         }
       }
+      setUserInfoLoaded(true);
     };
 
     getUserInfo();
@@ -168,7 +173,7 @@ export default function SchoolProgressPage() {
   };
 
   // Show loading or no access states
-  if (isLoading) {
+  if (isLoading || !userInfoLoaded) {
     return (
       <div className="min-h-screen bg-background flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -226,6 +231,51 @@ export default function SchoolProgressPage() {
               </Button>
             )}
           </div>
+
+          {/* Student picker — shown when the account has more than one child */}
+          {userRole === 'parent' && allStudents.length > 1 && currentStudent && (
+            <div className="flex items-center gap-3">
+              <span className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Viewing
+              </span>
+              <Select
+                value={String(currentStudent.id)}
+                onValueChange={(value) => {
+                  const next = allStudents.find((s) => String(s.id) === value);
+                  if (next) setCurrentStudent(next);
+                }}
+              >
+                <SelectTrigger
+                  className={cn(
+                    'h-11 w-auto min-w-[180px] gap-2 rounded-full border-none px-5',
+                    'font-heading text-sm font-bold shadow-[var(--shadow-soft)]',
+                    'transition-shadow hover:shadow-[var(--shadow-soft-lg)] focus:ring-2 focus:ring-ring',
+                    getPastelTone(`${currentStudent.first_name} ${currentStudent.last_name || ''}`.trim()).bg,
+                    getPastelTone(`${currentStudent.first_name} ${currentStudent.last_name || ''}`.trim()).text
+                  )}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
+                  {allStudents.map((s) => {
+                    const name = `${s.first_name} ${s.last_name || ''}`.trim();
+                    const tone = getPastelTone(name || String(s.id));
+                    return (
+                      <SelectItem
+                        key={s.id}
+                        value={String(s.id)}
+                        className="rounded-xl focus:bg-muted"
+                      >
+                        <span className={cn('rounded-full px-3 py-1 text-xs font-bold', tone.bg, tone.text)}>
+                          {name}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
         {/* Upload Form */}
         {showUpload && currentStudent && (
