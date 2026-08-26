@@ -453,8 +453,6 @@ const Students = () => {
           <div className="mx-auto w-full max-w-7xl space-y-6">
           <StudentsHero
             title={isParent ? 'My Children' : 'Clients'}
-            searchTerm={searchQuery}
-            onSearchChange={setSearchQuery}
             totalCount={students.length}
             activeCount={students.filter((s) => s.status === 'active').length}
             trialCount={students.filter((s) => s.status === 'trial').length}
@@ -531,10 +529,6 @@ const Students = () => {
           />
 
           <div className="space-y-6">
-              <div className="mb-4 text-sm text-muted-foreground">
-                Showing {currentStudents.length} of {totalItems} {isParent ? "children" : "clients"}
-                {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
-              </div>
               {isLoading ? (
                 <div className="space-y-3 py-2">
                   {[1, 2, 3, 4, 5].map((i) => (
