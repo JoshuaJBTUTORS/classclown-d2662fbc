@@ -97,17 +97,6 @@ export function SchoolProgressUpload({
     return file.type === 'application/pdf' ? <FileText className="h-5 w-5 text-pastel-blush-foreground" /> : <Image className="h-5 w-5 text-pastel-blush-foreground" />;
   };
   return <div className="overflow-hidden rounded-[1.5rem] border-none bg-card shadow-[var(--shadow-soft-lg)]">
-      <div className="relative overflow-hidden bg-pastel-sky px-6 py-6 sm:px-8">
-        <ScribbleStroke className="pointer-events-none absolute -right-6 -top-10 h-40 w-64 text-foreground/15" />
-        <div className="relative space-y-1">
-          <h2 className="font-heading text-2xl font-extrabold tracking-tight text-pastel-sky-foreground sm:text-3xl">
-            Upload School Progress
-          </h2>
-          <p className="text-sm text-pastel-sky-foreground/75">
-            Upload report cards, mock exam results, or other school progress documents
-          </p>
-        </div>
-      </div>
       <div className="px-6 py-6 sm:px-8">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
