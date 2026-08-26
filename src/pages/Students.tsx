@@ -534,9 +534,32 @@ const Students = () => {
                 Showing {currentStudents.length} of {totalItems} {isParent ? "children" : "clients"}
                 {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
               </div>
+              {isLoading ? (
+                <div className="space-y-3 py-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : currentStudents.length === 0 ? (
+                <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-10 text-center sm:p-14">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-background/70 text-pastel-sand-foreground">
+                    {searchQuery ? <Search className="h-7 w-7" /> : <Users className="h-7 w-7" />}
+                  </div>
+                  <h3 className="mb-3 font-heading text-2xl font-bold tracking-tight text-pastel-sand-foreground">
+                    {searchQuery ? 'No results found' : isParent ? 'No children yet' : 'No clients yet'}
+                  </h3>
+                  <p className="mx-auto max-w-md text-sm leading-relaxed text-pastel-sand-foreground/80">
+                    {searchQuery
+                      ? `Nothing matched "${searchQuery}". Try a different name, email, or subject.`
+                      : isParent
+                        ? "Your children's profiles will appear here."
+                        : 'Add your first client to get started.'}
+                  </p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-border/60 hover:bg-transparent">
                     <TableHead>Client Name</TableHead>
                     <TableHead className="hidden md:table-cell">Email</TableHead>
                     {!isParent && (
@@ -548,32 +571,18 @@ const Students = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-10">
-                        Loading clients...
-                      </TableCell>
-                    </TableRow>
-                  ) : currentStudents.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-10">
-                        {searchQuery ? 'No clients found matching your search.' : 
-                         isParent ? 'No children found.' : 'No clients found. Add your first client to get started.'}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentStudents.map((student) => (
-                      <TableRow key={student.id}>
+                  {currentStudents.map((student) => (
+                      <TableRow key={student.id} className="border-border/40 transition-colors hover:bg-muted/40">
                         <TableCell>
                           <div className="font-medium">
                             {student.first_name} {student.last_name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {student.user_id ? '🔐 Has Login' : '👤 Parent Managed'}
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {student.email || <span className="text-gray-400">Not provided</span>}
+                          {student.email || <span className="text-muted-foreground/70">Not provided</span>}
                         </TableCell>
                         {!isParent && (
                           <TableCell className="hidden lg:table-cell">
@@ -582,7 +591,7 @@ const Students = () => {
                                 {student.parentName}
                               </div>
                               {student.parentEmail && (
-                                <div className="text-gray-500">{student.parentEmail}</div>
+                                <div className="text-muted-foreground">{student.parentEmail}</div>
                               )}
                             </div>
                           </TableCell>
@@ -591,13 +600,13 @@ const Students = () => {
                           <div className="flex flex-wrap gap-1">
                             {typeof student.subjects === 'string' && student.subjects ? 
                               student.subjects.split(',').map((subject, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
+                                <Badge key={index} variant="outline" className="rounded-full text-xs">
                                   {subject.trim()}
                                 </Badge>
                               )) : 
                               Array.isArray(student.subjects) && student.subjects.length > 0 ?
                               student.subjects.map((subject, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
+                                <Badge key={index} variant="outline" className="rounded-full text-xs">
                                   {subject}
                                 </Badge>
                               )) :
