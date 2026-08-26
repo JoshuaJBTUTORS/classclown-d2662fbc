@@ -5510,6 +5510,36 @@ export type Database = {
           },
         ]
       }
+      tutor_schedule_notifications: {
+        Row: {
+          change_type: string
+          created_at: string
+          id: string
+          lesson_id: string | null
+          queued_at: string
+          sent_at: string | null
+          tutor_id: string
+        }
+        Insert: {
+          change_type: string
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          queued_at?: string
+          sent_at?: string | null
+          tutor_id: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          queued_at?: string
+          sent_at?: string | null
+          tutor_id?: string
+        }
+        Relationships: []
+      }
       tutor_subjects: {
         Row: {
           created_at: string | null
