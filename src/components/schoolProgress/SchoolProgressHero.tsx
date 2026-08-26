@@ -6,9 +6,6 @@ import type { Student } from '@/types/student';
 
 interface SchoolProgressHeroProps {
   documentCount: number;
-  canUpload: boolean;
-  showUpload: boolean;
-  onToggleUpload: () => void;
   students: Student[];
   currentStudent: Student | null;
   onStudentChange: (student: Student) => void;
