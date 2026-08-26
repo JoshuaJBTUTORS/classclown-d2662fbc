@@ -25,104 +25,43 @@ interface HomeworkScore {
 }
 
 const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
-  const [data, setData] = useState<HomeworkScore[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { data: heycleo, isLoading: loading } = useHeyCleoProgress(filters.selectedStudents);
 
-  useEffect(() => {
-    fetchHomeworkProgress();
-  }, [filters, user, userRole]);
+  const nameByHeycleoId = useMemo(() => {
+    const map = new Map<string, string>();
+    heycleo.students.forEach((s) => {
+      if (s.heycleoStudentId) map.set(s.heycleoStudentId, s.name);
+    });
+    return map;
+  }, [heycleo.students]);
 
-  const fetchHomeworkProgress = async () => {
-    if (!user) return;
+  const data = useMemo<HomeworkScore[]>(() => {
+    const from = filters.dateRange.from?.getTime();
+    const to = filters.dateRange.to?.getTime();
 
-    setLoading(true);
-    try {
-      let query = supabase
-        .from('homework_submissions')
-        .select(`
-          percentage_score,
-          submitted_at,
-          homework:homework(
-            title,
-            lesson:lessons(
-              subject,
-              title
-            )
-          ),
-          student:students(
-            id,
-            first_name,
-            last_name
-          )
-        `)
-        .not('percentage_score', 'is', null)
-        .order('submitted_at', { ascending: true });
-
-      // Filter by student for student role
-      if (userRole === 'student') {
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('id')
-          .eq('email', user.email)
-          .maybeSingle();
-
-        if (studentData) {
-          query = query.eq('student_id', studentData.id);
-        }
-      }
-
-      // Apply owner filters
-      if (userRole === 'owner') {
-        if (filters.selectedStudents.length > 0) {
-          // Convert user IDs to student IDs for homework filtering
-          const { data: studentData } = await supabase
-            .from('students')
-            .select('id, user_id')
-            .in('user_id', filters.selectedStudents);
-
-          if (studentData && studentData.length > 0) {
-            const studentIds = studentData.map(s => s.id);
-            query = query.in('student_id', studentIds);
-          }
-        }
-      }
-
-      // Apply date range filter
-      if (filters.dateRange.from) {
-        query = query.gte('submitted_at', filters.dateRange.from.toISOString());
-      }
-      if (filters.dateRange.to) {
-        query = query.lte('submitted_at', filters.dateRange.to.toISOString());
-      }
-
-      const { data: submissions, error } = await query;
-
-      if (error) throw error;
-
-      const chartData = submissions?.map(submission => ({
-        date: format(parseISO(submission.submitted_at), 'MMM dd'),
-        percentage: submission.percentage_score,
-        subject: submission.homework.lesson.subject || 'General',
-        homework_title: submission.homework.title,
-        student_name: userRole === 'owner' 
-          ? `${submission.student.first_name} ${submission.student.last_name}`
-          : undefined
-      })) || [];
-
-      // Filter by subject if specified
-      const filteredData = filters.selectedSubjects.length > 0
-        ? chartData.filter(item => filters.selectedSubjects.includes(item.subject))
-        : chartData;
-
-      setData(filteredData);
-    } catch (error) {
-      console.error('Error fetching homework progress:', error);
-      toast.error('Failed to load homework progress');
-    } finally {
-      setLoading(false);
-    }
-  };
+    return heycleo.homework
+      .filter((hw) => hw.percentage != null)
+      .map((hw) => {
+        const raw = hw.submitted_at ?? hw.due_date ?? hw.assigned_at;
+        return { hw, time: raw ? new Date(raw).getTime() : NaN, raw };
+      })
+      .filter(({ time }) => !Number.isNaN(time))
+      .filter(({ time }) => (from ? time >= from : true) && (to ? time <= to : true))
+      .sort((a, b) => a.time - b.time)
+      .map(({ hw, raw }) => ({
+        date: format(parseISO(raw as string), 'MMM dd'),
+        percentage: Math.round(Number(hw.percentage)),
+        subject: hw.subject || 'General',
+        homework_title: hw.title || 'Homework',
+        student_name:
+          heycleo.students.length > 1 && hw.student_id
+            ? nameByHeycleoId.get(hw.student_id)
+            : undefined,
+      }))
+      .filter((item) =>
+        filters.selectedSubjects.length > 0 ? filters.selectedSubjects.includes(item.subject) : true,
+      );
+  }, [heycleo, filters.dateRange.from, filters.dateRange.to, filters.selectedSubjects, nameByHeycleoId]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
