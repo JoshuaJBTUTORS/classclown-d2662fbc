@@ -356,7 +356,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     },
     {
       title: "Total Homework",
-      value: stats.totalHomework.toString(),
+      value: (heycleo.totalHomework || stats.totalHomework).toString(),
       icon: BookOpen,
       color: "text-orange-600",
       bgColor: "bg-orange-50"
