@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Upload, FileText, Image, X } from "lucide-react";
 import { toast } from "sonner";
-import { ScribbleStroke } from "@/components/lessonPlans/ScribbleStroke";
+
 import { schoolProgressService } from "@/services/schoolProgressService";
 
 const fieldClass = "h-12 rounded-full border-none bg-muted/50 px-5 focus-visible:ring-2 focus-visible:ring-ring";
