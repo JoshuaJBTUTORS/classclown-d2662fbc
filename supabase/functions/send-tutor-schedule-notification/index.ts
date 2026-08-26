@@ -1,19 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { Resend } from "npm:resend@4.0.0";
 import { renderAsync } from "npm:@react-email/components@0.0.22";
 import React from "npm:react@18.3.1";
+import { z } from "npm:zod@3.23.8";
 import { TutorScheduleUpdateEmail } from "./_templates/tutor-schedule-update-email.tsx";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // Quiet period: a tutor is only emailed once no further change has been
 // queued for them in the last 30 minutes.
 const COOLDOWN_MINUTES = 30;
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const RequestSchema = z.object({
+  tutorId: z.string().uuid(),
+  dryRun: z.boolean().optional().default(false),
+  scheduled: z.boolean().optional(),
+  jobName: z.string().max(100).optional(),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,22 +28,56 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     );
 
-    let dryRun = false;
-    let tutorId: string | null = null;
-    try {
-      const body = await req.json();
-      dryRun = body?.dryRun === true;
-      tutorId = typeof body?.tutorId === "string" ? body.tutorId : null;
-    } catch (_e) {
-      // Invalid or missing JSON is handled by validation below.
+    const authorization = req.headers.get("Authorization");
+    if (!authorization?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Authorization is required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    if (!tutorId || !UUID_PATTERN.test(tutorId)) {
+    const token = authorization.slice("Bearer ".length);
+    const apiKey = req.headers.get("apikey");
+    let scheduledClaims: { ref?: string; role?: string } | null = null;
+    try {
+      const encodedPayload = token.split(".")[1];
+      const base64 = encodedPayload?.replace(/-/g, "+").replace(/_/g, "/");
+      scheduledClaims = base64 ? JSON.parse(atob(base64)) : null;
+    } catch (_error) {
+      scheduledClaims = null;
+    }
+    const isScheduledCaller = Boolean(
+      apiKey &&
+      token === apiKey &&
+      scheduledClaims?.role === "anon" &&
+      scheduledClaims?.ref === "sjxbxkpegcnnfjbsxazo"
+    );
+    if (!isScheduledCaller) {
+      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        return new Response(
+          JSON.stringify({ error: "Invalid authorization" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch (_e) {
+      requestBody = null;
+    }
+
+    const parsed = RequestSchema.safeParse(requestBody);
+    if (!parsed.success) {
       return new Response(
-        JSON.stringify({ error: "A valid tutorId is required" }),
+        JSON.stringify({ error: parsed.error.flatten().fieldErrors }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const { tutorId, dryRun } = parsed.data;
 
     const { data: pending, error: pendingError } = await supabase
       .from("tutor_schedule_notifications")
