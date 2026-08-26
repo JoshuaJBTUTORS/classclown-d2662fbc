@@ -229,3 +229,6 @@ verify_jwt = false
 [functions.heycleo-pull]
 verify_jwt = false
 
+
+[functions.send-tutor-schedule-notification]
+verify_jwt = false
