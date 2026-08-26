@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
-import { Users, Video, FileText, User, Play, BookOpen, Calendar, Sparkles } from 'lucide-react';
+import { Users, Video, FileText, User, Play, Calendar, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
 import StudentLessonSummary from '@/components/calendar/StudentLessonSummary';
 import RevisionNotesDialog from './RevisionNotesDialog';
