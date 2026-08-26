@@ -1,11 +1,13 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { FileText, Image, MoreVertical, Download, Eye, Trash2 } from "lucide-react";
+import { FileText, Image as ImageIcon, MoreVertical, Download, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { SchoolProgress } from "@/services/schoolProgressService";
+import { getPastelTone } from "@/components/lessonPlans/pastelPalette";
+import { ScribbleStroke } from "@/components/lessonPlans/ScribbleStroke";
+import { cn } from "@/lib/utils";
 
 interface SchoolProgressCardProps {
   progress: SchoolProgress;
@@ -16,91 +18,96 @@ interface SchoolProgressCardProps {
   studentName?: string;
 }
 
-export function SchoolProgressCard({ 
-  progress, 
-  onView, 
-  onDownload, 
-  onDelete, 
+const getFileTypeLabel = (type: string) => {
+  switch (type) {
+    case 'report_card':
+      return 'Report Card';
+    case 'mock_exam':
+      return 'Mock Exam';
+    default:
+      return 'Other';
+  }
+};
+
+const getFileTypeTone = (type: string) => {
+  switch (type) {
+    case 'report_card':
+      return 'bg-pastel-sky text-pastel-sky-foreground';
+    case 'mock_exam':
+      return 'bg-pastel-lilac text-pastel-lilac-foreground';
+    default:
+      return 'bg-pastel-butter text-pastel-butter-foreground';
+  }
+};
+
+export function SchoolProgressCard({
+  progress,
+  onView,
+  onDownload,
+  onDelete,
   showStudentName = false,
-  studentName 
+  studentName
 }: SchoolProgressCardProps) {
-  const getFileIcon = () => {
-    return progress.file_format === 'pdf' ? (
-      <FileText className="h-8 w-8 text-red-500" />
-    ) : (
-      <Image className="h-8 w-8 text-blue-500" />
-    );
-  };
-
-  const getFileTypeLabel = (type: string) => {
-    switch (type) {
-      case 'report_card':
-        return 'Report Card';
-      case 'mock_exam':
-        return 'Mock Exam';
-      default:
-        return 'Other';
-    }
-  };
-
-  const getFileTypeBadgeVariant = (type: string) => {
-    switch (type) {
-      case 'report_card':
-        return 'default';
-      case 'mock_exam':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
+  const tone = getPastelTone(progress.file_name || String(progress.id));
+  const FileIcon = progress.file_format === 'pdf' ? FileText : ImageIcon;
 
   return (
     <TooltipProvider>
-      <Card className="group transition-all duration-200 hover:shadow-lg border-border/50 hover:border-border">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              {getFileIcon()}
-              <div className="flex-1 min-w-0">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <CardTitle className="text-base font-semibold truncate text-foreground cursor-default">
-                      {progress.file_name}
-                    </CardTitle>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs">
-                    <p className="break-all">{progress.file_name}</p>
-                  </TooltipContent>
-                </Tooltip>
-                {showStudentName && studentName && (
-                  <CardDescription className="text-sm text-muted-foreground">
-                    {studentName}
-                  </CardDescription>
-                )}
-              </div>
+      <div
+        className={cn(
+          'group relative overflow-hidden rounded-[1.5rem] p-6 min-h-[200px] flex flex-col',
+          'shadow-[var(--shadow-soft)] transition-all duration-300',
+          'hover:-translate-y-1 hover:shadow-[var(--shadow-soft-lg)]',
+          tone.bg
+        )}
+      >
+        <ScribbleStroke className="pointer-events-none absolute -right-4 -top-8 h-28 w-44 text-white/50" />
+
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-[var(--shadow-soft)]">
+              <FileIcon className={cn('h-5 w-5', tone.text)} />
             </div>
+            <div className="flex-1 min-w-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className={cn('font-heading text-base font-extrabold tracking-tight truncate cursor-default', tone.text)}>
+                    {progress.file_name}
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="break-all">{progress.file_name}</p>
+                </TooltipContent>
+              </Tooltip>
+              {showStudentName && studentName && (
+                <p className={cn('text-xs opacity-70 truncate', tone.text)}>{studentName}</p>
+              )}
+            </div>
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Document actions"
+                className={cn('h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/60', tone.text)}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => onView(progress)}>
+            <DropdownMenuContent align="end" className="w-40 rounded-2xl border-none shadow-[var(--shadow-soft-lg)]">
+              <DropdownMenuItem onClick={() => onView(progress)} className="rounded-xl">
                 <Eye className="h-4 w-4 mr-2" />
                 View
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDownload(progress)}>
+              <DropdownMenuItem onClick={() => onDownload(progress)} className="rounded-xl">
                 <Download className="h-4 w-4 mr-2" />
                 Download
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => onDelete(progress)}
-                className="text-destructive focus:text-destructive"
+                className="rounded-xl text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -108,53 +115,36 @@ export function SchoolProgressCard({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        <div className="space-y-3">
+
+        <div className="relative mt-4 flex flex-1 flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={getFileTypeBadgeVariant(progress.file_type)}>
+            <span className={cn('rounded-full px-3 py-1 text-xs font-bold', getFileTypeTone(progress.file_type))}>
               {getFileTypeLabel(progress.file_type)}
-            </Badge>
+            </span>
             {progress.grade_achieved && (
-              <Badge variant="outline" className="text-primary">
-                Grade: {progress.grade_achieved}
-              </Badge>
+              <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-foreground">
+                Grade {progress.grade_achieved}
+              </span>
             )}
           </div>
-          
+
           {progress.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className={cn('text-sm opacity-75 line-clamp-2', tone.text)}>
               {progress.description}
             </p>
           )}
-          
-          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-            {progress.academic_year && (
-              <div>
-                <span className="font-medium">Year:</span> {progress.academic_year}
-              </div>
-            )}
-            {progress.term && (
-              <div>
-                <span className="font-medium">Term:</span> {progress.term}
-              </div>
-            )}
-            {progress.subject && (
-              <div className="col-span-2">
-                <span className="font-medium">Subject:</span> {progress.subject}
-              </div>
-            )}
+
+          <div className={cn('flex flex-wrap gap-x-4 gap-y-1 text-xs opacity-70', tone.text)}>
+            {progress.academic_year && <span>Year: {progress.academic_year}</span>}
+            {progress.term && <span>Term: {progress.term}</span>}
+            {progress.subject && <span>{progress.subject}</span>}
           </div>
-          
-          <div className="pt-2 border-t border-border/50">
-            <p className="text-xs text-muted-foreground">
-              Uploaded {format(new Date(progress.upload_date), 'MMM dd, yyyy')}
-            </p>
-          </div>
+
+          <p className={cn('mt-auto pt-2 text-xs opacity-60', tone.text)}>
+            Uploaded {format(new Date(progress.upload_date), 'MMM dd, yyyy')}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
     </TooltipProvider>
   );
 }
