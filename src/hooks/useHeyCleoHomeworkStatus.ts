@@ -83,10 +83,11 @@ export function useHeyCleoHomeworkStatus(studentIds: number[]) {
           linked.set(s.id, direct);
           return;
         }
-        if (s.parent_id && (siblingCount.get(s.parent_id) ?? 0) === 1) {
+        if (s.parent_id) {
           const viaParent = byEmail.get(parentEmails.get(s.parent_id) ?? '');
           if (viaParent) linked.set(s.id, viaParent);
         }
+
       });
 
       const heycleoIds = [...new Set(linked.values())];
