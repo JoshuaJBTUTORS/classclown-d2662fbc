@@ -27,6 +27,7 @@ export default function SchoolProgressPage() {
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userInfoLoaded, setUserInfoLoaded] = useState(false);
 
   const queryClient = useQueryClient();
 
