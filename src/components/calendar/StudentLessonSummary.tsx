@@ -318,7 +318,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                   size="sm"
                   onClick={() => setShowGenerateAssessment(true)}
                   disabled={!lesson}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-full"
                 >
                   <FileText className="h-4 w-4" />
                   Generate Assessment
@@ -333,7 +333,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
                       variant="default"
                       size="sm"
                       onClick={() => handleTakeAssessment(assessment.id)}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-full"
                     >
                       <FileText className="h-4 w-4" />
                       Take Assessment
@@ -351,7 +351,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
             </div>
           </CardTitle>
         </CardHeader>
-      <CardContent className="p-4 pt-0">
+      <CardContent className="p-1 pt-0">
         <div className="space-y-3">
           {visibleSummaries.map((summary) => {
             const didNotAttend =
@@ -363,9 +363,11 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
               onOpenChange={() => toggleExpanded(summary.id)}
             >
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between rounded-2xl bg-muted/40 p-4 transition-colors hover:bg-muted/60 cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className={cn('flex h-9 w-9 items-center justify-center rounded-full', activeTone.bg, activeTone.text)}>
+                      <User className="h-4 w-4" />
+                    </span>
                     <div>
                       <p className="font-medium text-sm">
                         {summary.student?.first_name} {summary.student?.last_name}
