@@ -4,8 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ChevronDown, ChevronRight, User, Clock, Brain, FileText, Loader2, TrendingUp, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Clock, Brain, FileText, Loader2, TrendingUp, MessageCircle, NotebookPen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { getPastelTone, type PastelTone } from '@/components/lessonPlans/pastelPalette';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
@@ -73,9 +75,10 @@ interface StudentLessonSummaryProps {
       };
     }>;
   };
+  tone?: PastelTone;
 }
 
-const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, students, lesson }) => {
+const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, students, lesson, tone }) => {
   const [summaries, setSummaries] = useState<StudentSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
