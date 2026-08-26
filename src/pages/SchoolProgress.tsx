@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Upload, BookOpen } from "lucide-react";
+import { Upload, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/navigation/Navbar";
@@ -212,9 +211,9 @@ export default function SchoolProgressPage() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <div className="flex-1 p-8 space-y-6">
+        <div className="w-full flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
           <SchoolProgressHero
             documentCount={filteredProgress.length}
             canUpload={userRole === 'student' || userRole === 'parent'}
@@ -256,12 +255,6 @@ export default function SchoolProgressPage() {
                 : "Try adjusting your search or filter criteria"
               }
             </p>
-            {(userRole === 'student' || userRole === 'parent') && currentStudent && (
-              <Button onClick={() => setShowUpload(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Upload Document
-              </Button>
-            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
