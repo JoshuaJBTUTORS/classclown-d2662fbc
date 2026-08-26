@@ -1,5 +1,4 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
@@ -7,9 +6,6 @@ import type { Student } from '@/types/student';
 
 interface SchoolProgressHeroProps {
   documentCount: number;
-  canUpload: boolean;
-  showUpload: boolean;
-  onToggleUpload: () => void;
   students: Student[];
   currentStudent: Student | null;
   onStudentChange: (student: Student) => void;
@@ -19,9 +15,6 @@ const studentFullName = (s: Student) => `${s.first_name} ${s.last_name || ''}`.t
 
 export const SchoolProgressHero: React.FC<SchoolProgressHeroProps> = ({
   documentCount,
-  canUpload,
-  showUpload,
-  onToggleUpload,
   students,
   currentStudent,
   onStudentChange,
@@ -42,20 +35,6 @@ export const SchoolProgressHero: React.FC<SchoolProgressHeroProps> = ({
           </p>
         </div>
 
-        {canUpload && currentStudent && (
-          <button
-            onClick={onToggleUpload}
-            className={cn(
-              'inline-flex h-12 items-center gap-2 self-start rounded-full px-6 lg:self-end',
-              'bg-foreground font-heading text-sm font-bold text-background',
-              'shadow-[var(--shadow-soft)] transition-all duration-300',
-              'hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft-lg)]'
-            )}
-          >
-            <Plus className="h-4 w-4" />
-            {showUpload ? 'Close Upload' : 'Upload Document'}
-          </button>
-        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
