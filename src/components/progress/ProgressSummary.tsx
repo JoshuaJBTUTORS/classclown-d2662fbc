@@ -320,6 +320,10 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     );
   }
 
+  const overallProgress = hasAssessmentAccess
+    ? Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4)
+    : stats.improvementTrend;
+
   const statCards = [
     {
       title: "Homework Average",
@@ -329,32 +333,11 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       bgColor: "bg-blue-50"
     },
     {
-      title: "Assessment Average",
-      value: hasAssessmentAccess ? `${stats.averageAssessmentScore}%` : "Locked",
-      icon: hasAssessmentAccess ? Brain : Lock,
-      color: hasAssessmentAccess ? "text-purple-600" : "text-gray-400",
-      bgColor: hasAssessmentAccess ? "bg-purple-50" : "bg-gray-50"
-    },
-    {
       title: "Attendance Rate",
       value: `${stats.attendanceRate}%`,
       icon: Calendar,
       color: "text-green-600",
       bgColor: "bg-green-50"
-    },
-    {
-      title: "Average Engagement",
-      value: hasAssessmentAccess ? `${stats.averageEngagement}/10` : "Locked",
-      icon: hasAssessmentAccess ? TrendingUp : Lock,
-      color: hasAssessmentAccess ? "text-emerald-600" : "text-gray-400",
-      bgColor: hasAssessmentAccess ? "bg-emerald-50" : "bg-gray-50"
-    },
-    {
-      title: "Average Confidence",
-      value: hasAssessmentAccess ? `${stats.averageConfidence}/10` : "Locked",
-      icon: hasAssessmentAccess ? Brain : Lock,
-      color: hasAssessmentAccess ? "text-violet-600" : "text-gray-400",
-      bgColor: hasAssessmentAccess ? "bg-violet-50" : "bg-gray-50"
     },
     {
       title: "Total Homework",
@@ -364,26 +347,11 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       bgColor: "bg-orange-50"
     },
     {
-      title: "Total Assessments",
-      value: hasAssessmentAccess ? stats.totalAssessments.toString() : "Locked",
-      icon: hasAssessmentAccess ? Brain : Lock,
-      color: hasAssessmentAccess ? "text-indigo-600" : "text-gray-400",
-      bgColor: hasAssessmentAccess ? "bg-indigo-50" : "bg-gray-50"
-    },
-    {
       title: "Overall Progress",
-      value: hasAssessmentAccess 
-        ? `${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) > 0 ? '+' : ''}${Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4)}%`
-        : `${stats.improvementTrend > 0 ? '+' : ''}${stats.improvementTrend}%`,
-      icon: hasAssessmentAccess 
-        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) >= 0 ? TrendingUp : TrendingDown)
-        : (stats.improvementTrend >= 0 ? TrendingUp : TrendingDown),
-      color: hasAssessmentAccess 
-        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) >= 0 ? "text-green-600" : "text-red-600")
-        : (stats.improvementTrend >= 0 ? "text-green-600" : "text-red-600"),
-      bgColor: hasAssessmentAccess 
-        ? (Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4) >= 0 ? "bg-green-50" : "bg-red-50")
-        : (stats.improvementTrend >= 0 ? "bg-green-50" : "bg-red-50")
+      value: `${overallProgress > 0 ? '+' : ''}${overallProgress}%`,
+      icon: overallProgress >= 0 ? TrendingUp : TrendingDown,
+      color: overallProgress >= 0 ? "text-green-600" : "text-red-600",
+      bgColor: overallProgress >= 0 ? "bg-green-50" : "bg-red-50"
     }
   ];
 
