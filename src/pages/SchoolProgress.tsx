@@ -170,7 +170,7 @@ export default function SchoolProgressPage() {
   };
 
   // Show loading or no access states
-  if (isLoading) {
+  if (isLoading || !userInfoLoaded) {
     return (
       <div className="min-h-screen bg-background flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
