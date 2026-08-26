@@ -339,12 +339,12 @@ const LessonSummaries: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-background flex">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Navbar toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-auto">
-            <div className="space-y-6 p-2 md:p-4">
+            <div className="w-full space-y-8 p-4 md:p-6">
               <LessonSummariesHero
                 searchTerm=""
                 onSearchChange={() => {}}
@@ -358,19 +358,20 @@ const LessonSummaries: React.FC = () => {
                 filteredCount={0}
               />
               <div className="grid gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="h-96">
-                    <CardContent className="p-6">
-                      <div className="animate-pulse space-y-4">
-                        <div className="h-4 bg-muted rounded w-3/4"></div>
-                        <div className="aspect-video bg-muted rounded"></div>
-                        <div className="space-y-2">
-                          <div className="h-3 bg-muted rounded"></div>
-                          <div className="h-3 bg-muted rounded w-2/3"></div>
-                        </div>
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-[1.5rem] bg-card p-6 shadow-[var(--shadow-soft)]"
+                  >
+                    <div className="animate-pulse space-y-4">
+                      <div className="h-4 w-3/4 rounded-full bg-muted" />
+                      <div className="aspect-video rounded-[1.25rem] bg-muted" />
+                      <div className="space-y-2">
+                        <div className="h-3 rounded-full bg-muted" />
+                        <div className="h-3 w-2/3 rounded-full bg-muted" />
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -381,12 +382,12 @@ const LessonSummaries: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-background flex">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-auto">
-          <div className="min-h-full bg-gradient-to-br from-[hsl(var(--background))] to-[hsl(var(--muted))]/20">
+          <div className="flex min-h-full w-full flex-col gap-8 p-4 pb-12 md:p-6 md:pb-12">
             <LessonSummariesHero
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -394,43 +395,42 @@ const LessonSummaries: React.FC = () => {
               onSubjectFilterChange={setSubjectFilter}
               dateFilter={dateFilter}
               onDateFilterChange={setDateFilter}
+              studentFilter={studentFilter}
+              onStudentFilterChange={setStudentFilter}
+              students={studentOptions}
               onRefresh={fetchLessons}
               uniqueSubjects={getUniqueSubjects()}
               totalLessons={lessons.length}
               filteredCount={filteredLessons.length}
             />
 
-            <div className="px-2 md:px-4 pb-12">
-              {/* Results Section */}
-              {filteredLessons.length === 0 ? (
-                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-[var(--shadow-elegant)]">
-                  <CardContent className="p-12 text-center">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-[hsl(var(--medium-blue))]/60" />
-                    <h3 className="text-lg font-semibold mb-2 text-[hsl(var(--deep-purple-blue))]">No lesson summaries found</h3>
-                    <p className="text-[hsl(var(--medium-blue))]/70">
-                      {lessons.length === 0 
-                        ? "No lessons with recordings are available yet."
-                        : "Try adjusting your filters to see more results."
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-6">
-                    <p className="text-sm text-[hsl(var(--medium-blue))]/70 font-medium">
-                      Showing {filteredLessons.length} of {lessons.length} lessons
-                    </p>
-                  </div>
+            {filteredLessons.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-[1.5rem] border-2 border-dashed border-muted-foreground/20 bg-muted/20 px-6 py-16 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-pastel-mint">
+                  <BookOpen className="h-7 w-7 text-pastel-mint-foreground" />
+                </div>
+                <h3 className="font-heading text-xl font-extrabold tracking-tight text-foreground">
+                  No lesson summaries found
+                </h3>
+                <p className="max-w-sm text-sm text-muted-foreground">
+                  {lessons.length === 0
+                    ? 'No lessons with recordings are available yet. Summaries appear here once a session has finished.'
+                    : 'Try adjusting your filters to see more results.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Showing {filteredLessons.length} of {lessons.length} lessons
+                </p>
 
-                  <div className="grid gap-6">
-                    {filteredLessons.map((lesson) => (
-                      <LessonSummaryCard key={lesson.id} lesson={lesson} />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+                <div className="grid gap-6">
+                  {filteredLessons.map((lesson) => (
+                    <LessonSummaryCard key={lesson.id} lesson={lesson} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
