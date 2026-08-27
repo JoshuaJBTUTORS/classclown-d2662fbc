@@ -30,7 +30,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({
       <div className="flex items-center gap-4 text-left">
         <span
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+            'flex h-11 w-11 shrink-0 -rotate-3 items-center justify-center rounded-[0.9rem]',
             iconClassName
           )}
         >

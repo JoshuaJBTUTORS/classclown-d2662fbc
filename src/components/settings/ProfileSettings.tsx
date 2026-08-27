@@ -95,7 +95,8 @@ const ProfileSettings: React.FC = () => {
       <div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
+
             <div className="space-y-2">
               <Label htmlFor="firstName" className="text-sm font-medium text-muted-foreground">First Name</Label>
               <Input
@@ -121,7 +122,8 @@ const ProfileSettings: React.FC = () => {
                 disabled={loading}
               />
             </div>
-          </div>
+
+
 
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">Email Address</Label>
@@ -154,6 +156,7 @@ const ProfileSettings: React.FC = () => {
               />
             </div>
           </div>
+          </div>
 
           {error && (
             <Alert variant="destructive" className="rounded-2xl">
@@ -161,11 +164,13 @@ const ProfileSettings: React.FC = () => {
             </Alert>
           )}
 
+          <div className="flex justify-end">
           <Button
             type="submit"
             disabled={loading}
             className={cn(
-              'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background',
+              'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background sm:w-auto sm:px-8',
+
               'shadow-[var(--shadow-soft)] transition-all duration-300',
               'hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[var(--shadow-soft-lg)]'
             )}
@@ -182,6 +187,8 @@ const ProfileSettings: React.FC = () => {
               </>
             )}
           </Button>
+          </div>
+
         </form>
       </div>
     </div>
