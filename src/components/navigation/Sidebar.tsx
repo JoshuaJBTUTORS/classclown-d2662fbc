@@ -14,6 +14,11 @@ import SidebarProfile from '@/components/navigation/SidebarProfile';
 
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
 
+/** Simple rounded dot used as the sidebar menu icon for all items except HeyCleo. */
+const Dot: React.FC<{ className?: string }> = ({ className }) => (
+  <span className={cn('block h-1.5 w-1.5 rounded-full bg-current', className)} />
+);
+
 const GROUP_TONES = [
   { bg: 'bg-pastel-mint', text: 'text-pastel-mint-foreground', soft: 'hover:bg-pastel-mint/50' },
   { bg: 'bg-pastel-lilac', text: 'text-pastel-lilac-foreground', soft: 'hover:bg-pastel-lilac/50' },
