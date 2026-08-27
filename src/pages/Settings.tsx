@@ -1,7 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Accordion } from '@/components/ui/accordion';
-import { User, Shield, Settings as SettingsIcon, Server, BadgeCheck, Clock3, Smile } from 'lucide-react';
+import { BadgeCheck, Clock3 } from 'lucide-react';
+import {
+  DoodleSmiley,
+  DoodlePerson,
+  DoodleLock,
+  DoodleIdCard,
+  DoodleServer,
+} from '@/components/settings/DoodleIcons';
 import { useAuth } from '@/contexts/AuthContext';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
