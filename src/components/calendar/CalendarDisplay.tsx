@@ -79,13 +79,13 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               start: startTime,
               end: endTime,
               display: 'background',
-              backgroundColor: '#dcfce7', // green-100
-              borderColor: '#bbf7d0', // green-200
+              classNames: ['availability-bg'],
               extendedProps: {
                 type: 'availability',
                 tutorId: tutorId
               }
             });
+
           }
         }
       });
