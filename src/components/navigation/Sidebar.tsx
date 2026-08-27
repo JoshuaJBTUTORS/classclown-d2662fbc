@@ -341,7 +341,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   alt="ClassClown"
                   className="h-9 w-auto object-contain object-left"
                 />
-                <span className="text-[11px] text-muted-foreground">Live Tutoring Account</span>
+                
               </div>
               <button
                 onClick={onClose}
