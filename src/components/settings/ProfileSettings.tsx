@@ -156,6 +156,7 @@ const ProfileSettings: React.FC = () => {
               />
             </div>
           </div>
+          </div>
 
           {error && (
             <Alert variant="destructive" className="rounded-2xl">
@@ -163,11 +164,13 @@ const ProfileSettings: React.FC = () => {
             </Alert>
           )}
 
+          <div className="flex justify-end">
           <Button
             type="submit"
             disabled={loading}
             className={cn(
-              'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background',
+              'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background sm:w-auto sm:px-8',
+
               'shadow-[var(--shadow-soft)] transition-all duration-300',
               'hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[var(--shadow-soft-lg)]'
             )}
