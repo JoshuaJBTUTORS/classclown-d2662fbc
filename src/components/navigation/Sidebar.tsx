@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import classclownWordmark from '@/assets/classclown-wordmark.png.asset.json';
+
 
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
 
@@ -330,23 +332,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       >
         <div className="flex flex-col h-full p-3">
           {/* Brand header */}
-          <div className="relative overflow-hidden rounded-3xl bg-pastel-mint px-4 py-4 mb-4">
-            <ScribbleStroke className="pointer-events-none absolute -right-6 -top-4 h-24 w-40 text-pastel-mint-foreground opacity-[0.12]" />
-            <div className="relative flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
+          <div className="relative px-2 pt-3 pb-5 mb-1">
+            <ScribbleStroke className="pointer-events-none absolute -right-4 -top-2 h-20 w-32 text-primary opacity-[0.06]" />
+            <div className="relative flex items-start justify-between gap-2">
+              <div className="flex flex-col gap-1">
                 <img
-                  src="/lovable-uploads/a07030e4-b379-491d-aa75-73f415678dea.png"
-                  alt="ClassClown Logo"
-                  className="h-9 w-9 object-contain rounded-xl bg-background/70 p-1"
+                  src={classclownWordmark.url}
+                  alt="ClassClown"
+                  className="h-9 w-auto object-contain object-left"
                 />
-                <div className="flex flex-col leading-tight">
-                  <span className="font-heading text-lg font-bold text-pastel-mint-foreground">ClassClown</span>
-                  <span className="text-[11px] text-pastel-mint-foreground/70">Live Tutoring Account</span>
-                </div>
+                <span className="text-[11px] text-muted-foreground">Live Tutoring Account</span>
               </div>
               <button
                 onClick={onClose}
-                className="lg:hidden rounded-full p-2 bg-background/60 text-pastel-mint-foreground hover:bg-background transition-colors"
+                className="lg:hidden rounded-full p-2 text-muted-foreground hover:bg-muted transition-colors"
                 aria-label="Close menu"
               >
                 <X className="h-4 w-4" />
@@ -354,23 +353,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto pb-4 space-y-1">
+          <div className="flex-1 overflow-y-auto pb-4 space-y-5">
             {filteredMenuGroups.map((group, groupIndex) => {
               const isExpanded = expandedGroups[group.label] ?? getGroupHasActiveRoute(group);
               const tone = GROUP_TONES[groupIndex % GROUP_TONES.length];
 
               return (
                 <div key={group.label}>
-                  <div className="mb-1">
+                  <div>
                     <button
                       onClick={() => toggleGroup(group.label)}
                       className={cn(
-                        'w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-full transition-all duration-200 ease-in-out',
+                        'w-full flex items-center justify-between gap-2 px-4 py-1.5 rounded-full transition-colors duration-200',
                         'font-heading text-[11px] font-bold uppercase tracking-[0.12em]',
-                        tone.soft,
-                        isExpanded
-                          ? cn(tone.bg, tone.text)
-                          : 'text-muted-foreground'
+                        'text-muted-foreground hover:text-foreground'
                       )}
                     >
                       <span className="truncate text-left">
@@ -392,12 +388,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             'w-full flex items-center gap-3 pl-2 pr-4 py-2 rounded-full text-sm transition-all duration-200',
                             'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                             isActive
-                              ? cn(tone.bg, tone.text, 'font-semibold shadow-sm')
+                              ? cn(tone.bg, tone.text, 'font-semibold')
                               : cn('text-foreground/80', tone.soft)
                           );
                           const iconWrap = cn(
                             'flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors',
-                            isActive ? 'bg-background/70' : 'bg-muted/60'
+                            isActive ? 'bg-background/70' : 'bg-muted/50'
                           );
 
                           const content = (
@@ -432,17 +428,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       </div>
                     )}
                   </div>
-
-                  {groupIndex < filteredMenuGroups.length - 1 && isExpanded &&
-                    filteredMenuGroups.slice(groupIndex + 1).some((nextGroup) =>
-                      expandedGroups[nextGroup.label] ?? getGroupHasActiveRoute(nextGroup)
-                    ) && (
-                    <div className="mx-4 my-3 border-t border-dashed border-border/60" />
-                  )}
                 </div>
               );
             })}
           </div>
+
         </div>
       </aside>
 
