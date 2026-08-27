@@ -31,7 +31,7 @@ const Settings = () => {
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="min-w-0 flex-1">
-          <div className="w-full space-y-8 px-4 py-8 sm:px-8 lg:px-12 2xl:max-w-[1600px]">
+          <div className="w-full space-y-8 px-4 py-8 sm:px-8 lg:px-12">
 
             {/* Plain header */}
             <header className="w-full border-b border-border/60 pb-6">
