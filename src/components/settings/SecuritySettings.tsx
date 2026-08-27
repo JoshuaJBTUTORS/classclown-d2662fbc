@@ -265,8 +265,9 @@ const SecuritySettings: React.FC = () => {
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
+
   );
 };
 
