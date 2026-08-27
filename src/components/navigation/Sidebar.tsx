@@ -36,6 +36,8 @@ import {
 import { cn } from '@/lib/utils';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import classclownWordmark from '@/assets/classclown-wordmark.png.asset.json';
+import SidebarProfile from '@/components/navigation/SidebarProfile';
+
 
 
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
