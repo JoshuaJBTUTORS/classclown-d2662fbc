@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     onClick: () => heyCleoRedirectService.redirectToHeyCleo(),
   },
         {
-          icon: Dot,
+          icon: DoodleCalendar,
           label: 'Cleo Calendar',
           href: '/calendar',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
