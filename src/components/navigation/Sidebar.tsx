@@ -2,36 +2,8 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Calendar,
-  Users,
-  UserCheck,
-  GraduationCap,
-  FileText,
-  TrendingUp,
-  BarChart3,
-  Clock,
-  ClipboardList,
-  Video,
   X,
-  Building2,
-  MessageSquare,
   ChevronDown,
-  ChevronRight,
-  BookOpen,
-  UserPlus,
-  DollarSign,
-  LayoutDashboard,
-  Bot,
-  MessageCircle,
-  Film,
-  FileSignature,
-  BookMarked,
-  Activity,
-  Hand,
-  ClipboardCheck,
-  RefreshCw,
-  Target,
-  Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
