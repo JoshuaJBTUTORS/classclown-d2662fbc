@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
@@ -317,7 +317,7 @@ const Onboarding: React.FC = () => {
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-col flex-1 w-full">
-        <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 p-4 md:p-6 max-w-4xl mx-auto w-full">
           <div className="flex items-center gap-3 mb-4">
             <Button variant="ghost" size="sm" onClick={() => navigate('/students')}>

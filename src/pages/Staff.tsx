@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -17,7 +17,7 @@ const Staff: React.FC = () => {
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col lg:ml-64">
-        <Navbar toggleSidebar={() => setIsSidebarOpen(true)} />
+        <MobileMenuButton toggleSidebar={() => setIsSidebarOpen(true)} />
         <div className="flex-1 p-6">
           <PageTitle 
             title="Staff Management" 

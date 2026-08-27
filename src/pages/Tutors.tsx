@@ -3,7 +3,7 @@ import { Edit, PlusIcon, Trash2, Mail } from 'lucide-react';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
@@ -271,7 +271,7 @@ const Tutors = () => {
         "lg:ml-0",
         sidebarOpen && "lg:ml-64"
       )}>
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <div className="flex justify-between items-center mb-6">
             <PageTitle>Tutors</PageTitle>

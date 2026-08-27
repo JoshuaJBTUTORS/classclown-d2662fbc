@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Search, CheckCircle2, XCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 
 interface UserWithAccess {
   id: string;
@@ -166,7 +166,7 @@ const HubAccessManagement = () => {
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}

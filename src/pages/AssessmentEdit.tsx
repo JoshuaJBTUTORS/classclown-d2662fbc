@@ -9,7 +9,7 @@ import { aiAssessmentService } from '@/services/aiAssessmentService';
 import { useAuth } from '@/contexts/AuthContext';
 import AssessmentAccessControl from '@/components/learningHub/AssessmentAccessControl';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import EditAssessmentDetails from '@/components/learningHub/EditAssessmentDetails';
 import QuestionManager from '@/components/learningHub/QuestionManager';
 
@@ -46,7 +46,7 @@ const AssessmentEdit: React.FC = () => {
       <div className="flex min-h-screen bg-background">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
             <div className="container py-8">
               <div className="text-center">
@@ -73,7 +73,7 @@ const AssessmentEdit: React.FC = () => {
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
             <div className="container py-8">

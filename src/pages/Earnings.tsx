@@ -12,7 +12,7 @@ import { getTutorEarningsData, setTutorEarningGoal, type EarningsData } from '@/
 import { calculatePaymentDateFromRange, formatPeriodDisplay } from '@/utils/earningsPeriodUtils';
 import { supabase } from '@/integrations/supabase/client';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import { subDays } from 'date-fns';
 
 export default function Earnings() {
@@ -116,7 +116,7 @@ export default function Earnings() {
       <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 w-full">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <div className="container mx-auto">
               <PageTitle title="Earnings" />
@@ -142,7 +142,7 @@ export default function Earnings() {
     <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-col flex-1 w-full">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="container mx-auto space-y-6">
             <div className="flex items-center justify-between">

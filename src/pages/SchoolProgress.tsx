@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/navigation/Navbar";
+import MobileMenuButton from "@/components/navigation/MobileMenuButton";
 import Sidebar from "@/components/navigation/Sidebar";
 import { SchoolProgressHero } from "@/components/schoolProgress/SchoolProgressHero";
 import { SchoolProgressCard } from "@/components/schoolProgress/SchoolProgressCard";
@@ -176,7 +176,7 @@ export default function SchoolProgressPage() {
       <div className="min-h-screen bg-background flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex flex-col">
-          <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+          <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -193,7 +193,7 @@ export default function SchoolProgressPage() {
       <div className="min-h-screen bg-background flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex flex-col">
-          <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+          <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
           <div className="flex-1 p-8">
             <Alert>
               <BookOpen className="h-4 w-4" />
@@ -214,7 +214,7 @@ export default function SchoolProgressPage() {
     <div className="min-h-screen bg-background flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <div className="flex w-full flex-1 flex-col space-y-6 p-4 sm:p-6 lg:p-8">
           <SchoolProgressHero
             documentCount={filteredProgress.length}

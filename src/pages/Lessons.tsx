@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Input } from '@/components/ui/input';
@@ -192,7 +192,7 @@ const Lessons = () => {
         "lg:ml-0",
         sidebarOpen && "lg:ml-64"
       )}>
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col md:flex-row items-center justify-between mb-6">
             <PageTitle 

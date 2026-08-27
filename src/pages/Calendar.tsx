@@ -10,7 +10,7 @@ import ViewOptions from '@/components/calendar/ViewOptions';
 import CollapsibleFilters from '@/components/calendar/CollapsibleFilters';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus, Info, Filter, MessageSquare, Users } from 'lucide-react';
@@ -202,7 +202,7 @@ const Calendar = () => {
       <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 w-full">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <LockedFeature
               featureName="Calendar & Scheduling"
@@ -220,7 +220,7 @@ const Calendar = () => {
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       
       <div className="flex flex-col flex-1 w-full">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-background">
           {/* Hero header */}
           <div className="flex-shrink-0 px-4 md:px-8 pt-6 pb-4">

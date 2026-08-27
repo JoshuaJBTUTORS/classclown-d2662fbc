@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Search } from 'lucide-react';
 import { isWithinInterval, addDays } from 'date-fns';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import { AssessmentHero } from '@/components/assessments/AssessmentHero';
 import { AssessmentCard } from '@/components/assessments/AssessmentCard';
 import { cn } from '@/lib/utils';
@@ -100,7 +100,7 @@ const AssessmentCenter = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Navbar toggleSidebar={() => setSidebarOpen(true)} />
+        <MobileMenuButton toggleSidebar={() => setSidebarOpen(true)} />
 
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">

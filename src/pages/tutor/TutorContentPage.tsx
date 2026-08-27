@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TutorContentDashboard } from "@/components/content/TutorContentDashboard";
-import Navbar from "@/components/navigation/Navbar";
+import MobileMenuButton from "@/components/navigation/MobileMenuButton";
 import Sidebar from "@/components/navigation/Sidebar";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +30,7 @@ const TutorContentPage = () => {
         "lg:ml-0",
         sidebarOpen && "lg:ml-64"
       )}>
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-6">

@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAssessmentPermissions } from '@/hooks/useAssessmentPermissions';
 import AssessmentAccessControl from '@/components/learningHub/AssessmentAccessControl';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import ExamPaperAssessment from '@/components/assessments/ExamPaperAssessment';
 
 const AssessmentPreview: React.FC = () => {
@@ -49,7 +49,7 @@ const AssessmentPreview: React.FC = () => {
       <div className="flex min-h-screen bg-background">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
             <div className="container py-8">
               <Skeleton className="h-8 w-64 mb-6" />
@@ -69,7 +69,7 @@ const AssessmentPreview: React.FC = () => {
       <div className="flex min-h-screen bg-background">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
             <div className="container py-8">
               <div className="text-center">
@@ -109,7 +109,7 @@ const AssessmentPreview: React.FC = () => {
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
             <div className="container py-8">
