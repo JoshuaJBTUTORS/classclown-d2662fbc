@@ -91,19 +91,9 @@ const ProfileSettings: React.FC = () => {
   };
 
   return (
-    <Card className="rounded-[1.5rem] border border-border/60 shadow-[var(--shadow-soft)]">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pastel-mint text-pastel-mint-foreground">
-            <User className="h-4 w-4" />
-          </span>
-          Profile Information
-        </CardTitle>
-        <CardDescription>
-          Update your personal information and contact details
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
