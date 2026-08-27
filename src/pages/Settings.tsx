@@ -39,7 +39,7 @@ const Settings = () => {
               <h1 className="mt-1 font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
                 Account Settings
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
                 Manage your profile icon, personal information and security preferences.
               </p>
             </header>
@@ -91,7 +91,7 @@ const Settings = () => {
                   icon={<DoodleIdCard />}
                   iconClassName="bg-pastel-sky text-pastel-sky-foreground"
                 >
-                  <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
                     <div className="rounded-2xl bg-muted/50 px-4 py-3">
                       <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Account ID</span>
                       <p className="mt-1 break-all font-mono text-xs text-foreground">{user?.id}</p>

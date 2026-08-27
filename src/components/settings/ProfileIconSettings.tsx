@@ -71,7 +71,7 @@ const ProfileIconSettings: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-[repeat(auto-fit,minmax(140px,1fr))]">
         <button type="button" onClick={() => select(null)} className={optionClass(!current)}>
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-pastel-sand font-heading text-lg font-extrabold text-foreground">
             {saving === 'initials' ? <Loader2 className="h-5 w-5 animate-spin" /> : initials}
