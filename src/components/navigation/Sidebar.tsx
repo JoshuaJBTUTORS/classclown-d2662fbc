@@ -34,8 +34,19 @@ import {
   Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
+
+const GROUP_TONES = [
+  { bg: 'bg-pastel-mint', text: 'text-pastel-mint-foreground', soft: 'hover:bg-pastel-mint/50' },
+  { bg: 'bg-pastel-lilac', text: 'text-pastel-lilac-foreground', soft: 'hover:bg-pastel-lilac/50' },
+  { bg: 'bg-pastel-butter', text: 'text-pastel-butter-foreground', soft: 'hover:bg-pastel-butter/50' },
+  { bg: 'bg-pastel-sky', text: 'text-pastel-sky-foreground', soft: 'hover:bg-pastel-sky/50' },
+  { bg: 'bg-pastel-blush', text: 'text-pastel-blush-foreground', soft: 'hover:bg-pastel-blush/50' },
+  { bg: 'bg-pastel-sand', text: 'text-pastel-sand-foreground', soft: 'hover:bg-pastel-sand/50' },
+];
+
 
 interface SidebarProps {
   isOpen: boolean;
