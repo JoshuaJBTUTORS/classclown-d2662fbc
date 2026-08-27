@@ -20,13 +20,6 @@ const pillBase =
 const pillSoft = cn(pillBase, 'bg-card text-foreground shadow-[var(--shadow-soft)] hover:-translate-y-0.5');
 const pillDark = cn(pillBase, 'bg-foreground text-background hover:-translate-y-0.5 hover:opacity-90');
 
-const LEGEND = [
-  { label: 'Lessons', tone: 'bg-pastel-sky text-pastel-sky-foreground' },
-  { label: 'Trials', tone: 'bg-pastel-butter text-pastel-butter-foreground' },
-  { label: 'Availability', tone: 'bg-pastel-mint text-pastel-mint-foreground' },
-  { label: 'Time off', tone: 'bg-pastel-blush text-pastel-blush-foreground' },
-];
-
 export const CalendarHero: React.FC<CalendarHeroProps> = ({
   canUseFilters,
   filtersOpen,
