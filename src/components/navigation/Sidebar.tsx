@@ -13,11 +13,29 @@ import SidebarProfile from '@/components/navigation/SidebarProfile';
 
 
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
-
-/** Simple rounded dot used as the sidebar menu icon for all items except HeyCleo. */
-const Dot: React.FC<{ className?: string }> = ({ className }) => (
-  <span className={cn('block h-1.5 w-1.5 rounded-full bg-current', className)} />
-);
+import {
+  DoodleCalendar,
+  DoodleMortarboard,
+  DoodleNotebook,
+  DoodleClipboardCheck,
+  DoodleVideo,
+  DoodlePerson,
+  DoodlePersonCheck,
+  DoodlePersonPlus,
+  DoodleClipboard,
+  DoodleSpeech,
+  DoodleClock,
+  DoodleReferral,
+  DoodleDocSign,
+  DoodleFilm,
+  DoodleDashboard,
+  DoodleTarget,
+  DoodleSignal,
+  DoodleBook,
+  DoodleCoin,
+  DoodleTrend,
+  DoodleBarChart,
+} from '@/components/navigation/SidebarDoodles';
 
 const GROUP_TONES = [
   { bg: 'bg-pastel-mint', text: 'text-pastel-mint-foreground', soft: 'hover:bg-pastel-mint/50' },
