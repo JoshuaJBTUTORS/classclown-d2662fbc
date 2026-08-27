@@ -4,16 +4,33 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, Lock, GraduationCap, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
-import { getDomainConfig } from '@/utils/domainConfig';
 import { DomainSEO } from '@/components/seo/DomainSEO';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import cleoMascot from '@/assets/avatars/cleo-1.png';
+
+/** Soft pastel blob backdrop shared by the page and the showcase panel. */
+const PastelBlobs: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ''}`} aria-hidden="true">
+    <div className="absolute -left-16 top-4 h-64 w-64 rounded-full bg-pastel-blush blur-3xl opacity-70" />
+    <div className="absolute right-0 top-24 h-72 w-72 rounded-full bg-pastel-sky blur-3xl opacity-70" />
+    <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-pastel-lilac blur-3xl opacity-70" />
+    <div className="absolute -bottom-10 right-1/4 h-56 w-56 rounded-full bg-pastel-mint blur-3xl opacity-60" />
+  </div>
+);
+
+const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="relative min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+    <PastelBlobs className="opacity-60" />
+    <div className="relative w-full max-w-md">{children}</div>
+  </div>
+);
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -22,14 +39,10 @@ const Auth = () => {
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const {
-    signIn,
-    user
-  } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const config = getDomainConfig();
-  
+
   useEffect(() => {
     if (user) {
       navigate('/');
@@ -39,6 +52,7 @@ const Auth = () => {
   // Check if we're in reset password mode
   const tab = searchParams.get('tab');
   const isResetPassword = tab === 'reset-password';
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const sanitizedEmail = sanitizeInput(email);
@@ -64,150 +78,155 @@ const Auth = () => {
     }
   };
 
-  // Handle reset password mode
   if (isResetPassword) {
     return <ResetPasswordForm />;
   }
 
-  // Handle showing forgot password form
   if (showForgotPassword) {
-    return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+    return (
+      <AuthShell>
         <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
-      </div>;
+      </AuthShell>
+    );
   }
+
   return (
     <>
-      <DomainSEO 
+      <DomainSEO
         pageTitle="Login"
         pageDescription="Sign in to continue your AI-powered learning journey with personalized lessons and interactive tutoring."
       />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
-          {/* Left Side - Branding */}
-          <motion.div initial={{
-          opacity: 0,
-          x: -50
-        }} animate={{
-          opacity: 1,
-          x: 0
-        }} transition={{
-          duration: 0.6
-        }} className="text-center lg:text-left space-y-6">
-            {/* Class Beyond Branding */}
-            <div className="flex items-center justify-center lg:justify-start gap-3">
-              <img src="/class-beyond-logo.png" alt="Class Beyond" className="h-20 w-auto" />
-            </div>
-            
-            <div>
-              <h1 className="text-5xl font-bold text-gray-900 mb-8">
-                Welcome to Class Clown
-              </h1>
-              
-              <div className="space-y-4 text-left">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🗣️</span>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Interactive Voice Lessons</h3>
-                    <p className="text-gray-600">Talk naturally with AI tutoring</p>
-                  </div>
+      <div className="relative min-h-screen bg-background flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+        <PastelBlobs className="opacity-50" />
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative w-full max-w-6xl rounded-[2rem] border border-border/60 bg-card/80 backdrop-blur-xl shadow-[0_30px_80px_-40px_hsl(var(--foreground)/0.35)] p-4 sm:p-8"
+        >
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-stretch">
+            {/* Sign-in card */}
+            <div className="flex items-center justify-center py-6 lg:py-16">
+              <div className="w-full max-w-sm">
+                <div className="relative mb-8">
+                  <ScribbleStroke className="pointer-events-none absolute -top-6 -left-4 h-16 w-40 text-pastel-lilac-foreground opacity-20" />
+                  <h1 className="relative font-heading text-4xl font-bold tracking-tight text-foreground">
+                    Welcome back
+                  </h1>
+                  <p className="relative mt-2 text-sm text-muted-foreground">
+                    Sign in to continue to your Class Clown workspace
+                  </p>
                 </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">📊</span>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Visual Learning Aids</h3>
-                    <p className="text-gray-600">Diagrams and examples appear as you learn</p>
+
+                <form onSubmit={handleSignIn} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email" className="text-xs font-medium text-muted-foreground">
+                      Email
+                    </Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="Email address"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="h-12 rounded-2xl bg-background/80 px-4"
+                      required
+                    />
                   </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🎯</span>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Personalized Teaching</h3>
-                    <p className="text-gray-600">Adapts to your learning style</p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password" className="text-xs font-medium text-muted-foreground">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="h-12 rounded-2xl bg-background/80 px-4 pr-12"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">💡</span>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Learn Anything, Anytime</h3>
-                    <p className="text-gray-600">Available 24/7 for all subjects</p>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      disabled={loading}
+                      className="text-sm font-semibold text-foreground hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
                   </div>
-                </div>
+
+                  {error && (
+                    <Alert variant="destructive" className="rounded-2xl">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="h-12 w-full rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold shadow-sm"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      'Sign in'
+                    )}
+                  </Button>
+                </form>
+
+                <p className="mt-8 text-center text-xs text-muted-foreground">
+                  Trouble signing in? Contact your Class Beyond Academy coordinator.
+                </p>
               </div>
             </div>
 
-          </motion.div>
-
-          {/* Right Side - Auth Form */}
-          <motion.div initial={{
-          opacity: 0,
-          x: 50
-        }} animate={{
-          opacity: 1,
-          x: 0
-        }} transition={{
-          duration: 0.6,
-          delay: 0.2
-        }}>
-            <Card className="shadow-xl">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl"> Login</CardTitle>
-                <CardDescription>
-                  Sign in to access the internal system
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input id="signin-email" type="email" placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" required />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input id="signin-password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} className="pl-10 pr-10" required />
-                      <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {error && <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>}
-
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading ? <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing in...
-                      </> : 'Sign In'}
-                  </Button>
-
-                  <div className="text-center">
-                    <Button type="button" variant="link" onClick={() => setShowForgotPassword(true)} className="text-sm text-blue-600 hover:text-blue-800" disabled={loading}>
-                      Forgot your password?
-                    </Button>
-                  </div>
-                  
-                </form>
-              </CardContent>
-            </Card>
-      </motion.div>
-        </div>
+            {/* Showcase panel */}
+            <div className="relative hidden lg:flex min-h-[540px] overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/60">
+              <PastelBlobs />
+              <ScribbleStroke className="pointer-events-none absolute bottom-8 left-8 h-32 w-56 text-pastel-blush-foreground opacity-20" />
+              <div className="relative flex w-full flex-col items-center justify-center gap-6 p-10 text-center">
+                <motion.div
+                  className="h-56 w-56 overflow-hidden rounded-full shadow-[0_25px_60px_-25px_hsl(var(--foreground)/0.45)]"
+                  animate={{ y: [0, -14, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <img
+                    src={cleoMascot}
+                    alt="Cleo, the Class Clown AI tutor mascot"
+                    className="h-full w-full scale-[1.35] object-cover"
+                  />
+                </motion.div>
+                <div>
+                  <h2 className="font-heading text-2xl font-bold text-foreground">Learning, with Cleo</h2>
+                  <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
+                    Live tutoring, lesson plans and progress — all in one friendly place.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
-    </div>
     </>
   );
 };

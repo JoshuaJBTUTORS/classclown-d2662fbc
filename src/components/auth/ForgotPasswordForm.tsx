@@ -59,9 +59,9 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
 
   if (sent) {
     return (
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="w-full max-w-md mx-auto rounded-3xl border-border/60 bg-card/90 backdrop-blur-xl shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl text-green-600">Email Sent!</CardTitle>
+          <CardTitle className="text-xl text-pastel-mint-foreground font-heading">Email Sent!</CardTitle>
           <CardDescription>
             We've sent a password reset link to {email}
           </CardDescription>
@@ -77,7 +77,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
           <Button 
             variant="outline" 
             onClick={onBack}
-            className="w-full"
+            className="w-full h-11 rounded-full"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Sign In
@@ -88,9 +88,9 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto rounded-3xl border-border/60 bg-card/90 backdrop-blur-xl shadow-xl">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">Reset Password</CardTitle>
+        <CardTitle className="text-2xl font-heading">Reset Password</CardTitle>
         <CardDescription>
           Enter your email address and we'll send you a link to reset your password
         </CardDescription>
@@ -100,14 +100,14 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
           <div className="space-y-2">
             <Label htmlFor="reset-email">Email Address</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="reset-email"
                 type="email"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-12 rounded-2xl"
                 required
                 disabled={loading}
               />
@@ -123,7 +123,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
           <div className="space-y-3">
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90" 
               disabled={loading}
             >
               {loading ? (
@@ -140,7 +140,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
               type="button"
               variant="outline" 
               onClick={onBack}
-              className="w-full"
+              className="w-full h-11 rounded-full"
               disabled={loading}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

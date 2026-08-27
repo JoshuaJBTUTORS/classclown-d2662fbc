@@ -115,8 +115,8 @@ const ResetPasswordForm: React.FC = () => {
   // Show loading state while validating token
   if (loading && !resetToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md mx-auto">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-auto rounded-3xl border-border/60 shadow-xl">
           <CardHeader className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
             <CardTitle>Validating Reset Token...</CardTitle>
@@ -130,17 +130,17 @@ const ResetPasswordForm: React.FC = () => {
   // Show error if token validation failed
   if (error && !resetToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md mx-auto">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-auto rounded-3xl border-border/60 shadow-xl">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-red-600" />
+            <div className="mx-auto mb-4 w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-destructive" />
             </div>
-            <CardTitle className="text-xl text-red-600">Invalid Reset Link</CardTitle>
+            <CardTitle className="text-xl text-destructive">Invalid Reset Link</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate('/auth')} className="w-full">
+            <Button onClick={() => navigate('/auth')} className="w-full rounded-full h-11">
               Back to Login
             </Button>
           </CardContent>
@@ -151,13 +151,13 @@ const ResetPasswordForm: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md mx-auto">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-auto rounded-3xl border-border/60 shadow-xl">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="mx-auto mb-4 w-12 h-12 bg-pastel-mint rounded-full flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-pastel-mint-foreground" />
             </div>
-            <CardTitle className="text-xl text-green-600">Password Updated!</CardTitle>
+            <CardTitle className="text-xl text-pastel-mint-foreground">Password Updated!</CardTitle>
             <CardDescription>
               Your password has been successfully updated. You will be redirected to the login page.
             </CardDescription>
@@ -168,8 +168,8 @@ const ResetPasswordForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md mx-auto">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md mx-auto rounded-3xl border-border/60 shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Create New Password</CardTitle>
           <CardDescription>
@@ -181,21 +181,21 @@ const ResetPasswordForm: React.FC = () => {
             <div className="space-y-2">
               <Label htmlFor="new-password">New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="new-password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter new password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 h-12 rounded-2xl"
                   required
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   disabled={loading}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -219,12 +219,12 @@ const ResetPasswordForm: React.FC = () => {
                     <span className={`text-xs font-medium ${
                       passwordStrength === 'weak' ? 'text-red-600' :
                       passwordStrength === 'medium' ? 'text-yellow-600' :
-                      passwordStrength === 'strong' ? 'text-green-600' : 'text-gray-600'
+                      passwordStrength === 'strong' ? 'text-green-600' : 'text-muted-foreground'
                     }`}>
                       {passwordStrength}
                     </span>
                   </div>
-                  <ul className="text-xs text-gray-600 space-y-1">
+                  <ul className="text-xs text-muted-foreground space-y-1">
                     <li className={password.length >= 8 ? 'text-green-600' : 'text-red-600'}>
                       ✓ At least 8 characters
                     </li>
@@ -248,21 +248,21 @@ const ResetPasswordForm: React.FC = () => {
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="confirm-password"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 h-12 rounded-2xl"
                   required
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   disabled={loading}
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -284,7 +284,7 @@ const ResetPasswordForm: React.FC = () => {
 
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full rounded-full h-11" 
               disabled={loading || !isPasswordValid || !passwordsMatch}
             >
               {loading ? (
