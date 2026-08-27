@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import cleoMascot from '@/assets/avatars/cleo-1.png';
+import cleoHandAsset from '@/assets/auth/cleo-hand.png.asset.json';
+import teacherCartoon from '@/assets/auth/teacher-cartoon.jpg';
 
 const ROTATE_MS = 6000;
 
@@ -28,20 +29,16 @@ const SlideFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </motion.div>
 );
 
-/** Slide 1 — Cleo mascot */
+/** Slide 1 — Cleo hand logo */
 const CleoSlide: React.FC<{ float: boolean }> = ({ float }) => (
   <SlideFrame>
-    <motion.div
-      className="h-52 w-52 overflow-hidden rounded-full bg-pastel-mint shadow-[0_25px_60px_-25px_hsl(var(--foreground)/0.45)]"
-      animate={float ? { y: [0, -12, 0] } : undefined}
+    <motion.img
+      src={cleoHandAsset.url}
+      alt="Cleo waving hand logo"
+      className="h-52 w-52 object-contain drop-shadow-[0_25px_40px_hsl(var(--foreground)/0.25)]"
+      animate={float ? { y: [0, -12, 0], rotate: [0, -4, 0] } : undefined}
       transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      <img
-        src={cleoMascot}
-        alt="Cleo, the Class Clown AI tutor mascot"
-        className="h-full w-full scale-[1.35] object-cover"
-      />
-    </motion.div>
+    />
     <div>
       <h2 className="font-heading text-2xl font-bold text-foreground">Learning, with Cleo</h2>
       <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
@@ -54,27 +51,21 @@ const CleoSlide: React.FC<{ float: boolean }> = ({ float }) => (
 /** Slide 2 — Top-tier teachers */
 const TeachersSlide: React.FC = () => (
   <SlideFrame>
-    <div className="grid w-full max-w-sm grid-cols-3 gap-3">
-      {[
-        { tone: 'bg-pastel-mint', label: '11 Plus' },
-        { tone: 'bg-pastel-sky', label: 'GCSE' },
-        { tone: 'bg-pastel-blush', label: 'A Level' },
-      ].map((t, i) => (
-        <motion.div
-          key={t.label}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 + i * 0.12, duration: 0.5 }}
-          className={`flex h-24 flex-col items-center justify-center gap-2 rounded-2xl ${t.tone} border border-border/40`}
-        >
-          <svg viewBox="0 0 40 40" className="h-8 w-8 text-foreground/70" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="20" cy="14" r="6" />
-            <path d="M8 33c2.5-6 8-9 12-9s9.5 3 12 9" />
-          </svg>
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground/70">{t.label}</span>
-        </motion.div>
-      ))}
-    </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-xs overflow-hidden rounded-3xl border border-border/40 shadow-[0_25px_60px_-25px_hsl(var(--foreground)/0.45)]"
+    >
+      <img
+        src={teacherCartoon}
+        alt="Cartoon teacher at a chalkboard"
+        loading="lazy"
+        width={1024}
+        height={1024}
+        className="h-full w-full object-cover"
+      />
+    </motion.div>
     <div>
       <h2 className="font-heading text-2xl font-bold text-foreground">Taught by top-tier teachers</h2>
       <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
