@@ -59,6 +59,8 @@ export function useLiveLessonAlert() {
   const { userRole, user } = useAuth();
   const [activeLesson, setActiveLesson] = useState<LiveLesson | null>(null);
   const fetchingRef = useRef(false);
+  const lastVisibilityFetchRef = useRef(0);
+
 
   const fetchLiveLessons = useCallback(async () => {
     const role: AppRole | null = userRole;
