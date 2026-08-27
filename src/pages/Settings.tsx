@@ -58,7 +58,7 @@ const Settings = () => {
                   value="icon"
                   title="Profile Icon"
                   description="Choose your initials or a Cleo avatar"
-                  icon={<Smile className="h-5 w-5" />}
+                  icon={<DoodleSmiley />}
                   iconClassName="bg-pastel-butter text-pastel-butter-foreground"
                 >
                   <ProfileIconSettings />
@@ -68,7 +68,7 @@ const Settings = () => {
                   value="profile"
                   title="Profile Information"
                   description="Update your personal information and contact details"
-                  icon={<User className="h-5 w-5" />}
+                  icon={<DoodlePerson />}
                   iconClassName="bg-pastel-mint text-pastel-mint-foreground"
                 >
                   <ProfileSettings />
@@ -78,7 +78,7 @@ const Settings = () => {
                   value="security"
                   title="Security"
                   description="Update your password to keep your account secure"
-                  icon={<Shield className="h-5 w-5" />}
+                  icon={<DoodleLock />}
                   iconClassName="bg-pastel-blush text-pastel-blush-foreground"
                 >
                   <SecuritySettings />
@@ -88,7 +88,7 @@ const Settings = () => {
                   value="account"
                   title="Account Information"
                   description="Your account details and current status"
-                  icon={<SettingsIcon className="h-5 w-5" />}
+                  icon={<DoodleIdCard />}
                   iconClassName="bg-pastel-sky text-pastel-sky-foreground"
                 >
                   <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
@@ -130,7 +130,7 @@ const Settings = () => {
                     value="system"
                     title="System"
                     description="App version and platform controls"
-                    icon={<Server className="h-5 w-5" />}
+                    icon={<DoodleServer />}
                     iconClassName="bg-pastel-lilac text-pastel-lilac-foreground"
                   >
                     <AppVersionControl />
