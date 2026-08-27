@@ -30,7 +30,7 @@ const Settings = () => {
       <MobileMenuButton toggleSidebar={toggleSidebar} />
       <div className="flex w-full overflow-x-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="min-w-0 w-full flex-1 lg:w-[calc(100%_-_16rem)] lg:flex-none">
+        <main className="min-w-0 flex-1">
           <div className="w-full space-y-8 px-4 py-8 sm:px-8 lg:px-12">
 
             {/* Plain header */}
