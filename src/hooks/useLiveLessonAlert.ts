@@ -23,6 +23,8 @@ interface DismissedEntry {
 
 const DISMISS_KEY = 'live-lesson-alert-dismissed';
 const POLL_INTERVAL_MS = 60_000; // 1 minute
+const VISIBILITY_THROTTLE_MS = 60_000; // at most one refetch per minute on tab return
+
 const SOON_WINDOW_MIN = 10; // show popup up to 10 min before start
 
 function readDismissed(): DismissedEntry[] {
