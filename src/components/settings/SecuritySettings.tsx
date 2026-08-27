@@ -9,6 +9,12 @@ import { Loader2, Lock, Eye, EyeOff, Shield, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { validatePasswordDetailed, calculatePasswordStrength, sanitizeInput } from '@/utils/validation';
+import { cn } from '@/lib/utils';
+
+const inputClass = cn(
+  'h-12 rounded-full border-border/60 bg-background pl-11 pr-11',
+  'focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0'
+);
 
 const SecuritySettings: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -100,10 +106,12 @@ const SecuritySettings: React.FC = () => {
   };
 
   return (
-    <Card>
+    <Card className="rounded-[1.5rem] border border-border/60 shadow-[var(--shadow-soft)]">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pastel-blush text-pastel-blush-foreground">
+            <Shield className="h-4 w-4" />
+          </span>
           Change Password
         </CardTitle>
         <CardDescription>
@@ -111,26 +119,26 @@ const SecuritySettings: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Current Password */}
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current Password</Label>
+            <Label htmlFor="currentPassword" className="text-sm font-medium text-muted-foreground">Current Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
               <Input
                 id="currentPassword"
                 type={showPasswords.current ? 'text' : 'password'}
                 value={formData.currentPassword}
                 onChange={(e) => setFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
                 placeholder="Enter your current password"
-                className="pl-10 pr-10"
+                className={inputClass}
                 disabled={loading}
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full p-0 hover:bg-muted"
                 onClick={() => togglePasswordVisibility('current')}
                 disabled={loading}
               >
@@ -141,23 +149,23 @@ const SecuritySettings: React.FC = () => {
 
           {/* New Password */}
           <div className="space-y-2">
-            <Label htmlFor="newPassword">New Password</Label>
+            <Label htmlFor="newPassword" className="text-sm font-medium text-muted-foreground">New Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
               <Input
                 id="newPassword"
                 type={showPasswords.new ? 'text' : 'password'}
                 value={formData.newPassword}
                 onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
                 placeholder="Enter your new password"
-                className="pl-10 pr-10"
+                className={inputClass}
                 disabled={loading}
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full p-0 hover:bg-muted"
                 onClick={() => togglePasswordVisibility('new')}
                 disabled={loading}
               >
@@ -167,9 +175,9 @@ const SecuritySettings: React.FC = () => {
 
             {/* Password Strength Indicator */}
             {formData.newPassword && (
-              <div className="space-y-2">
+              <div className="space-y-2 rounded-2xl bg-muted/50 px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Password Strength:</span>
+                  <span className="text-sm text-muted-foreground">Password Strength:</span>
                   <span className={`text-sm font-medium ${
                     passwordStrength.color === 'success' ? 'text-green-600' : 
                     passwordStrength.color === 'warning' ? 'text-yellow-600' : 'text-red-600'
@@ -179,7 +187,7 @@ const SecuritySettings: React.FC = () => {
                 </div>
                 <Progress 
                   value={passwordStrength.score} 
-                  className={`h-2 ${
+                  className={`h-2 rounded-full ${
                     passwordStrength.color === 'success' ? '[&>div]:bg-green-500' : 
                     passwordStrength.color === 'warning' ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500'
                   }`}
@@ -189,10 +197,10 @@ const SecuritySettings: React.FC = () => {
 
             {/* Password Requirements */}
             {formData.newPassword && (
-              <div className="space-y-1 text-sm">
+              <div className="space-y-1 rounded-2xl bg-muted/50 px-4 py-3 text-sm">
                 {requirements.map((req, index) => (
-                  <div key={index} className={`flex items-center gap-2 ${req.met ? 'text-green-600' : 'text-gray-500'}`}>
-                    <CheckCircle className={`h-3 w-3 ${req.met ? 'text-green-500' : 'text-gray-300'}`} />
+                  <div key={index} className={`flex items-center gap-2 ${req.met ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <CheckCircle className={`h-3 w-3 ${req.met ? 'text-green-500' : 'text-muted-foreground/40'}`} />
                     {req.name}
                   </div>
                 ))}
@@ -202,23 +210,23 @@ const SecuritySettings: React.FC = () => {
 
           {/* Confirm Password */}
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Label htmlFor="confirmPassword" className="text-sm font-medium text-muted-foreground">Confirm New Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
               <Input
                 id="confirmPassword"
                 type={showPasswords.confirm ? 'text' : 'password'}
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                 placeholder="Confirm your new password"
-                className="pl-10 pr-10"
+                className={inputClass}
                 disabled={loading}
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full p-0 hover:bg-muted"
                 onClick={() => togglePasswordVisibility('confirm')}
                 disabled={loading}
               >
@@ -240,7 +248,7 @@ const SecuritySettings: React.FC = () => {
           </div>
 
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="rounded-2xl">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -248,7 +256,11 @@ const SecuritySettings: React.FC = () => {
           <Button 
             type="submit" 
             disabled={loading || !isPasswordValid || formData.newPassword !== formData.confirmPassword}
-            className="w-full"
+            className={cn(
+              'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background',
+              'shadow-[var(--shadow-soft)] transition-all duration-300',
+              'hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[var(--shadow-soft-lg)]'
+            )}
           >
             {loading ? (
               <>
