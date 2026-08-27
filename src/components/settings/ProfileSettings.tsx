@@ -9,6 +9,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
+import { cn } from '@/lib/utils';
+
+const inputClass = cn(
+  'h-12 rounded-full border-border/60 bg-background px-5',
+  'focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0'
+);
 
 const ProfileSettings: React.FC = () => {
   const { user, profile } = useAuth();
@@ -85,10 +91,12 @@ const ProfileSettings: React.FC = () => {
   };
 
   return (
-    <Card>
+    <Card className="rounded-[1.5rem] border border-border/60 shadow-[var(--shadow-soft)]">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pastel-mint text-pastel-mint-foreground">
+            <User className="h-4 w-4" />
+          </span>
           Profile Information
         </CardTitle>
         <CardDescription>
@@ -96,72 +104,82 @@ const ProfileSettings: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
+              <Label htmlFor="firstName" className="text-sm font-medium text-muted-foreground">First Name</Label>
               <Input
                 id="firstName"
                 type="text"
                 value={formData.firstName}
                 onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
                 placeholder="Enter your first name"
+                className={inputClass}
                 disabled={loading}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
+              <Label htmlFor="lastName" className="text-sm font-medium text-muted-foreground">Last Name</Label>
               <Input
                 id="lastName"
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
                 placeholder="Enter your last name"
+                className={inputClass}
                 disabled={loading}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">Email Address</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="Enter your email"
-                className="pl-10"
+                className={cn(inputClass, 'pl-11')}
                 disabled={loading}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone" className="text-sm font-medium text-muted-foreground">Phone Number</Label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
               <Input
                 id="phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="Enter your phone number"
-                className="pl-10"
+                className={cn(inputClass, 'pl-11')}
                 disabled={loading}
               />
             </div>
           </div>
 
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="rounded-2xl">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button
+            type="submit"
+            disabled={loading}
+            className={cn(
+              'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background',
+              'shadow-[var(--shadow-soft)] transition-all duration-300',
+              'hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[var(--shadow-soft-lg)]'
+            )}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
