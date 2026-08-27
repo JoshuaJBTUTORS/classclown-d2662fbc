@@ -94,8 +94,20 @@ const AppVersionMonitor = () => {
   return null;
 };
 
+// Single shared client — recreating it on every render wipes the cache and
+// remounts every screen (losing in-progress form input).
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+      retry: 1,
+    },
+  },
+});
+
 function App() {
-  const queryClient = new QueryClient();
+
 
   return (
     <BrowserRouter>

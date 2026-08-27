@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -86,7 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [hasCleoHubAccess, setHasCleoHubAccess] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  // Tracks which user id we've already hydrated, so repeated SIGNED_IN events
+  // (fired when the tab regains focus) don't re-trigger a full reload.
+  const hydratedUserIdRef = useRef<string | null>(null);
   const navigate = useNavigate();
+
 
   // Fetch user profile, role, and parent profile
   const fetchUserData = async (userId: string) => {
@@ -232,6 +236,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && newSession?.user) {
+          // Supabase re-emits SIGNED_IN when the tab regains focus / the token
+          // refreshes. Only do the heavy hydration when the user actually changed,
+          // otherwise we flip into a loading state and remount the whole app.
+          if (hydratedUserIdRef.current === newSession.user.id) {
+            return;
+          }
+          hydratedUserIdRef.current = newSession.user.id;
           setLoading(true);
           setTimeout(() => {
             void fetchUserData(newSession.user.id).finally(() => {
@@ -243,6 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
+          hydratedUserIdRef.current = null;
           setProfile(null);
           setParentProfile(null);
           setUserRole(null);
@@ -266,11 +278,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
+        hydratedUserIdRef.current = existingSession.user.id;
         await fetchUserData(existingSession.user.id);
       }
       
       setLoading(false);
     });
+
 
     return () => {
       subscription.unsubscribe();
