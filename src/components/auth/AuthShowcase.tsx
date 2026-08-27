@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import cleoHandAsset from '@/assets/auth/cleo-hand.png.asset.json';
-import teacherCartoon from '@/assets/auth/teacher-cartoon.jpg';
+import { TeacherChalkboard } from '@/components/auth/TeacherChalkboard';
+
 
 const ROTATE_MS = 6000;
 
@@ -55,16 +56,9 @@ const TeachersSlide: React.FC = () => (
       initial={{ opacity: 0, scale: 0.94 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-xs overflow-hidden rounded-3xl border border-border/40 shadow-[0_25px_60px_-25px_hsl(var(--foreground)/0.45)]"
+      className="flex w-full justify-center"
     >
-      <img
-        src={teacherCartoon}
-        alt="Cartoon teacher at a chalkboard"
-        loading="lazy"
-        width={1024}
-        height={1024}
-        className="h-full w-full object-cover"
-      />
+      <TeacherChalkboard />
     </motion.div>
     <div>
       <h2 className="font-heading text-2xl font-bold text-foreground">Taught by top-tier teachers</h2>
@@ -74,6 +68,7 @@ const TeachersSlide: React.FC = () => (
     </div>
   </SlideFrame>
 );
+
 
 const RESULTS = [
   { figure: '94%', label: '11 Plus pass rate', tone: 'bg-pastel-mint' },
