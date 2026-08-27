@@ -29,20 +29,16 @@ const SlideFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </motion.div>
 );
 
-/** Slide 1 — Cleo mascot */
+/** Slide 1 — Cleo hand logo */
 const CleoSlide: React.FC<{ float: boolean }> = ({ float }) => (
   <SlideFrame>
-    <motion.div
-      className="h-52 w-52 overflow-hidden rounded-full bg-pastel-mint shadow-[0_25px_60px_-25px_hsl(var(--foreground)/0.45)]"
-      animate={float ? { y: [0, -12, 0] } : undefined}
+    <motion.img
+      src={cleoHandAsset.url}
+      alt="Cleo waving hand logo"
+      className="h-52 w-52 object-contain drop-shadow-[0_25px_40px_hsl(var(--foreground)/0.25)]"
+      animate={float ? { y: [0, -12, 0], rotate: [0, -4, 0] } : undefined}
       transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      <img
-        src={cleoMascot}
-        alt="Cleo, the Class Clown AI tutor mascot"
-        className="h-full w-full scale-[1.35] object-cover"
-      />
-    </motion.div>
+    />
     <div>
       <h2 className="font-heading text-2xl font-bold text-foreground">Learning, with Cleo</h2>
       <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
