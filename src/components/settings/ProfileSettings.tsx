@@ -187,6 +187,8 @@ const ProfileSettings: React.FC = () => {
               </>
             )}
           </Button>
+          </div>
+
         </form>
       </div>
     </div>
