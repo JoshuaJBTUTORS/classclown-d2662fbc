@@ -39,16 +39,6 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
         <p className="max-w-xl text-sm text-muted-foreground">
           Every lesson, trial and tutor slot in one soft, scrollable view.
         </p>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {LEGEND.map((item) => (
-            <span
-              key={item.label}
-              className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-medium', item.tone)}
-            >
-              {item.label}
-            </span>
-          ))}
-        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
