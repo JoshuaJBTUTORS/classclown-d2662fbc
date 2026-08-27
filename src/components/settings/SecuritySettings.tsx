@@ -238,6 +238,7 @@ const SecuritySettings: React.FC = () => {
               </div>
             )}
           </div>
+          </div>
 
           {error && (
             <Alert variant="destructive" className="rounded-2xl">
@@ -245,30 +246,33 @@ const SecuritySettings: React.FC = () => {
             </Alert>
           )}
 
-          <Button 
-            type="submit" 
-            disabled={loading || !isPasswordValid || formData.newPassword !== formData.confirmPassword}
-            className={cn(
-              'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background',
-              'shadow-[var(--shadow-soft)] transition-all duration-300',
-              'hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[var(--shadow-soft-lg)]'
-            )}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating Password...
-              </>
-            ) : (
-              <>
-                <Shield className="mr-2 h-4 w-4" />
-                Update Password
-              </>
-            )}
-          </Button>
+          <div className="flex justify-end">
+            <Button 
+              type="submit" 
+              disabled={loading || !isPasswordValid || formData.newPassword !== formData.confirmPassword}
+              className={cn(
+                'h-12 w-full rounded-full bg-foreground font-heading text-sm font-bold text-background sm:w-auto sm:px-8',
+                'shadow-[var(--shadow-soft)] transition-all duration-300',
+                'hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[var(--shadow-soft-lg)]'
+              )}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating Password...
+                </>
+              ) : (
+                <>
+                  <Shield className="mr-2 h-4 w-4" />
+                  Update Password
+                </>
+              )}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
+
 
   );
 };
