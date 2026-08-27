@@ -39,7 +39,7 @@ const Settings = () => {
               <h1 className="mt-1 font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
                 Account Settings
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
                 Manage your profile icon, personal information and security preferences.
               </p>
             </header>

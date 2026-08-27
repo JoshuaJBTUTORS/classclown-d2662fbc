@@ -110,7 +110,7 @@ const SecuritySettings: React.FC = () => {
       <div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 items-start gap-x-6 gap-y-5 lg:grid-cols-3">
+          <div className="grid grid-cols-1 items-start gap-x-6 gap-y-5 lg:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
           {/* Current Password */}
 
           <div className="space-y-2">
