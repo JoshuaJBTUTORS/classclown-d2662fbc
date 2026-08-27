@@ -26,7 +26,7 @@ const Settings = () => {
   const isAdmin = userRole === 'admin' || userRole === 'owner';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen min-w-0 w-full flex-1 bg-background">
       <MobileMenuButton toggleSidebar={toggleSidebar} />
       <div className="flex w-full overflow-x-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
