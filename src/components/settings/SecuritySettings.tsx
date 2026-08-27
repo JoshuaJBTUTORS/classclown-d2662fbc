@@ -106,19 +106,9 @@ const SecuritySettings: React.FC = () => {
   };
 
   return (
-    <Card className="rounded-[1.5rem] border border-border/60 shadow-[var(--shadow-soft)]">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pastel-blush text-pastel-blush-foreground">
-            <Shield className="h-4 w-4" />
-          </span>
-          Change Password
-        </CardTitle>
-        <CardDescription>
-          Update your password to keep your account secure
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Current Password */}
           <div className="space-y-2">

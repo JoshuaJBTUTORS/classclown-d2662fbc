@@ -183,8 +183,9 @@ const ProfileSettings: React.FC = () => {
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
+
   );
 };
 
