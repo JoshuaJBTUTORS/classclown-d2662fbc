@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -156,7 +156,7 @@ const CreateAdmin = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-col flex-1 lg:pl-64">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <PageTitle 
             title="Create Admin Account" 

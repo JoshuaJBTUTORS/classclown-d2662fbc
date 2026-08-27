@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -53,7 +53,7 @@ const Reports: React.FC = () => {
       <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 w-full">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-8">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -72,7 +72,7 @@ const Reports: React.FC = () => {
     <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-col flex-1 w-full">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <PageTitle 
             title="Reports" 

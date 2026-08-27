@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import SubjectDetailDialog from '@/components/lessonPlans/SubjectDetailDialog';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import { LessonPlansHero } from '@/components/lessonPlans/LessonPlansHero';
 import { SubjectCard } from '@/components/lessonPlans/SubjectCard';
@@ -139,7 +139,7 @@ const LessonPlans: React.FC = () => {
       <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 w-full">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <div className="text-center">
               <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
@@ -156,7 +156,7 @@ const LessonPlans: React.FC = () => {
       <>
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 w-full">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1">
             <LessonPlansLoadingSkeleton />
           </main>
@@ -169,7 +169,7 @@ const LessonPlans: React.FC = () => {
     <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-col flex-1 w-full min-h-screen bg-background">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         
         <main className="flex-1">
           {/* Hero Section */}

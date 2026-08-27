@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Shield, Settings as SettingsIcon, Server } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import ProfileSettings from '@/components/settings/ProfileSettings';
@@ -20,7 +20,7 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar toggleSidebar={toggleSidebar} />
+      <MobileMenuButton toggleSidebar={toggleSidebar} />
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1">

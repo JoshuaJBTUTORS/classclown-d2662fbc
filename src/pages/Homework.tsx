@@ -5,7 +5,7 @@ import LockedFeature from '@/components/common/LockedFeature';
 import { useTrialBooking } from '@/hooks/useTrialBooking';
 import { BookOpen } from 'lucide-react';
 
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import HomeworkManager from '@/components/homework/HomeworkManager';
@@ -152,7 +152,7 @@ const Homework: React.FC = () => {
     <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-col flex-1 w-full">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <PageTitle 
             title="Homework" 

@@ -36,6 +36,8 @@ import {
 import { cn } from '@/lib/utils';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import classclownWordmark from '@/assets/classclown-wordmark.png.asset.json';
+import SidebarProfile from '@/components/navigation/SidebarProfile';
+
 
 
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
@@ -433,7 +435,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             })}
           </div>
 
+          <div className="mt-auto border-t border-border/40 pt-3 px-1">
+            <SidebarProfile />
+          </div>
+
         </div>
+
       </aside>
 
     </>

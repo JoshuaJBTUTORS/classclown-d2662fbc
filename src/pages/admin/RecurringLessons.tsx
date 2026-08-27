@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -135,7 +135,7 @@ const RecurringLessons: React.FC = () => {
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-col flex-1 w-full">
-        <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 p-4 md:p-8">
           <PageTitle
             title="Recurring Lessons"

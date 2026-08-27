@@ -15,7 +15,7 @@ import { Calendar, Clock, Plus, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { convertUKToUTC, formatInUKTime, createUKDateTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 
 const TimeOff = () => {
   const { userRole, user } = useAuth();
@@ -171,7 +171,7 @@ const TimeOff = () => {
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-col flex-1 lg:pl-64">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <div className="text-center py-8">
               <h1 className="text-2xl font-bold text-gray-900">Access Denied</h1>
@@ -187,7 +187,7 @@ const TimeOff = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex-1">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="container mx-auto space-y-6">
             <div className="flex justify-between items-center">

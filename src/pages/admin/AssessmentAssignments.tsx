@@ -65,7 +65,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import CreateAssessmentDialog from '@/components/learningHub/CreateAssessmentDialog';
 import { AssessmentPreviewDialog } from '@/components/assessments/AssessmentPreviewDialog';
 import CreateAIAssessmentDialog from '@/components/learningHub/CreateAIAssessmentDialog';
@@ -601,7 +601,7 @@ const AssessmentAssignments = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar toggleSidebar={() => setSidebarOpen(true)} />
+        <MobileMenuButton toggleSidebar={() => setSidebarOpen(true)} />
         
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-6xl mx-auto">

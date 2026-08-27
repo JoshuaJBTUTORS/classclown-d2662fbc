@@ -14,7 +14,7 @@ import { Check, X, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatInUKTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import { TimeOffFilters } from '@/components/timeOff/TimeOffFilters';
 import { ConflictDetectionDialog } from '@/components/timeOff/ConflictDetectionDialog';
 import { checkTimeOffConflicts, TimeOffConflict } from '@/services/timeOffConflictService';
@@ -256,7 +256,7 @@ const TimeOffRequests = () => {
           "lg:ml-0",
           sidebarOpen && "lg:ml-64"
         )}>
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 p-4 md:p-6">
             <div className="text-center py-8">
               <h1 className="text-2xl font-bold text-gray-900">Access Denied</h1>
@@ -276,7 +276,7 @@ const TimeOffRequests = () => {
         "lg:ml-0",
         sidebarOpen && "lg:ml-64"
       )}>
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="container mx-auto space-y-6">
             <div>

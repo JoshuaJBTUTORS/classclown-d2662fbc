@@ -6,7 +6,7 @@ import LessonSummaryCard from '@/components/learningHub/LessonSummaryCard';
 import { LessonSummariesHero } from '@/components/lessonPlans/LessonSummariesHero';
 import { parseISO, subDays } from 'date-fns';
 import Sidebar from '@/components/navigation/Sidebar';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import { toast } from 'sonner';
 
 interface Lesson {
@@ -344,7 +344,7 @@ const LessonSummaries: React.FC = () => {
       <div className="min-h-screen bg-background flex">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <Navbar toggleSidebar={toggleSidebar} />
+          <MobileMenuButton toggleSidebar={toggleSidebar} />
           <main className="flex-1 overflow-auto">
             <div className="w-full space-y-8 p-4 md:p-6">
               <LessonSummariesHero
@@ -387,7 +387,7 @@ const LessonSummaries: React.FC = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-auto">
           <div className="flex min-h-full w-full flex-col gap-8 p-4 pb-12 md:p-6 md:pb-12">
             <LessonSummariesHero

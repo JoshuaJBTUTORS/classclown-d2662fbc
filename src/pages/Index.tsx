@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/navigation/Navbar';
+import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import PageTitle from '@/components/ui/PageTitle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,7 +44,7 @@ const Index = () => {
         "lg:ml-0",
         sidebarOpen && "lg:ml-64"
       )}>
-        <Navbar toggleSidebar={toggleSidebar} />
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div>
             <PageTitle 
