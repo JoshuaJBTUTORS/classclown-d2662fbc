@@ -83,7 +83,7 @@ export const useParticipantUrl = (lessonId: string) => {
           const { data: tutorData, error: tutorError } = await supabase
             .from('tutors')
             .select('id, first_name, last_name')
-            .eq('email', user.email)
+            .ilike('email', user.email)
             .single();
 
           if ((tutorError || !tutorData) && userRole === 'tutor') {

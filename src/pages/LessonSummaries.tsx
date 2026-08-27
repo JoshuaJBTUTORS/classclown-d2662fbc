@@ -85,7 +85,7 @@ const LessonSummaries: React.FC = () => {
         const { data: tutorData, error: tutorError } = await supabase
           .from('tutors')
           .select('id')
-          .eq('email', user?.email)
+          .ilike('email', user?.email)
           .maybeSingle();
 
         if (tutorError) {

@@ -37,7 +37,7 @@ export default function Earnings() {
         const { data: tutor } = await supabase
           .from('tutors')
           .select('id')
-          .eq('email', user.email)
+          .ilike('email', user.email)
           .single();
 
         if (tutor) {
