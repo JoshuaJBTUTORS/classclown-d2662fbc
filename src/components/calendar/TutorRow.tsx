@@ -61,7 +61,7 @@ const TutorRow: React.FC<TutorRowProps> = ({
     return (
       <div
         key={event.id}
-        className={`fc-event w-full mb-1 p-2 h-auto rounded-md cursor-pointer transition-all duration-200 border ${subjectClass} hover:scale-105 hover:shadow-sm`}
+        className={`fc-event w-full mb-1 p-2 h-auto rounded-2xl cursor-pointer transition-all duration-200 border ${subjectClass} hover:scale-105 hover:shadow-sm`}
         onClick={() => onEventClick?.(event)}
       >
         <div className="flex flex-col w-full min-w-0">
@@ -92,11 +92,11 @@ const TutorRow: React.FC<TutorRowProps> = ({
   };
 
   return (
-    <div className="flex border-b hover:bg-muted/30 transition-colors">
+    <div className="flex border-b border-border/50 hover:bg-muted/30 transition-colors">
       {/* Tutor info column */}
       <div className="w-48 flex-shrink-0 p-3 border-r bg-background">
         <div className="flex flex-col">
-          <h4 className="font-medium text-sm truncate">
+          <h4 className="font-heading font-semibold text-sm truncate">
             {tutor.first_name} {tutor.last_name}
           </h4>
           <p className="text-xs text-muted-foreground truncate mt-1">
@@ -123,12 +123,12 @@ const TutorRow: React.FC<TutorRowProps> = ({
               className={`${viewType === 'teacherDay' ? 'w-24' : 'w-32'} p-2 border-r last:border-r-0 min-h-20 flex-shrink-0`}
             >
               {slotEvents.length === 0 ? (
-                <div className={`h-full flex items-center justify-center rounded-md transition-colors ${
+                <div className={`h-full flex items-center justify-center rounded-2xl transition-colors ${
                   slotStatus === 'time_off'
-                    ? 'bg-red-100 text-red-800 border border-red-200'
+                    ? 'bg-pastel-blush text-pastel-blush-foreground'
                     : slotStatus === 'available'
-                      ? 'bg-green-100 text-green-800 border border-green-200'
-                      : 'text-muted-foreground'
+                      ? 'bg-pastel-mint text-pastel-mint-foreground'
+                      : 'bg-muted/40 text-muted-foreground'
                 }`}>
                   <span className="text-xs font-medium">
                     {slotStatus === 'time_off' ? 'Time off' : slotStatus === 'available' ? 'Available' : 'Unavailable'}

@@ -22,7 +22,7 @@ const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, sh
   
   return (
     <TooltipProvider>
-      <div className="flex items-center space-x-1 border rounded-md">
+      <div className="flex items-center gap-1 rounded-full bg-card p-1 shadow-[var(--shadow-soft)]">
         {isTeacherContext ? (
           // Teacher view options only
           <>
@@ -32,7 +32,7 @@ const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, sh
                   pressed={currentView === 'teacherWeek'}
                   onPressedChange={() => onViewChange('teacherWeek')}
                   size="sm"
-                  className="data-[state=on]:bg-muted"
+                  className="rounded-full px-4 h-10 data-[state=on]:bg-foreground data-[state=on]:text-background"
                 >
                   <Users className="h-4 w-4 mr-1" />
                   <Calendar className="h-3 w-3" />
@@ -49,7 +49,7 @@ const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, sh
                   pressed={currentView === 'teacherDay'}
                   onPressedChange={() => onViewChange('teacherDay')}
                   size="sm"
-                  className="data-[state=on]:bg-muted"
+                  className="rounded-full px-4 h-10 data-[state=on]:bg-foreground data-[state=on]:text-background"
                 >
                   <Users className="h-4 w-4 mr-1" />
                   <Clock className="h-3 w-3" />
@@ -69,7 +69,7 @@ const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, sh
                   pressed={currentView === 'dayGridMonth'}
                   onPressedChange={() => onViewChange('dayGridMonth')}
                   size="sm"
-                  className="data-[state=on]:bg-muted"
+                  className="rounded-full px-4 h-10 data-[state=on]:bg-foreground data-[state=on]:text-background"
                 >
                   <CalendarDays className="h-4 w-4" />
                 </Toggle>
@@ -85,7 +85,7 @@ const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, sh
                   pressed={currentView === 'timeGridWeek'}
                   onPressedChange={() => onViewChange('timeGridWeek')}
                   size="sm"
-                  className="data-[state=on]:bg-muted"
+                  className="rounded-full px-4 h-10 data-[state=on]:bg-foreground data-[state=on]:text-background"
                 >
                   <Calendar className="h-4 w-4" />
                 </Toggle>
@@ -101,7 +101,7 @@ const ViewOptions: React.FC<ViewOptionsProps> = ({ currentView, onViewChange, sh
                   pressed={currentView === 'timeGridDay'}
                   onPressedChange={() => onViewChange('timeGridDay')}
                   size="sm"
-                  className="data-[state=on]:bg-muted"
+                  className="rounded-full px-4 h-10 data-[state=on]:bg-foreground data-[state=on]:text-background"
                 >
                   <Clock className="h-4 w-4" />
                 </Toggle>

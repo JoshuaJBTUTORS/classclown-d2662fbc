@@ -19,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
 import { ReferFriendDialog } from '@/components/calendar/ReferFriendDialog';
+import CalendarHero from '@/components/calendar/CalendarHero';
+
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
@@ -219,103 +221,39 @@ const Calendar = () => {
       
       <div className="flex flex-col flex-1 w-full">
         <Navbar toggleSidebar={toggleSidebar} />
-        <main className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
-          {/* Header with title and controls */}
-          <div className="flex-shrink-0 px-4 md:px-6 py-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center mb-4 md:mb-0">
-                <PageTitle title="Calendar" className="mb-0" />
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="ml-2">
-                        <Info className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="p-2 max-w-xs">
-                        <p className="mb-2 text-sm font-medium">Calendar Legend:</p>
-                        <div className="flex items-center mb-1">
-                          <div className="w-3 h-3 bg-blue-500 rounded-sm mr-2"></div>
-                          <span className="text-xs">Regular lessons</span>
-                        </div>
-                        <div className="flex items-center mb-1">
-                          <div className="w-3 h-3 border-l-2 border-purple-600 pl-1 mr-2">🔄</div>
-                          <span className="text-xs">Recurring lessons</span>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 items-center">
-                {/* Filter button - only show for admins and owners */}
-                {canUseFilters && (
-                  <Button 
-                    onClick={toggleFilters}
-                    variant={filtersOpen ? "default" : "outline"}
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                    size="sm"
-                  >
-                    <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">{filtersOpen ? 'Hide Filters' : 'Show Filters'}</span>
-                    <span className="sm:hidden">Filter</span>
-                  </Button>
-                )}
-
-                {/* Topic Request button - only show for students and parents */}
-                {!canUseFilters && (isStudent || isParent) && (
-                  <>
-                    <Button 
-                      onClick={() => setShowTopicRequestDialog(true)}
-                      variant="default"
-                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                      size="sm"
-                    >
-                      <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">Request Topic</span>
-                      <span className="sm:hidden">Request</span>  
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => setShowReferFriendDialog(true)}
-                      variant="default"
-                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                      size="sm"
-                    >
-                      <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">Refer Friend £100</span>
-                      <span className="sm:hidden">Refer £100</span>  
-                    </Button>
-                  </>
-                )}
-
-                {/* Schedule lesson button for admins and owners */}
-                {canScheduleLessons && (
-                  <Button 
-                    onClick={openAddLessonDialog}
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                    size="sm"
-                  >
-                    <CalendarPlus className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Schedule Lesson</span>
-                    <span className="sm:hidden">Schedule</span>
-                  </Button>
-                )}
-              </div>
-            </div>
+        <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-background">
+          {/* Hero header */}
+          <div className="flex-shrink-0 px-4 md:px-8 pt-6 pb-4">
+            <CalendarHero
+              canUseFilters={canUseFilters}
+              filtersOpen={filtersOpen}
+              onToggleFilters={toggleFilters}
+              canScheduleLessons={canScheduleLessons}
+              onSchedule={openAddLessonDialog}
+              showFamilyActions={!canUseFilters && (isStudent || isParent)}
+              onRequestTopic={() => setShowTopicRequestDialog(true)}
+              onReferFriend={() => setShowReferFriendDialog(true)}
+            />
           </div>
           
           {/* Tabbed Calendar Interface */}
-          <div className="flex-1 overflow-hidden px-2 sm:px-4 pb-4">
+          <div className="flex-1 overflow-hidden px-4 md:px-8 pb-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <TabsList>
-                  <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <TabsList className="h-12 rounded-full bg-card p-1 shadow-[var(--shadow-soft)]">
+                  <TabsTrigger
+                    value="calendar"
+                    className="rounded-full px-5 h-10 text-sm font-medium data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-none"
+                  >
+                    Calendar view
+                  </TabsTrigger>
                   {canUseTeacherView && (
-                    <TabsTrigger value="teacher">Teacher View</TabsTrigger>
+                    <TabsTrigger
+                      value="teacher"
+                      className="rounded-full px-5 h-10 text-sm font-medium data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-none"
+                    >
+                      Teacher view
+                    </TabsTrigger>
                   )}
                 </TabsList>
                 
@@ -326,6 +264,7 @@ const Calendar = () => {
                   showTeacherView={false}
                 />
               </div>
+
 
               <TabsContent value="calendar" className="flex-1 mt-0 min-w-0">
                 <CalendarDisplay 

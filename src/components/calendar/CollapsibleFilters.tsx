@@ -53,18 +53,18 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
         {isOpen && (
           <div 
             className={cn(
-              "fixed top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 shadow-lg z-40 transition-all duration-300 ease-in-out w-80",
+              "fixed top-16 h-[calc(100vh-4rem)] bg-card border-r border-border/60 shadow-[var(--shadow-soft)] z-40 transition-all duration-300 ease-in-out w-80",
               leftPosition
             )}
           >
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-3 border-b border-gray-200">
-                <span className="text-sm font-medium text-gray-700">Filters</span>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
+                <span className="font-heading text-base font-semibold text-foreground">Filters</span>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={onToggle}
-                  className="h-8 w-8"
+                  className="h-9 w-9 rounded-full"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -93,9 +93,9 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
       {/* Mobile Sheet */}
       <div className="lg:hidden">
         <Sheet open={isOpen} onOpenChange={onToggle}>
-          <SheetContent side="left" className="w-80">
+          <SheetContent side="left" className="w-80 rounded-r-[var(--radius-soft)]">
             <SheetHeader>
-              <SheetTitle>Calendar Filters</SheetTitle>
+              <SheetTitle className="font-heading text-xl">Calendar filters</SheetTitle>
             </SheetHeader>
             <div className="mt-6">
           <CalendarFilters

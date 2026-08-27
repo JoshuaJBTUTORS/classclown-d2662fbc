@@ -79,13 +79,13 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
               start: startTime,
               end: endTime,
               display: 'background',
-              backgroundColor: '#dcfce7', // green-100
-              borderColor: '#bbf7d0', // green-200
+              classNames: ['availability-bg'],
               extendedProps: {
                 type: 'availability',
                 tutorId: tutorId
               }
             });
+
           }
         }
       });
@@ -161,12 +161,16 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 relative calendar-container">
+      <div className="flex-1 relative calendar-container calendar-soft">
         {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-            <div className="text-sm text-muted-foreground">Loading...</div>
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+            <div className="rounded-[var(--radius-soft)] border-2 border-dashed border-pastel-sky bg-pastel-sky/40 px-8 py-6 text-center">
+              <p className="font-heading text-base font-semibold text-pastel-sky-foreground">Loading your week…</p>
+              <p className="mt-1 text-xs text-muted-foreground">Fetching lessons and tutor availability</p>
+            </div>
           </div>
         ) : (
+
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
