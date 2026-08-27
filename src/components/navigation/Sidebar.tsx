@@ -75,22 +75,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           href: '/calendar',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
-        {          icon: DoodleMortarboard,
+        {
+          icon: DoodleMortarboard,
           label: 'Cleo Lesson Plans',
           href: '/lesson-plans',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
         },
-        {          icon: DoodleNotebook,
+        {
+          icon: DoodleNotebook,
           label: 'Homework',
           href: '/homework',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleClipboardCheck,
+        {
+          icon: DoodleClipboardCheck,
           label: 'Cleo Assessment Center',
           href: '/assessment-center',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
-        {          icon: DoodleVideo,
+        {
+          icon: DoodleVideo,
           label: 'Cleo Lesson Summaries',
           href: '/lesson-summaries',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
@@ -100,37 +104,44 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'People Management',
       items: [
-        {          icon: DoodlePerson,
+        {
+          icon: DoodlePerson,
           label: isParent ? 'My Children' : 'Clients',
           href: '/students',
           roles: ['admin', 'owner', 'parent'],
         },
-        {          icon: DoodleMortarboard,
+        {
+          icon: DoodleMortarboard,
           label: 'Students',
           href: '/students-list',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodlePersonCheck,
+        {
+          icon: DoodlePersonCheck,
           label: 'Tutors',
           href: '/tutors',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodlePersonPlus,
+        {
+          icon: DoodlePersonPlus,
           label: 'Staff',
           href: '/staff',
           roles: ['owner'],
         },
-        {          icon: DoodleClipboard,
+        {
+          icon: DoodleClipboard,
           label: 'Time Off Requests',
           href: '/time-off-requests',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleSpeech,
+        {
+          icon: DoodleSpeech,
           label: 'Topic Requests',
           href: '/topic-requests',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleClock,
+        {
+          icon: DoodleClock,
           label: 'Time Off',
           href: '/time-off',
           roles: ['tutor'],
@@ -140,23 +151,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Business Development',
       items: [
-        {          icon: DoodleVideo,
+        {
+          icon: DoodleVideo,
           label: 'Trial Bookings',
           href: '/trial-bookings',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleReferral,
+        {
+          icon: DoodleReferral,
           label: 'Referrals',
           href: '/referrals',
           roles: ['admin', 'owner'],
         },
 
-        {          icon: DoodleDocSign,
+        {
+          icon: DoodleDocSign,
           label: 'Lesson Proposals',
           href: '/admin/proposals',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleFilm,
+        {
+          icon: DoodleFilm,
           label: 'Content Creation',
           href: '/tutor-content',
           roles: ['tutor'],
@@ -166,53 +181,63 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Analytics & Insights',
       items: [
-        {          icon: DoodleDashboard,
+        {
+          icon: DoodleDashboard,
           label: 'Admin Dashboard',
           href: '/admin-dashboard',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleTarget,
+        {
+          icon: DoodleTarget,
           label: 'Goals',
           href: '/goals',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleSignal,
+        {
+          icon: DoodleSignal,
           label: 'Live Sessions',
           href: '/admin/live-sessions',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleBook,
+        {
+          icon: DoodleBook,
           label: 'HeyCleo Data',
           href: '/admin/heycleo-data',
           roles: ['admin', 'owner'],
         },
 
-        {          icon: DoodleCoin,
+        {
+          icon: DoodleCoin,
           label: 'Earnings',
           href: '/earnings',
           roles: ['tutor'],
         },
-        {          icon: DoodleTrend,
+        {
+          icon: DoodleTrend,
           label: 'Admin Earnings',
           href: '/admin-earnings',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleTrend,
+        {
+          icon: DoodleTrend,
           label: 'Progress',
           href: '/progress',
           roles: ['admin', 'owner', 'parent', 'student'],
         },
-        {          icon: DoodleBook,
+        {
+          icon: DoodleBook,
           label: 'School Progress',
           href: '/school-progress',
           roles: ['admin', 'owner', 'parent', 'student'],
         },
-        {          icon: DoodleBarChart,
+        {
+          icon: DoodleBarChart,
           label: 'Reports',
           href: '/reports',
           roles: ['admin', 'owner'],
         },
-        {          icon: DoodleClipboardCheck,
+        {
+          icon: DoodleClipboardCheck,
           label: 'Assessment Assignments',
           href: '/assessment-assignments',
           roles: ['admin', 'owner'],
