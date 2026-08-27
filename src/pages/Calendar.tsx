@@ -19,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
 import { ReferFriendDialog } from '@/components/calendar/ReferFriendDialog';
+import CalendarHero from '@/components/calendar/CalendarHero';
+
 
 const Calendar = () => {
   const { isLearningHubOnly, userRole, user } = useAuth();
