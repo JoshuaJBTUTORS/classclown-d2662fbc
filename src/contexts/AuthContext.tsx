@@ -86,7 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [hasCleoHubAccess, setHasCleoHubAccess] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  // Tracks which user id we've already hydrated, so repeated SIGNED_IN events
+  // (fired when the tab regains focus) don't re-trigger a full reload.
+  const hydratedUserIdRef = useRef<string | null>(null);
   const navigate = useNavigate();
+
 
   // Fetch user profile, role, and parent profile
   const fetchUserData = async (userId: string) => {
