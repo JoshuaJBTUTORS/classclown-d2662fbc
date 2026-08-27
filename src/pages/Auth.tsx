@@ -13,7 +13,7 @@ import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
 import { DomainSEO } from '@/components/seo/DomainSEO';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
-import cleoMascot from '@/assets/cleo-logo.png';
+import cleoMascot from '@/assets/avatars/cleo-1.png';
 
 /** Soft pastel blob backdrop shared by the page and the showcase panel. */
 const PastelBlobs: React.FC<{ className?: string }> = ({ className }) => (
@@ -205,13 +205,17 @@ const Auth = () => {
               <PastelBlobs />
               <ScribbleStroke className="pointer-events-none absolute bottom-8 left-8 h-32 w-56 text-pastel-blush-foreground opacity-20" />
               <div className="relative flex w-full flex-col items-center justify-center gap-6 p-10 text-center">
-                <motion.img
-                  src={cleoMascot}
-                  alt="Cleo, the Class Clown AI tutor mascot"
-                  className="w-64 max-w-full drop-shadow-2xl"
+                <motion.div
+                  className="h-56 w-56 overflow-hidden rounded-full shadow-[0_25px_60px_-25px_hsl(var(--foreground)/0.45)]"
                   animate={{ y: [0, -14, 0] }}
                   transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                />
+                >
+                  <img
+                    src={cleoMascot}
+                    alt="Cleo, the Class Clown AI tutor mascot"
+                    className="h-full w-full scale-[1.35] object-cover"
+                  />
+                </motion.div>
                 <div>
                   <h2 className="font-heading text-2xl font-bold text-foreground">Learning, with Cleo</h2>
                   <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
