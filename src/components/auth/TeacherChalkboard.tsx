@@ -75,17 +75,18 @@ export const TeacherChalkboard: React.FC = () => (
           <Chalk d="M32 52 h34 M40 44 v20 M78 44 l18 20 M96 44 l-18 20 M112 52 h26" len={140} delay={0.1} />
           {/* fraction */}
           <Chalk d="M34 92 h44 M40 82 h30 M46 104 h22" len={100} delay={0.6} />
-          {/* boxed formula, top right */}
-          <Chalk d="M262 40 h108 v40 h-108 z" len={296} delay={1.0} width={1.6} />
-          <Chalk d="M276 66 h20 M304 52 v22 M320 52 l14 22 M340 52 h18" len={90} delay={1.4} />
+          {/* boxed formula */}
+          <Chalk d="M130 40 h100 v38 h-100 z" len={276} delay={1.0} width={1.6} />
+          <Chalk d="M144 64 h18 M172 50 v22 M188 50 l14 22 M208 50 h14" len={86} delay={1.4} />
           {/* sector / angle diagram, bottom left */}
-          <Chalk d="M40 258 l52 -62 M40 258 h74 M40 258 l60 -20 M40 258 l30 -50" len={260} delay={1.8} />
-          <Chalk d="M64 254 a24 24 0 0 1 6 -18" len={40} delay={2.4} width={1.4} />
-          {/* sine wave with axis, bottom right */}
-          <Chalk d="M212 268 h150 M232 208 v70" len={220} delay={2.7} width={1.4} />
-          <Chalk d="M216 240 q18 -40 36 0 q18 40 36 0 q18 -40 36 0 q18 40 36 0" len={330} delay={3.1} />
+          <Chalk d="M34 262 l48 -58 M34 262 h70 M34 262 l56 -18 M34 262 l28 -48" len={250} delay={1.8} />
+          <Chalk d="M58 258 a24 24 0 0 1 6 -18" len={40} delay={2.4} width={1.4} />
+          {/* sine wave with axis */}
+          <Chalk d="M124 262 h108 M138 204 v66" len={175} delay={2.7} width={1.4} />
+          <Chalk d="M126 236 q16 -34 32 0 q16 34 32 0 q16 -34 32 0" len={250} delay={3.1} />
           {/* small notes */}
-          <Chalk d="M150 118 h40 M150 130 h64 M150 142 h28" len={132} delay={3.6} width={1.4} />
+          <Chalk d="M34 138 h62 M34 152 h84 M34 166 h40" len={186} delay={3.6} width={1.4} />
+
         </g>
       </svg>
 
