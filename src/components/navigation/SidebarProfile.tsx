@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronsUpDown, HelpCircle, LogOut, Settings, User } from 'lucide-react';
+import { ChevronsUpDown, LogOut, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,14 +106,6 @@ const SidebarProfile: React.FC = () => {
         <DropdownMenuItem className={menuItemClass} onClick={() => navigate('/settings')}>
           <User className="h-4 w-4" />
           Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem className={menuItemClass} onClick={() => navigate('/settings')}>
-          <Settings className="h-4 w-4" />
-          Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem className={menuItemClass}>
-          <HelpCircle className="h-4 w-4" />
-          Help
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-border/50" />
         <DropdownMenuItem
