@@ -2,36 +2,8 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Calendar,
-  Users,
-  UserCheck,
-  GraduationCap,
-  FileText,
-  TrendingUp,
-  BarChart3,
-  Clock,
-  ClipboardList,
-  Video,
   X,
-  Building2,
-  MessageSquare,
   ChevronDown,
-  ChevronRight,
-  BookOpen,
-  UserPlus,
-  DollarSign,
-  LayoutDashboard,
-  Bot,
-  MessageCircle,
-  Film,
-  FileSignature,
-  BookMarked,
-  Activity,
-  Hand,
-  ClipboardCheck,
-  RefreshCw,
-  Target,
-  Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
@@ -41,6 +13,11 @@ import SidebarProfile from '@/components/navigation/SidebarProfile';
 
 
 import { heyCleoRedirectService } from '@/services/heyCleoRedirectService';
+
+/** Simple rounded dot used as the sidebar menu icon for all items except HeyCleo. */
+const Dot: React.FC<{ className?: string }> = ({ className }) => (
+  <span className={cn('block h-1.5 w-1.5 rounded-full bg-current', className)} />
+);
 
 const GROUP_TONES = [
   { bg: 'bg-pastel-mint', text: 'text-pastel-mint-foreground', soft: 'hover:bg-pastel-mint/50' },
@@ -75,31 +52,31 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     onClick: () => heyCleoRedirectService.redirectToHeyCleo(),
   },
         {
-          icon: Calendar,
+          icon: Dot,
           label: 'Cleo Calendar',
           href: '/calendar',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
         {
-          icon: GraduationCap,
+          icon: Dot,
           label: 'Cleo Lesson Plans',
           href: '/lesson-plans',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student', 'learning_hub_only'],
         },
         {
-          icon: FileText,
+          icon: Dot,
           label: 'Homework',
           href: '/homework',
           roles: ['admin', 'owner'],
         },
         {
-          icon: ClipboardCheck,
+          icon: Dot,
           label: 'Cleo Assessment Center',
           href: '/assessment-center',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
         },
         {
-          icon: Video,
+          icon: Dot,
           label: 'Cleo Lesson Summaries',
           href: '/lesson-summaries',
           roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
@@ -110,43 +87,43 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'People Management',
       items: [
         {
-          icon: Users,
+          icon: Dot,
           label: isParent ? 'My Children' : 'Clients',
           href: '/students',
           roles: ['admin', 'owner', 'parent'],
         },
         {
-          icon: GraduationCap,
+          icon: Dot,
           label: 'Students',
           href: '/students-list',
           roles: ['admin', 'owner'],
         },
         {
-          icon: UserCheck,
+          icon: Dot,
           label: 'Tutors',
           href: '/tutors',
           roles: ['admin', 'owner'],
         },
         {
-          icon: UserPlus,
+          icon: Dot,
           label: 'Staff',
           href: '/staff',
           roles: ['owner'],
         },
         {
-          icon: ClipboardList,
+          icon: Dot,
           label: 'Time Off Requests',
           href: '/time-off-requests',
           roles: ['admin', 'owner'],
         },
         {
-          icon: MessageSquare,
+          icon: Dot,
           label: 'Topic Requests',
           href: '/topic-requests',
           roles: ['admin', 'owner'],
         },
         {
-          icon: Clock,
+          icon: Dot,
           label: 'Time Off',
           href: '/time-off',
           roles: ['tutor'],
@@ -157,26 +134,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Business Development',
       items: [
         {
-          icon: Video,
+          icon: Dot,
           label: 'Trial Bookings',
           href: '/trial-bookings',
           roles: ['admin', 'owner'],
         },
         {
-          icon: Users,
+          icon: Dot,
           label: 'Referrals',
           href: '/referrals',
           roles: ['admin', 'owner'],
         },
 
         {
-          icon: FileSignature,
+          icon: Dot,
           label: 'Lesson Proposals',
           href: '/admin/proposals',
           roles: ['admin', 'owner'],
         },
         {
-          icon: Film,
+          icon: Dot,
           label: 'Content Creation',
           href: '/tutor-content',
           roles: ['tutor'],
@@ -187,62 +164,62 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Analytics & Insights',
       items: [
         {
-          icon: LayoutDashboard,
+          icon: Dot,
           label: 'Admin Dashboard',
           href: '/admin-dashboard',
           roles: ['admin', 'owner'],
         },
         {
-          icon: Target,
+          icon: Dot,
           label: 'Goals',
           href: '/goals',
           roles: ['admin', 'owner'],
         },
         {
-          icon: Radio,
+          icon: Dot,
           label: 'Live Sessions',
           href: '/admin/live-sessions',
           roles: ['admin', 'owner'],
         },
         {
-          icon: BookOpen,
+          icon: Dot,
           label: 'HeyCleo Data',
           href: '/admin/heycleo-data',
           roles: ['admin', 'owner'],
         },
 
         {
-          icon: DollarSign,
+          icon: Dot,
           label: 'Earnings',
           href: '/earnings',
           roles: ['tutor'],
         },
         {
-          icon: TrendingUp,
+          icon: Dot,
           label: 'Admin Earnings',
           href: '/admin-earnings',
           roles: ['admin', 'owner'],
         },
         {
-          icon: TrendingUp,
+          icon: Dot,
           label: 'Progress',
           href: '/progress',
           roles: ['admin', 'owner', 'parent', 'student'],
         },
         {
-          icon: BookOpen,
+          icon: Dot,
           label: 'School Progress',
           href: '/school-progress',
           roles: ['admin', 'owner', 'parent', 'student'],
         },
         {
-          icon: BarChart3,
+          icon: Dot,
           label: 'Reports',
           href: '/reports',
           roles: ['admin', 'owner'],
         },
         {
-          icon: ClipboardList,
+          icon: Dot,
           label: 'Assessment Assignments',
           href: '/assessment-assignments',
           roles: ['admin', 'owner'],
