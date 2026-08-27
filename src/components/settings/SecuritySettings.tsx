@@ -110,7 +110,9 @@ const SecuritySettings: React.FC = () => {
       <div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 items-start gap-x-6 gap-y-5 lg:grid-cols-3">
           {/* Current Password */}
+
           <div className="space-y-2">
             <Label htmlFor="currentPassword" className="text-sm font-medium text-muted-foreground">Current Password</Label>
             <div className="relative">
