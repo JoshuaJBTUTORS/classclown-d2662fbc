@@ -61,9 +61,21 @@ const SidebarProfile: React.FC = () => {
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-left'
           )}
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background/80 font-heading text-xs font-bold text-foreground">
-            {getUserInitials()}
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-background/80 font-heading text-xs font-bold text-foreground">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt="Profile icon"
+                loading="lazy"
+                width={512}
+                height={512}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              getUserInitials()
+            )}
           </span>
+
           <span className="min-w-0 flex-1">
             <span className="block truncate font-heading text-sm font-semibold text-foreground">
               {getDisplayName()}
