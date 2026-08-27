@@ -186,7 +186,7 @@ export const useCalendarData = ({
             const { data: studentData, error: studentError } = await supabase
               .from('students')
               .select('id, user_id, first_name, last_name, email')
-              .eq('email', userEmail)
+              .ilike('email', userEmail)
               .maybeSingle();
 
             if (studentError) {

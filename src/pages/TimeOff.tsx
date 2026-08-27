@@ -87,7 +87,7 @@ const TimeOff = () => {
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutors')
         .select('id')
-        .eq('email', user.email)
+        .ilike('email', user.email)
         .single();
 
       if (tutorError) throw tutorError;
