@@ -232,6 +232,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && newSession?.user) {
+          // Supabase re-emits SIGNED_IN when the tab regains focus / the token
+          // refreshes. Only do the heavy hydration when the user actually changed,
+          // otherwise we flip into a loading state and remount the whole app.
+          if (hydratedUserIdRef.current === newSession.user.id) {
+            return;
+          }
+          hydratedUserIdRef.current = newSession.user.id;
           setLoading(true);
           setTimeout(() => {
             void fetchUserData(newSession.user.id).finally(() => {
@@ -243,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
+          hydratedUserIdRef.current = null;
           setProfile(null);
           setParentProfile(null);
           setUserRole(null);
@@ -266,11 +274,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
+        hydratedUserIdRef.current = existingSession.user.id;
         await fetchUserData(existingSession.user.id);
       }
       
       setLoading(false);
     });
+
 
     return () => {
       subscription.unsubscribe();
