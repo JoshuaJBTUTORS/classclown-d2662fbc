@@ -13,7 +13,8 @@ import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
 import { DomainSEO } from '@/components/seo/DomainSEO';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
-import cleoMascot from '@/assets/avatars/cleo-1.png';
+import { AuthShowcase } from '@/components/auth/AuthShowcase';
+
 
 /** Soft pastel blob backdrop shared by the page and the showcase panel. */
 const PastelBlobs: React.FC<{ className?: string }> = ({ className }) => (
