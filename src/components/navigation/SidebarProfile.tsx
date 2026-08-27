@@ -11,10 +11,14 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { resolveAvatarSrc } from '@/lib/cleoAvatars';
+
 
 const SidebarProfile: React.FC = () => {
   const { user, profile, userRole, signOut } = useAuth();
   const navigate = useNavigate();
+  const avatarSrc = resolveAvatarSrc(profile?.avatar_url);
+
 
   const handleSignOut = async () => {
     await signOut();
