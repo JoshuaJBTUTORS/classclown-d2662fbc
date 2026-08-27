@@ -122,7 +122,8 @@ const ProfileSettings: React.FC = () => {
                 disabled={loading}
               />
             </div>
-          </div>
+
+
 
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">Email Address</Label>
