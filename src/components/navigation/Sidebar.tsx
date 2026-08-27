@@ -433,7 +433,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             })}
           </div>
 
+          <div className="mt-auto border-t border-border/40 pt-3 px-1">
+            <SidebarProfile />
+          </div>
+
         </div>
+
       </aside>
 
     </>
