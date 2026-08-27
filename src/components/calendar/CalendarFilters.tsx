@@ -159,7 +159,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
 
   if (isLoading || studentsLoading) {
     return (
-      <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
+      <div className="flex items-center gap-4 rounded-[var(--radius-soft)] bg-muted/30 p-5">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4" />
           <span className="text-sm text-muted-foreground">Loading filters...</span>
@@ -169,11 +169,11 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
   }
 
   return (
-    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+    <div className="space-y-5 rounded-[var(--radius-soft)] bg-muted/30 p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4" />
-          <span className="text-sm font-medium">Filter Calendar</span>
+          <span className="font-heading text-sm font-semibold">Filter calendar</span>
           {totalFiltersActive > 0 && (
             <Badge variant="secondary" className="ml-2">
               {totalFiltersActive} active
@@ -185,7 +185,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
             variant="outline"
             size="sm"
             onClick={onClearFilters}
-            className="text-xs"
+            className="rounded-full text-xs"
           >
             Clear All
           </Button>
@@ -201,7 +201,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </div>
           <Popover open={studentSearchOpen} onOpenChange={setStudentSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-9">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
                 <span className="text-sm">
                   {selectedStudents.length > 0 
                     ? `${selectedStudents.length} selected` 
@@ -270,7 +270,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                   <Badge
                     key={studentId}
                     variant="secondary"
-                    className="text-xs flex items-center gap-1"
+                    className="rounded-full text-xs flex items-center gap-1"
                   >
                     {student.first_name} {student.last_name}
                     <X
@@ -292,7 +292,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </div>
           <Popover open={tutorSearchOpen} onOpenChange={setTutorSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-9">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
                 <span className="text-sm">
                   {selectedTutors.length > 0 
                     ? `${selectedTutors.length} selected` 
@@ -361,7 +361,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                   <Badge
                     key={tutorId}
                     variant="secondary"
-                    className="text-xs flex items-center gap-1"
+                    className="rounded-full text-xs flex items-center gap-1"
                   >
                     {tutor.first_name} {tutor.last_name}
                     <X
@@ -383,7 +383,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </div>
           <Popover open={parentSearchOpen} onOpenChange={setParentSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-9">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
                 <span className="text-sm">
                   {selectedParents.length > 0 
                     ? `${selectedParents.length} selected` 
@@ -452,7 +452,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                   <Badge
                     key={parentId}
                     variant="secondary"
-                    className="text-xs flex items-center gap-1"
+                    className="rounded-full text-xs flex items-center gap-1"
                   >
                     {parent.first_name} {parent.last_name}
                     <X
@@ -474,7 +474,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </div>
           <Popover open={subjectSearchOpen} onOpenChange={setSubjectSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-9">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
                 <span className="text-sm">
                   {selectedSubjects.length > 0 
                     ? `${selectedSubjects.length} selected` 
@@ -535,7 +535,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                 <Badge
                   key={subject}
                   variant="secondary"
-                  className="text-xs flex items-center gap-1"
+                  className="rounded-full text-xs flex items-center gap-1"
                 >
                   {subject}
                   <X
