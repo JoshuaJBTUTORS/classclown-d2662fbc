@@ -221,7 +221,7 @@ const Calendar = () => {
       
       <div className="flex flex-col flex-1 w-full">
         <MobileMenuButton toggleSidebar={toggleSidebar} />
-        <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-background">
+        <main className="flex-1 flex flex-col h-screen bg-background">
           {/* Hero header */}
           <div className="flex-shrink-0 px-4 md:px-8 pt-6 pb-4">
             <CalendarHero
