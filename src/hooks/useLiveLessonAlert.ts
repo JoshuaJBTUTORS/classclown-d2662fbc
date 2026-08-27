@@ -161,10 +161,11 @@ export function useLiveLessonAlert() {
     };
   }, [fetchLiveLessons, userRole]);
 
-  // Re-check on sign-in / token refresh so the popup appears right after login
+  // Re-check on sign-in so the popup appears right after login.
+  // TOKEN_REFRESHED is ignored: it fires on tab focus and adds needless churn.
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         // defer to avoid running inside the auth callback
         setTimeout(() => fetchLiveLessons(), 0);
       }
@@ -175,19 +176,22 @@ export function useLiveLessonAlert() {
     return () => sub.subscription.unsubscribe();
   }, [fetchLiveLessons]);
 
-  // Re-check on tab visibility change and window focus (e.g. user returns to tab)
+  // Re-check when the tab becomes visible again, throttled so quick tab
+  // switches don't refire the query.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible') fetchLiveLessons();
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastVisibilityFetchRef.current < VISIBILITY_THROTTLE_MS) return;
+      lastVisibilityFetchRef.current = now;
+      fetchLiveLessons();
     };
-    const onFocus = () => fetchLiveLessons();
     document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onFocus);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onFocus);
     };
   }, [fetchLiveLessons]);
+
 
 
   const dismiss = useCallback((lessonId: string, snoozeMinutes?: number) => {
