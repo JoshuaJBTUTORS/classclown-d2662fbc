@@ -20,13 +20,6 @@ const pillBase =
 const pillSoft = cn(pillBase, 'bg-card text-foreground shadow-[var(--shadow-soft)] hover:-translate-y-0.5');
 const pillDark = cn(pillBase, 'bg-foreground text-background hover:-translate-y-0.5 hover:opacity-90');
 
-const LEGEND = [
-  { label: 'Lessons', tone: 'bg-pastel-sky text-pastel-sky-foreground' },
-  { label: 'Trials', tone: 'bg-pastel-butter text-pastel-butter-foreground' },
-  { label: 'Availability', tone: 'bg-pastel-mint text-pastel-mint-foreground' },
-  { label: 'Time off', tone: 'bg-pastel-blush text-pastel-blush-foreground' },
-];
-
 export const CalendarHero: React.FC<CalendarHeroProps> = ({
   canUseFilters,
   filtersOpen,
@@ -46,16 +39,6 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
         <p className="max-w-xl text-sm text-muted-foreground">
           Every lesson, trial and tutor slot in one soft, scrollable view.
         </p>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {LEGEND.map((item) => (
-            <span
-              key={item.label}
-              className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-medium', item.tone)}
-            >
-              {item.label}
-            </span>
-          ))}
-        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
