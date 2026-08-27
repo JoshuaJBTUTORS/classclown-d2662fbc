@@ -95,7 +95,8 @@ const ProfileSettings: React.FC = () => {
       <div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
+
             <div className="space-y-2">
               <Label htmlFor="firstName" className="text-sm font-medium text-muted-foreground">First Name</Label>
               <Input
