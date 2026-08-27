@@ -28,10 +28,10 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-background">
       <MobileMenuButton toggleSidebar={toggleSidebar} />
-      <div className="flex">
+      <div className="flex w-full">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="min-w-0 flex-1">
-          <div className="w-full space-y-8 px-4 py-8 sm:px-8 lg:px-12 2xl:max-w-[1600px]">
+        <main className="min-w-0 w-full max-w-none lg:w-[calc(100vw-16rem)] lg:flex-none">
+          <div className="w-full space-y-8 px-4 py-8 sm:px-8 lg:px-12">
 
             {/* Plain header */}
             <header className="w-full border-b border-border/60 pb-6">
@@ -140,7 +140,7 @@ const Settings = () => {
             </motion.div>
 
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
