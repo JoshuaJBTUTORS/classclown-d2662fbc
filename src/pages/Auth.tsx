@@ -97,19 +97,16 @@ const Auth = () => {
         pageTitle="Login"
         pageDescription="Sign in to continue your AI-powered learning journey with personalized lessons and interactive tutoring."
       />
-      <div className="relative min-h-screen bg-background flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-        <PastelBlobs className="opacity-50" />
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative w-full max-w-6xl rounded-[2rem] border border-border/60 bg-card/80 backdrop-blur-xl shadow-[0_30px_80px_-40px_hsl(var(--foreground)/0.35)] p-4 sm:p-8"
-        >
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-stretch">
-            {/* Sign-in card */}
-            <div className="flex items-center justify-center py-6 lg:py-16">
-              <div className="w-full max-w-sm">
+      <div className="relative min-h-screen bg-background overflow-hidden">
+        <div className="grid lg:grid-cols-2 h-screen">
+            {/* Sign-in column */}
+            <div className="flex items-center justify-center px-6 sm:px-12 lg:px-20 py-8">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-sm"
+              >
                 <div className="relative mb-8">
                   <ScribbleStroke className="pointer-events-none absolute -top-6 -left-4 h-16 w-40 text-pastel-lilac-foreground opacity-20" />
                   <h1 className="relative font-heading text-4xl font-bold tracking-tight text-foreground">
@@ -198,18 +195,16 @@ const Auth = () => {
                 <p className="mt-8 text-center text-xs text-muted-foreground">
                   Trouble signing in? Contact your Class Beyond Academy coordinator.
                 </p>
-              </div>
+              </motion.div>
             </div>
 
             {/* Showcase panel */}
-            <div className="relative hidden lg:flex min-h-[540px] overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/60">
+            <div className="relative hidden lg:flex overflow-hidden">
               <PastelBlobs />
               <ScribbleStroke className="pointer-events-none absolute bottom-8 left-8 h-32 w-56 text-pastel-blush-foreground opacity-20" />
               <AuthShowcase />
-
             </div>
-          </div>
-        </motion.div>
+        </div>
       </div>
     </>
   );
