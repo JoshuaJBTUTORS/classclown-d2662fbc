@@ -1349,12 +1349,12 @@
 .fc-event.completed-event::before {
   content: "✓" !important;
   position: absolute !important;
-  top: 2px !important;
-  right: 4px !important;
+  top: 4px !important;
+  right: 10px !important;
   font-size: 10px !important;
   font-weight: bold !important;
-  color: white !important;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.5) !important;
+  color: inherit !important;
+  text-shadow: none !important;
   z-index: 10 !important;
 }
 
@@ -1384,12 +1384,12 @@
 .fc-event.absent-event::before {
   content: "✖" !important;
   position: absolute !important;
-  top: 2px !important;
-  right: 4px !important;
+  top: 4px !important;
+  right: 10px !important;
   font-size: 10px !important;
   font-weight: bold !important;
-  color: white !important;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.5) !important;
+  color: inherit !important;
+  text-shadow: none !important;
 }
 
 .fc-event.recurring-event {
