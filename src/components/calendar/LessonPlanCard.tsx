@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { DoodleBook } from './LessonDoodles';
 import { useLessonPlanForLesson } from '@/hooks/useLessonPlanForLesson';
 
 interface LessonPlanCardProps {
@@ -17,10 +16,9 @@ const LessonPlanCard: React.FC<LessonPlanCardProps> = ({ subject, startTime, can
   if (!subject || !weekNumber) return null;
 
   return (
-    <div className="rounded-[var(--radius-soft)] bg-pastel-mint p-6">
+    <div className="rounded-[var(--radius-soft)] border-2 border-black p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 font-heading text-lg font-extrabold tracking-tight text-pastel-mint-foreground">
-            <DoodleBook className="h-5 w-5" />
+          <h3 className="flex items-center gap-2 font-heading text-lg font-extrabold tracking-tight text-foreground">
             Lesson Plan
           </h3>
           <span className="rounded-full bg-card px-3 py-1 text-xs font-semibold text-foreground">{planSubject}</span>
