@@ -156,8 +156,6 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
   const renderEventContent = (eventInfo: any) => {
     return (
       <div className="calendar-event-content">
-        {/* painted scribble — same artwork as the lesson-plan subject tiles */}
-        <ScribbleStroke className="calendar-event-scribble" />
         <p className="event-title">{eventInfo.event.title}</p>
         {/* black arrow button — same design as the subject tile arrow */}
         <span className="calendar-event-arrow">
