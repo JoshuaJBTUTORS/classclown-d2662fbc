@@ -4,7 +4,7 @@ import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import ProgressChart from '@/components/progress/ProgressChart';
 
-import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
+import ReferralInvite from '@/components/progress/ReferralInvite';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
 import ProgressHero from '@/components/progress/ProgressHero';
@@ -87,7 +87,7 @@ const Progress: React.FC = () => {
       <div className="flex flex-col flex-1 w-full">
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
-          <div className="mx-auto max-w-[880px] space-y-8">
+          <div className="w-full space-y-8">
             <ProgressHero title={getPageTitle()} subtitle={getSubtitle()}>
               <ProgressFilters
                 filters={filters}
@@ -100,7 +100,7 @@ const Progress: React.FC = () => {
 
             <ProgressChart filters={filters} userRole={userRole} />
 
-            <AssessmentProgressChart filters={filters} userRole={userRole} />
+            <ReferralInvite />
           </div>
         </main>
       </div>
