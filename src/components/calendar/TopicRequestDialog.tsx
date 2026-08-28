@@ -190,16 +190,21 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
+                className="rounded-full border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -210,6 +215,7 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
                 )}
               </Button>
             </DialogFooter>
+
           </form>
         </Form>
       </DialogContent>
