@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
-import { BookOpen } from 'lucide-react';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
+import ProgressPanel from './ProgressPanel';
+import { DoodleEmpty } from './ProgressDoodles';
 
 interface ProgressChartProps {
   filters: {
@@ -63,90 +63,81 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const point = payload[0].payload;
       return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-[#e94b7f]">
-          <p className="font-semibold text-gray-900 mb-2">{label}</p>
-          <p className="text-[#e94b7f] font-medium">Score: {data.percentage}%</p>
-          <p className="text-sm text-gray-600 mt-1">Subject: {data.subject}</p>
-          <p className="text-sm text-gray-600">{data.homework_title}</p>
-          {data.student_name && (
-            <p className="text-sm text-gray-600">Student: {data.student_name}</p>
-          )}
+        <div className="rounded-[1rem] border border-border/60 bg-card px-4 py-3 shadow-lg">
+          <p className="font-heading text-sm font-semibold text-foreground">{label}</p>
+          <p className="mt-1 text-sm font-medium text-pastel-blush-foreground">Score: {point.percentage}%</p>
+          <p className="text-xs text-muted-foreground">{point.subject}</p>
+          <p className="text-xs text-muted-foreground">{point.homework_title}</p>
+          {point.student_name && <p className="text-xs text-muted-foreground">Student: {point.student_name}</p>}
         </div>
       );
     }
     return null;
   };
 
+  const description =
+    userRole === 'owner' ? 'Student homework scores over time' : 'Your homework scores over time';
+
   if (loading) {
     return (
-      <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="font-playfair text-xl text-gray-900">Homework Progress</CardTitle>
-          <CardDescription className="text-gray-600">Loading homework scores...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e94b7f]"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <ProgressPanel title="Homework over time" description="Loading homework scores...">
+        <div className="h-72 animate-pulse rounded-[1.25rem] bg-muted" />
+      </ProgressPanel>
     );
   }
 
   return (
-    <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-      <CardHeader className="pb-4">
-        <CardTitle className="font-playfair text-xl text-gray-900">Homework Progress</CardTitle>
-        <CardDescription className="text-gray-600">
-          {userRole === 'owner' ? 'Student homework scores over time' : 
-           'Your homework scores over time'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  domain={[0, 100]} 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="percentage" 
-                  stroke="#e94b7f" 
-                  strokeWidth={3}
-                  dot={{ fill: '#e94b7f', strokeWidth: 2, r: 5 }}
-                  activeDot={{ r: 7, stroke: '#e94b7f', strokeWidth: 2, fill: '#fff' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              <div className="text-center">
-                <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-400">No homework data available</p>
-                <p className="text-sm text-gray-400 mt-1">for the selected filters</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <ProgressPanel title="Homework over time" description={description}>
+      <div className="h-72">
+        {data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+              <defs>
+                <linearGradient id="homeworkFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" className="[stop-color:hsl(var(--pastel-blush-foreground))]" stopOpacity={0.28} />
+                  <stop offset="100%" className="[stop-color:hsl(var(--pastel-blush-foreground))]" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="date"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                className="fill-muted-foreground"
+                tick={{ fill: 'currentColor' }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                fontSize={11}
+                width={34}
+                tickLine={false}
+                axisLine={false}
+                className="fill-muted-foreground"
+                tick={{ fill: 'currentColor' }}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={false} />
+              <Area
+                type="monotone"
+                dataKey="percentage"
+                strokeWidth={3}
+                fill="url(#homeworkFill)"
+                className="stroke-pastel-blush-foreground"
+                activeDot={{ r: 6, strokeWidth: 0, className: 'fill-pastel-blush-foreground' }}
+                dot={{ r: 4, strokeWidth: 0, className: 'fill-pastel-blush-foreground' }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <DoodleEmpty className="h-16 w-20 text-muted-foreground/50" />
+            <p className="mt-3 font-heading text-sm font-semibold text-muted-foreground">No homework scores yet</p>
+            <p className="text-xs text-muted-foreground/80">Nothing matches these filters</p>
+          </div>
+        )}
+      </div>
+    </ProgressPanel>
   );
 };
 

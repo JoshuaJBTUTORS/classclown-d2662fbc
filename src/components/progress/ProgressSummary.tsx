@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Calendar, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { paymentService } from '@/services/paymentService';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import StatTile from './StatTile';
+import { DoodleBook, DoodleCalendar, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
 
 interface ProgressSummaryProps {
   filters: {
