@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,9 +24,7 @@ interface User {
   last_name: string;
 }
 
-type RangeMode = '6' | '12' | 'all' | 'year';
-
-const startOfMonthsAgo = (months: number) => {
+const monthsAgo = (months: number) => {
   const d = new Date();
   d.setMonth(d.getMonth() - (months - 1), 1);
   d.setHours(0, 0, 0, 0);
@@ -32,32 +33,12 @@ const startOfMonthsAgo = (months: number) => {
 
 const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersChange, userRole }) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [mode, setMode] = useState<RangeMode>('12');
-  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (userRole === 'owner') fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userRole]);
-
-  // Keep the shared dateRange in sync with the month selection
-  useEffect(() => {
-    if (mode === 'all') {
-      onFiltersChange({ dateRange: { from: null, to: null } });
-      return;
-    }
-    if (mode === 'year') {
-      onFiltersChange({
-        dateRange: {
-          from: new Date(year, 0, 1, 0, 0, 0, 0),
-          to: new Date(year, 11, 31, 23, 59, 59, 999),
-        },
-      });
-      return;
-    }
-    onFiltersChange({ dateRange: { from: startOfMonthsAgo(Number(mode)), to: null } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, year]);
 
   const fetchUsers = async () => {
     try {
@@ -73,77 +54,65 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     }
   };
 
-  const pillClass =
-    'h-10 rounded-full border-0 bg-background/70 px-4 text-sm font-medium text-foreground shadow-sm hover:bg-background';
+  const { from, to } = filters.dateRange;
 
-  const rangeOptions: { value: RangeMode; label: string }[] = [
-    { value: '6', label: 'Last 6 months' },
-    { value: '12', label: 'Last 12 months' },
-    { value: 'all', label: 'All time' },
+  const label = from
+    ? to
+      ? `${format(from, 'd MMM yyyy')} – ${format(to, 'd MMM yyyy')}`
+      : `${format(from, 'd MMM yyyy')} – now`
+    : 'All time';
+
+  const presets: { label: string; range: { from: Date | null; to: Date | null } }[] = [
+    { label: 'Last 3 months', range: { from: monthsAgo(3), to: null } },
+    { label: 'Last 6 months', range: { from: monthsAgo(6), to: null } },
+    { label: 'Last 12 months', range: { from: monthsAgo(12), to: null } },
+    { label: 'All time', range: { from: null, to: null } },
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {/* Month range */}
-      <div className="flex items-center gap-1 rounded-full bg-foreground/5 p-1">
-        {rangeOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setMode(option.value)}
-            className={cn(
-              'h-8 rounded-full px-4 text-sm font-medium transition-colors',
-              mode === option.value
-                ? 'bg-foreground text-background shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="h-11 justify-start gap-2 rounded-full border-foreground/15 bg-background px-5 text-sm font-medium text-foreground hover:bg-background"
           >
-            {option.label}
-          </button>
-        ))}
-      </div>
+            <CalendarIcon className="h-4 w-4" />
+            {label}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto rounded-[1.25rem] p-0" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={from || undefined}
+            selected={{ from: from || undefined, to: to || undefined }}
+            onSelect={(range) =>
+              onFiltersChange({
+                dateRange: { from: range?.from || null, to: range?.to || null },
+              })
+            }
+            numberOfMonths={2}
+            className={cn('p-3 pointer-events-auto')}
+          />
+          <div className="flex flex-wrap gap-2 border-t border-border/60 p-3">
+            {presets.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  onFiltersChange({ dateRange: preset.range });
+                  setOpen(false);
+                }}
+                className="rounded-full bg-foreground/5 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
 
-      {/* Year stepper */}
-      <div
-        className={cn(
-          'flex items-center gap-1 rounded-full border border-foreground/15 bg-background/70 px-1.5 py-1',
-          mode === 'year' && 'border-foreground bg-foreground text-background',
-        )}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 rounded-full hover:bg-foreground/10"
-          onClick={() => {
-            setYear((y) => y - 1);
-            setMode('year');
-          }}
-          aria-label="Previous year"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <button
-          type="button"
-          onClick={() => setMode('year')}
-          className="min-w-[3.5rem] text-sm font-semibold"
-        >
-          {year}
-        </button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 rounded-full hover:bg-foreground/10"
-          onClick={() => {
-            setYear((y) => y + 1);
-            setMode('year');
-          }}
-          aria-label="Next year"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* User Filter - Only for owners */}
       {userRole === 'owner' && (
         <Select
           value={filters.selectedStudents[0] || 'all'}
@@ -151,7 +120,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
             onFiltersChange({ selectedStudents: value === 'all' ? [] : [value] })
           }
         >
-          <SelectTrigger className={cn(pillClass, 'w-[200px]')}>
+          <SelectTrigger className="h-11 w-full rounded-full border-foreground/15 bg-background px-5 text-sm font-medium sm:w-[220px]">
             <SelectValue placeholder="All users" />
           </SelectTrigger>
           <SelectContent className="rounded-[1.25rem]">
@@ -165,15 +134,13 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
         </Select>
       )}
 
-      {(mode !== '12' || filters.selectedStudents.length > 0) && (
+      {(from || to || filters.selectedStudents.length > 0) && (
         <Button
           variant="ghost"
-          onClick={() => {
-            setMode('12');
-            setYear(new Date().getFullYear());
-            onFiltersChange({ selectedStudents: [] });
-          }}
-          className="h-10 rounded-full px-4 text-sm text-muted-foreground hover:bg-background/60 hover:text-foreground"
+          onClick={() =>
+            onFiltersChange({ dateRange: { from: null, to: null }, selectedStudents: [] })
+          }
+          className="h-11 rounded-full px-4 text-sm text-pastel-sky-foreground hover:bg-background/60"
         >
           Clear
         </Button>
