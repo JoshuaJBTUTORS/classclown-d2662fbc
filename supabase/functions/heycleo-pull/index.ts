@@ -59,6 +59,7 @@ const HOMEWORK_KEYS = [
 async function syncResource(
   supabase: ReturnType<typeof createClient>,
   resource: "students" | "homework-completion",
+  full = false,
 ) {
   const table = resource === "students" ? "heycleo_students" : "heycleo_homework_completion";
   const pk = resource === "students" ? "student_id" : "assignment_id";
@@ -70,7 +71,7 @@ async function syncResource(
     .eq("resource", resource)
     .maybeSingle();
 
-  const since = (state?.last_server_time as string | null) ?? null;
+  const since = full ? null : ((state?.last_server_time as string | null) ?? null);
 
   try {
     const { rows, serverTime } = await pull(resource, since);
