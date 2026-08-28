@@ -494,14 +494,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   return <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 p-6 shadow-[var(--shadow-soft-lg)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-3 font-heading text-2xl font-extrabold tracking-tight">
+              <DoodleCalendar className="h-6 w-6 shrink-0 text-foreground" />
               {lesson?.title || 'Loading...'}
-              {isRecurringInstance && <Badge variant="outline" className="ml-2">
+              {isRecurringInstance && <span className="ml-1 rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-pastel-lilac-foreground">
                   Recurring Instance
-                </Badge>}
+                </span>}
             </DialogTitle>
           </DialogHeader>
 
@@ -509,15 +509,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             <div className="flex justify-end">
               <Button
                 size="sm"
-                variant="outline"
-                className="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                variant="ghost"
+                className="rounded-full bg-pastel-butter px-4 text-pastel-butter-foreground hover:bg-pastel-butter/80"
                 onClick={openAssessmentDialog}
               >
-                <ClipboardCheck className="h-4 w-4 mr-2" />
+                <DoodleClipboard className="h-4 w-4 mr-2" />
                 Assessment Week
               </Button>
             </div>
           )}
+
 
           {isLoading ? <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
