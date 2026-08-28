@@ -357,14 +357,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       </div>
 
       {/* Supporting tiles */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        <StatTile
-          tone="sky"
-          label="Attendance rate"
-          value={`${stats.attendanceRate}%`}
-          caption="Lessons attended on time"
-          icon={<DoodleCalendar className="h-5 w-5" />}
-        />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <StatTile
           tone="butter"
           label="Homework set"
