@@ -12,19 +12,19 @@ const STEPS = [
     Icon: DoodleSend,
     title: 'Share your link',
     copy: 'Send it to a friend in one tap',
-    chip: 'bg-pastel-sky text-pastel-sky-foreground',
+    chip: 'bg-[hsl(var(--pastel-sky))] text-[hsl(var(--pastel-sky-foreground))]',
   },
   {
     Icon: DoodleChat,
     title: 'They try a free lesson',
     copy: 'No cost, no commitment',
-    chip: 'bg-pastel-lilac text-pastel-lilac-foreground',
+    chip: 'bg-[hsl(var(--pastel-lilac))] text-[hsl(var(--pastel-lilac-foreground))]',
   },
   {
     Icon: DoodleCoin,
     title: 'You both get £50',
     copy: 'Once they join us',
-    chip: 'bg-pastel-butter text-pastel-butter-foreground',
+    chip: 'bg-[hsl(var(--pastel-butter))] text-[hsl(var(--pastel-butter-foreground))]',
   },
 ];
 
