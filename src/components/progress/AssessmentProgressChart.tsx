@@ -15,7 +15,7 @@ interface AssessmentProgressChartProps {
   filters: {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
-    selectedSubjects: string[];
+    selectedSubjects?: string[];
   };
   userRole: string;
 }
@@ -144,8 +144,8 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
       }) || [];
 
       // Filter by subject if specified
-      const filteredData = filters.selectedSubjects.length > 0
-        ? chartData.filter(item => filters.selectedSubjects.includes(item.subject))
+      const filteredData = (filters.selectedSubjects?.length ?? 0) > 0
+        ? chartData.filter(item => filters.selectedSubjects!.includes(item.subject))
         : chartData;
 
       setData(filteredData);

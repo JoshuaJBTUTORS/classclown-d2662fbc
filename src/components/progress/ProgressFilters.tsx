@@ -1,11 +1,7 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -14,7 +10,6 @@ interface ProgressFiltersProps {
   filters: {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
-    selectedSubjects: string[];
   };
   onFiltersChange: (filters: any) => void;
   userRole: string;
@@ -26,16 +21,43 @@ interface User {
   last_name: string;
 }
 
+type RangeMode = '6' | '12' | 'all' | 'year';
+
+const startOfMonthsAgo = (months: number) => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - (months - 1), 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
 const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersChange, userRole }) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [mode, setMode] = useState<RangeMode>('12');
+  const [year, setYear] = useState<number>(new Date().getFullYear());
 
   useEffect(() => {
-    if (userRole === 'owner') {
-      fetchUsers();
-    }
-    fetchSubjects();
+    if (userRole === 'owner') fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userRole]);
+
+  // Keep the shared dateRange in sync with the month selection
+  useEffect(() => {
+    if (mode === 'all') {
+      onFiltersChange({ dateRange: { from: null, to: null } });
+      return;
+    }
+    if (mode === 'year') {
+      onFiltersChange({
+        dateRange: {
+          from: new Date(year, 0, 1, 0, 0, 0, 0),
+          to: new Date(year, 11, 31, 23, 59, 59, 999),
+        },
+      });
+      return;
+    }
+    onFiltersChange({ dateRange: { from: startOfMonthsAgo(Number(mode)), to: null } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, year]);
 
   const fetchUsers = async () => {
     try {
@@ -43,7 +65,6 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
         .from('profiles')
         .select('id, first_name, last_name')
         .order('first_name');
-
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
@@ -52,96 +73,75 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     }
   };
 
-  const fetchSubjects = async () => {
-    try {
-      // Get subjects from lessons
-      const { data: lessonData, error: lessonError } = await supabase
-        .from('lessons')
-        .select('subject')
-        .not('subject', 'is', null);
-
-      if (lessonError) throw lessonError;
-
-      // Get subjects from assessments
-      const { data: assessmentData, error: assessmentError } = await supabase
-        .from('ai_assessments')
-        .select('subject')
-        .not('subject', 'is', null);
-
-      if (assessmentError) throw assessmentError;
-      
-      const lessonSubjects = lessonData?.map(l => l.subject).filter(Boolean) || [];
-      const assessmentSubjects = assessmentData?.map(a => a.subject).filter(Boolean) || [];
-      const uniqueSubjects = [...new Set([...lessonSubjects, ...assessmentSubjects])];
-      
-      setSubjects(uniqueSubjects);
-    } catch (error) {
-      console.error('Error fetching subjects:', error);
-      toast.error('Failed to load subjects');
-    }
-  };
-
-  const clearFilters = () => {
-    onFiltersChange({
-      dateRange: { from: null, to: null },
-      selectedStudents: [],
-      selectedSubjects: []
-    });
-  };
-
-  const hasActiveFilters = 
-    filters.dateRange.from || 
-    filters.dateRange.to || 
-    filters.selectedStudents.length > 0 || 
-    filters.selectedSubjects.length > 0;
-
   const pillClass =
     'h-10 rounded-full border-0 bg-background/70 px-4 text-sm font-medium text-foreground shadow-sm hover:bg-background';
 
+  const rangeOptions: { value: RangeMode; label: string }[] = [
+    { value: '6', label: 'Last 6 months' },
+    { value: '12', label: 'Last 12 months' },
+    { value: 'all', label: 'All time' },
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {/* Date Range Filter */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            className={cn(pillClass, 'justify-start gap-2 font-normal', !filters.dateRange.from && 'text-muted-foreground')}
-          >
-            <CalendarIcon className="h-4 w-4" />
-            {filters.dateRange.from ? (
-              filters.dateRange.to ? (
-                <>
-                  {format(filters.dateRange.from, 'LLL dd, y')} – {format(filters.dateRange.to, 'LLL dd, y')}
-                </>
-              ) : (
-                format(filters.dateRange.from, 'LLL dd, y')
-              )
-            ) : (
-              <span>Any dates</span>
+      {/* Month range */}
+      <div className="flex items-center gap-1 rounded-full bg-foreground/5 p-1">
+        {rangeOptions.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setMode(option.value)}
+            className={cn(
+              'h-8 rounded-full px-4 text-sm font-medium transition-colors',
+              mode === option.value
+                ? 'bg-foreground text-background shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
             )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto rounded-[1.25rem] p-0" align="start">
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={filters.dateRange.from || undefined}
-            selected={{
-              from: filters.dateRange.from || undefined,
-              to: filters.dateRange.to || undefined,
-            }}
-            onSelect={(range) =>
-              onFiltersChange({
-                dateRange: {
-                  from: range?.from || null,
-                  to: range?.to || null,
-                },
-              })
-            }
-            numberOfMonths={2}
-          />
-        </PopoverContent>
-      </Popover>
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Year stepper */}
+      <div
+        className={cn(
+          'flex items-center gap-1 rounded-full border border-foreground/15 bg-background/70 px-1.5 py-1',
+          mode === 'year' && 'border-foreground bg-foreground text-background',
+        )}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 rounded-full hover:bg-foreground/10"
+          onClick={() => {
+            setYear((y) => y - 1);
+            setMode('year');
+          }}
+          aria-label="Previous year"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <button
+          type="button"
+          onClick={() => setMode('year')}
+          className="min-w-[3.5rem] text-sm font-semibold"
+        >
+          {year}
+        </button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 rounded-full hover:bg-foreground/10"
+          onClick={() => {
+            setYear((y) => y + 1);
+            setMode('year');
+          }}
+          aria-label="Next year"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* User Filter - Only for owners */}
       {userRole === 'owner' && (
@@ -165,33 +165,16 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
         </Select>
       )}
 
-      {/* Subject Filter */}
-      <Select
-        value={filters.selectedSubjects[0] || 'all'}
-        onValueChange={(value) =>
-          onFiltersChange({ selectedSubjects: value === 'all' ? [] : [value] })
-        }
-      >
-        <SelectTrigger className={cn(pillClass, 'w-[200px]')}>
-          <SelectValue placeholder="All subjects" />
-        </SelectTrigger>
-        <SelectContent className="rounded-[1.25rem]">
-          <SelectItem value="all">All subjects</SelectItem>
-          {subjects.map((subject) => (
-            <SelectItem key={subject} value={subject}>
-              {subject}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {hasActiveFilters && (
+      {(mode !== '12' || filters.selectedStudents.length > 0) && (
         <Button
           variant="ghost"
-          onClick={clearFilters}
-          className="h-10 gap-1.5 rounded-full px-4 text-sm text-pastel-sky-foreground hover:bg-background/60"
+          onClick={() => {
+            setMode('12');
+            setYear(new Date().getFullYear());
+            onFiltersChange({ selectedStudents: [] });
+          }}
+          className="h-10 rounded-full px-4 text-sm text-muted-foreground hover:bg-background/60 hover:text-foreground"
         >
-          <X className="h-4 w-4" />
           Clear
         </Button>
       )}
@@ -200,4 +183,3 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
 };
 
 export default ProgressFilters;
-

@@ -1,15 +1,7 @@
-import React, { useMemo } from 'react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  ReferenceArea,
-} from 'recharts';
+import React, { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import { ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 import ProgressPanel from './ProgressPanel';
 import { DoodleEmpty } from './ProgressDoodles';
@@ -18,40 +10,47 @@ interface ProgressChartProps {
   filters: {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
-    selectedSubjects: string[];
   };
   userRole: string;
 }
 
 interface HomeworkScore {
-  date: string;
+  key: string; // yyyy-MM
+  date: Date;
   percentage: number;
   subject: string;
   homework_title: string;
   student_name?: string;
 }
 
-const Pill: React.FC<{ tone: 'mint' | 'sky' | 'butter'; label: string; value: string }> = ({
-  tone,
+interface MonthBucket {
+  key: string;
+  label: string;
+  average: number | null;
+  count: number;
+  items: HomeworkScore[];
+  delta: number | null;
+}
+
+const StatPill: React.FC<{ label: string; value: string; solid?: boolean }> = ({
   label,
   value,
-}) => {
-  const tones = {
-    mint: 'bg-pastel-mint text-pastel-mint-foreground',
-    sky: 'bg-pastel-sky text-pastel-sky-foreground',
-    butter: 'bg-pastel-butter text-pastel-butter-foreground',
-  } as const;
+  solid,
+}) => (
+  <div
+    className={cn(
+      'flex items-baseline gap-2 rounded-full px-4 py-2',
+      solid ? 'bg-foreground text-background' : 'border border-foreground/15 bg-background text-foreground',
+    )}
+  >
+    <span className="text-[11px] uppercase tracking-wide opacity-70">{label}</span>
+    <span className="font-heading text-sm font-semibold">{value}</span>
+  </div>
+);
 
-  return (
-    <div className={`flex items-baseline gap-2 rounded-full px-4 py-2 ${tones[tone]}`}>
-      <span className="text-[11px] uppercase tracking-wide opacity-70">{label}</span>
-      <span className="font-heading text-sm font-semibold">{value}</span>
-    </div>
-  );
-};
-
-const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
+const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   const { data: heycleo, isLoading: loading } = useHeyCleoProgress(filters.selectedStudents);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const nameByHeycleoId = useMemo(() => {
     const map = new Map<string, string>();
@@ -61,7 +60,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
     return map;
   }, [heycleo.students]);
 
-  const data = useMemo<HomeworkScore[]>(() => {
+  const scores = useMemo<HomeworkScore[]>(() => {
     const from = filters.dateRange.from?.getTime();
     const to = filters.dateRange.to?.getTime();
 
@@ -74,172 +73,217 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
       .filter(({ time }) => !Number.isNaN(time))
       .filter(({ time }) => (from ? time >= from : true) && (to ? time <= to : true))
       .sort((a, b) => a.time - b.time)
-      .map(({ hw, raw }) => ({
-        date: format(parseISO(raw as string), 'MMM dd'),
-        percentage: Math.round(Number(hw.percentage)),
-        subject: hw.subject || 'General',
-        homework_title: hw.title || 'Homework',
-        student_name:
-          heycleo.students.length > 1 && hw.student_id
-            ? nameByHeycleoId.get(hw.student_id)
-            : undefined,
-      }))
-      .filter((item) =>
-        filters.selectedSubjects.length > 0 ? filters.selectedSubjects.includes(item.subject) : true,
-      );
-  }, [heycleo, filters.dateRange.from, filters.dateRange.to, filters.selectedSubjects, nameByHeycleoId]);
+      .map(({ hw, raw }) => {
+        const date = parseISO(raw as string);
+        return {
+          key: format(date, 'yyyy-MM'),
+          date,
+          percentage: Math.round(Number(hw.percentage)),
+          subject: hw.subject || 'General',
+          homework_title: hw.title || 'Homework',
+          student_name:
+            heycleo.students.length > 1 && hw.student_id
+              ? nameByHeycleoId.get(hw.student_id)
+              : undefined,
+        };
+      });
+  }, [heycleo, filters.dateRange.from, filters.dateRange.to, nameByHeycleoId]);
+
+  const months = useMemo<MonthBucket[]>(() => {
+    if (scores.length === 0) return [];
+
+    const first = filters.dateRange.from ?? scores[0].date;
+    const last = filters.dateRange.to ?? new Date();
+
+    const cursor = new Date(first.getFullYear(), first.getMonth(), 1);
+    const end = new Date(last.getFullYear(), last.getMonth(), 1);
+
+    const grouped = new Map<string, HomeworkScore[]>();
+    scores.forEach((s) => {
+      const arr = grouped.get(s.key);
+      if (arr) arr.push(s);
+      else grouped.set(s.key, [s]);
+    });
+
+    const list: MonthBucket[] = [];
+    let previousAverage: number | null = null;
+
+    while (cursor <= end) {
+      const key = format(cursor, 'yyyy-MM');
+      const items = grouped.get(key) ?? [];
+      const average =
+        items.length > 0
+          ? Math.round(items.reduce((sum, i) => sum + i.percentage, 0) / items.length)
+          : null;
+
+      list.push({
+        key,
+        label: format(cursor, 'MMMM yyyy'),
+        average,
+        count: items.length,
+        items: [...items].sort((a, b) => b.date.getTime() - a.date.getTime()),
+        delta: average != null && previousAverage != null ? average - previousAverage : null,
+      });
+
+      if (average != null) previousAverage = average;
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return list.reverse();
+  }, [scores, filters.dateRange.from, filters.dateRange.to]);
 
   const summary = useMemo(() => {
-    if (data.length === 0) return null;
-    const scores = data.map((d) => d.percentage);
-    const average = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
-    return {
-      average,
-      latest: scores[scores.length - 1],
-      best: Math.max(...scores),
-      count: scores.length,
-    };
-  }, [data]);
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const point = payload[0].payload;
-      return (
-        <div className="rounded-[1rem] border border-border/60 bg-card px-4 py-3 shadow-lg">
-          <p className="font-heading text-sm font-semibold text-foreground">{label}</p>
-          <p className="mt-1 text-sm font-medium text-pastel-blush-foreground">Score: {point.percentage}%</p>
-          <p className="text-xs text-muted-foreground">{point.subject}</p>
-          <p className="text-xs text-muted-foreground">{point.homework_title}</p>
-          {point.student_name && <p className="text-xs text-muted-foreground">Student: {point.student_name}</p>}
-        </div>
-      );
-    }
-    return null;
-  };
+    const scored = months.filter((m) => m.average != null);
+    if (scored.length === 0) return null;
+    const overall = Math.round(
+      scores.reduce((sum, s) => sum + s.percentage, 0) / Math.max(scores.length, 1),
+    );
+    const best = scored.reduce((a, b) => ((b.average ?? 0) > (a.average ?? 0) ? b : a));
+    return { overall, best, marked: scores.length };
+  }, [months, scores]);
 
   const description =
-    userRole === 'owner' ? 'Student homework scores over time' : 'Your homework scores over time';
+    userRole === 'owner' ? 'Student homework results, month by month' : 'Your homework results, month by month';
 
   if (loading) {
     return (
-      <ProgressPanel title="Homework over time" description="Loading homework scores...">
-        <div className="h-80 animate-pulse rounded-[1.25rem] bg-muted" />
+      <ProgressPanel title="Homework by month" description="Loading homework scores...">
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-16 animate-pulse rounded-[1.25rem] bg-muted" />
+          ))}
+        </div>
       </ProgressPanel>
     );
   }
 
   return (
     <ProgressPanel
-      title="Homework over time"
+      title="Homework by month"
       description={description}
       action={
         summary ? (
           <div className="hidden shrink-0 items-center gap-2 sm:flex">
-            <Pill tone="sky" label="Average" value={`${summary.average}%`} />
+            <StatPill label="Average" value={`${summary.overall}%`} solid />
+            <StatPill label="Marked" value={`${summary.marked}`} />
           </div>
         ) : undefined
       }
     >
-      <div className="h-80 rounded-[1.25rem] bg-muted/30 p-3">
-        {data.length > 0 && summary ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
-              <defs>
-                <linearGradient id="homeworkFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" className="[stop-color:hsl(var(--pastel-blush-foreground))]" stopOpacity={0.35} />
-                  <stop offset="100%" className="[stop-color:hsl(var(--pastel-blush-foreground))]" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+      {months.length === 0 ? (
+        <div className="flex h-56 flex-col items-center justify-center rounded-[1.25rem] border border-dashed border-foreground/20 text-center">
+          <DoodleEmpty className="h-16 w-20 text-muted-foreground/50" />
+          <p className="mt-3 font-heading text-sm font-semibold text-muted-foreground">No homework scores yet</p>
+          <p className="text-xs text-muted-foreground/80">Nothing matches this date range</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {months.map((month) => {
+            const isBest = summary?.best.key === month.key && month.average != null;
+            const isOpen = expanded === month.key;
+            const hasData = month.average != null;
 
-              {/* pastel guide bands instead of gridlines */}
-              <ReferenceArea
-                y1={0}
-                y2={40}
-                className="fill-pastel-blush"
-                fillOpacity={0.35}
-                strokeOpacity={0}
-                ifOverflow="extendDomain"
-              />
-              <ReferenceArea
-                y1={40}
-                y2={70}
-                className="fill-pastel-butter"
-                fillOpacity={0.35}
-                strokeOpacity={0}
-                ifOverflow="extendDomain"
-              />
-              <ReferenceArea
-                y1={70}
-                y2={100}
-                className="fill-pastel-mint"
-                fillOpacity={0.35}
-                strokeOpacity={0}
-                ifOverflow="extendDomain"
-              />
+            return (
+              <div
+                key={month.key}
+                className={cn(
+                  'overflow-hidden rounded-[1.25rem] border transition-colors',
+                  isBest
+                    ? 'border-foreground bg-foreground text-background'
+                    : hasData
+                      ? 'border-foreground/15 bg-background'
+                      : 'border-dashed border-foreground/10 bg-muted/30',
+                )}
+              >
+                <button
+                  type="button"
+                  disabled={!hasData}
+                  onClick={() => setExpanded(isOpen ? null : month.key)}
+                  className="flex w-full items-center gap-4 px-5 py-4 text-left disabled:cursor-default"
+                >
+                  <div className="min-w-[9rem]">
+                    <p className="font-heading text-sm font-semibold">{month.label}</p>
+                    <p className={cn('text-xs', isBest ? 'opacity-70' : 'text-muted-foreground')}>
+                      {hasData
+                        ? `${month.count} piece${month.count === 1 ? '' : 's'} marked`
+                        : 'Nothing marked'}
+                    </p>
+                  </div>
 
-              <XAxis
-                dataKey="date"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                className="fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-              />
-              <YAxis
-                domain={[0, 100]}
-                ticks={[0, 40, 70, 100]}
-                fontSize={11}
-                width={34}
-                tickLine={false}
-                axisLine={false}
-                className="fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={false} />
+                  <div className="flex flex-1 items-center gap-4">
+                    <div
+                      className={cn(
+                        'h-2.5 flex-1 overflow-hidden rounded-full',
+                        isBest ? 'bg-background/25' : 'bg-foreground/10',
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'h-full rounded-full transition-all duration-700',
+                          isBest ? 'bg-background' : 'bg-foreground',
+                        )}
+                        style={{ width: `${month.average ?? 0}%` }}
+                      />
+                    </div>
+                    <span className="font-heading text-2xl font-bold tabular-nums">
+                      {hasData ? `${month.average}%` : '—'}
+                    </span>
+                  </div>
 
-              {/* average baseline */}
-              <ReferenceLine
-                y={summary.average}
-                strokeDasharray="6 6"
-                strokeWidth={2}
-                className="stroke-pastel-lilac-foreground"
-                label={{
-                  value: `avg ${summary.average}%`,
-                  position: 'right',
-                  fontSize: 11,
-                  className: 'fill-muted-foreground',
-                }}
-              />
+                  {month.delta != null && month.delta !== 0 && (
+                    <span
+                      className={cn(
+                        'rounded-full px-2.5 py-1 text-xs font-semibold',
+                        isBest
+                          ? 'bg-background/20 text-background'
+                          : month.delta > 0
+                            ? 'bg-pastel-mint text-pastel-mint-foreground'
+                            : 'bg-pastel-blush text-pastel-blush-foreground',
+                      )}
+                    >
+                      {month.delta > 0 ? '+' : ''}
+                      {month.delta}
+                    </span>
+                  )}
 
-              <Area
-                type="monotone"
-                dataKey="percentage"
-                strokeWidth={3}
-                fill="url(#homeworkFill)"
-                className="stroke-pastel-blush-foreground"
-                activeDot={{ r: 7, strokeWidth: 2, className: 'fill-card stroke-pastel-blush-foreground' }}
-                dot={{ r: 4, strokeWidth: 2, className: 'fill-card stroke-pastel-blush-foreground' }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <DoodleEmpty className="h-16 w-20 text-muted-foreground/50" />
-            <p className="mt-3 font-heading text-sm font-semibold text-muted-foreground">No homework scores yet</p>
-            <p className="text-xs text-muted-foreground/80">Nothing matches these filters</p>
-          </div>
-        )}
-      </div>
+                  {hasData && (
+                    <ChevronDown
+                      className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-180')}
+                    />
+                  )}
+                </button>
 
-      {summary && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Pill tone="mint" label="Latest" value={`${summary.latest}%`} />
-          <Pill tone="butter" label="Best" value={`${summary.best}%`} />
-          <Pill tone="sky" label="Marked" value={`${summary.count}`} />
+                {isOpen && (
+                  <div
+                    className={cn(
+                      'space-y-2 border-t px-5 py-4',
+                      isBest ? 'border-background/20' : 'border-foreground/10',
+                    )}
+                  >
+                    {month.items.map((item, index) => (
+                      <div
+                        key={`${item.homework_title}-${index}`}
+                        className="flex items-center justify-between gap-4 text-sm"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{item.homework_title}</p>
+                          <p className={cn('text-xs', isBest ? 'opacity-70' : 'text-muted-foreground')}>
+                            {format(item.date, 'dd MMM')} · {item.subject}
+                            {item.student_name ? ` · ${item.student_name}` : ''}
+                          </p>
+                        </div>
+                        <span className="font-heading font-semibold tabular-nums">{item.percentage}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </ProgressPanel>
   );
 };
 
-export default ProgressChart;
+export default HomeworkByMonth;
