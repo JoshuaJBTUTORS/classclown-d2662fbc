@@ -119,16 +119,24 @@ export const ReferFriendDialog: React.FC<ReferFriendDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Refer a Friend for £100
+          <DialogTitle className="flex items-center gap-3 font-heading">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-pastel-blush text-pastel-blush-foreground">
+              <DoodleCoin className="h-5 w-5" />
+            </span>
+            <span className="flex items-center gap-2">
+              Refer a friend
+              <span className="rounded-full bg-foreground px-2 py-0.5 text-xs font-semibold text-background">
+                £100
+              </span>
+            </span>
           </DialogTitle>
           <DialogDescription>
             Know someone who could benefit from our tutoring services? Refer them and earn £100 when they sign up!
           </DialogDescription>
         </DialogHeader>
+
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
