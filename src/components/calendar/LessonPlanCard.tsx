@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
+import { DoodleBook } from './LessonDoodles';
 import { useLessonPlanForLesson } from '@/hooks/useLessonPlanForLesson';
 
 interface LessonPlanCardProps {
@@ -18,17 +17,17 @@ const LessonPlanCard: React.FC<LessonPlanCardProps> = ({ subject, startTime, can
   if (!subject || !weekNumber) return null;
 
   return (
-    <Card className="border-emerald-200 bg-emerald-50/50">
-      <CardContent className="p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 font-medium text-emerald-800">
-            <BookOpen className="h-4 w-4" />
+    <div className="rounded-[var(--radius-soft)] bg-pastel-mint p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 font-heading text-lg font-extrabold tracking-tight text-pastel-mint-foreground">
+            <DoodleBook className="h-5 w-5" />
             Lesson Plan
           </h3>
-          <Badge variant="secondary">{planSubject}</Badge>
+          <span className="rounded-full bg-card px-3 py-1 text-xs font-semibold text-foreground">{planSubject}</span>
         </div>
 
-        <div className="rounded-lg border bg-white p-3">
+        <div className="rounded-2xl bg-card p-4 shadow-[var(--shadow-soft)]">
+
           <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">Week {weekNumber}</span>
             {term && <span>· {term} term</span>}
@@ -63,8 +62,8 @@ const LessonPlanCard: React.FC<LessonPlanCardProps> = ({ subject, startTime, can
             </p>
           )}
         </div>
-      </CardContent>
-    </Card>
+    </div>
+
   );
 };
 
