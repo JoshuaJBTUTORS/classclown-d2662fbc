@@ -119,7 +119,8 @@
     --pastel-blush-foreground: 344 40% 34%;
     --pastel-sky: 205 80% 92%;
     --pastel-sky-foreground: 210 50% 28%;
-    --progress-bar: 210 58% 56%;
+    --progress-bar-fill: 205 90% 94%;
+    --progress-bar-line: 205 70% 74%;
     --pastel-sand: 30 45% 92%;
     --pastel-sand-foreground: 28 40% 28%;
 
@@ -165,7 +166,8 @@
     --pastel-blush-foreground: 344 50% 82%;
     --pastel-sky: 208 25% 17%;
     --pastel-sky-foreground: 205 55% 80%;
-    --progress-bar: 210 60% 62%;
+    --progress-bar-fill: 208 40% 22%;
+    --progress-bar-line: 205 55% 60%;
     --pastel-sand: 30 18% 16%;
     --pastel-sand-foreground: 30 40% 80%;
 

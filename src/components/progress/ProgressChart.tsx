@@ -37,8 +37,30 @@ interface MonthBucket {
 /** Number of months visible in the chart window at once. */
 const WINDOW = 6;
 
-/** Single calm blue used for every bar, regardless of score. */
-const BAR_TONE = 'bg-[hsl(var(--progress-bar))]';
+type ChartPoint = { key: string; x: number; y: number };
+
+/**
+ * Smooth, slightly wobbly path through the points (Catmull-Rom style smoothing
+ * with a small alternating lift so the line reads as hand-drawn).
+ */
+const squigglePath = (pts: ChartPoint[]) => {
+  if (pts.length === 0) return '';
+  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y} L ${pts[0].x + 0.01} ${pts[0].y}`;
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const wobble = i % 2 === 0 ? -2.2 : 2.2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6 + wobble;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6 - wobble;
+    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+};
 
 const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   const { data: heycleo, isLoading: loading } = useHeyCleoProgress(filters.selectedStudents);
