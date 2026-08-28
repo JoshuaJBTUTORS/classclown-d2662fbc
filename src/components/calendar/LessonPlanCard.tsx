@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { DoodleBook } from './LessonDoodles';
 import { useLessonPlanForLesson } from '@/hooks/useLessonPlanForLesson';
 
 interface LessonPlanCardProps {
