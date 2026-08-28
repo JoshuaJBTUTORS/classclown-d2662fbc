@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 import ProgressPanel from './ProgressPanel';
 import { DoodleEmpty } from './ProgressDoodles';
