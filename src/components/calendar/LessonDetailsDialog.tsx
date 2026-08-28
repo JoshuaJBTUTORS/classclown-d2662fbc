@@ -576,24 +576,23 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
               {/* Basic Information */}
-              <Card>
-                <CardContent className="p-4 space-y-3">
+              <div className="rounded-[var(--radius-soft)] bg-card p-6 space-y-3 shadow-[var(--shadow-soft)]">
                   {lesson.description && <p className="text-sm text-muted-foreground">{lesson.description}</p>}
                   
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <DoodleClock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
                       {displayStartTime && typeof displayStartTime === 'string' && format(parseISO(displayStartTime), 'MMM d, yyyy h:mm a')}
                       {displayEndTime && typeof displayEndTime === 'string' && ` - ${format(parseISO(displayEndTime), 'h:mm a')}`}
                     </span>
-                    {isRecurringInstance && <Badge variant="secondary" className="ml-2 text-xs">
+                    {isRecurringInstance && <span className="ml-2 rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-pastel-lilac-foreground">
                         Recurring Instance
-                      </Badge>}
+                      </span>}
                   </div>
 
                   {lesson.tutor && (
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <DoodlePerson className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
                         Teacher: {lesson.tutor.first_name} {lesson.tutor.last_name}
                       </span>
@@ -601,42 +600,40 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   )}
 
                   {lesson.subject && <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="secondary">{lesson.subject}</Badge>
+                      <DoodleTag className="h-4 w-4 text-muted-foreground" />
+                      <span className="rounded-full bg-pastel-sky px-3 py-1 text-xs font-semibold text-pastel-sky-foreground">{lesson.subject}</span>
                       
                     </div>}
 
                   {lesson.is_group && <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="outline">Group Lesson</Badge>
+                      <DoodlePeople className="h-4 w-4 text-muted-foreground" />
+                      <span className="rounded-full bg-pastel-mint px-3 py-1 text-xs font-semibold text-pastel-mint-foreground">Group Lesson</span>
                       {validStudents.length > 0 && <span className="text-sm text-muted-foreground">
                           ({validStudents.length} students)
                         </span>}
                     </div>}
 
                   {lesson.is_recurring}
-                </CardContent>
-              </Card>
+              </div>
 
               {/* Video Conference Section */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Video className="h-4 w-4" />
-                    <h3 className="font-medium">Video Conference</h3>
-                    {isTeacherRole ? <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs ml-auto">
-                        <Shield className="h-3 w-3" />
+              <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <DoodleVideo className="h-5 w-5" />
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight">Video Conference</h3>
+                    {isTeacherRole ? <div className="flex items-center gap-1 px-3 py-1 bg-pastel-sky text-pastel-sky-foreground rounded-full text-xs font-semibold ml-auto">
+                        <DoodleShield className="h-3 w-3" />
                         Host Access
-                      </div> : <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs ml-auto">
-                        <UserCheck className="h-3 w-3" />
+                      </div> : <div className="flex items-center gap-1 px-3 py-1 bg-pastel-mint text-pastel-mint-foreground rounded-full text-xs font-semibold ml-auto">
+                        <DoodlePerson className="h-3 w-3" />
                         Student Access
                       </div>}
                   </div>
 
                   {lesson.lesson_space_room_url || lesson.lesson_space_room_id ? <VideoConferenceLink lessonId={lesson.id} lessonSpaceRoomUrl={lesson.lesson_space_room_url} lessonSpaceRoomId={lesson.lesson_space_room_id} lessonSpaceSpaceId={lesson.lesson_space_space_id} lessonTitle={lesson.title} lessonSubject={lesson.subject} isGroupLesson={lesson.is_group} studentCount={validStudents.length} hasHomework={homeworkStatus.exists} homeworkId={homeworkStatus.homework?.id} /> : <div className="space-y-3">
-                      <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-amber-700">
+                      <div className="flex items-start gap-2 p-4 bg-pastel-sand rounded-2xl">
+                        <DoodleAlert className="h-4 w-4 text-pastel-sand-foreground mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-pastel-sand-foreground">
                           <p className="font-medium">No video room created yet</p>
                           <p>
                             {isTeacherRole ? 'Create a LessonSpace room to enable video conferencing for this lesson.' : 'Ask your teacher to create a video room for this lesson.'}
@@ -644,28 +641,26 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                         </div>
                       </div>
                       
-                      {isTeacherRole && <Button onClick={handleCreateLessonSpaceRoom} disabled={isCreatingRoom} className="w-full">
+                      {isTeacherRole && <Button onClick={handleCreateLessonSpaceRoom} disabled={isCreatingRoom} className="w-full rounded-full">
                           {isCreatingRoom ? <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Creating Room...
                             </> : <>
-                              <Video className="h-4 w-4 mr-2" />
+                              <DoodleVideo className="h-4 w-4 mr-2" />
                               Create LessonSpace Room
                             </>}
                         </Button>}
                     </div>}
-                </CardContent>
-              </Card>
+              </div>
 
               {/* Students Section with Attendance - Only show if there are valid students */}
-              {validStudents.length > 0 && <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
+              {validStudents.length > 0 && <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight mb-3 flex items-center gap-2">
+                      <DoodlePeople className="h-5 w-5" />
                       Students ({validStudents.length})
-                      {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <Badge variant="destructive" className="ml-2 text-xs">
+                      {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <span className="ml-2 rounded-full bg-pastel-blush px-3 py-1 text-xs font-semibold text-pastel-blush-foreground">
                           {lesson.lesson_students.length - validStudents.length} missing data
-                        </Badge>}
+                        </span>}
                     </h3>
                     {homeworkSummary && (
                       <p className="text-xs text-muted-foreground mb-3">
@@ -680,15 +675,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                  }} isStudent={!isTeacherRole} />)}
 
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
 
               {/* Show warning if there are students with missing data */}
-              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <Card className="border-amber-200 bg-amber-50/50">
-                  <CardContent className="p-4">
+              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-6">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-amber-700">
+                      <DoodleAlert className="h-4 w-4 text-pastel-sand-foreground mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-pastel-sand-foreground">
                         <p className="font-medium">Some student data is missing</p>
                         <p>
                           {lesson.lesson_students.length - validStudents.length} student record(s) could not be loaded. 
@@ -696,8 +689,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                         </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
+
 
               {/* Homework Section */}
               {homeworkStatus.exists && <Card>
