@@ -52,13 +52,34 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Login link requested for:", rawEmail);
 
-    // Mint a Supabase tokenised magic link. If the user doesn't exist this errors —
-    // we swallow it and still return success (no account enumeration).
+    // Only mint links for existing accounts (never auto-create users here).
+    const { data: existing, error: lookupError } = await supabase
+      .schema("auth")
+      .from("users")
+      .select("id")
+      .ilike("email", rawEmail)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error("User lookup failed:", lookupError.message);
+      return new Response(JSON.stringify({ error: "Failed to send login link" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    if (!existing) {
+      console.log("No account found for that email, returning generic success");
+      return genericSuccess();
+    }
+
+    // Mint a Supabase tokenised magic link.
     const { data, error } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email: rawEmail,
       options: { redirectTo: `${APP_ORIGIN}/` },
     });
+
 
     if (error || !data?.properties?.action_link) {
       console.log("Could not generate link (user may not exist):", error?.message);
