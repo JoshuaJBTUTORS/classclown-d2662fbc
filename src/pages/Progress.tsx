@@ -71,15 +71,6 @@ const Progress: React.FC = () => {
     }
   };
 
-  const getSubtitle = () => {
-    if (userRole === 'parent') {
-      return "Track your homework and assessment progress";
-    } else if (userRole === 'student') {
-      return "View your homework and assessment progress";
-    } else {
-      return "Track student progress and performance analytics";
-    }
-  };
 
   return (
     <>
@@ -88,7 +79,7 @@ const Progress: React.FC = () => {
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           <div className="w-full space-y-8">
-            <ProgressHero title={getPageTitle()} subtitle={getSubtitle()}>
+            <ProgressHero title={getPageTitle()}>
               <ProgressFilters
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
