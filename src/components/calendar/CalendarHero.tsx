@@ -63,7 +63,7 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
             <button
               type="button"
               onClick={onRequestTopic}
-              className={cn(chipBase, 'bg-pastel-sky text-pastel-sky-foreground')}
+              className={chipBase}
             >
               <span className={chipIcon}>
                 <DoodleChat className="h-4 w-4" />
@@ -73,7 +73,7 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
             <button
               type="button"
               onClick={onReferFriend}
-              className={cn(chipBase, 'bg-pastel-blush text-pastel-blush-foreground')}
+              className={chipBase}
             >
               <span className={chipIcon}>
                 <DoodleCoin className="h-4 w-4" />
