@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon } from 'lucide-react';
+import { DoodleCalendar } from './ProgressDoodles';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,13 +75,20 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="h-11 justify-start gap-2 rounded-full border-foreground/15 bg-background px-5 text-sm font-medium text-foreground hover:bg-background"
+            className="h-11 justify-start gap-2.5 rounded-full border-foreground/15 bg-background px-5 text-sm font-semibold text-foreground shadow-sm hover:bg-background"
           >
-            <CalendarIcon className="h-4 w-4" />
+            <DoodleCalendar className="h-[18px] w-[18px]" />
             {label}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto rounded-[1.25rem] p-0" align="start">
+        <PopoverContent
+          className="w-auto overflow-hidden rounded-[1.5rem] border-foreground/10 p-0 shadow-lg"
+          align="start"
+        >
+          <div className="flex items-center gap-2.5 border-b border-foreground/10 bg-pastel-sky px-5 py-3.5 text-pastel-sky-foreground">
+            <DoodleCalendar className="h-[18px] w-[18px]" />
+            <span className="font-heading text-sm font-semibold">Pick a date range</span>
+          </div>
           <Calendar
             initialFocus
             mode="range"
@@ -95,7 +102,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
             numberOfMonths={2}
             className={cn('p-3 pointer-events-auto')}
           />
-          <div className="flex flex-wrap gap-2 border-t border-border/60 p-3">
+          <div className="flex flex-wrap gap-2 border-t border-foreground/10 bg-muted/40 p-3">
             {presets.map((preset) => (
               <button
                 key={preset.label}
@@ -104,7 +111,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
                   onFiltersChange({ dateRange: preset.range });
                   setOpen(false);
                 }}
-                className="rounded-full bg-foreground/5 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
+                className="rounded-full border border-foreground/10 bg-background px-3.5 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background"
               >
                 {preset.label}
               </button>
@@ -120,7 +127,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
             onFiltersChange({ selectedStudents: value === 'all' ? [] : [value] })
           }
         >
-          <SelectTrigger className="h-11 w-full rounded-full border-foreground/15 bg-background px-5 text-sm font-medium sm:w-[220px]">
+          <SelectTrigger className="h-11 w-full rounded-full border-foreground/15 bg-background px-5 text-sm font-semibold shadow-sm sm:w-[220px]">
             <SelectValue placeholder="All users" />
           </SelectTrigger>
           <SelectContent className="rounded-[1.25rem]">
@@ -140,7 +147,7 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
           onClick={() =>
             onFiltersChange({ dateRange: { from: null, to: null }, selectedStudents: [] })
           }
-          className="h-11 rounded-full px-4 text-sm text-pastel-sky-foreground hover:bg-background/60"
+          className="h-11 rounded-full px-4 text-sm font-semibold text-pastel-sky-foreground hover:bg-background/60"
         >
           Clear
         </Button>

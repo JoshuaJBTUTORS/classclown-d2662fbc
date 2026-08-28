@@ -5,8 +5,6 @@ import { toast } from 'sonner';
 import { paymentService } from '@/services/paymentService';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
-import StatTile from './StatTile';
-import { DoodleBook, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
 
 interface ProgressSummaryProps {
   filters: {
@@ -281,28 +279,11 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
   };
 
   if (loading) {
-    return (
-      <div className="space-y-5">
-        <div className="h-40 animate-pulse rounded-[1.5rem] bg-muted" />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-36 animate-pulse rounded-[1.5rem] bg-muted" />
-          ))}
-        </div>
-      </div>
-    );
+    return <div className="h-40 animate-pulse rounded-[1.5rem] bg-muted" />;
   }
-
-  const overallProgress = hasAssessmentAccess
-    ? Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4)
-    : stats.improvementTrend;
 
   const headlineScore = heycleo.averageScore ?? stats.averageScore;
   const totalHomework = heycleo.totalHomework || stats.totalHomework;
-  const sparkPoints = heycleo.homework
-    .filter((hw) => hw.percentage != null)
-    .slice(-12)
-    .map((hw) => Number(hw.percentage));
 
   const ringCircumference = 2 * Math.PI * 52;
   const ringOffset = ringCircumference * (1 - Math.min(Math.max(headlineScore, 0), 100) / 100);
@@ -313,62 +294,39 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       : 'No homework tracked for these filters yet';
 
   return (
-    <div className="space-y-5">
-      {/* Headline ring */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-foreground/10 bg-pastel-lilac p-6 text-pastel-lilac-foreground">
-        <ScribbleStroke className="pointer-events-none absolute -bottom-8 -left-6 h-40 w-64 text-pastel-lilac-foreground/15" />
-        <div className="relative flex items-center gap-5">
-          <div className="relative h-32 w-32 shrink-0">
-            <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-              <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" className="stroke-background/50" />
-              <circle
-                cx="60"
-                cy="60"
-                r="52"
-                fill="none"
-                strokeWidth="12"
-                strokeLinecap="round"
-                stroke="currentColor"
-                strokeDasharray={ringCircumference}
-                strokeDashoffset={ringOffset}
-                className="transition-all duration-700"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-heading text-3xl font-bold leading-none">{headlineScore}%</span>
-              <span className="mt-1 text-[11px] uppercase tracking-wide opacity-70">average</span>
-            </div>
-          </div>
-          <div>
-            <p className="font-heading text-base font-semibold">Homework average</p>
-            <p className="mt-1 text-sm opacity-80">{headlineCopy}</p>
+    <div className="relative overflow-hidden rounded-[1.5rem] border border-foreground/10 bg-pastel-lilac p-6 text-pastel-lilac-foreground">
+      <ScribbleStroke className="pointer-events-none absolute -bottom-8 -left-6 h-40 w-64 text-pastel-lilac-foreground/15" />
+      <div className="relative flex items-center gap-5">
+        <div className="relative h-32 w-32 shrink-0">
+          <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+            <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" className="stroke-background/50" />
+            <circle
+              cx="60"
+              cy="60"
+              r="52"
+              fill="none"
+              strokeWidth="12"
+              strokeLinecap="round"
+              stroke="currentColor"
+              strokeDasharray={ringCircumference}
+              strokeDashoffset={ringOffset}
+              className="transition-all duration-700"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-heading text-3xl font-bold leading-none">{headlineScore}%</span>
+            <span className="mt-1 text-[11px] uppercase tracking-wide opacity-70">average</span>
           </div>
         </div>
-      </div>
-
-      {/* Supporting tiles */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <StatTile
-          tone="butter"
-          label="Homework set"
-          value={totalHomework.toString()}
-          caption="Pieces tracked in this range"
-          icon={<DoodleBook className="h-5 w-5" />}
-          sparkline={sparkPoints}
-        />
-        <StatTile
-          tone={overallProgress >= 0 ? 'mint' : 'blush'}
-          label="Overall trend"
-          value={`${overallProgress > 0 ? '+' : ''}${overallProgress}%`}
-          caption={overallProgress >= 0 ? 'Moving in the right direction' : 'Worth a closer look'}
-          icon={
-            overallProgress >= 0 ? <DoodleTrendUp className="h-5 w-5" /> : <DoodleTrendDown className="h-5 w-5" />
-          }
-        />
+        <div>
+          <p className="font-heading text-base font-semibold">Homework average</p>
+          <p className="mt-1 text-sm opacity-80">{headlineCopy}</p>
+        </div>
       </div>
     </div>
   );
 };
+
 
 export default ProgressSummary;
 
