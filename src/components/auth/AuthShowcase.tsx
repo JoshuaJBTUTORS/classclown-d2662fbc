@@ -43,7 +43,7 @@ const CleoSlide: React.FC<{ float: boolean }> = ({ float }) => (
     <div>
       <h2 className="font-heading text-2xl font-bold text-foreground">Learning, with Cleo</h2>
       <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
-        Live tutoring, lesson plans and progress — all in one friendly place.
+        Live tutoring, lesson plans and progress, all in one friendly place.
       </p>
     </div>
   </SlideFrame>
