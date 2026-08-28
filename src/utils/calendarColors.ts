@@ -45,13 +45,17 @@ export const getSubjectClass = (subject: string, lessonType?: string): string =>
     return 'ks3-event';
   }
 
+  // Year 11 gets its own color — check before GCSE so it isn't swallowed
+  if (subjectLower.includes('year 11')) {
+    return 'year-11-event';
+  }
+
   // GCSE subjects (typically secondary school level)
   if (subjectLower.includes('gcse') ||
       subjectLower.includes('year 7') ||
       subjectLower.includes('year 8') ||
       subjectLower.includes('year 9') ||
-      subjectLower.includes('year 10') ||
-      subjectLower.includes('year 11')) {
+      subjectLower.includes('year 10')) {
     return 'gcse-event';
   }
 
