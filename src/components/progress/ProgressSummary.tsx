@@ -155,20 +155,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         assessmentData = assessments;
       }
 
-      // Fetch attendance statistics
-      let attendanceQuery = supabase
-        .from('lesson_attendance')
-        .select(`
-          attendance_status,
-          lesson:lessons(start_time, subject)
-        `);
-
-      if (studentIds.length > 0) {
-        attendanceQuery = attendanceQuery.in('student_id', studentIds);
-      }
-
-      const { data: attendanceData, error: attendanceError } = await attendanceQuery;
-      if (attendanceError) throw attendanceError;
 
       // Fetch engagement and confidence statistics
       let engagementData = null;
