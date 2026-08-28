@@ -10,7 +10,7 @@ import { useAppVersion } from '@/hooks/useAppVersion';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthRedirect from '@/components/routing/AuthRedirect';
 import { DomainRouteGuard } from '@/components/routing/DomainRouteGuard';
-import LandingPage from './pages/LandingPage';
+
 import LoginPage from './pages/LoginPage';
 
 
@@ -121,7 +121,6 @@ function App() {
                 <Route path="/" element={<AuthRedirect />} />
                 
                 {/* Public routes */}
-                <Route path="/landing" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 
                 <Route path="/auth" element={<Auth />} />

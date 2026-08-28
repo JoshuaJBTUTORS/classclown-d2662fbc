@@ -1,6 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import LandingPage from '@/pages/LandingPage';
 
 const AuthRedirect = () => {
   const { user, userRole, loading } = useAuth();
@@ -32,8 +31,8 @@ const AuthRedirect = () => {
     return <Navigate to="/calendar" replace />;
   }
 
-  // If user is not authenticated, show landing page
-  return <LandingPage />;
+  // If user is not authenticated, go straight to the sign-in page
+  return <Navigate to="/auth" replace />;
 };
 
 export default AuthRedirect;

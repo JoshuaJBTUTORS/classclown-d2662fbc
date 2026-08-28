@@ -9,7 +9,7 @@ const TrialBookingConfirmation: React.FC = () => {
   const navigate = useNavigate();
 
   const handleGoHome = () => {
-    navigate('/landing');
+    navigate('/');
   };
 
   return (
