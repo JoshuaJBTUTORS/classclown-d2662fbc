@@ -2641,6 +2641,47 @@
   font-weight: 600;
 }
 
+/* Subject-tile design reuse inside calendar event boxes */
+.calendar-soft .calendar-event-content {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.calendar-soft .calendar-event-scribble {
+  pointer-events: none;
+  position: absolute;
+  top: -4px;
+  right: 0;
+  width: 80%;
+  height: 100%;
+  color: hsl(var(--background));
+  opacity: 0.85;
+}
+
+.calendar-soft .calendar-event-arrow {
+  position: absolute;
+  right: 6px;
+  top: 58%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  flex-shrink: 0;
+}
+
+.calendar-soft .fc-event .event-title {
+  position: relative;
+  padding-right: 30px;
+}
+
 .calendar-soft .availability-bg {
   background: hsl(var(--pastel-mint) / 0.55) !important;
 }
