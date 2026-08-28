@@ -6311,6 +6311,7 @@ export type Database = {
         Args: { submission_homework_id: string; submission_student_id: number }
         Returns: boolean
       }
+      can_view_heycleo_email: { Args: { _email: string }; Returns: boolean }
       check_learning_hub_access: {
         Args: { user_id_param: string }
         Returns: boolean
