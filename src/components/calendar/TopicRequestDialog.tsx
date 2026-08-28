@@ -129,10 +129,12 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-3xl border-0 shadow-[var(--shadow-soft)]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-3 font-heading">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-pastel-sky text-pastel-sky-foreground">
+              <DoodleChat className="h-5 w-5" />
+            </span>
             Request a Topic
           </DialogTitle>
           <DialogDescription>
@@ -152,14 +154,14 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
               name="subject"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subject</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Subject</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11 rounded-2xl border-border bg-muted/40 focus:ring-2 focus:ring-ring focus:ring-offset-0">
                         <SelectValue placeholder="Select a subject" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="rounded-2xl">
                       {SUBJECTS.map((subject) => (
                         <SelectItem key={subject} value={subject}>
                           {subject}
@@ -177,11 +179,11 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
               name="requestedTopic"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Topic Description</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Topic Description</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Describe the specific topic or concept you'd like to learn about..."
-                      className="min-h-[100px]"
+                      className="min-h-[110px] rounded-2xl border-border bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                       {...field}
                     />
                   </FormControl>
@@ -189,6 +191,8 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
                 </FormItem>
               )}
             />
+
+
 
             <DialogFooter className="gap-2 sm:justify-end">
               <Button
