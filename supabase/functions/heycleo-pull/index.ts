@@ -75,17 +75,32 @@ async function syncResource(
 
   try {
     const { rows, serverTime } = await pull(resource, since);
+    const runStamp = new Date().toISOString();
 
     let upserted = 0;
     for (let i = 0; i < rows.length; i += 500) {
       const chunk = rows.slice(i, i + 500)
-        .map((r) => ({ ...pick(r, keys), synced_at: new Date().toISOString() }))
+        .map((r) => ({ ...pick(r, keys), synced_at: runStamp }))
         .filter((r) => r[pk]);
       if (!chunk.length) continue;
       const { error } = await supabase.from(table).upsert(chunk, { onConflict: pk });
       if (error) throw new Error(`upsert failed: ${error.message}`);
       upserted += chunk.length;
     }
+
+    // On a full pull, anything HeyCleo no longer returns has been deleted upstream.
+    let pruned = 0;
+    if (full && upserted > 0) {
+      const { data: removed, error: pruneError } = await supabase
+        .from(table)
+        .delete()
+        .lt("synced_at", runStamp)
+        .select(pk);
+      if (pruneError) throw new Error(`prune failed: ${pruneError.message}`);
+      pruned = removed?.length ?? 0;
+      if (pruned) console.log(`[heycleo-pull] ${resource}: pruned ${pruned} stale rows`);
+    }
+
 
     await supabase.from("heycleo_sync_state").upsert({
       resource,
@@ -97,7 +112,8 @@ async function syncResource(
     }, { onConflict: "resource" });
 
     console.log(`[heycleo-pull] ${resource}: ${upserted} rows (since=${since ?? "null"})`);
-    return { resource, rows: upserted, server_time: serverTime, status: "success" };
+    return { resource, rows: upserted, pruned, server_time: serverTime, status: "success" };
+
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error(`[heycleo-pull] ${resource} failed:`, message);
