@@ -143,8 +143,38 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
           )}`
       : '';
 
+  /** Points in the 0–100 SVG space (x = centre of each month column). */
+  const points = useMemo<ChartPoint[]>(() => {
+    const step = 100 / Math.max(visible.length, 1);
+    return visible
+      .map((month, i) =>
+        month.average == null
+          ? null
+          : { key: month.key, x: step * i + step / 2, y: 100 - month.average },
+      )
+      .filter((p): p is ChartPoint => p !== null);
+  }, [visible]);
+
+  /** Contiguous runs of months with data, so gaps break the line. */
+  const segments = useMemo<ChartPoint[][]>(() => {
+    const step = 100 / Math.max(visible.length, 1);
+    const runs: ChartPoint[][] = [];
+    let current: ChartPoint[] = [];
+    visible.forEach((month, i) => {
+      if (month.average == null) {
+        if (current.length) runs.push(current);
+        current = [];
+        return;
+      }
+      current.push({ key: month.key, x: step * i + step / 2, y: 100 - month.average });
+    });
+    if (current.length) runs.push(current);
+    return runs;
+  }, [visible]);
+
   const description =
     userRole === 'owner' ? 'Student homework, month by month' : 'Your homework, month by month';
+
 
   if (loading) {
     return (
