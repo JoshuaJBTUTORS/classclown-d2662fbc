@@ -910,10 +910,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
+              <Button variant="outline" className="rounded-full border-foreground/20 bg-transparent" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
                 Cancel
               </Button>
               <Button
+                className="rounded-full"
                 onClick={handleAssignAssessmentWeek}
                 disabled={!selectedAssessmentTutor || !selectedAssessmentId || isAssigningAssessment}
               >
@@ -921,6 +922,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 Confirm
               </Button>
             </div>
+
           </div>
 
         </DialogContent>
