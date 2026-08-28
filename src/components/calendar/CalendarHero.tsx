@@ -23,10 +23,11 @@ const pillDark = cn(pillBase, 'bg-foreground text-background hover:-translate-y-
 
 const chipBase = cn(
   pillBase,
-  'pl-2 pr-4 gap-2.5 shadow-[var(--shadow-soft)] hover:-translate-y-0.5',
+  'pl-2 pr-4 gap-2.5 bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
 );
 const chipIcon =
-  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-card text-foreground';
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
+
 
 export const CalendarHero: React.FC<CalendarHeroProps> = ({
   canUseFilters,
@@ -62,7 +63,7 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
             <button
               type="button"
               onClick={onRequestTopic}
-              className={cn(chipBase, 'bg-pastel-sky text-pastel-sky-foreground')}
+              className={chipBase}
             >
               <span className={chipIcon}>
                 <DoodleChat className="h-4 w-4" />
@@ -72,7 +73,7 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
             <button
               type="button"
               onClick={onReferFriend}
-              className={cn(chipBase, 'bg-pastel-blush text-pastel-blush-foreground')}
+              className={chipBase}
             >
               <span className={chipIcon}>
                 <DoodleCoin className="h-4 w-4" />

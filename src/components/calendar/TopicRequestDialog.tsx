@@ -27,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { DoodleChat } from '@/components/progress/ProgressDoodles';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -129,10 +130,12 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-3xl border-0 shadow-[var(--shadow-soft)]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-3 font-heading">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-pastel-sky text-pastel-sky-foreground">
+              <DoodleChat className="h-5 w-5" />
+            </span>
             Request a Topic
           </DialogTitle>
           <DialogDescription>
@@ -152,14 +155,14 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
               name="subject"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subject</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Subject</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11 rounded-2xl border-border bg-muted/40 focus:ring-2 focus:ring-ring focus:ring-offset-0">
                         <SelectValue placeholder="Select a subject" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="rounded-2xl">
                       {SUBJECTS.map((subject) => (
                         <SelectItem key={subject} value={subject}>
                           {subject}
@@ -177,11 +180,11 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
               name="requestedTopic"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Topic Description</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Topic Description</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Describe the specific topic or concept you'd like to learn about..."
-                      className="min-h-[100px]"
+                      className="min-h-[110px] rounded-2xl border-border bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                       {...field}
                     />
                   </FormControl>
@@ -190,16 +193,23 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
               )}
             />
 
-            <DialogFooter>
+
+
+            <DialogFooter className="gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
+                className="rounded-full border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -210,6 +220,7 @@ export const TopicRequestDialog: React.FC<TopicRequestDialogProps> = ({
                 )}
               </Button>
             </DialogFooter>
+
           </form>
         </Form>
       </DialogContent>
