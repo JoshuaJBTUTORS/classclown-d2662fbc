@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import ProgressChart from '@/components/progress/ProgressChart';
-import AttendanceChart from '@/components/progress/AttendanceChart';
+
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
