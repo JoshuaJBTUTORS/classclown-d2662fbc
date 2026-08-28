@@ -5,8 +5,6 @@ import { toast } from 'sonner';
 import { paymentService } from '@/services/paymentService';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
-import StatTile from './StatTile';
-import { DoodleBook, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
 
 interface ProgressSummaryProps {
   filters: {
