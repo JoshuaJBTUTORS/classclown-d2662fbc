@@ -728,16 +728,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   {lesson.is_recurring}
                 </div>
                 
-                <div className="flex gap-2">
-                  {canEditLesson && <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="flex items-center gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
+                  {canEditLesson && <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent">
                       <Edit className="h-4 w-4" />
                       Edit Lesson
                     </Button>}
-                  {canDeleteLesson && <Button variant="outline" onClick={() => setIsDeleteDialogOpen(true)} className="flex items-center gap-2 text-destructive hover:text-destructive">
+                  {canDeleteLesson && <Button variant="outline" onClick={() => setIsDeleteDialogOpen(true)} className="flex items-center gap-2 rounded-full border-destructive/30 bg-transparent text-destructive hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2">
+                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent">
                       <FileUp className="h-4 w-4" />
                       Submit Resources
                     </Button>}
@@ -748,7 +748,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Button 
                         variant={isProcessed ? "default" : "outline"}
                         onClick={handleProcessLesson}
-                        className={`flex items-center gap-2 ${isProcessed ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                        className={`flex items-center gap-2 rounded-full ${isProcessed ? '' : 'border-foreground/20 bg-transparent'}`}
                       >
                         <Play className="h-4 w-4" />
                         Process Lesson
@@ -760,7 +760,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Button
                         variant="outline"
                         onClick={() => setIsTranscriptProposalOpen(true)}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent"
                       >
                         <Send className="h-4 w-4" />
                         Send Proposal
@@ -769,6 +769,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
                   
                 </div>
+
               </div>
             </div> : <div className="text-center p-8">
               <p className="text-muted-foreground">Failed to load lesson details</p>
