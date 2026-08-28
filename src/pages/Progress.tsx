@@ -16,7 +16,6 @@ import { AlertCircle } from 'lucide-react';
 interface ProgressFilters {
   dateRange: { from: Date | null; to: Date | null };
   selectedStudents: string[];
-  selectedSubjects: string[];
 }
 
 const Progress: React.FC = () => {
@@ -25,7 +24,6 @@ const Progress: React.FC = () => {
   const [filters, setFilters] = useState<ProgressFilters>({
     dateRange: { from: null, to: null },
     selectedStudents: [],
-    selectedSubjects: []
   });
 
   const { userRole, user } = useAuth();

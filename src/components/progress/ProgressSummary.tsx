@@ -12,7 +12,6 @@ interface ProgressSummaryProps {
   filters: {
     dateRange: { from: Date | null; to: Date | null };
     selectedStudents: string[];
-    selectedSubjects: string[];
   };
   userRole: string;
 }
