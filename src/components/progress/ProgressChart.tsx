@@ -224,54 +224,85 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
               </div>
             )}
 
-            {/* Bars */}
-            <div className="absolute inset-y-0 left-11 right-0 flex items-end gap-3">
-              {visible.map((month, index) => {
-                const hasData = month.average != null;
-                return (
-                  <Tooltip key={month.key}>
-                    <TooltipTrigger asChild>
-                      <div className="group flex h-full flex-1 cursor-default flex-col justify-end">
-                        {hasData && (
-                          <span className="mb-1.5 text-center font-heading text-sm font-bold tabular-nums text-foreground">
-                            {month.average}%
-                          </span>
+            {/* Squiggle line */}
+            <div className="absolute inset-y-0 left-11 right-0">
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="absolute inset-0 h-full w-full overflow-visible"
+                aria-hidden="true"
+              >
+                {segments.map((segment, i) => (
+                  <g key={`seg-${i}`}>
+                    {segment.length > 1 && (
+                      <path
+                        d={`${squigglePath(segment)} L ${segment[segment.length - 1].x} 100 L ${segment[0].x} 100 Z`}
+                        fill="hsl(var(--progress-bar-fill))"
+                      />
+                    )}
+                    <motion.path
+                      d={squigglePath(segment)}
+                      fill="none"
+                      stroke="hsl(var(--progress-bar-line))"
+                      strokeWidth={2.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      vectorEffect="non-scaling-stroke"
+                      initial={reduceMotion ? false : { pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 0.9, ease: 'easeOut' }}
+                    />
+                  </g>
+                ))}
+                {points.map((point) => (
+                  <circle
+                    key={`dot-${point.key}`}
+                    cx={point.x}
+                    cy={point.y}
+                    r={3}
+                    fill="hsl(var(--background))"
+                    stroke="hsl(var(--progress-bar-line))"
+                    strokeWidth={2}
+                    vectorEffect="non-scaling-stroke"
+                    style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+                  />
+                ))}
+              </svg>
+
+              {/* Hover columns */}
+              <div className="absolute inset-0 flex">
+                {visible.map((month) => {
+                  const hasData = month.average != null;
+                  return (
+                    <Tooltip key={month.key}>
+                      <TooltipTrigger asChild>
+                        <div className="h-full flex-1 cursor-default rounded-lg transition-colors hover:bg-foreground/[0.04]" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[16rem] rounded-xl">
+                        <p className="font-semibold">{month.label}</p>
+                        {hasData ? (
+                          <>
+                            <p className="text-xs">
+                              {month.average}% average · {month.count} piece{month.count === 1 ? '' : 's'} marked
+                            </p>
+                            <ul className="mt-1 space-y-0.5 text-xs opacity-80">
+                              {month.items.slice(0, 3).map((item, i) => (
+                                <li key={`${month.key}-t-${i}`} className="truncate">
+                                  {item.homework_title} · {item.percentage}%
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        ) : (
+                          <p className="text-xs">Nothing marked</p>
                         )}
-                        <motion.div
-                          initial={reduceMotion ? false : { height: 0 }}
-                          animate={{ height: `${hasData ? Math.max(month.average!, 2) : 1.5}%` }}
-                          transition={{ duration: 0.6, delay: index * 0.06, ease: 'easeOut' }}
-                          className={cn(
-                            'w-full rounded-t-[0.9rem] transition-opacity',
-                            hasData ? BAR_TONE : 'bg-foreground/10',
-                            hasData && 'group-hover:opacity-80',
-                          )}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[16rem] rounded-xl">
-                      <p className="font-semibold">{month.label}</p>
-                      {hasData ? (
-                        <>
-                          <p className="text-xs">
-                            {month.average}% average · {month.count} piece{month.count === 1 ? '' : 's'} marked
-                          </p>
-                          <ul className="mt-1 space-y-0.5 text-xs opacity-80">
-                            {month.items.slice(0, 3).map((item, i) => (
-                              <li key={`${month.key}-t-${i}`} className="truncate">
-                                {item.homework_title} · {item.percentage}%
-                              </li>
-                            ))}
-                          </ul>
-                        </>
-                      ) : (
-                        <p className="text-xs">Nothing marked</p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
             </div>
+
           </div>
 
           {/* Month labels */}
