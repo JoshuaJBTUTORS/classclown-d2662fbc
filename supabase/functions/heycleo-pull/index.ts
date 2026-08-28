@@ -131,9 +131,11 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   let resource = "all";
+  let full = false;
   try {
     const body = await req.json();
     if (body?.resource) resource = String(body.resource);
+    if (body?.full === true) full = true;
   } catch {
     // no body -> default to all (cron invocations)
   }
