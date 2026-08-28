@@ -1396,33 +1396,40 @@
   border-left: 3px solid white !important;
 }
 
-/* Vibrant subject-specific event colors with transparency */
+/* Year-group event colors — ClassClown pastel design language */
 .fc-event.ks2-event {
-  background: hsl(var(--ks2-color)) !important;
+  background: hsl(var(--pastel-blush)) !important;
+  color: hsl(var(--pastel-blush-foreground)) !important;
 }
 
 .fc-event.eleven-plus-event {
-  background: hsl(var(--eleven-plus-color)) !important;
+  background: hsl(var(--pastel-lilac) / 0.7) !important;
+  color: hsl(var(--pastel-lilac-foreground)) !important;
 }
 
 .fc-event.ks3-event {
-  background: hsl(var(--ks3-color)) !important;
+  background: hsl(var(--pastel-sky)) !important;
+  color: hsl(var(--pastel-sky-foreground)) !important;
 }
 
 .fc-event.gcse-event {
-  background: hsl(var(--gcse-color)) !important;
+  background: hsl(var(--pastel-mint)) !important;
+  color: hsl(var(--pastel-mint-foreground)) !important;
 }
 
 .fc-event.sats-event {
-  background: hsl(var(--sats-color)) !important;
+  background: hsl(var(--pastel-blush) / 0.7) !important;
+  color: hsl(var(--pastel-blush-foreground)) !important;
 }
 
 .fc-event.year-11-event {
-  background: hsl(var(--year-11-color)) !important;
+  background: hsl(var(--pastel-butter)) !important;
+  color: hsl(var(--pastel-butter-foreground)) !important;
 }
 
 .fc-event.a-level-event {
-  background: hsl(var(--a-level-color)) !important;
+  background: hsl(var(--pastel-lilac)) !important;
+  color: hsl(var(--pastel-lilac-foreground)) !important;
 }
 
 .fc-event.trial-event {
