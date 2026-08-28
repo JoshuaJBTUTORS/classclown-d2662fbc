@@ -1424,22 +1424,30 @@
   border-left: 3px solid white !important;
 }
 
-/* Year-group event colors — rich pastel with tiger-stripe texture */
-.fc-event.ks2-event,
-.fc-event.sats-event {
+/* Year-group event colors — rich tile-matched pastels with tiger-stripe texture */
+.fc-event.ks2-event {
   background: hsl(var(--event-ks2)) repeating-linear-gradient(
     45deg,
-    hsl(var(--event-ks2-stripe) / 0.08) 0 6px,
+    hsl(var(--event-ks2-stripe) / 0.1) 0 6px,
     transparent 6px 12px
   ) !important;
   color: hsl(var(--pastel-blush-foreground)) !important;
+}
+
+.fc-event.sats-event {
+  background: hsl(var(--event-sats)) repeating-linear-gradient(
+    45deg,
+    hsl(var(--event-sats-stripe) / 0.1) 0 6px,
+    transparent 6px 12px
+  ) !important;
+  color: hsl(var(--pastel-sand-foreground)) !important;
 }
 
 .fc-event.eleven-plus-event,
 .fc-event.a-level-event {
   background: hsl(var(--event-a-level)) repeating-linear-gradient(
     45deg,
-    hsl(var(--event-a-level-stripe) / 0.08) 0 6px,
+    hsl(var(--event-a-level-stripe) / 0.1) 0 6px,
     transparent 6px 12px
   ) !important;
   color: hsl(var(--pastel-lilac-foreground)) !important;
@@ -1448,7 +1456,7 @@
 .fc-event.ks3-event {
   background: hsl(var(--event-ks3)) repeating-linear-gradient(
     45deg,
-    hsl(var(--event-ks3-stripe) / 0.08) 0 6px,
+    hsl(var(--event-ks3-stripe) / 0.1) 0 6px,
     transparent 6px 12px
   ) !important;
   color: hsl(var(--pastel-sky-foreground)) !important;
@@ -1457,7 +1465,7 @@
 .fc-event.gcse-event {
   background: hsl(var(--event-gcse)) repeating-linear-gradient(
     45deg,
-    hsl(var(--event-gcse-stripe) / 0.08) 0 6px,
+    hsl(var(--event-gcse-stripe) / 0.1) 0 6px,
     transparent 6px 12px
   ) !important;
   color: hsl(var(--pastel-mint-foreground)) !important;
@@ -1466,10 +1474,15 @@
 .fc-event.year-11-event {
   background: hsl(var(--event-year-11)) repeating-linear-gradient(
     45deg,
-    hsl(var(--event-year-11-stripe) / 0.08) 0 6px,
+    hsl(var(--event-year-11-stripe) / 0.1) 0 6px,
     transparent 6px 12px
   ) !important;
   color: hsl(var(--pastel-butter-foreground)) !important;
+}
+
+.calendar-soft .fc-event .fc-event-title,
+.calendar-soft .fc-event .event-title {
+  font-weight: 600 !important;
 }
 
 .fc-event.trial-event {
