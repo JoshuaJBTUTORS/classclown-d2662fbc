@@ -693,25 +693,24 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
               {/* Homework Section */}
-              {homeworkStatus.exists && <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
+              {homeworkStatus.exists && <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight mb-3 flex items-center gap-2">
+                      <DoodleBook className="h-5 w-5" />
                       Assigned Homework
                     </h3>
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-sm font-medium text-green-800">
+                    <div className="p-4 bg-pastel-mint rounded-2xl">
+                      <p className="text-sm font-semibold text-pastel-mint-foreground">
                         {homeworkStatus.homework?.title}
                       </p>
-                      {homeworkStatus.homework?.description && <p className="text-sm text-green-700 mt-1">
+                      {homeworkStatus.homework?.description && <p className="text-sm text-pastel-mint-foreground/80 mt-1">
                           {homeworkStatus.homework.description}
                         </p>}
-                      {homeworkStatus.homework?.due_date && <p className="text-xs text-green-600 mt-2">
+                      {homeworkStatus.homework?.due_date && <p className="text-xs text-pastel-mint-foreground/70 mt-2">
                           Due: {format(parseISO(homeworkStatus.homework.due_date), 'MMM d, yyyy')}
                         </p>}
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
+
 
               {/* AI Lesson Summaries Section - Only show if students exist and not a demo session */}
               {validStudents.length > 0 && (
