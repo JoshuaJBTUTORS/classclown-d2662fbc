@@ -313,9 +313,9 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       : 'No homework tracked for these filters yet';
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_2fr]">
+    <div className="space-y-5">
       {/* Headline ring */}
-      <div className="relative overflow-hidden rounded-[1.5rem] bg-pastel-lilac p-6 text-pastel-lilac-foreground">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-foreground/10 bg-pastel-lilac p-6 text-pastel-lilac-foreground">
         <ScribbleStroke className="pointer-events-none absolute -bottom-8 -left-6 h-40 w-64 text-pastel-lilac-foreground/15" />
         <div className="relative flex items-center gap-5">
           <div className="relative h-32 w-32 shrink-0">
