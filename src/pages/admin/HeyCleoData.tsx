@@ -21,7 +21,9 @@ type SyncState = {
   last_status: string | null;
   last_error: string | null;
   rows_synced: number | null;
+  rows_pruned: number | null;
 };
+
 
 const fmt = (value?: string | null, pattern = 'd MMM yyyy, HH:mm') => {
   if (!value) return '—';
