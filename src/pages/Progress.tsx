@@ -71,15 +71,6 @@ const Progress: React.FC = () => {
     }
   };
 
-  const getSubtitle = () => {
-    if (userRole === 'parent') {
-      return "Track your homework and assessment progress";
-    } else if (userRole === 'student') {
-      return "View your homework and assessment progress";
-    } else {
-      return "Track student progress and performance analytics";
-    }
-  };
 
   return (
     <>
