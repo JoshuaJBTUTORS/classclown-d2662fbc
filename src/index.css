@@ -2667,7 +2667,8 @@
 
 .calendar-soft .fc-event .event-title {
   position: relative;
-  padding-right: 30px;
+  padding-right: 6px;
+  padding-bottom: 26px;
 }
 
 .calendar-soft .availability-bg {
