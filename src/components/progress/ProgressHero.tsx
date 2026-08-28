@@ -2,7 +2,6 @@ import React from 'react';
 
 interface ProgressHeroProps {
   title: string;
-  subtitle: string;
   children?: React.ReactNode;
 }
 
