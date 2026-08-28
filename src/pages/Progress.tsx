@@ -1,18 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
-import PageTitle from '@/components/ui/PageTitle';
 import ProgressChart from '@/components/progress/ProgressChart';
 import AttendanceChart from '@/components/progress/AttendanceChart';
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
+import ProgressHero from '@/components/progress/ProgressHero';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface ProgressFilters {
   dateRange: { from: Date | null; to: Date | null };
@@ -90,40 +89,25 @@ const Progress: React.FC = () => {
       <div className="flex flex-col flex-1 w-full">
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
-          <PageTitle 
-            title={getPageTitle()}
-            subtitle={getSubtitle()}
-          />
-
-          <div className="space-y-8">
-            <ProgressFilters 
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              userRole={userRole}
-            />
-
-            <ProgressSummary 
-              filters={filters}
-              userRole={userRole}
-            />
-
-
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              <ProgressChart 
+          <div className="mx-auto max-w-[1400px] space-y-6">
+            <ProgressHero title={getPageTitle()} subtitle={getSubtitle()}>
+              <ProgressFilters
                 filters={filters}
+                onFiltersChange={handleFiltersChange}
                 userRole={userRole}
               />
-              
-              <AttendanceChart 
-                filters={filters}
-                userRole={userRole}
-              />
+            </ProgressHero>
 
-              <AssessmentProgressChart 
-                filters={filters}
-                userRole={userRole}
-              />
+            <ProgressSummary filters={filters} userRole={userRole} />
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <div className="xl:col-span-2">
+                <ProgressChart filters={filters} userRole={userRole} />
+              </div>
+              <AttendanceChart filters={filters} userRole={userRole} />
             </div>
+
+            <AssessmentProgressChart filters={filters} userRole={userRole} />
           </div>
         </main>
       </div>
@@ -132,3 +116,4 @@ const Progress: React.FC = () => {
 };
 
 export default Progress;
+

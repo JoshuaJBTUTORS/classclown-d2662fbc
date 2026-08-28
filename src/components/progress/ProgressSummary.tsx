@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Calendar, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { paymentService } from '@/services/paymentService';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import StatTile from './StatTile';
+import { DoodleBook, DoodleCalendar, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
 
 interface ProgressSummaryProps {
   filters: {
@@ -305,17 +306,13 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_2fr]">
+        <div className="h-44 animate-pulse rounded-[1.5rem] bg-muted" />
+        <div className="grid grid-cols-2 gap-5 xl:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-44 animate-pulse rounded-[1.5rem] bg-muted" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -324,60 +321,85 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
     ? Math.round((stats.improvementTrend + stats.assessmentImprovementTrend + stats.engagementTrend + stats.confidenceTrend) / 4)
     : stats.improvementTrend;
 
-  const statCards = [
-    {
-      title: "Homework Average",
-      value: `${heycleo.averageScore ?? stats.averageScore}%`,
-      icon: BookOpen,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "Attendance Rate",
-      value: `${stats.attendanceRate}%`,
-      icon: Calendar,
-      color: "text-green-600",
-      bgColor: "bg-green-50"
-    },
-    {
-      title: "Total Homework",
-      value: (heycleo.totalHomework || stats.totalHomework).toString(),
-      icon: BookOpen,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50"
-    },
-    {
-      title: "Overall Progress",
-      value: `${overallProgress > 0 ? '+' : ''}${overallProgress}%`,
-      icon: overallProgress >= 0 ? TrendingUp : TrendingDown,
-      color: overallProgress >= 0 ? "text-green-600" : "text-red-600",
-      bgColor: overallProgress >= 0 ? "bg-green-50" : "bg-red-50"
-    }
-  ];
+  const headlineScore = heycleo.averageScore ?? stats.averageScore;
+  const totalHomework = heycleo.totalHomework || stats.totalHomework;
+  const sparkPoints = heycleo.homework
+    .filter((hw) => hw.percentage != null)
+    .slice(-12)
+    .map((hw) => Number(hw.percentage));
+
+  const ringCircumference = 2 * Math.PI * 52;
+  const ringOffset = ringCircumference * (1 - Math.min(Math.max(headlineScore, 0), 100) / 100);
+
+  const headlineCopy =
+    totalHomework > 0
+      ? `${totalHomework} homework${totalHomework === 1 ? '' : 's'} tracked, averaging ${headlineScore}%`
+      : 'No homework tracked for these filters yet';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-      {statCards.map((card, index) => (
-        <Card key={index} className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200 group">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-600 group-hover:text-gray-700 transition-colors">
-                  {card.title}
-                </p>
-                <p className="text-2xl font-bold font-playfair text-gray-900">
-                  {card.value}
-                </p>
-              </div>
-              <div className={`p-3 rounded-lg ${card.bgColor} group-hover:scale-110 transition-transform duration-200`}>
-                <card.icon className={`h-6 w-6 ${card.color}`} />
-              </div>
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_2fr]">
+      {/* Headline ring */}
+      <div className="relative overflow-hidden rounded-[1.5rem] bg-pastel-lilac p-6 text-pastel-lilac-foreground">
+        <ScribbleStroke className="pointer-events-none absolute -bottom-8 -left-6 h-40 w-64 text-pastel-lilac-foreground/15" />
+        <div className="relative flex items-center gap-5">
+          <div className="relative h-32 w-32 shrink-0">
+            <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+              <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" className="stroke-background/50" />
+              <circle
+                cx="60"
+                cy="60"
+                r="52"
+                fill="none"
+                strokeWidth="12"
+                strokeLinecap="round"
+                stroke="currentColor"
+                strokeDasharray={ringCircumference}
+                strokeDashoffset={ringOffset}
+                className="transition-all duration-700"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-heading text-3xl font-bold leading-none">{headlineScore}%</span>
+              <span className="mt-1 text-[11px] uppercase tracking-wide opacity-70">average</span>
             </div>
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+          <div>
+            <p className="font-heading text-base font-semibold">Homework average</p>
+            <p className="mt-1 text-sm opacity-80">{headlineCopy}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Supporting tiles */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <StatTile
+          tone="sky"
+          label="Attendance rate"
+          value={`${stats.attendanceRate}%`}
+          caption="Lessons attended on time"
+          icon={<DoodleCalendar className="h-5 w-5" />}
+        />
+        <StatTile
+          tone="butter"
+          label="Homework set"
+          value={totalHomework.toString()}
+          caption="Pieces tracked in this range"
+          icon={<DoodleBook className="h-5 w-5" />}
+          sparkline={sparkPoints}
+        />
+        <StatTile
+          tone={overallProgress >= 0 ? 'mint' : 'blush'}
+          label="Overall trend"
+          value={`${overallProgress > 0 ? '+' : ''}${overallProgress}%`}
+          caption={overallProgress >= 0 ? 'Moving in the right direction' : 'Worth a closer look'}
+          icon={
+            overallProgress >= 0 ? <DoodleTrendUp className="h-5 w-5" /> : <DoodleTrendDown className="h-5 w-5" />
+          }
+        />
+      </div>
     </div>
   );
 };
 
 export default ProgressSummary;
+
