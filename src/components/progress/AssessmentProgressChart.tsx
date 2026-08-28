@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-import { Brain, Lock, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { paymentService } from '@/services/paymentService';
+import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
+import ProgressPanel from './ProgressPanel';
+import { DoodleEmpty, DoodleLock } from './ProgressDoodles';
 
 interface AssessmentProgressChartProps {
   filters: {
