@@ -58,7 +58,7 @@ const TeachersSlide: React.FC = () => (
       transition={{ duration: 0.5 }}
       className="flex w-full justify-center"
     >
-      <TeacherChalkboard />
+      <WhiteboardScene />
     </motion.div>
     <div>
       <h2 className="font-heading text-2xl font-bold text-foreground">Taught by top-tier teachers</h2>
