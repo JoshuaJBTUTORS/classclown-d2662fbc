@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
 import ProgressChart from '@/components/progress/ProgressChart';
-import AttendanceChart from '@/components/progress/AttendanceChart';
+
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
@@ -75,9 +75,9 @@ const Progress: React.FC = () => {
 
   const getSubtitle = () => {
     if (userRole === 'parent') {
-      return "Track your homework, attendance, and assessment progress";
+      return "Track your homework and assessment progress";
     } else if (userRole === 'student') {
-      return "View your homework, attendance, and assessment progress";
+      return "View your homework and assessment progress";
     } else {
       return "Track student progress and performance analytics";
     }
@@ -100,12 +100,7 @@ const Progress: React.FC = () => {
 
             <ProgressSummary filters={filters} userRole={userRole} />
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-              <div className="xl:col-span-2">
-                <ProgressChart filters={filters} userRole={userRole} />
-              </div>
-              <AttendanceChart filters={filters} userRole={userRole} />
-            </div>
+            <ProgressChart filters={filters} userRole={userRole} />
 
             <AssessmentProgressChart filters={filters} userRole={userRole} />
           </div>

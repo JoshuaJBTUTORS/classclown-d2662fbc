@@ -6,7 +6,7 @@ import { paymentService } from '@/services/paymentService';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import StatTile from './StatTile';
-import { DoodleBook, DoodleCalendar, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
+import { DoodleBook, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
 
 interface ProgressSummaryProps {
   filters: {
@@ -19,7 +19,6 @@ interface ProgressSummaryProps {
 
 interface SummaryStats {
   averageScore: number;
-  attendanceRate: number;
   totalHomework: number;
   improvementTrend: number;
   averageAssessmentScore: number;
@@ -35,7 +34,6 @@ interface SummaryStats {
 const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) => {
   const [stats, setStats] = useState<SummaryStats>({
     averageScore: 0,
-    attendanceRate: 0,
     totalHomework: 0,
     improvementTrend: 0,
     averageAssessmentScore: 0,
@@ -155,20 +153,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
         assessmentData = assessments;
       }
 
-      // Fetch attendance statistics
-      let attendanceQuery = supabase
-        .from('lesson_attendance')
-        .select(`
-          attendance_status,
-          lesson:lessons(start_time, subject)
-        `);
-
-      if (studentIds.length > 0) {
-        attendanceQuery = attendanceQuery.in('student_id', studentIds);
-      }
-
-      const { data: attendanceData, error: attendanceError } = await attendanceQuery;
-      if (attendanceError) throw attendanceError;
 
       // Fetch engagement and confidence statistics
       let engagementData = null;
@@ -216,12 +200,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
           }, 0) / totalAssessments)
         : 0;
 
-      // Calculate attendance statistics
-      const totalLessons = attendanceData?.length || 0;
-      const attendedLessons = attendanceData?.filter(a => a.attendance_status === 'present').length || 0;
-      const attendanceRate = totalLessons > 0 
-        ? Math.round((attendedLessons / totalLessons) * 100)
-        : 0;
 
       // Calculate homework improvement trend
       let improvementTrend = 0;
@@ -284,7 +262,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
       setStats({
         averageScore,
-        attendanceRate,
         totalHomework,
         improvementTrend,
         averageAssessmentScore,
@@ -371,14 +348,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
       </div>
 
       {/* Supporting tiles */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        <StatTile
-          tone="sky"
-          label="Attendance rate"
-          value={`${stats.attendanceRate}%`}
-          caption="Lessons attended on time"
-          icon={<DoodleCalendar className="h-5 w-5" />}
-        />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <StatTile
           tone="butter"
           label="Homework set"
