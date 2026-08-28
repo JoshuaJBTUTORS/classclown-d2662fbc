@@ -1,6 +1,7 @@
 import React from 'react';
-import { Filter, CalendarPlus, MessageSquare, Users } from 'lucide-react';
+import { Filter, CalendarPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DoodleChat, DoodleCoin } from '@/components/progress/ProgressDoodles';
 
 interface CalendarHeroProps {
   canUseFilters: boolean;
@@ -19,6 +20,13 @@ const pillBase =
 
 const pillSoft = cn(pillBase, 'bg-card text-foreground shadow-[var(--shadow-soft)] hover:-translate-y-0.5');
 const pillDark = cn(pillBase, 'bg-foreground text-background hover:-translate-y-0.5 hover:opacity-90');
+
+const chipBase = cn(
+  pillBase,
+  'pl-2 pr-4 gap-2.5 shadow-[var(--shadow-soft)] hover:-translate-y-0.5',
+);
+const chipIcon =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-card text-foreground';
 
 export const CalendarHero: React.FC<CalendarHeroProps> = ({
   canUseFilters,
@@ -51,16 +59,32 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
 
         {showFamilyActions && (
           <>
-            <button type="button" onClick={onRequestTopic} className={pillSoft}>
-              <MessageSquare className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={onRequestTopic}
+              className={cn(chipBase, 'bg-pastel-sky text-pastel-sky-foreground')}
+            >
+              <span className={chipIcon}>
+                <DoodleChat className="h-4 w-4" />
+              </span>
               Request topic
             </button>
-            <button type="button" onClick={onReferFriend} className={pillSoft}>
-              <Users className="h-4 w-4" />
-              Refer a friend £100
+            <button
+              type="button"
+              onClick={onReferFriend}
+              className={cn(chipBase, 'bg-pastel-blush text-pastel-blush-foreground')}
+            >
+              <span className={chipIcon}>
+                <DoodleCoin className="h-4 w-4" />
+              </span>
+              Refer a friend
+              <span className="rounded-full bg-foreground px-2 py-0.5 text-xs font-semibold text-background">
+                £100
+              </span>
             </button>
           </>
         )}
+
 
         {canScheduleLessons && (
           <button type="button" onClick={onSchedule} className={pillDark}>
