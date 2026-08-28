@@ -173,14 +173,17 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   let resource = "all";
-  let full = false;
+  // Authoritative by default: pull everything and prune what HeyCleo no longer sends.
+  // Pass { "full": false } explicitly for a cursor-based incremental pull (debugging only).
+  let full = true;
   try {
     const body = await req.json();
     if (body?.resource) resource = String(body.resource);
-    if (body?.full === true) full = true;
+    if (body?.full === false) full = false;
   } catch {
-    // no body -> default to all (cron invocations)
+    // no body -> default to a full pull of all resources (cron invocations)
   }
+
 
   // Manual (browser) invocations carry a user JWT: require admin/owner.
   const authHeader = req.headers.get("Authorization") ?? "";
