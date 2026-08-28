@@ -36,34 +36,10 @@ interface MonthBucket {
 /** Number of months visible in the chart window at once. */
 const WINDOW = 6;
 
-type ChartPoint = { key: string; x: number; y: number };
-
-/**
- * Smooth, slightly wobbly path through the points (Catmull-Rom style smoothing
- * with a small alternating lift so the line reads as hand-drawn).
- */
-const squigglePath = (pts: ChartPoint[]) => {
-  if (pts.length === 0) return '';
-  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y} L ${pts[0].x + 0.01} ${pts[0].y}`;
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] ?? p2;
-    const wobble = i % 2 === 0 ? -2.2 : 2.2;
-    const c1x = p1.x + (p2.x - p0.x) / 6;
-    const c1y = p1.y + (p2.y - p0.y) / 6 + wobble;
-    const c2x = p2.x - (p3.x - p1.x) / 6;
-    const c2y = p2.y - (p3.y - p1.y) / 6 - wobble;
-    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
-  }
-  return d;
-};
-
 const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   const { data: heycleo, isLoading: loading } = useHeyCleoProgress(filters.selectedStudents);
   const [offset, setOffset] = useState(0);
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
 
   const nameByHeycleoId = useMemo(() => {
@@ -154,6 +130,14 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
     return Math.round(scores.reduce((sum, s) => sum + s.percentage, 0) / scores.length);
   }, [scores]);
 
+  /** Most recent visible month with data — gets the deep-peach highlight. */
+  const latestKey = useMemo(() => {
+    for (let i = visible.length - 1; i >= 0; i--) {
+      if (visible[i].average != null) return visible[i].key;
+    }
+    return null;
+  }, [visible]);
+
   const windowLabel =
     visible.length > 0
       ? visible.length === 1
@@ -164,38 +148,8 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
           )}`
       : '';
 
-  /** Points in the 0–100 SVG space (x = centre of each month column). */
-  const points = useMemo<ChartPoint[]>(() => {
-    const step = 100 / Math.max(visible.length, 1);
-    return visible
-      .map((month, i) =>
-        month.average == null
-          ? null
-          : { key: month.key, x: step * i + step / 2, y: 100 - month.average },
-      )
-      .filter((p): p is ChartPoint => p !== null);
-  }, [visible]);
-
-  /** Contiguous runs of months with data, so gaps break the line. */
-  const segments = useMemo<ChartPoint[][]>(() => {
-    const step = 100 / Math.max(visible.length, 1);
-    const runs: ChartPoint[][] = [];
-    let current: ChartPoint[] = [];
-    visible.forEach((month, i) => {
-      if (month.average == null) {
-        if (current.length) runs.push(current);
-        current = [];
-        return;
-      }
-      current.push({ key: month.key, x: step * i + step / 2, y: 100 - month.average });
-    });
-    if (current.length) runs.push(current);
-    return runs;
-  }, [visible]);
-
   const description =
     userRole === 'owner' ? 'Student homework, month by month' : 'Your homework, month by month';
-
 
   if (loading) {
     return (
@@ -249,8 +203,8 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
     >
       <TooltipProvider delayDuration={80}>
         <div className="relative rounded-[1.25rem] border border-foreground/10 bg-background p-5 pt-8">
-          {/* Gridlines */}
           <div className="relative h-64">
+            {/* Gridlines */}
             {[100, 75, 50, 25, 0].map((line) => (
               <div
                 key={line}
@@ -265,7 +219,7 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
             {/* Average baseline */}
             {overall != null && (
               <div
-                className="absolute left-11 right-0 flex items-center"
+                className="absolute left-11 right-0 z-10 flex items-center"
                 style={{ bottom: `${overall}%` }}
               >
                 <span className="h-px flex-1 border-t border-dashed border-foreground/50" />
@@ -275,89 +229,66 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
               </div>
             )}
 
-            {/* Squiggle line */}
-            <div className="absolute inset-y-0 left-11 right-0">
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="absolute inset-0 h-full w-full overflow-visible"
-                aria-hidden="true"
-              >
-                {segments.map((segment, i) => (
-                  <g key={`seg-${i}`}>
-                    {segment.length > 1 && (
-                      <path
-                        d={`${squigglePath(segment)} L ${segment[segment.length - 1].x} 100 L ${segment[0].x} 100 Z`}
-                        fill="hsl(var(--progress-bar-fill))"
-                      />
-                    )}
-                    <motion.path
-                      d={squigglePath(segment)}
-                      fill="none"
-                      stroke="hsl(var(--progress-bar-line))"
-                      strokeWidth={2.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      vectorEffect="non-scaling-stroke"
-                      initial={reduceMotion ? false : { pathLength: 0 }}
-                      animate={{ pathLength: 1 }}
-                      transition={{ duration: 0.9, ease: 'easeOut' }}
-                    />
-                  </g>
-                ))}
-                {points.map((point) => (
-                  <circle
-                    key={`dot-${point.key}`}
-                    cx={point.x}
-                    cy={point.y}
-                    r={3}
-                    fill="hsl(var(--background))"
-                    stroke="hsl(var(--progress-bar-line))"
-                    strokeWidth={2}
-                    vectorEffect="non-scaling-stroke"
-                    style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
-                  />
-                ))}
-              </svg>
+            {/* Bars */}
+            <div className="absolute inset-y-0 left-11 right-0 flex items-stretch gap-3 sm:gap-4">
+              {visible.map((month) => {
+                const hasData = month.average != null;
+                const isHighlighted = month.key === (hoveredKey ?? latestKey);
+                const heightPct = hasData ? Math.max(month.average as number, 6) : 4;
 
-              {/* Hover columns */}
-              <div className="absolute inset-0 flex">
-                {visible.map((month) => {
-                  const hasData = month.average != null;
-                  return (
-                    <Tooltip key={month.key}>
-                      <TooltipTrigger asChild>
-                        <div className="h-full flex-1 cursor-default rounded-lg transition-colors hover:bg-foreground/[0.04]" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[16rem] rounded-xl">
-                        <p className="font-semibold">{month.label}</p>
-                        {hasData ? (
-                          <>
-                            <p className="text-xs">
-                              {month.average}% average · {month.count} piece{month.count === 1 ? '' : 's'} marked
-                            </p>
-                            <ul className="mt-1 space-y-0.5 text-xs opacity-80">
-                              {month.items.slice(0, 3).map((item, i) => (
-                                <li key={`${month.key}-t-${i}`} className="truncate">
-                                  {item.homework_title} · {item.percentage}%
-                                </li>
-                              ))}
-                            </ul>
-                          </>
-                        ) : (
-                          <p className="text-xs">Nothing marked</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </div>
+                return (
+                  <Tooltip key={month.key}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="relative flex flex-1 cursor-default items-end justify-center"
+                        onMouseEnter={() => setHoveredKey(month.key)}
+                        onMouseLeave={() => setHoveredKey(null)}
+                      >
+                        <motion.div
+                          className="w-full max-w-[3rem] rounded-full transition-colors duration-200"
+                          style={{
+                            backgroundColor: hasData
+                              ? isHighlighted
+                                ? 'hsl(var(--progress-bar-highlight))'
+                                : 'hsl(var(--progress-bar-fill))'
+                              : 'transparent',
+                            border: hasData
+                              ? 'none'
+                              : '2px dashed hsl(var(--foreground) / 0.12)',
+                          }}
+                          initial={reduceMotion ? false : { height: '0%' }}
+                          animate={{ height: `${heightPct}%` }}
+                          transition={{ duration: 0.6, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[16rem] rounded-xl">
+                      <p className="font-semibold">{month.label}</p>
+                      {hasData ? (
+                        <>
+                          <p className="text-xs">
+                            {month.average}% average · {month.count} piece{month.count === 1 ? '' : 's'} marked
+                          </p>
+                          <ul className="mt-1 space-y-0.5 text-xs opacity-80">
+                            {month.items.slice(0, 3).map((item, i) => (
+                              <li key={`${month.key}-t-${i}`} className="truncate">
+                                {item.homework_title} · {item.percentage}%
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : (
+                        <p className="text-xs">Nothing marked</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
             </div>
-
           </div>
 
           {/* Month labels */}
-          <div className="mt-3 flex gap-3 pl-11">
+          <div className="mt-3 flex gap-3 pl-11 sm:gap-4">
             {visible.map((month) => (
               <div key={`${month.key}-label`} className="flex-1 text-center">
                 <p className="font-heading text-xs font-semibold text-foreground">{month.shortLabel}</p>
