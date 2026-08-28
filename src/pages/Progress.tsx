@@ -8,7 +8,7 @@ import AttendanceChart from '@/components/progress/AttendanceChart';
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
-import HeyCleoHomeworkProgress from '@/components/progress/HeyCleoHomeworkProgress';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
@@ -107,7 +107,6 @@ const Progress: React.FC = () => {
               userRole={userRole}
             />
 
-            <HeyCleoHomeworkProgress selectedStudents={filters.selectedStudents} />
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <ProgressChart 
