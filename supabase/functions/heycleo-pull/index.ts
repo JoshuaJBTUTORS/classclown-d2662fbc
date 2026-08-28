@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
 
   const results = [];
   for (const r of resources) {
-    results.push(await syncResource(supabase, r));
+    results.push(await syncResource(supabase, r, full));
   }
 
   const hasError = results.some((r) => r.status === "error");
