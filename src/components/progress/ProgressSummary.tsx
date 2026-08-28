@@ -282,11 +282,11 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_2fr]">
-        <div className="h-44 animate-pulse rounded-[1.5rem] bg-muted" />
-        <div className="grid grid-cols-2 gap-5 xl:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-44 animate-pulse rounded-[1.5rem] bg-muted" />
+      <div className="space-y-5">
+        <div className="h-40 animate-pulse rounded-[1.5rem] bg-muted" />
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-36 animate-pulse rounded-[1.5rem] bg-muted" />
           ))}
         </div>
       </div>

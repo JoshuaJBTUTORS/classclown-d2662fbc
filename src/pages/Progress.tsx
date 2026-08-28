@@ -87,7 +87,7 @@ const Progress: React.FC = () => {
       <div className="flex flex-col flex-1 w-full">
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
-          <div className="mx-auto max-w-[1400px] space-y-6">
+          <div className="mx-auto max-w-[880px] space-y-8">
             <ProgressHero title={getPageTitle()} subtitle={getSubtitle()}>
               <ProgressFilters
                 filters={filters}
