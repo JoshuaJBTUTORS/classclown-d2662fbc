@@ -62,8 +62,8 @@ const LessonPlanCard: React.FC<LessonPlanCardProps> = ({ subject, startTime, can
             </p>
           )}
         </div>
-      </CardContent>
-    </Card>
+    </div>
+
   );
 };
 
