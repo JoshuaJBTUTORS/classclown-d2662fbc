@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import cleoHandAsset from '@/assets/auth/cleo-hand.png.asset.json';
-import { TeacherChalkboard } from '@/components/auth/TeacherChalkboard';
+import { WhiteboardScene } from '@/components/auth/WhiteboardScene';
 
 
 const ROTATE_MS = 6000;
