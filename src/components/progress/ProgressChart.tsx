@@ -38,7 +38,7 @@ interface MonthBucket {
 const WINDOW = 6;
 
 /** Single calm blue used for every bar, regardless of score. */
-const BAR_TONE = 'bg-[hsl(210_55%_58%)]';
+const BAR_TONE = 'bg-[hsl(var(--progress-bar))]';
 
 const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   const { data: heycleo, isLoading: loading } = useHeyCleoProgress(filters.selectedStudents);
