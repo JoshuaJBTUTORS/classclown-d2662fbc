@@ -125,17 +125,19 @@
     --pastel-sand: 30 45% 92%;
     --pastel-sand-foreground: 28 40% 28%;
 
-    /* Calendar event boxes — richer pastel variants with matching stripe tone */
-    --event-ks2: 344 60% 80%;
+    /* Calendar event boxes — rich tile-matched variants with stripe tone */
+    --event-ks2: 344 65% 78%;
     --event-ks2-stripe: 344 40% 34%;
-    --event-ks3: 205 70% 78%;
+    --event-ks3: 206 72% 76%;
     --event-ks3-stripe: 210 50% 28%;
-    --event-gcse: 158 45% 72%;
+    --event-gcse: 158 42% 68%;
     --event-gcse-stripe: 168 55% 22%;
-    --event-year-11: 44 85% 72%;
+    --event-year-11: 44 88% 74%;
     --event-year-11-stripe: 34 55% 27%;
-    --event-a-level: 265 50% 80%;
+    --event-a-level: 265 48% 78%;
     --event-a-level-stripe: 265 40% 32%;
+    --event-sats: 28 50% 80%;
+    --event-sats-stripe: 28 40% 28%;
 
     --radius-soft: 1.5rem;
     --shadow-soft: 0 10px 30px -12px rgba(17, 24, 39, 0.12);
@@ -185,17 +187,19 @@
     --pastel-sand: 30 18% 16%;
     --pastel-sand-foreground: 30 40% 80%;
 
-    /* Calendar event boxes — richer variants for dark mode */
-    --event-ks2: 344 35% 32%;
+    /* Calendar event boxes — rich variants for dark mode */
+    --event-ks2: 344 38% 34%;
     --event-ks2-stripe: 344 50% 82%;
-    --event-ks3: 208 40% 34%;
+    --event-ks3: 208 42% 36%;
     --event-ks3-stripe: 205 55% 80%;
-    --event-gcse: 165 30% 32%;
+    --event-gcse: 165 32% 34%;
     --event-gcse-stripe: 158 45% 78%;
-    --event-year-11: 40 40% 34%;
+    --event-year-11: 40 42% 36%;
     --event-year-11-stripe: 44 60% 78%;
-    --event-a-level: 265 30% 36%;
+    --event-a-level: 265 32% 38%;
     --event-a-level-stripe: 265 45% 82%;
+    --event-sats: 28 32% 34%;
+    --event-sats-stripe: 30 40% 80%;
 
     --shadow-soft: 0 10px 30px -12px rgba(0, 0, 0, 0.5);
     --shadow-soft-lg: 0 22px 45px -18px rgba(0, 0, 0, 0.6);
