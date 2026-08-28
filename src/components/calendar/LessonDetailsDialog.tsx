@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { Clock, Users, MapPin, Calendar, Video, Loader2, ExternalLink, AlertCircle, Shield, UserCheck, CheckCircle, Circle, BookOpen, Edit, Trash2, Play, Send, ClipboardCheck, Check, ChevronsUpDown, FileUp } from 'lucide-react';
+import { DoodleCalendar, DoodleClock, DoodlePerson, DoodlePeople, DoodleTag, DoodleVideo, DoodleBook, DoodleCheck, DoodleCircle, DoodleClipboard, DoodleAlert, DoodleShield } from './LessonDoodles';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -494,14 +495,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   return <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 p-6 shadow-[var(--shadow-soft-lg)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-3 font-heading text-2xl font-extrabold tracking-tight">
+              <DoodleCalendar className="h-6 w-6 shrink-0 text-foreground" />
               {lesson?.title || 'Loading...'}
-              {isRecurringInstance && <Badge variant="outline" className="ml-2">
+              {isRecurringInstance && <span className="ml-1 rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-pastel-lilac-foreground">
                   Recurring Instance
-                </Badge>}
+                </span>}
             </DialogTitle>
           </DialogHeader>
 
@@ -509,30 +510,30 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
             <div className="flex justify-end">
               <Button
                 size="sm"
-                variant="outline"
-                className="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                variant="ghost"
+                className="rounded-full bg-pastel-butter px-4 text-pastel-butter-foreground hover:bg-pastel-butter/80"
                 onClick={openAssessmentDialog}
               >
-                <ClipboardCheck className="h-4 w-4 mr-2" />
+                <DoodleClipboard className="h-4 w-4 mr-2" />
                 Assessment Week
               </Button>
             </div>
           )}
 
+
           {isLoading ? <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div> : lesson ? <div className="space-y-6">
               {/* Lesson Progress Tracking - Only for teachers and not demo sessions */}
-              {isTeacherRole && <Card className="border-blue-200 bg-blue-50/50">
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2 text-blue-800">
-                      <CheckCircle className="h-4 w-4" />
+              {isTeacherRole && <div className="rounded-[var(--radius-soft)] bg-pastel-sky p-6">
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight mb-4 flex items-center gap-2 text-pastel-sky-foreground">
+                      <DoodleCheck className="h-5 w-5" />
                       Lesson Completion Progress
                     </h3>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div className="flex items-center justify-between p-4 bg-card rounded-2xl shadow-[var(--shadow-soft)]">
                         <div className="flex items-center gap-3">
-                          {attendanceStatus.allMarked ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
+                          {attendanceStatus.allMarked ? <DoodleCheck className="h-5 w-5 text-primary" /> : <DoodleCircle className="h-5 w-5 text-muted-foreground" />}
                           <div>
                             <p className="font-medium text-sm">Mark Attendance</p>
                             <p className="text-xs text-muted-foreground">
@@ -540,14 +541,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                             </p>
                           </div>
                         </div>
-                        <Badge variant={attendanceStatus.allMarked ? "default" : "secondary"}>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${attendanceStatus.allMarked ? 'bg-pastel-mint text-pastel-mint-foreground' : 'bg-muted text-muted-foreground'}`}>
                           {attendanceStatus.allMarked ? "Complete" : "Pending"}
-                        </Badge>
+                        </span>
                       </div>
 
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div className="flex items-center justify-between p-4 bg-card rounded-2xl shadow-[var(--shadow-soft)]">
                         <div className="flex items-center gap-3">
-                          {hasResources ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
+                          {hasResources ? <DoodleCheck className="h-5 w-5 text-primary" /> : <DoodleCircle className="h-5 w-5 text-muted-foreground" />}
                           <div>
                             <p className="font-medium text-sm">Submit Resources</p>
                             <p className="text-xs text-muted-foreground">
@@ -557,14 +558,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                             </p>
                           </div>
                         </div>
-                        <Badge variant={hasResources ? "default" : "secondary"}>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${hasResources ? 'bg-pastel-mint text-pastel-mint-foreground' : 'bg-muted text-muted-foreground'}`}>
                           {hasResources ? "Complete" : "Pending"}
-                        </Badge>
+                        </span>
                       </div>
 
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
+
 
               {/* Lesson Plan for this week */}
               <LessonPlanCard
@@ -576,24 +577,23 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
               {/* Basic Information */}
-              <Card>
-                <CardContent className="p-4 space-y-3">
+              <div className="rounded-[var(--radius-soft)] bg-card p-6 space-y-3 shadow-[var(--shadow-soft)]">
                   {lesson.description && <p className="text-sm text-muted-foreground">{lesson.description}</p>}
                   
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <DoodleClock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
                       {displayStartTime && typeof displayStartTime === 'string' && format(parseISO(displayStartTime), 'MMM d, yyyy h:mm a')}
                       {displayEndTime && typeof displayEndTime === 'string' && ` - ${format(parseISO(displayEndTime), 'h:mm a')}`}
                     </span>
-                    {isRecurringInstance && <Badge variant="secondary" className="ml-2 text-xs">
+                    {isRecurringInstance && <span className="ml-2 rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-pastel-lilac-foreground">
                         Recurring Instance
-                      </Badge>}
+                      </span>}
                   </div>
 
                   {lesson.tutor && (
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <DoodlePerson className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
                         Teacher: {lesson.tutor.first_name} {lesson.tutor.last_name}
                       </span>
@@ -601,42 +601,40 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   )}
 
                   {lesson.subject && <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="secondary">{lesson.subject}</Badge>
+                      <DoodleTag className="h-4 w-4 text-muted-foreground" />
+                      <span className="rounded-full bg-pastel-sky px-3 py-1 text-xs font-semibold text-pastel-sky-foreground">{lesson.subject}</span>
                       
                     </div>}
 
                   {lesson.is_group && <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="outline">Group Lesson</Badge>
+                      <DoodlePeople className="h-4 w-4 text-muted-foreground" />
+                      <span className="rounded-full bg-pastel-mint px-3 py-1 text-xs font-semibold text-pastel-mint-foreground">Group Lesson</span>
                       {validStudents.length > 0 && <span className="text-sm text-muted-foreground">
                           ({validStudents.length} students)
                         </span>}
                     </div>}
 
                   {lesson.is_recurring}
-                </CardContent>
-              </Card>
+              </div>
 
               {/* Video Conference Section */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Video className="h-4 w-4" />
-                    <h3 className="font-medium">Video Conference</h3>
-                    {isTeacherRole ? <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs ml-auto">
-                        <Shield className="h-3 w-3" />
+              <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <DoodleVideo className="h-5 w-5" />
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight">Video Conference</h3>
+                    {isTeacherRole ? <div className="flex items-center gap-1 px-3 py-1 bg-pastel-sky text-pastel-sky-foreground rounded-full text-xs font-semibold ml-auto">
+                        <DoodleShield className="h-3 w-3" />
                         Host Access
-                      </div> : <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs ml-auto">
-                        <UserCheck className="h-3 w-3" />
+                      </div> : <div className="flex items-center gap-1 px-3 py-1 bg-pastel-mint text-pastel-mint-foreground rounded-full text-xs font-semibold ml-auto">
+                        <DoodlePerson className="h-3 w-3" />
                         Student Access
                       </div>}
                   </div>
 
                   {lesson.lesson_space_room_url || lesson.lesson_space_room_id ? <VideoConferenceLink lessonId={lesson.id} lessonSpaceRoomUrl={lesson.lesson_space_room_url} lessonSpaceRoomId={lesson.lesson_space_room_id} lessonSpaceSpaceId={lesson.lesson_space_space_id} lessonTitle={lesson.title} lessonSubject={lesson.subject} isGroupLesson={lesson.is_group} studentCount={validStudents.length} hasHomework={homeworkStatus.exists} homeworkId={homeworkStatus.homework?.id} /> : <div className="space-y-3">
-                      <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-amber-700">
+                      <div className="flex items-start gap-2 p-4 bg-pastel-sand rounded-2xl">
+                        <DoodleAlert className="h-4 w-4 text-pastel-sand-foreground mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-pastel-sand-foreground">
                           <p className="font-medium">No video room created yet</p>
                           <p>
                             {isTeacherRole ? 'Create a LessonSpace room to enable video conferencing for this lesson.' : 'Ask your teacher to create a video room for this lesson.'}
@@ -644,28 +642,26 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                         </div>
                       </div>
                       
-                      {isTeacherRole && <Button onClick={handleCreateLessonSpaceRoom} disabled={isCreatingRoom} className="w-full">
+                      {isTeacherRole && <Button onClick={handleCreateLessonSpaceRoom} disabled={isCreatingRoom} className="w-full rounded-full">
                           {isCreatingRoom ? <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Creating Room...
                             </> : <>
-                              <Video className="h-4 w-4 mr-2" />
+                              <DoodleVideo className="h-4 w-4 mr-2" />
                               Create LessonSpace Room
                             </>}
                         </Button>}
                     </div>}
-                </CardContent>
-              </Card>
+              </div>
 
               {/* Students Section with Attendance - Only show if there are valid students */}
-              {validStudents.length > 0 && <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
+              {validStudents.length > 0 && <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight mb-3 flex items-center gap-2">
+                      <DoodlePeople className="h-5 w-5" />
                       Students ({validStudents.length})
-                      {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <Badge variant="destructive" className="ml-2 text-xs">
+                      {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <span className="ml-2 rounded-full bg-pastel-blush px-3 py-1 text-xs font-semibold text-pastel-blush-foreground">
                           {lesson.lesson_students.length - validStudents.length} missing data
-                        </Badge>}
+                        </span>}
                     </h3>
                     {homeworkSummary && (
                       <p className="text-xs text-muted-foreground mb-3">
@@ -680,15 +676,13 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                  }} isStudent={!isTeacherRole} />)}
 
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
 
               {/* Show warning if there are students with missing data */}
-              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <Card className="border-amber-200 bg-amber-50/50">
-                  <CardContent className="p-4">
+              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-6">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-amber-700">
+                      <DoodleAlert className="h-4 w-4 text-pastel-sand-foreground mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-pastel-sand-foreground">
                         <p className="font-medium">Some student data is missing</p>
                         <p>
                           {lesson.lesson_students.length - validStudents.length} student record(s) could not be loaded. 
@@ -696,29 +690,28 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                         </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
+
 
               {/* Homework Section */}
-              {homeworkStatus.exists && <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
+              {homeworkStatus.exists && <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight mb-3 flex items-center gap-2">
+                      <DoodleBook className="h-5 w-5" />
                       Assigned Homework
                     </h3>
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-sm font-medium text-green-800">
+                    <div className="p-4 bg-pastel-mint rounded-2xl">
+                      <p className="text-sm font-semibold text-pastel-mint-foreground">
                         {homeworkStatus.homework?.title}
                       </p>
-                      {homeworkStatus.homework?.description && <p className="text-sm text-green-700 mt-1">
+                      {homeworkStatus.homework?.description && <p className="text-sm text-pastel-mint-foreground/80 mt-1">
                           {homeworkStatus.homework.description}
                         </p>}
-                      {homeworkStatus.homework?.due_date && <p className="text-xs text-green-600 mt-2">
+                      {homeworkStatus.homework?.due_date && <p className="text-xs text-pastel-mint-foreground/70 mt-2">
                           Due: {format(parseISO(homeworkStatus.homework.due_date), 'MMM d, yyyy')}
                         </p>}
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
+
 
               {/* AI Lesson Summaries Section - Only show if students exist and not a demo session */}
               {validStudents.length > 0 && (
@@ -736,16 +729,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   {lesson.is_recurring}
                 </div>
                 
-                <div className="flex gap-2">
-                  {canEditLesson && <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="flex items-center gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
+                  {canEditLesson && <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent">
                       <Edit className="h-4 w-4" />
                       Edit Lesson
                     </Button>}
-                  {canDeleteLesson && <Button variant="outline" onClick={() => setIsDeleteDialogOpen(true)} className="flex items-center gap-2 text-destructive hover:text-destructive">
+                  {canDeleteLesson && <Button variant="outline" onClick={() => setIsDeleteDialogOpen(true)} className="flex items-center gap-2 rounded-full border-destructive/30 bg-transparent text-destructive hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2">
+                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent">
                       <FileUp className="h-4 w-4" />
                       Submit Resources
                     </Button>}
@@ -756,7 +749,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Button 
                         variant={isProcessed ? "default" : "outline"}
                         onClick={handleProcessLesson}
-                        className={`flex items-center gap-2 ${isProcessed ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                        className={`flex items-center gap-2 rounded-full ${isProcessed ? '' : 'border-foreground/20 bg-transparent'}`}
                       >
                         <Play className="h-4 w-4" />
                         Process Lesson
@@ -768,7 +761,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Button
                         variant="outline"
                         onClick={() => setIsTranscriptProposalOpen(true)}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent"
                       >
                         <Send className="h-4 w-4" />
                         Send Proposal
@@ -777,6 +770,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
                   
                 </div>
+
               </div>
             </div> : <div className="text-center p-8">
               <p className="text-muted-foreground">Failed to load lesson details</p>
@@ -825,13 +819,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
       <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-[var(--radius-soft)] border-0 p-6 shadow-[var(--shadow-soft-lg)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
+              <DoodleClipboard className="h-5 w-5" />
               Assign Assessment Week
             </DialogTitle>
           </DialogHeader>
+
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Reassign the lesson to the assessment tutor, swap the video link to the shared assessment room, and assign an assessment to every enrolled student. Time conflicts are ignored.
@@ -916,10 +911,11 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
+              <Button variant="outline" className="rounded-full border-foreground/20 bg-transparent" onClick={() => setIsAssessmentDialogOpen(false)} disabled={isAssigningAssessment}>
                 Cancel
               </Button>
               <Button
+                className="rounded-full"
                 onClick={handleAssignAssessmentWeek}
                 disabled={!selectedAssessmentTutor || !selectedAssessmentId || isAssigningAssessment}
               >
@@ -927,6 +923,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 Confirm
               </Button>
             </div>
+
           </div>
 
         </DialogContent>
