@@ -162,16 +162,14 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const point = payload[0].payload;
       return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-[#8b5cf6]">
-          <p className="font-semibold text-gray-900 mb-2">{label}</p>
-          <p className="text-[#8b5cf6] font-medium">Score: {data.percentage}%</p>
-          <p className="text-sm text-gray-600 mt-1">Subject: {data.subject}</p>
-          <p className="text-sm text-gray-600">{data.assessment_title}</p>
-          {data.student_name && (
-            <p className="text-sm text-gray-600">Student: {data.student_name}</p>
-          )}
+        <div className="rounded-[1rem] border border-border/60 bg-card px-4 py-3 shadow-lg">
+          <p className="font-heading text-sm font-semibold text-foreground">{label}</p>
+          <p className="mt-1 text-sm font-medium text-pastel-lilac-foreground">Score: {point.percentage}%</p>
+          <p className="text-xs text-muted-foreground">{point.subject}</p>
+          <p className="text-xs text-muted-foreground">{point.assessment_title}</p>
+          {point.student_name && <p className="text-xs text-muted-foreground">Student: {point.student_name}</p>}
         </div>
       );
     }
@@ -180,121 +178,86 @@ const AssessmentProgressChart: React.FC<AssessmentProgressChartProps> = ({ filte
 
   if (checkingAccess || loading) {
     return (
-      <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="font-playfair text-xl text-gray-900">Assessment Progress</CardTitle>
-          <CardDescription className="text-gray-600">
-            {checkingAccess ? 'Checking access...' : 'Loading assessment scores...'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8b5cf6]"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <ProgressPanel title="Assessments" description={checkingAccess ? 'Checking access...' : 'Loading assessment scores...'}>
+        <div className="h-72 animate-pulse rounded-[1.25rem] bg-muted" />
+      </ProgressPanel>
     );
   }
 
   // Show locked state for users without course access
   if (!hasAccess) {
     return (
-      <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="font-playfair text-xl text-gray-900">Assessment Progress</CardTitle>
-          <CardDescription className="text-gray-600">
-            Course enrollment required to access assessment progress
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center relative">
-            {/* Blurred background chart for visual effect */}
-            <div className="absolute inset-0 opacity-20 blur-sm">
-              <div className="h-full w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg flex items-center justify-center">
-                <Brain className="h-24 w-24 text-gray-300" />
-              </div>
-            </div>
-            
-            {/* Lock overlay */}
-            <div className="relative z-10 text-center bg-white rounded-lg p-8 border border-gray-200 shadow-lg max-w-sm">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 rounded-full bg-purple-100">
-                  <Lock className="h-8 w-8 text-purple-600" />
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Unlock Assessment Progress
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Purchase any course to access your assessment progress tracking and detailed performance analytics.
-              </p>
-              <Button 
-                onClick={handleUnlockAccess}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Browse Courses
-              </Button>
-            </div>
+      <ProgressPanel title="Assessments" description="Course enrolment unlocks assessment tracking">
+        <div className="relative overflow-hidden rounded-[1.25rem] bg-pastel-lilac p-8 text-center text-pastel-lilac-foreground">
+          <ScribbleStroke className="pointer-events-none absolute -right-8 -top-8 h-40 w-64 text-pastel-lilac-foreground/15" />
+          <div className="relative mx-auto max-w-sm">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-background/60">
+              <DoodleLock className="h-7 w-7" />
+            </span>
+            <h3 className="mt-4 font-heading text-lg font-semibold">Unlock assessment progress</h3>
+            <p className="mt-2 text-sm opacity-80">
+              Purchase any course to access assessment progress tracking and detailed performance analytics.
+            </p>
+            <Button
+              onClick={handleUnlockAccess}
+              className="mt-6 rounded-full bg-pastel-lilac-foreground px-6 text-pastel-lilac hover:bg-pastel-lilac-foreground/90"
+            >
+              Browse courses
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ProgressPanel>
     );
   }
 
+  const description =
+    userRole === 'owner' ? 'Student assessment scores over time' : 'Your assessment scores over time';
+
   return (
-    <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-      <CardHeader className="pb-4">
-        <CardTitle className="font-playfair text-xl text-gray-900">Assessment Progress</CardTitle>
-        <CardDescription className="text-gray-600">
-          {userRole === 'owner' ? 'Student assessment scores over time' : 
-           'Your assessment scores over time'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  domain={[0, 100]} 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="percentage" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={3}
-                  dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 5 }}
-                  activeDot={{ r: 7, stroke: '#8b5cf6', strokeWidth: 2, fill: '#fff' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              <div className="text-center">
-                <Brain className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-400">No assessment data available</p>
-                <p className="text-sm text-gray-400 mt-1">for the selected filters</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <ProgressPanel title="Assessments" description={description}>
+      <div className="h-72">
+        {data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+              <XAxis
+                dataKey="date"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                className="fill-muted-foreground"
+                tick={{ fill: 'currentColor' }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                width={34}
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                className="fill-muted-foreground"
+                tick={{ fill: 'currentColor' }}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={false} />
+              <Line
+                type="monotone"
+                dataKey="percentage"
+                strokeWidth={3}
+                className="stroke-pastel-lilac-foreground"
+                dot={{ r: 4, strokeWidth: 0, className: 'fill-pastel-lilac-foreground' }}
+                activeDot={{ r: 6, strokeWidth: 0, className: 'fill-pastel-lilac-foreground' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <DoodleEmpty className="h-16 w-20 text-muted-foreground/50" />
+            <p className="mt-3 font-heading text-sm font-semibold text-muted-foreground">No assessment data yet</p>
+            <p className="text-xs text-muted-foreground/80">Nothing matches these filters</p>
+          </div>
+        )}
+      </div>
+    </ProgressPanel>
   );
 };
 
 export default AssessmentProgressChart;
+

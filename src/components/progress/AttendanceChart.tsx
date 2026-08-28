@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, startOfWeek } from 'date-fns';
 import { toast } from 'sonner';
-import { Calendar } from 'lucide-react';
+import ProgressPanel from './ProgressPanel';
+import { DoodleEmpty } from './ProgressDoodles';
 
 interface AttendanceChartProps {
   filters: {
