@@ -45,9 +45,6 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
         <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Cleo Calendar
         </h1>
-        <p className="max-w-xl text-sm text-muted-foreground">
-          Every lesson, trial and tutor slot in one soft, scrollable view.
-        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
