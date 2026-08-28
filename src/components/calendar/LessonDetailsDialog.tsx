@@ -524,16 +524,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               <Loader2 className="h-8 w-8 animate-spin" />
             </div> : lesson ? <div className="space-y-6">
               {/* Lesson Progress Tracking - Only for teachers and not demo sessions */}
-              {isTeacherRole && <Card className="border-blue-200 bg-blue-50/50">
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-3 flex items-center gap-2 text-blue-800">
-                      <CheckCircle className="h-4 w-4" />
+              {isTeacherRole && <div className="rounded-[var(--radius-soft)] bg-pastel-sky p-6">
+                    <h3 className="font-heading text-lg font-extrabold tracking-tight mb-4 flex items-center gap-2 text-pastel-sky-foreground">
+                      <DoodleCheck className="h-5 w-5" />
                       Lesson Completion Progress
                     </h3>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div className="flex items-center justify-between p-4 bg-card rounded-2xl shadow-[var(--shadow-soft)]">
                         <div className="flex items-center gap-3">
-                          {attendanceStatus.allMarked ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
+                          {attendanceStatus.allMarked ? <DoodleCheck className="h-5 w-5 text-primary" /> : <DoodleCircle className="h-5 w-5 text-muted-foreground" />}
                           <div>
                             <p className="font-medium text-sm">Mark Attendance</p>
                             <p className="text-xs text-muted-foreground">
@@ -541,14 +540,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                             </p>
                           </div>
                         </div>
-                        <Badge variant={attendanceStatus.allMarked ? "default" : "secondary"}>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${attendanceStatus.allMarked ? 'bg-pastel-mint text-pastel-mint-foreground' : 'bg-muted text-muted-foreground'}`}>
                           {attendanceStatus.allMarked ? "Complete" : "Pending"}
-                        </Badge>
+                        </span>
                       </div>
 
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div className="flex items-center justify-between p-4 bg-card rounded-2xl shadow-[var(--shadow-soft)]">
                         <div className="flex items-center gap-3">
-                          {hasResources ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-gray-400" />}
+                          {hasResources ? <DoodleCheck className="h-5 w-5 text-primary" /> : <DoodleCircle className="h-5 w-5 text-muted-foreground" />}
                           <div>
                             <p className="font-medium text-sm">Submit Resources</p>
                             <p className="text-xs text-muted-foreground">
@@ -558,14 +557,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                             </p>
                           </div>
                         </div>
-                        <Badge variant={hasResources ? "default" : "secondary"}>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${hasResources ? 'bg-pastel-mint text-pastel-mint-foreground' : 'bg-muted text-muted-foreground'}`}>
                           {hasResources ? "Complete" : "Pending"}
-                        </Badge>
+                        </span>
                       </div>
 
                     </div>
-                  </CardContent>
-                </Card>}
+                </div>}
+
 
               {/* Lesson Plan for this week */}
               <LessonPlanCard
