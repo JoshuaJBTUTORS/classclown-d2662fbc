@@ -14,6 +14,7 @@ import { validateEmail, sanitizeInput } from '@/utils/validation';
 import { DomainSEO } from '@/components/seo/DomainSEO';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import { AuthShowcase } from '@/components/auth/AuthShowcase';
+import classLogo from '@/assets/auth/class-logo.png.asset.json';
 
 
 /** Soft pastel blob backdrop shared by the page and the showcase panel. */
@@ -109,12 +110,10 @@ const Auth = () => {
               >
                 <div className="relative mb-8">
                   <ScribbleStroke className="pointer-events-none absolute -top-6 -left-4 h-16 w-40 text-pastel-lilac-foreground opacity-20" />
+                  <img src={classLogo.url} alt="Class Beyond" className="relative mb-6 h-12 w-auto" />
                   <h1 className="relative font-heading text-4xl font-bold tracking-tight text-foreground">
                     Welcome back
                   </h1>
-                  <p className="relative mt-2 text-sm text-muted-foreground">
-                    Sign in to continue to your Class Clown workspace
-                  </p>
                 </div>
 
                 <form onSubmit={handleSignIn} className="space-y-5">
