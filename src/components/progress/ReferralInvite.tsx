@@ -5,12 +5,27 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useReferral } from '@/hooks/useReferral';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
-import { DoodleSpark, DoodleBook, DoodleStar } from './ProgressDoodles';
+import { DoodleSend, DoodleChat, DoodleCoin } from './ProgressDoodles';
 
 const STEPS = [
-  { Icon: DoodleSpark, title: 'Share your link', copy: 'Send it to a friend in one tap' },
-  { Icon: DoodleBook, title: 'They try a free lesson', copy: 'No cost, no commitment' },
-  { Icon: DoodleStar, title: 'You both get £50', copy: 'Once they join us' },
+  {
+    Icon: DoodleSend,
+    title: 'Share your link',
+    copy: 'Send it to a friend in one tap',
+    chip: 'bg-[hsl(var(--pastel-sky))] text-[hsl(var(--pastel-sky-foreground))]',
+  },
+  {
+    Icon: DoodleChat,
+    title: 'They try a free lesson',
+    copy: 'No cost, no commitment',
+    chip: 'bg-[hsl(var(--pastel-lilac))] text-[hsl(var(--pastel-lilac-foreground))]',
+  },
+  {
+    Icon: DoodleCoin,
+    title: 'You both get £50',
+    copy: 'Once they join us',
+    chip: 'bg-[hsl(var(--pastel-butter))] text-[hsl(var(--pastel-butter-foreground))]',
+  },
 ];
 
 /** Refer-a-friend prompt shown at the bottom of the progress page. */
@@ -68,12 +83,12 @@ const ReferralInvite: React.FC = () => {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          {STEPS.map(({ Icon, title, copy }) => (
+          {STEPS.map(({ Icon, title, copy, chip }) => (
             <div
               key={title}
               className="rounded-[1.25rem] border border-foreground/10 bg-background/80 p-4 text-foreground"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/5">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-full ${chip}`}>
                 <Icon className="h-5 w-5" />
               </span>
               <p className="mt-3 font-heading text-sm font-semibold">{title}</p>

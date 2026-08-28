@@ -76,3 +76,25 @@ export const DoodleEmpty: React.FC<DoodleProps> = ({ className }) => (
     <path d="M14 30c1.6 1.6 3.6 2.4 5.8 2.4" opacity="0.5" />
   </svg>
 );
+
+export const DoodleSend: React.FC<DoodleProps> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
+    <path d="M20.4 4.1c-5.6 1.7-11 3.8-16.4 6.2 2.3 1 4.5 1.8 6.8 2.4 1 2.4 2 4.7 3.2 7 2.5-5.2 4.6-10.4 6.4-15.6z" />
+    <path d="M10.8 12.7c2.6-2.5 5.6-5.1 9.6-8.6" />
+  </svg>
+);
+
+export const DoodleChat: React.FC<DoodleProps> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
+    <path d="M4.2 6.6c5.2-.9 10.4-1 15.6-.2.5 3.4.5 6.8 0 10.2-3.6.5-7.2.6-10.8.3l-4 3.1c.2-1.2.3-2.3.3-3.5-.7-.1-1.1-.6-1.2-1.3-.4-2.9-.4-5.7.1-8.6z" />
+    <path d="M8.4 11.4h7.2M8.4 14.2h4.6" />
+  </svg>
+);
+
+export const DoodleCoin: React.FC<DoodleProps> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
+    <path d="M12 3.6c4.7 0 8.4 3.8 8.3 8.5-.1 4.6-3.8 8.3-8.4 8.3S3.6 16.7 3.6 12 7.3 3.6 12 3.6z" />
+    <path d="M14.3 9.2c-1.5-1.4-4.4-1.2-4.5 1 0 2 4.6 1.4 4.6 3.5 0 2.2-3 2.5-4.6 1.1" />
+    <path d="M12 6.9v1.6M12 15.5v1.7" />
+  </svg>
+);
