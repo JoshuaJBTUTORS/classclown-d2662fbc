@@ -105,11 +105,16 @@ const Auth = () => {
                 <div className="relative mb-8">
                   <ScribbleStroke className="pointer-events-none absolute -top-6 -left-4 h-16 w-40 text-pastel-lilac-foreground opacity-20" />
                   <img src={classLogo.url} alt="Class Beyond" className="relative mb-6 h-12 w-auto" />
-                  <h1 className="relative font-heading text-4xl font-bold tracking-tight text-foreground">
-                    Welcome back
-                  </h1>
+                  {!showLoginLink && (
+                    <h1 className="relative font-heading text-4xl font-bold tracking-tight text-foreground">
+                      Welcome back
+                    </h1>
+                  )}
                 </div>
 
+                {showLoginLink ? (
+                  <LoginLinkForm onBack={() => setShowLoginLink(false)} defaultEmail={email} />
+                ) : (
                 <form onSubmit={handleSignIn} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email" className="text-xs font-medium text-muted-foreground">
@@ -155,11 +160,11 @@ const Auth = () => {
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={() => setShowForgotPassword(true)}
+                      onClick={() => setShowLoginLink(true)}
                       disabled={loading}
                       className="text-sm font-semibold text-foreground hover:underline"
                     >
-                      Forgot Password?
+                      Login with link
                     </button>
                   </div>
 
@@ -184,10 +189,12 @@ const Auth = () => {
                     )}
                   </Button>
                 </form>
+                )}
 
                 <p className="mt-8 text-center text-xs text-muted-foreground">
                   Trouble signing in? Contact your Class Beyond Academy coordinator.
                 </p>
+
               </motion.div>
             </div>
 
