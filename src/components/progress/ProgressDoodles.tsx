@@ -61,6 +61,36 @@ export const DoodleLock: React.FC<DoodleProps> = ({ className }) => (
   </svg>
 );
 
+export const DoodleFaceHappy: React.FC<DoodleProps> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
+    <path d="M12 3.4c4.8 0 8.6 3.8 8.6 8.6S16.8 20.6 12 20.6 3.4 16.8 3.4 12 7.2 3.4 12 3.4z" />
+    <path d="M8.6 9.6c.1-.7.2-1.2.3-1.6M15.1 9.6c.1-.7.2-1.2.3-1.6" />
+    <path d="M8 13.6c2.4 2.4 5.6 2.4 8 0" />
+  </svg>
+);
+
+export const DoodleFaceSteady: React.FC<DoodleProps> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
+    <path d="M12 3.4c4.8 0 8.6 3.8 8.6 8.6S16.8 20.6 12 20.6 3.4 16.8 3.4 12 7.2 3.4 12 3.4z" />
+    <path d="M8.7 9.3v.6M15.3 9.3v.6" />
+    <path d="M8.4 14.4c2.4-.5 4.8-.5 7.2 0" />
+  </svg>
+);
+
+export const DoodleFaceLow: React.FC<DoodleProps> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
+    <path d="M12 3.4c4.8 0 8.6 3.8 8.6 8.6S16.8 20.6 12 20.6 3.4 16.8 3.4 12 7.2 3.4 12 3.4z" />
+    <path d="M8.7 9.3v.6M15.3 9.3v.6" />
+    <path d="M8.4 15.6c2.3-2.1 4.9-2.1 7.2 0" />
+  </svg>
+);
+
+export const DoodleStar: React.FC<DoodleProps> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
+    <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.6 9.7l5.8-.8L12 3.6z" />
+  </svg>
+);
+
 export const DoodleEmpty: React.FC<DoodleProps> = ({ className }) => (
   <svg viewBox="0 0 64 48" aria-hidden="true" className={className} {...base} strokeWidth={1.4}>
     <path d="M6 38c8-1.5 12-8 17-14.5C27.6 17.6 33 12 42 9.6" />
