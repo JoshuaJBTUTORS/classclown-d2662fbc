@@ -37,8 +37,8 @@ interface MonthBucket {
 /** Number of months visible in the chart window at once. */
 const WINDOW = 6;
 
-const barTone = (score: number) =>
-  score >= 75 ? 'bg-pastel-mint-foreground' : score >= 50 ? 'bg-pastel-butter-foreground' : 'bg-pastel-blush-foreground';
+/** Single calm blue used for every bar, regardless of score. */
+const BAR_TONE = 'bg-[hsl(210_55%_58%)]';
 
 const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) => {
   const { data: heycleo, isLoading: loading } = useHeyCleoProgress(filters.selectedStudents);
@@ -243,7 +243,7 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
                           transition={{ duration: 0.6, delay: index * 0.06, ease: 'easeOut' }}
                           className={cn(
                             'w-full rounded-t-[0.9rem] transition-opacity',
-                            hasData ? barTone(month.average!) : 'bg-foreground/10',
+                            hasData ? BAR_TONE : 'bg-foreground/10',
                             hasData && 'group-hover:opacity-80',
                           )}
                         />
