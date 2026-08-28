@@ -59,7 +59,7 @@ const HOMEWORK_KEYS = [
 async function syncResource(
   supabase: ReturnType<typeof createClient>,
   resource: "students" | "homework-completion",
-  full = false,
+  full = true,
 ) {
   const table = resource === "students" ? "heycleo_students" : "heycleo_homework_completion";
   const pk = resource === "students" ? "student_id" : "assignment_id";
@@ -74,8 +74,32 @@ async function syncResource(
   const since = full ? null : ((state?.last_server_time as string | null) ?? null);
 
   try {
+    // Current row count, used as the sanity baseline before we prune anything.
+    const { count: existingCount } = await supabase
+      .from(table)
+      .select(pk, { count: "exact", head: true });
+    const baseline = existingCount ?? 0;
+
     const { rows, serverTime } = await pull(resource, since);
     const runStamp = new Date().toISOString();
+
+    // Guard: on a full pull, an empty or implausibly small payload means an upstream
+    // problem, not a genuine wipe. Skip the write + prune entirely and flag it.
+    if (full && baseline > 0 && rows.length < Math.ceil(baseline * 0.5)) {
+      const warning =
+        `implausible payload: got ${rows.length} rows, currently store ${baseline} — skipped upsert and prune`;
+      console.warn(`[heycleo-pull] ${resource}: ${warning}`);
+      await supabase.from("heycleo_sync_state").upsert({
+        resource,
+        last_server_time: state?.last_server_time ?? null,
+        last_run_at: runStamp,
+        last_status: "warning",
+        last_error: warning,
+        rows_synced: 0,
+        rows_pruned: 0,
+      }, { onConflict: "resource" });
+      return { resource, rows: 0, pruned: 0, status: "warning", error: warning };
+    }
 
     let upserted = 0;
     for (let i = 0; i < rows.length; i += 500) {
@@ -109,9 +133,10 @@ async function syncResource(
       last_status: "success",
       last_error: null,
       rows_synced: upserted,
+      rows_pruned: pruned,
     }, { onConflict: "resource" });
 
-    console.log(`[heycleo-pull] ${resource}: ${upserted} rows (since=${since ?? "null"})`);
+    console.log(`[heycleo-pull] ${resource}: ${upserted} rows, ${pruned} pruned (full=${full})`);
     return { resource, rows: upserted, pruned, server_time: serverTime, status: "success" };
 
   } catch (e) {
@@ -125,9 +150,10 @@ async function syncResource(
       last_status: "error",
       last_error: message.slice(0, 500),
     }, { onConflict: "resource" });
-    return { resource, rows: 0, status: "error", error: message };
+    return { resource, rows: 0, pruned: 0, status: "error", error: message };
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
