@@ -818,13 +818,14 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
       <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-[var(--radius-soft)] border-0 p-6 shadow-[var(--shadow-soft-lg)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
+              <DoodleClipboard className="h-5 w-5" />
               Assign Assessment Week
             </DialogTitle>
           </DialogHeader>
+
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Reassign the lesson to the assessment tutor, swap the video link to the shared assessment room, and assign an assessment to every enrolled student. Time conflicts are ignored.
