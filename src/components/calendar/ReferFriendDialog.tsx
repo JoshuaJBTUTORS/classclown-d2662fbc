@@ -120,7 +120,7 @@ export const ReferFriendDialog: React.FC<ReferFriendDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] rounded-3xl">
+      <DialogContent className="sm:max-w-[500px] rounded-3xl border-0 shadow-[var(--shadow-soft)]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 font-heading">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-pastel-blush text-pastel-blush-foreground">
@@ -146,9 +146,10 @@ export const ReferFriendDialog: React.FC<ReferFriendDialogProps> = ({
               name="friendName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Friend's Name</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Friend's Name</FormLabel>
                   <FormControl>
                     <Input 
+                      className="h-11 rounded-2xl border-border bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                       placeholder="Enter your friend's full name" 
                       {...field} 
                     />
@@ -163,9 +164,10 @@ export const ReferFriendDialog: React.FC<ReferFriendDialogProps> = ({
               name="friendEmail"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Friend's Email</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Friend's Email</FormLabel>
                   <FormControl>
                     <Input 
+                      className="h-11 rounded-2xl border-border bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                       type="email"
                       placeholder="Enter your friend's email address" 
                       {...field} 
@@ -181,9 +183,10 @@ export const ReferFriendDialog: React.FC<ReferFriendDialogProps> = ({
               name="friendPhone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Friend's Phone Number</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Friend's Phone Number</FormLabel>
                   <FormControl>
                     <Input 
+                      className="h-11 rounded-2xl border-border bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                       type="tel"
                       placeholder="Enter your friend's phone number" 
                       {...field} 
@@ -194,16 +197,17 @@ export const ReferFriendDialog: React.FC<ReferFriendDialogProps> = ({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:justify-end">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
+                className="rounded-full border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="rounded-full bg-foreground px-5 text-background hover:bg-foreground/90">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Send Referral
               </Button>
