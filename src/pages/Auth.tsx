@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
+import LoginLinkForm from '@/components/auth/LoginLinkForm';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 import { validateEmail, sanitizeInput } from '@/utils/validation';
 import { DomainSEO } from '@/components/seo/DomainSEO';
@@ -39,7 +39,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showLoginLink, setShowLoginLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
@@ -84,13 +84,7 @@ const Auth = () => {
     return <ResetPasswordForm />;
   }
 
-  if (showForgotPassword) {
-    return (
-      <AuthShell>
-        <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
-      </AuthShell>
-    );
-  }
+
 
   return (
     <>
