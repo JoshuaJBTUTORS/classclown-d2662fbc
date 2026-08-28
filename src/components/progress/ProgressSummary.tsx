@@ -6,7 +6,7 @@ import { paymentService } from '@/services/paymentService';
 import { useHeyCleoProgress } from '@/hooks/useHeyCleoProgress';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import StatTile from './StatTile';
-import { DoodleBook, DoodleCalendar, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
+import { DoodleBook, DoodleTrendDown, DoodleTrendUp } from './ProgressDoodles';
 
 interface ProgressSummaryProps {
   filters: {
@@ -19,7 +19,6 @@ interface ProgressSummaryProps {
 
 interface SummaryStats {
   averageScore: number;
-  attendanceRate: number;
   totalHomework: number;
   improvementTrend: number;
   averageAssessmentScore: number;
@@ -35,7 +34,6 @@ interface SummaryStats {
 const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) => {
   const [stats, setStats] = useState<SummaryStats>({
     averageScore: 0,
-    attendanceRate: 0,
     totalHomework: 0,
     improvementTrend: 0,
     averageAssessmentScore: 0,
@@ -264,7 +262,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
 
       setStats({
         averageScore,
-        attendanceRate,
         totalHomework,
         improvementTrend,
         averageAssessmentScore,
