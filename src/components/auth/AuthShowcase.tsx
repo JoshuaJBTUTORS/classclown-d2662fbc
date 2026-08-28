@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import cleoHandAsset from '@/assets/auth/cleo-hand.png.asset.json';
-import { TeacherChalkboard } from '@/components/auth/TeacherChalkboard';
+import { WhiteboardScene } from '@/components/auth/WhiteboardScene';
 
 
 const ROTATE_MS = 6000;
@@ -58,7 +58,7 @@ const TeachersSlide: React.FC = () => (
       transition={{ duration: 0.5 }}
       className="flex w-full justify-center"
     >
-      <TeacherChalkboard />
+      <WhiteboardScene />
     </motion.div>
     <div>
       <h2 className="font-heading text-2xl font-bold text-foreground">Taught by top-tier teachers</h2>
