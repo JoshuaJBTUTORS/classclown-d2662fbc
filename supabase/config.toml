@@ -232,3 +232,7 @@ verify_jwt = false
 
 [functions.send-tutor-schedule-notification]
 verify_jwt = false
+
+[functions.daily-timeoff-clash-check]
+verify_jwt = false
+
