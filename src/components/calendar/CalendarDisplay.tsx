@@ -5,7 +5,6 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import LessonDetailsDialog from '@/components/calendar/LessonDetailsDialog';
-import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import { ArrowUpRight } from 'lucide-react';
 import { DatesSetArg } from '@fullcalendar/core';
 import { useTutorAvailability } from '@/hooks/useTutorAvailability';
