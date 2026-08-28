@@ -79,25 +79,37 @@ const HeyCleoData: React.FC = () => {
 
   const syncMutation = useMutation({
     mutationFn: async (resource: 'all' | 'students' | 'homework-completion') => {
-      const { data, error } = await supabase.functions.invoke('heycleo-pull', { body: { resource } });
+      const { data, error } = await supabase.functions.invoke('heycleo-pull', {
+        body: { resource, full: true },
+      });
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      const results = (data?.results ?? []) as { resource: string; rows: number; status: string; error?: string }[];
-      const failed = results.filter((r) => r.status === 'error');
+      const results = (data?.results ?? []) as {
+        resource: string;
+        rows: number;
+        pruned?: number;
+        status: string;
+        error?: string;
+      }[];
+      const failed = results.filter((r) => r.status === 'error' || r.status === 'warning');
       if (failed.length) {
         toast({
-          title: 'Sync finished with errors',
+          title: failed.some((f) => f.status === 'error') ? 'Sync finished with errors' : 'Sync skipped',
           description: failed.map((f) => `${f.resource}: ${f.error}`).join(' | '),
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Sync complete',
-          description: results.map((r) => `${r.resource}: ${r.rows} rows`).join(' · ') || 'No changes',
+          description:
+            results
+              .map((r) => `${r.resource}: ${r.rows} rows${r.pruned ? `, ${r.pruned} removed` : ''}`)
+              .join(' · ') || 'No changes',
         });
       }
+
       queryClient.invalidateQueries({ queryKey: ['heycleo-students'] });
       queryClient.invalidateQueries({ queryKey: ['heycleo-homework'] });
       queryClient.invalidateQueries({ queryKey: ['heycleo-sync-state'] });
