@@ -2354,6 +2354,7 @@ export type Database = {
           last_server_time: string | null
           last_status: string | null
           resource: string
+          rows_pruned: number | null
           rows_synced: number | null
         }
         Insert: {
@@ -2362,6 +2363,7 @@ export type Database = {
           last_server_time?: string | null
           last_status?: string | null
           resource: string
+          rows_pruned?: number | null
           rows_synced?: number | null
         }
         Update: {
@@ -2370,6 +2372,7 @@ export type Database = {
           last_server_time?: string | null
           last_status?: string | null
           resource?: string
+          rows_pruned?: number | null
           rows_synced?: number | null
         }
         Relationships: []

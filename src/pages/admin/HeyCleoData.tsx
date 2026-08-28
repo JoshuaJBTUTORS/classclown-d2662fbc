@@ -21,7 +21,9 @@ type SyncState = {
   last_status: string | null;
   last_error: string | null;
   rows_synced: number | null;
+  rows_pruned: number | null;
 };
+
 
 const fmt = (value?: string | null, pattern = 'd MMM yyyy, HH:mm') => {
   if (!value) return '—';
@@ -77,25 +79,37 @@ const HeyCleoData: React.FC = () => {
 
   const syncMutation = useMutation({
     mutationFn: async (resource: 'all' | 'students' | 'homework-completion') => {
-      const { data, error } = await supabase.functions.invoke('heycleo-pull', { body: { resource } });
+      const { data, error } = await supabase.functions.invoke('heycleo-pull', {
+        body: { resource, full: true },
+      });
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      const results = (data?.results ?? []) as { resource: string; rows: number; status: string; error?: string }[];
-      const failed = results.filter((r) => r.status === 'error');
+      const results = (data?.results ?? []) as {
+        resource: string;
+        rows: number;
+        pruned?: number;
+        status: string;
+        error?: string;
+      }[];
+      const failed = results.filter((r) => r.status === 'error' || r.status === 'warning');
       if (failed.length) {
         toast({
-          title: 'Sync finished with errors',
+          title: failed.some((f) => f.status === 'error') ? 'Sync finished with errors' : 'Sync skipped',
           description: failed.map((f) => `${f.resource}: ${f.error}`).join(' | '),
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Sync complete',
-          description: results.map((r) => `${r.resource}: ${r.rows} rows`).join(' · ') || 'No changes',
+          description:
+            results
+              .map((r) => `${r.resource}: ${r.rows} rows${r.pruned ? `, ${r.pruned} removed` : ''}`)
+              .join(' · ') || 'No changes',
         });
       }
+
       queryClient.invalidateQueries({ queryKey: ['heycleo-students'] });
       queryClient.invalidateQueries({ queryKey: ['heycleo-homework'] });
       queryClient.invalidateQueries({ queryKey: ['heycleo-sync-state'] });
@@ -208,18 +222,32 @@ const HeyCleoData: React.FC = () => {
           <CardContent className="space-y-1 text-xs text-muted-foreground">
             {['students', 'homework-completion'].map((resource) => {
               const state = stateFor(resource);
+              const status = state?.last_status ?? 'never';
               return (
-                <div key={resource} className="flex items-center justify-between gap-2">
-                  <span className="capitalize">{resource === 'students' ? 'Students' : 'Homework'}</span>
-                  <span className="flex items-center gap-2">
-                    {fmt(state?.last_run_at, 'd MMM, HH:mm')}
-                    <Badge variant={state?.last_status === 'error' ? 'destructive' : 'secondary'}>
-                      {state?.last_status ?? 'never'}
-                    </Badge>
-                  </span>
+                <div key={resource} className="space-y-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="capitalize">{resource === 'students' ? 'Students' : 'Homework'}</span>
+                    <span className="flex items-center gap-2">
+                      {fmt(state?.last_run_at, 'd MMM, HH:mm')}
+                      <Badge
+                        variant={
+                          status === 'error' ? 'destructive' : status === 'warning' ? 'outline' : 'secondary'
+                        }
+                      >
+                        {status}
+                      </Badge>
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground/80">
+                    {state?.rows_synced ?? 0} pulled · {state?.rows_pruned ?? 0} removed
+                  </div>
+                  {status !== 'success' && state?.last_error && (
+                    <div className="text-[11px] text-destructive line-clamp-2">{state.last_error}</div>
+                  )}
                 </div>
               );
             })}
+
           </CardContent>
         </Card>
       </div>
