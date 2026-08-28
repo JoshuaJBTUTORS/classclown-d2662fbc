@@ -96,240 +96,109 @@ const ProgressFilters: React.FC<ProgressFiltersProps> = ({ filters, onFiltersCha
     filters.selectedStudents.length > 0 || 
     filters.selectedSubjects.length > 0;
 
-  if (userRole === 'student' || userRole === 'parent') {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            {/* Date Range Filter */}
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">Date Range</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[240px] justify-start text-left font-normal",
-                      !filters.dateRange.from && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.dateRange.from ? (
-                      filters.dateRange.to ? (
-                        <>
-                          {format(filters.dateRange.from, "LLL dd, y")} -{" "}
-                          {format(filters.dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(filters.dateRange.from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pick a date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={filters.dateRange.from || undefined}
-                    selected={{
-                      from: filters.dateRange.from || undefined,
-                      to: filters.dateRange.to || undefined,
-                    }}
-                    onSelect={(range) => 
-                      onFiltersChange({ 
-                        dateRange: { 
-                          from: range?.from || null, 
-                          to: range?.to || null 
-                        } 
-                      })
-                    }
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Subject Filter */}
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">Subjects</label>
-              <Select
-                value={filters.selectedSubjects[0] || "all"}
-                onValueChange={(value) => 
-                  onFiltersChange({ 
-                    selectedSubjects: value === "all" ? [] : [value] 
-                  })
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All subjects" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All subjects</SelectItem>
-                  {subjects.map(subject => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {hasActiveFilters && (
-              <div className="flex items-end">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={clearFilters}
-                  className="flex items-center gap-1"
-                >
-                  <X className="h-3 w-3" />
-                  Clear
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const pillClass =
+    'h-10 rounded-full border-0 bg-background/70 px-4 text-sm font-medium text-foreground shadow-sm hover:bg-background';
 
   return (
-    <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 font-playfair text-xl text-gray-900">
-          <Filter className="h-5 w-5 text-[#e94b7f]" />
-          Filters
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-6">
-          {/* Date Range Filter */}
-          <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700">Date Range</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[280px] justify-start text-left font-normal border-gray-200 hover:bg-gray-50",
-                    !filters.dateRange.from && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-[#e94b7f]" />
-                  {filters.dateRange.from ? (
-                    filters.dateRange.to ? (
-                      <>
-                        {format(filters.dateRange.from, "LLL dd, y")} -{" "}
-                        {format(filters.dateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(filters.dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={filters.dateRange.from || undefined}
-                  selected={{
-                    from: filters.dateRange.from || undefined,
-                    to: filters.dateRange.to || undefined,
-                  }}
-                  onSelect={(range) => 
-                    onFiltersChange({ 
-                      dateRange: { 
-                        from: range?.from || null, 
-                        to: range?.to || null 
-                      } 
-                    })
-                  }
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Date Range Filter */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            className={cn(pillClass, 'justify-start gap-2 font-normal', !filters.dateRange.from && 'text-muted-foreground')}
+          >
+            <CalendarIcon className="h-4 w-4" />
+            {filters.dateRange.from ? (
+              filters.dateRange.to ? (
+                <>
+                  {format(filters.dateRange.from, 'LLL dd, y')} – {format(filters.dateRange.to, 'LLL dd, y')}
+                </>
+              ) : (
+                format(filters.dateRange.from, 'LLL dd, y')
+              )
+            ) : (
+              <span>Any dates</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto rounded-[1.25rem] p-0" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={filters.dateRange.from || undefined}
+            selected={{
+              from: filters.dateRange.from || undefined,
+              to: filters.dateRange.to || undefined,
+            }}
+            onSelect={(range) =>
+              onFiltersChange({
+                dateRange: {
+                  from: range?.from || null,
+                  to: range?.to || null,
+                },
+              })
+            }
+            numberOfMonths={2}
+          />
+        </PopoverContent>
+      </Popover>
 
-          {/* User Filter - Only for owners */}
-          {userRole === 'owner' && (
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium text-gray-700">Users</label>
-              <Select
-                value={filters.selectedStudents[0] || "all"}
-                onValueChange={(value) => 
-                  onFiltersChange({ 
-                    selectedStudents: value === "all" ? [] : [value] 
-                  })
-                }
-              >
-                <SelectTrigger className="w-[200px] border-gray-200 hover:bg-gray-50">
-                  <SelectValue placeholder="All users" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All users</SelectItem>
-                  {users.map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.first_name} {user.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+      {/* User Filter - Only for owners */}
+      {userRole === 'owner' && (
+        <Select
+          value={filters.selectedStudents[0] || 'all'}
+          onValueChange={(value) =>
+            onFiltersChange({ selectedStudents: value === 'all' ? [] : [value] })
+          }
+        >
+          <SelectTrigger className={cn(pillClass, 'w-[200px]')}>
+            <SelectValue placeholder="All users" />
+          </SelectTrigger>
+          <SelectContent className="rounded-[1.25rem]">
+            <SelectItem value="all">All users</SelectItem>
+            {users.map((u) => (
+              <SelectItem key={u.id} value={u.id}>
+                {u.first_name} {u.last_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
-          {/* Subject Filter */}
-          <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700">Subjects</label>
-            <Select
-              value={filters.selectedSubjects[0] || "all"}
-              onValueChange={(value) => 
-                onFiltersChange({ 
-                  selectedSubjects: value === "all" ? [] : [value] 
-                })
-              }
-            >
-              <SelectTrigger className="w-[200px] border-gray-200 hover:bg-gray-50">
-                <SelectValue placeholder="All subjects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All subjects</SelectItem>
-                {subjects.map(subject => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Subject Filter */}
+      <Select
+        value={filters.selectedSubjects[0] || 'all'}
+        onValueChange={(value) =>
+          onFiltersChange({ selectedSubjects: value === 'all' ? [] : [value] })
+        }
+      >
+        <SelectTrigger className={cn(pillClass, 'w-[200px]')}>
+          <SelectValue placeholder="All subjects" />
+        </SelectTrigger>
+        <SelectContent className="rounded-[1.25rem]">
+          <SelectItem value="all">All subjects</SelectItem>
+          {subjects.map((subject) => (
+            <SelectItem key={subject} value={subject}>
+              {subject}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-          {hasActiveFilters && (
-            <div className="flex items-end">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={clearFilters}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-              >
-                <X className="h-4 w-4" />
-                Clear Filters
-              </Button>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      {hasActiveFilters && (
+        <Button
+          variant="ghost"
+          onClick={clearFilters}
+          className="h-10 gap-1.5 rounded-full px-4 text-sm text-pastel-sky-foreground hover:bg-background/60"
+        >
+          <X className="h-4 w-4" />
+          Clear
+        </Button>
+      )}
+    </div>
   );
 };
 
 export default ProgressFilters;
+
