@@ -107,7 +107,6 @@ const Progress: React.FC = () => {
               userRole={userRole}
             />
 
-            <HeyCleoHomeworkProgress selectedStudents={filters.selectedStudents} />
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <ProgressChart 
