@@ -1,0 +1,1 @@
+ALTER TABLE public.heycleo_sync_state ADD COLUMN IF NOT EXISTS rows_pruned integer DEFAULT 0;
