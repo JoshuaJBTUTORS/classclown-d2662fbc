@@ -53,25 +53,30 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Login link requested for:", rawEmail);
 
     // Only mint links for existing accounts (never auto-create users here).
-    const { data: existing, error: lookupError } = await supabase
-      .schema("auth")
-      .from("users")
-      .select("id")
-      .ilike("email", rawEmail)
-      .maybeSingle();
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const lookupRes = await fetch(
+      `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users?filter=${encodeURIComponent(rawEmail)}&per_page=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    );
 
-    if (lookupError) {
-      console.error("User lookup failed:", lookupError.message);
+    if (!lookupRes.ok) {
+      console.error("User lookup failed:", lookupRes.status, await lookupRes.text());
       return new Response(JSON.stringify({ error: "Failed to send login link" }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    if (!existing) {
+    const lookupJson = await lookupRes.json();
+    const exists = (lookupJson?.users || []).some(
+      (u: { email?: string }) => (u.email || "").toLowerCase() === rawEmail
+    );
+
+    if (!exists) {
       console.log("No account found for that email, returning generic success");
       return genericSuccess();
     }
+
 
     // Mint a Supabase tokenised magic link.
     const { data, error } = await supabase.auth.admin.generateLink({
