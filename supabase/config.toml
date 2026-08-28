@@ -236,3 +236,6 @@ verify_jwt = false
 [functions.daily-timeoff-clash-check]
 verify_jwt = false
 
+
+[functions.send-login-link]
+verify_jwt = false
