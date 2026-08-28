@@ -222,18 +222,32 @@ const HeyCleoData: React.FC = () => {
           <CardContent className="space-y-1 text-xs text-muted-foreground">
             {['students', 'homework-completion'].map((resource) => {
               const state = stateFor(resource);
+              const status = state?.last_status ?? 'never';
               return (
-                <div key={resource} className="flex items-center justify-between gap-2">
-                  <span className="capitalize">{resource === 'students' ? 'Students' : 'Homework'}</span>
-                  <span className="flex items-center gap-2">
-                    {fmt(state?.last_run_at, 'd MMM, HH:mm')}
-                    <Badge variant={state?.last_status === 'error' ? 'destructive' : 'secondary'}>
-                      {state?.last_status ?? 'never'}
-                    </Badge>
-                  </span>
+                <div key={resource} className="space-y-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="capitalize">{resource === 'students' ? 'Students' : 'Homework'}</span>
+                    <span className="flex items-center gap-2">
+                      {fmt(state?.last_run_at, 'd MMM, HH:mm')}
+                      <Badge
+                        variant={
+                          status === 'error' ? 'destructive' : status === 'warning' ? 'outline' : 'secondary'
+                        }
+                      >
+                        {status}
+                      </Badge>
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground/80">
+                    {state?.rows_synced ?? 0} pulled · {state?.rows_pruned ?? 0} removed
+                  </div>
+                  {status !== 'success' && state?.last_error && (
+                    <div className="text-[11px] text-destructive line-clamp-2">{state.last_error}</div>
+                  )}
                 </div>
               );
             })}
+
           </CardContent>
         </Card>
       </div>
