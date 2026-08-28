@@ -158,86 +158,83 @@ const AttendanceChart: React.FC<AttendanceChartProps> = ({ filters, userRole }) 
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg border-l-4 border-l-emerald-500">
-          <p className="font-semibold text-gray-900 mb-2">Week of {label}</p>
-          <p className="text-emerald-600 font-medium">Attended: {data.attended}/{data.total}</p>
-          <p className="text-blue-600 font-medium">Percentage: {data.percentage}%</p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const description =
+    userRole === 'owner' ? 'Student attendance rates by week' : 'Your attendance rates by week';
 
   if (loading) {
     return (
-      <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="font-playfair text-xl text-gray-900">Attendance Tracking</CardTitle>
-          <CardDescription className="text-gray-600">Loading attendance data...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e94b7f]"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <ProgressPanel title="Attendance" description="Loading attendance data...">
+        <div className="h-72 animate-pulse rounded-[1.25rem] bg-muted" />
+      </ProgressPanel>
     );
   }
 
+  const bandFor = (percentage: number) => {
+    if (percentage >= 90) return 'bg-pastel-mint text-pastel-mint-foreground';
+    if (percentage >= 70) return 'bg-pastel-sky text-pastel-sky-foreground';
+    if (percentage >= 40) return 'bg-pastel-butter text-pastel-butter-foreground';
+    return 'bg-pastel-blush text-pastel-blush-foreground';
+  };
+
+  const overall =
+    data.length > 0
+      ? Math.round(
+          (data.reduce((sum, d) => sum + d.attended, 0) / Math.max(data.reduce((sum, d) => sum + d.total, 0), 1)) * 100,
+        )
+      : 0;
+
   return (
-    <Card className="border border-gray-200/50 bg-white shadow-sm hover:shadow-md transition-all duration-200">
-      <CardHeader className="pb-4">
-        <CardTitle className="font-playfair text-xl text-gray-900">Attendance Tracking</CardTitle>
-        <CardDescription className="text-gray-600">
-          {userRole === 'owner' ? 'Student attendance rates by week' : 
-           'Your attendance rates by week'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="week" 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  domain={[0, 100]} 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="percentage" 
-                  fill="#10b981"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              <div className="text-center">
-                <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-400">No attendance data available</p>
-                <p className="text-sm text-gray-400 mt-1">for the selected filters</p>
-              </div>
+    <ProgressPanel
+      title="Attendance"
+      description={description}
+      action={
+        data.length > 0 ? (
+          <span className="rounded-full bg-pastel-mint px-3 py-1 font-heading text-sm font-semibold text-pastel-mint-foreground">
+            {overall}%
+          </span>
+        ) : undefined
+      }
+    >
+      <div className="min-h-[18rem]">
+        {data.length > 0 ? (
+          <>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-2">
+              {data.map((week) => (
+                <div
+                  key={week.week}
+                  title={`Week of ${week.week}: ${week.attended}/${week.total} attended (${week.percentage}%)`}
+                  className={`flex aspect-square flex-col items-center justify-center rounded-[0.9rem] transition-transform duration-200 hover:-translate-y-0.5 ${bandFor(week.percentage)}`}
+                >
+                  <span className="font-heading text-sm font-bold leading-none">{week.percentage}%</span>
+                  <span className="mt-1 text-[10px] opacity-75">{week.week}</span>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              {[
+                { label: '90%+', cls: 'bg-pastel-mint' },
+                { label: '70–89%', cls: 'bg-pastel-sky' },
+                { label: '40–69%', cls: 'bg-pastel-butter' },
+                { label: 'Below 40%', cls: 'bg-pastel-blush' },
+              ].map((item) => (
+                <span key={item.label} className="flex items-center gap-1.5">
+                  <span className={`h-3 w-3 rounded-[0.35rem] ${item.cls}`} />
+                  {item.label}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex h-72 flex-col items-center justify-center text-center">
+            <DoodleEmpty className="h-16 w-20 text-muted-foreground/50" />
+            <p className="mt-3 font-heading text-sm font-semibold text-muted-foreground">No attendance yet</p>
+            <p className="text-xs text-muted-foreground/80">Nothing matches these filters</p>
+          </div>
+        )}
+      </div>
+    </ProgressPanel>
   );
 };
 
 export default AttendanceChart;
+
