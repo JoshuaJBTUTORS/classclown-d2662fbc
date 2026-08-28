@@ -1541,13 +1541,13 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(168, 65%, 32%);
+  background: hsl(0, 0%, 0%);
   border-radius: 3px;
   opacity: 0.6;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(168, 65%, 25%);
+  background: hsl(0, 0%, 0%);
 }
 
 /* Blog content styles */
