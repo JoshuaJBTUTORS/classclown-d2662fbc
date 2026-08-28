@@ -1,18 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
-import PageTitle from '@/components/ui/PageTitle';
 import ProgressChart from '@/components/progress/ProgressChart';
 import AttendanceChart from '@/components/progress/AttendanceChart';
 import AssessmentProgressChart from '@/components/progress/AssessmentProgressChart';
 import ProgressSummary from '@/components/progress/ProgressSummary';
 import ProgressFilters from '@/components/progress/ProgressFilters';
+import ProgressHero from '@/components/progress/ProgressHero';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface ProgressFilters {
   dateRange: { from: Date | null; to: Date | null };
