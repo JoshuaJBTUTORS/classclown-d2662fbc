@@ -2570,6 +2570,12 @@
   padding: 3px 8px !important;
   box-shadow: var(--shadow-soft) !important;
   font-size: 12px !important;
+  opacity: 1 !important;
+}
+
+.calendar-soft .fc-event:hover {
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 .calendar-soft .fc-event:hover {
