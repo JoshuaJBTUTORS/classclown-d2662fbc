@@ -202,12 +202,6 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({ filters, userRole }) 
           }, 0) / totalAssessments)
         : 0;
 
-      // Calculate attendance statistics
-      const totalLessons = attendanceData?.length || 0;
-      const attendedLessons = attendanceData?.filter(a => a.attendance_status === 'present').length || 0;
-      const attendanceRate = totalLessons > 0 
-        ? Math.round((attendedLessons / totalLessons) * 100)
-        : 0;
 
       // Calculate homework improvement trend
       let improvementTrend = 0;
