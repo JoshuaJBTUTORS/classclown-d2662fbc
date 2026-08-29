@@ -254,23 +254,29 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="cc-dialog sm:max-w-[800px] max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Create Family Account
-          </DialogTitle>
-          <DialogDescription>
-            Create a parent account and add multiple students in one step. Students will be linked to the parent account.
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+              <Users className="h-5 w-5" />
+            </span>
+            <div className="space-y-1">
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">
+                Create Family Account
+              </DialogTitle>
+              <DialogDescription>
+                Create a parent account and add multiple students in one step. Students will be linked to the parent account.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Parent Details Section */}
-            <Card>
+            <Card className="rounded-[var(--radius-soft)] border-0 bg-pastel-butter shadow-[var(--shadow-soft)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="text-lg font-heading font-extrabold tracking-tight flex items-center gap-2 text-pastel-butter-foreground">
                   <UserPlus className="h-4 w-4" />
                   Parent Details
                 </CardTitle>
