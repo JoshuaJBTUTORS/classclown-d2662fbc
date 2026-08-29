@@ -2,34 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
-import StudentsHero from '@/components/students/StudentsHero';
-import StudentCard from '@/components/students/StudentCard';
-import { Button } from '@/components/ui/button';
-const chipBase = cn(
-  'inline-flex items-center gap-2.5 rounded-full pl-2 pr-4 h-11 text-sm font-medium transition-all duration-200',
-  'bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-);
-const chipIcon =
-  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Upload, ChevronDown, Users, UserPlus, User } from 'lucide-react';
+import { Plus, ChevronDown, Users, UserPlus, User, Upload, MoreHorizontal, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,8 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import EditStudentForm from '@/components/students/EditStudentForm';
 import ViewStudentProfile from '@/components/students/ViewStudentProfile';
 import { Student } from '@/types/student';
@@ -52,10 +26,10 @@ import AddParentOnlyForm from '@/components/parents/AddParentOnlyForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { BulkImportDialog } from '@/components/students/BulkImportDialog';
 import { useAuth } from '@/contexts/AuthContext';
-
 import { studentDataService } from '@/services/studentDataService';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
-import { 
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -65,12 +39,60 @@ import {
   PaginationEllipsis,
 } from '@/components/ui/pagination';
 
+const chipBase = cn(
+  'inline-flex items-center gap-2.5 rounded-full pl-2 pr-4 h-11 text-sm font-medium transition-all duration-200',
+  'bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+);
+const chipIcon =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
+
+const stroke = {
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const DoodleSearch: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M11 4.2c3.6-.3 6.4 2.4 6.3 5.9-.1 3.3-2.8 5.8-6.1 5.7-3.4-.1-5.9-2.7-5.8-6C5.5 6.7 7.9 4.4 11 4.2z" />
+    <path d="M15.4 14.6c1.6 1.5 3 3.1 4.3 4.9" />
+  </svg>
+);
+
+const DoodleArrow: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M4.8 12.2c4.7-.4 9.4-.5 14.1-.3" />
+    <path d="M14.2 7.3c1.8 1.5 3.4 3 4.8 4.7-1.5 1.6-3.1 3.1-4.9 4.5" />
+  </svg>
+);
+
+const initials = (first?: string | null, last?: string | null) =>
+  `${(first ?? '').charAt(0)}${(last ?? '').charAt(0)}`.toUpperCase() || '?';
+
+const avatarTones = [
+  'bg-pastel-mint',
+  'bg-pastel-lilac',
+  'bg-pastel-butter',
+  'bg-pastel-blush',
+  'bg-pastel-sky',
+];
+
+const statusTone = (status?: string) => {
+  const s = status || 'active';
+  if (s === 'trial') return 'bg-pastel-butter text-pastel-butter-foreground';
+  if (s === 'active') return 'bg-pastel-mint text-pastel-mint-foreground';
+  return 'bg-muted text-muted-foreground';
+};
+
 const Students = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'active' | 'trial'>('active');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddFamilyDialogOpen, setIsAddFamilyDialogOpen] = useState(false);
   const [isAddToParentDialogOpen, setIsAddToParentDialogOpen] = useState(false);
@@ -134,7 +156,6 @@ const Students = () => {
       if (!studentsData || studentsData.length === 0) {
         console.log('No students found in database');
         setStudents([]);
-        setFilteredStudents([]);
         setIsLoading(false);
         return;
       }
@@ -230,7 +251,6 @@ const Students = () => {
       console.log('Total students to display:', formattedStudents.length);
       
       setStudents(formattedStudents);
-      setFilteredStudents(formattedStudents);
     } catch (error) {
       console.error('Error in fetchStudents:', error);
       toast.error('Failed to load students. Please try again.');
@@ -249,25 +269,33 @@ const Students = () => {
     }
   }, [user, userRole, parentProfile]);
 
+  // Tab classification: trial students vs everyone else
+  const trialStudents = students.filter((s) => (s.status || 'active') === 'trial');
+  const activeStudents = students.filter((s) => (s.status || 'active') !== 'trial');
+  const tabStudents = activeTab === 'trial' ? trialStudents : activeStudents;
+
   // Filter students based on search query
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredStudents(students);
-    } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = students.filter(
+  const query = searchQuery.trim().toLowerCase();
+  const filteredStudents = query
+    ? tabStudents.filter(
         (student) =>
           (student.first_name || '').toLowerCase().includes(query) ||
           (student.last_name || '').toLowerCase().includes(query) ||
           (student.email || '').toLowerCase().includes(query) ||
           (typeof student.subjects === 'string' && student.subjects.toLowerCase().includes(query)) ||
           (student.parentName && student.parentName.toLowerCase().includes(query))
-      );
-      setFilteredStudents(filtered);
-    }
-    // Reset to first page when filtering
+      )
+    : tabStudents;
+
+  const handleTabChange = (tab: 'active' | 'trial') => {
+    setActiveTab(tab);
     setCurrentPage(1);
-  }, [searchQuery, students]);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   // Pagination calculations
   const itemsPerPage = 50;
@@ -421,35 +449,6 @@ const Students = () => {
     setIsEditParentDialogOpen(false);
   };
 
-  // Helper function to get status badge variant and text
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'trial':
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-pastel-butter px-3 py-1 text-pastel-butter-foreground">
-            Trial
-          </Badge>
-        );
-      case 'active':
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-pastel-mint px-3 py-1 text-pastel-mint-foreground">
-            Active
-          </Badge>
-        );
-      case 'inactive':
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
-            Inactive
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
-            {status}
-          </Badge>
-        );
-    }
-  };
 
   return (
     <>
@@ -458,14 +457,32 @@ const Students = () => {
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="mx-auto w-full max-w-7xl space-y-6">
-          <StudentsHero
-            title={isParent ? 'My Children' : 'Clients'}
-            totalCount={students.length}
-            activeCount={students.filter((s) => s.status === 'active').length}
-            trialCount={students.filter((s) => s.status === 'trial').length}
-            actions={
-              <>
-                {(isAdmin || isOwner) && (
+          {/* Header */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex items-center gap-3">
+              <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
+                {isParent ? 'My Children' : 'Clients'}
+              </h1>
+              {students.length > 0 && (
+                <span className="mt-2 inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-foreground">
+                  {students.length}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-72">
+                <span className="pointer-events-none absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleSearch className="h-4 w-4" />
+                </span>
+                <input
+                  placeholder={isParent ? 'Search children...' : 'Search clients...'}
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="h-11 w-full rounded-full border-2 border-foreground bg-transparent pl-12 pr-5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:bg-foreground/[0.03]"
+                />
+              </div>
+              {(isAdmin || isOwner) && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => navigate('/onboarding')}
@@ -476,8 +493,6 @@ const Students = () => {
                     </span>
                     Cleo Onboarding
                   </button>
-                )}
-                {(isAdmin || isOwner) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" className={chipBase}>
@@ -489,35 +504,35 @@ const Students = () => {
                       </button>
                     </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsAddFamilyDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <Users className="h-4 w-4" />
                       Add Family
                     </DropdownMenuItem>
-                     <DropdownMenuItem 
+                     <DropdownMenuItem
                       onClick={() => setIsAddToParentDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <UserPlus className="h-4 w-4" />
                       Add to Parent
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsLinkStudentDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <UserPlus className="h-4 w-4" />
                       Link Existing Student
                     </DropdownMenuItem>
-                     <DropdownMenuItem 
+                     <DropdownMenuItem
                       onClick={() => setIsAddDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <User className="h-4 w-4" />
                       Add Client Only
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsAddParentOnlyDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
@@ -525,7 +540,7 @@ const Students = () => {
                       Add Parent Only
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsBulkImportDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
@@ -534,85 +549,229 @@ const Students = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                   </DropdownMenu>
-                )}
-              </>
-            }
-          />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          {!isLoading && students.length > 0 && (
+            <div className="flex items-center gap-2">
+              {(
+                [
+                  { key: 'active' as const, label: 'Active', count: activeStudents.length },
+                  { key: 'trial' as const, label: 'Trial', count: trialStudents.length },
+                ]
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => handleTabChange(tab.key)}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-full border-2 border-foreground px-4 py-2 text-sm font-semibold transition-colors',
+                    activeTab === tab.key
+                      ? 'bg-foreground text-background'
+                      : 'bg-transparent text-foreground hover:bg-foreground/[0.04]'
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      'inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold',
+                      activeTab === tab.key
+                        ? 'bg-background/20 text-background'
+                        : 'bg-pastel-lilac text-foreground'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-6">
               {isLoading ? (
-                <div className="space-y-3 py-2">
+                <div className="space-y-2 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
+                    <Skeleton key={i} className="h-14 w-full rounded-[1.25rem]" />
                   ))}
                 </div>
               ) : currentStudents.length === 0 ? (
-                <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-10 text-center sm:p-14">
-                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-background/70 text-pastel-sand-foreground">
-                    {searchQuery ? <Search className="h-7 w-7" /> : <Users className="h-7 w-7" />}
-                  </div>
-                  <h3 className="mb-3 font-heading text-2xl font-bold tracking-tight text-pastel-sand-foreground">
-                    {searchQuery ? 'No results found' : isParent ? 'No children yet' : 'No clients yet'}
-                  </h3>
-                  <p className="mx-auto max-w-md text-sm leading-relaxed text-pastel-sand-foreground/80">
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
+                  {searchQuery ? (
+                    <Search className="h-8 w-8 text-foreground/70" />
+                  ) : (
+                    <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                  )}
+                  <p className="text-sm text-muted-foreground">
                     {searchQuery
-                      ? `Nothing matched "${searchQuery}". Try a different name, email, or subject.`
-                      : isParent
-                        ? "Your children's profiles will appear here."
-                        : 'Add your first client to get started.'}
+                      ? `No clients match "${searchQuery}".`
+                      : activeTab === 'trial'
+                        ? 'No trial clients.'
+                        : isParent
+                          ? "Your children's profiles will appear here."
+                          : 'No clients yet. Add your first client to get started.'}
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {currentStudents.map((student, index) => {
-                    const subjects =
-                      typeof student.subjects === 'string' && student.subjects
-                        ? student.subjects.split(',').map((s) => s.trim()).filter(Boolean)
-                        : Array.isArray(student.subjects)
-                          ? (student.subjects as string[])
-                          : [];
+                <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+                  <div className="space-y-2">
+                    {/* Column headers (desktop) */}
+                    <div
+                      className={cn(
+                        'hidden gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid',
+                        isParent
+                          ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,0.7fr)_96px]'
+                          : 'grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,0.7fr)_96px]'
+                      )}
+                    >
+                      <span>Name</span>
+                      <span>Email</span>
+                      {!isParent && <span>Parent</span>}
+                      <span>Subjects</span>
+                      <span>Status</span>
+                      <span className="text-right">Actions</span>
+                    </div>
 
-                    return (
-                      <StudentCard
-                        key={student.id}
-                        index={index}
-                        showParent={!isParent}
-                        student={{
-                          id: String(student.id),
+                    {currentStudents.map((student, i) => {
+                      const subjects =
+                        typeof student.subjects === 'string' && student.subjects
+                          ? student.subjects.split(',').map((s) => s.trim()).filter(Boolean)
+                          : Array.isArray(student.subjects)
+                            ? (student.subjects as string[])
+                            : [];
 
-                          name: `${student.first_name} ${student.last_name}`.trim(),
-                          email: student.email,
-                          parentName: student.parentName,
-                          parentEmail: student.parentEmail,
-                          status: student.status,
-                          subjects,
-                          hasLogin: Boolean(student.user_id),
-                        }}
-                        onOpen={() => handleViewClick(student)}
-                        onEdit={() => handleEditClick(student)}
-                        onEditParent={
-                          (isAdmin || isOwner) && student.parent_id
-                            ? () => handleEditParentClick(student)
-                            : undefined
-                        }
-                        onDelete={
-                          isAdmin || isOwner ? () => handleDeleteClick(student) : undefined
-                        }
-                      />
-                    );
-                  })}
+                      return (
+                        <div
+                          key={student.id}
+                          className={cn(
+                            'group grid w-full grid-cols-1 items-center gap-2 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/70 lg:gap-4',
+                            isParent
+                              ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,0.7fr)_96px]'
+                              : 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,0.7fr)_96px]'
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleViewClick(student)}
+                            className="flex min-w-0 items-center gap-3 text-left"
+                          >
+                            <span
+                              className={cn(
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground',
+                                avatarTones[i % avatarTones.length]
+                              )}
+                            >
+                              {initials(student.first_name, student.last_name)}
+                            </span>
+                            <span className="truncate font-semibold text-foreground">
+                              {student.first_name} {student.last_name}
+                            </span>
+                          </button>
+
+                          <span className="truncate pl-12 text-sm text-muted-foreground lg:pl-0">
+                            {student.email || '—'}
+                          </span>
+                          {!isParent && (
+                            <span className="truncate pl-12 text-sm text-muted-foreground lg:pl-0">
+                              {student.parentName || '—'}
+                            </span>
+                          )}
+                          <span className="flex flex-wrap items-center gap-1.5 pl-12 lg:pl-0">
+                            {subjects.length === 0 ? (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            ) : (
+                              <>
+                                {subjects.slice(0, 2).map((subject) => (
+                                  <span
+                                    key={subject}
+                                    className="rounded-full bg-pastel-lilac px-2.5 py-0.5 text-xs font-medium text-foreground"
+                                  >
+                                    {subject}
+                                  </span>
+                                ))}
+                                {subjects.length > 2 && (
+                                  <span className="rounded-full bg-pastel-lilac px-2.5 py-0.5 text-xs font-medium text-foreground">
+                                    +{subjects.length - 2}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </span>
+
+                          <span className="pl-12 lg:pl-0">
+                            <span
+                              className={cn(
+                                'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize',
+                                statusTone(student.status)
+                              )}
+                            >
+                              {student.status || 'active'}
+                            </span>
+                          </span>
+
+                          <span className="flex items-center justify-end gap-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label="Client actions"
+                                  className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground transition-colors hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Options</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleViewClick(student)}>
+                                  View Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditClick(student)}>
+                                  Edit Student
+                                </DropdownMenuItem>
+                                {(isAdmin || isOwner) && student.parent_id && (
+                                  <DropdownMenuItem onClick={() => handleEditParentClick(student)}>
+                                    Edit Parent
+                                  </DropdownMenuItem>
+                                )}
+                                {(isAdmin || isOwner) && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteClick(student)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      Delete Client
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <button
+                              type="button"
+                              onClick={() => handleViewClick(student)}
+                              aria-label={`Open ${student.first_name} ${student.last_name}`}
+                              className="hidden h-9 w-9 items-center justify-center rounded-full bg-foreground text-background opacity-0 transition-opacity duration-200 group-hover:opacity-100 lg:flex"
+                            >
+                              <DoodleArrow className="h-4 w-4" />
+                            </button>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-              
-              
-              
+
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-4 flex justify-center">
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious 
+                        <PaginationPrevious
                           onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                           className={cn(
                             "cursor-pointer",
@@ -620,11 +779,11 @@ const Students = () => {
                           )}
                         />
                       </PaginationItem>
-                      
+
                       {renderPaginationItems()}
-                      
+
                       <PaginationItem>
-                        <PaginationNext 
+                        <PaginationNext
                           onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                           className={cn(
                             "cursor-pointer",
