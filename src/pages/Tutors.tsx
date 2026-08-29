@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, PlusIcon, Trash2, Mail, Loader2 } from 'lucide-react';
+import { Edit, PlusIcon, Trash2, Mail, Loader2, ChevronDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 import { supabase } from '@/integrations/supabase/client';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
