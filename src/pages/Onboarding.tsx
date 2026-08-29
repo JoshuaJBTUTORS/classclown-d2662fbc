@@ -6,6 +6,8 @@ import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UserPlus, ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { DoodleCalendar, DoodleClock } from '@/components/calendar/LessonDoodles';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
