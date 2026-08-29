@@ -437,7 +437,7 @@ const Tutors = () => {
                               className="w-auto max-w-xs rounded-[1.25rem] border-2 border-foreground/10 bg-card p-3 shadow-[var(--shadow-soft-lg)]"
                             >
                               <div className="flex flex-wrap gap-1.5">
-                                {tutor.subjects.map((subject, sIdx) => (
+                                {sortSubjectNames(tutor.subjects).map((subject, sIdx) => (
                                   <span
                                     key={sIdx}
                                     className={cn(
