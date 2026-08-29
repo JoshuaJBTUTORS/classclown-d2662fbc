@@ -63,7 +63,7 @@ const Staff: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
 
       <CreateAdminDialog
