@@ -572,7 +572,7 @@ const Tutors = () => {
           />
         </main>
       </div>
-    </div>
+    </>
   );
 };
 
