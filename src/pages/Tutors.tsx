@@ -160,17 +160,28 @@ const Tutors = () => {
     fetchTutors();
   };
 
+  // Tab classification: tutors with no subjects (shown as N/A) are "inactive"
+  const hasSubjects = (t: TutorWithSubjects) => (t.subjects?.length ?? 0) > 0;
+  const activeTutors = tutors.filter(hasSubjects);
+  const inactiveTutors = tutors.filter((t) => !hasSubjects(t));
+  const tabTutors = activeTab === 'active' ? activeTutors : inactiveTutors;
+
   // Pagination calculations
   const itemsPerPage = 50;
-  const totalItems = tutors.length;
+  const totalItems = tabTutors.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentTutors = tutors.slice(startIndex, endIndex);
+  const currentTutors = tabTutors.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTabChange = (tab: 'active' | 'inactive') => {
+    setActiveTab(tab);
+    setCurrentPage(1);
   };
 
   const renderPaginationItems = () => {
