@@ -1,28 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, PlusIcon, Trash2, Mail } from 'lucide-react';
+import { Edit, PlusIcon, Trash2, Mail, Loader2 } from 'lucide-react';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
-import PageTitle from '@/components/ui/PageTitle';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
 import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
 import EditTutorForm from '@/components/tutors/EditTutorForm';
 import DeleteTutorDialog from '@/components/tutors/DeleteTutorDialog';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Tutor } from '@/types/tutor';
 import { cn } from '@/lib/utils';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { 
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -31,6 +21,17 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
+
+const initials = (first?: string | null, last?: string | null) =>
+  `${(first ?? '').charAt(0)}${(last ?? '').charAt(0)}`.toUpperCase() || '?';
+
+const avatarTones = [
+  'bg-pastel-mint',
+  'bg-pastel-lilac',
+  'bg-pastel-butter',
+  'bg-pastel-blush',
+  'bg-pastel-sky',
+];
 
 interface TutorWithSubjects extends Tutor {
   subjects?: string[];
