@@ -175,12 +175,19 @@ const LinkStudentToParentForm: React.FC<LinkStudentToParentFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>Link Existing Student to Parent</DialogTitle>
-          <DialogDescription>
-            Select a standalone student and link them to an existing parent account.
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+              <Users className="h-5 w-5" />
+            </span>
+            <div className="space-y-1">
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Link Existing Student to Parent</DialogTitle>
+              <DialogDescription>
+                Select a standalone student and link them to an existing parent account.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -219,14 +226,14 @@ const LinkStudentToParentForm: React.FC<LinkStudentToParentFormProps> = ({
               
               {/* Student Dropdown */}
               {showStudentDropdown && studentSearch && !selectedStudent && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
-                  <div className="max-h-60 overflow-auto p-1">
+                <div className="absolute z-50 mt-2 w-full rounded-[1.25rem] border-0 bg-popover shadow-[var(--shadow-soft-lg)]">
+                  <div className="max-h-60 overflow-auto p-2">
                     {filteredStudents.length > 0 ? (
                       filteredStudents.map((student) => (
                         <div
                           key={student.id}
                           onClick={() => selectStudent(student)}
-                          className="flex cursor-pointer items-center gap-2 rounded-sm p-2 hover:bg-accent"
+                          className="flex cursor-pointer items-center gap-2 rounded-full px-3 py-2 hover:bg-muted"
                         >
                           <User className="h-4 w-4 text-muted-foreground" />
                           <div>
@@ -251,11 +258,11 @@ const LinkStudentToParentForm: React.FC<LinkStudentToParentFormProps> = ({
             
             {/* Selected Student Display */}
             {selectedStudent && (
-              <div className="flex items-center gap-2 rounded-md border p-2 bg-muted/50">
-                <User className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 rounded-full px-4 py-2 bg-pastel-mint text-pastel-mint-foreground">
+                <User className="h-4 w-4" />
                 <span className="text-sm">
                   <strong>{selectedStudent.first_name} {selectedStudent.last_name}</strong>
-                  <span className="text-muted-foreground"> - {selectedStudent.email}</span>
+                  <span className="opacity-70"> - {selectedStudent.email}</span>
                 </span>
               </div>
             )}
