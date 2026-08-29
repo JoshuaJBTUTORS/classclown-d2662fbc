@@ -124,21 +124,28 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="cc-dialog max-w-4xl max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>Bulk Import Clients</DialogTitle>
-          <DialogDescription>
-            Import multiple parents and students from an Excel file
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+              <Upload className="h-5 w-5" />
+            </span>
+            <div className="space-y-1">
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Bulk Import Clients</DialogTitle>
+              <DialogDescription>
+                Import multiple parents and students from an Excel file
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
         {step === 'upload' && (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+              <div className="rounded-[var(--radius-soft)] border-2 border-dashed border-foreground/25 bg-pastel-sky p-8">
                 <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Upload Excel File</h3>
+                  <h3 className="text-lg font-heading font-extrabold tracking-tight">Upload Excel File</h3>
                   <p className="text-sm text-muted-foreground">
                     Select an Excel file with "Parents" and "Students" sheets
                   </p>
@@ -152,7 +159,7 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
                     id="file-upload"
                   />
                   <label htmlFor="file-upload">
-                    <Button asChild className="cursor-pointer">
+                    <Button asChild className="cursor-pointer rounded-full bg-foreground text-background hover:opacity-90 transition-all duration-200 hover:-translate-y-0.5">
                       <span>Choose File</span>
                     </Button>
                   </label>
@@ -161,13 +168,13 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
             </div>
 
             <div className="flex justify-center">
-              <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Button variant="outline" onClick={handleDownloadTemplate} className="rounded-full border-foreground bg-transparent hover:bg-foreground/5 transition-all duration-200 hover:-translate-y-0.5">
                 <Download className="h-4 w-4 mr-2" />
                 Download Template
               </Button>
             </div>
 
-            <Alert>
+            <Alert className="rounded-[var(--radius-soft)] border-0 bg-pastel-butter text-pastel-butter-foreground">
               <FileText className="h-4 w-4" />
               <AlertDescription>
                 <strong>Template Requirements:</strong>
