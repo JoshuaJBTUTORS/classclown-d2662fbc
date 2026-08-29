@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, X } from 'lucide-react';
+import { sortSubjectsByLevel, subjectLevelRank, getSubjectCategoryTone } from '@/utils/subjectLevelOrder';
 import { toast } from '@/hooks/use-toast';
 
 interface Subject {
@@ -92,14 +93,16 @@ const MultiSelectSubjects: React.FC<MultiSelectSubjectsProps> = ({
     onSubjectsChange(newSelectedIds);
   };
 
-  // Group subjects by category
-  const subjectsByCategory = subjects.reduce((acc, subject) => {
-    if (!acc[subject.category]) {
-      acc[subject.category] = [];
-    }
-    acc[subject.category].push(subject);
+  // Group subjects by education level, A-level downwards
+  const LEVEL_LABELS = ['A-level', 'GCSE & Year 11', 'KS3', 'KS2 & Sats', '11 Plus', 'Other'];
+  const orderedSubjects = sortSubjectsByLevel(subjects, (s) => s.name);
+  const subjectsByLevel = orderedSubjects.reduce((acc, subject) => {
+    const label = LEVEL_LABELS[subjectLevelRank(subject.name)];
+    if (!acc[label]) acc[label] = [];
+    acc[label].push(subject);
     return acc;
   }, {} as Record<string, Subject[]>);
+  const orderedGroups = LEVEL_LABELS.filter((label) => subjectsByLevel[label]?.length);
 
   if (loading) {
     return <div className="text-sm text-muted-foreground">Loading subjects...</div>;
@@ -108,9 +111,9 @@ const MultiSelectSubjects: React.FC<MultiSelectSubjectsProps> = ({
   return (
     <div className="space-y-3">
       {/* Display selected subjects as badges */}
-      <div className="flex flex-wrap gap-1 min-h-[2rem] p-2 border rounded-md bg-background">
-        {selectedSubjects.length > 0 ? selectedSubjects.map((subject) => (
-          <Badge key={subject.id} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+      <div className="flex min-h-[2.5rem] flex-wrap items-center gap-1.5 rounded-[1.25rem] bg-muted/40 p-2">
+        {selectedSubjects.length > 0 ? sortSubjectsByLevel(selectedSubjects, (s) => s.name).map((subject) => (
+          <Badge key={subject.id} variant="secondary" className={`flex items-center gap-1 rounded-full border-0 px-3 py-1 text-foreground ${getSubjectCategoryTone(subject.name)}`}>
             {subject.name}
             {!disabled && (
               <button 
@@ -132,7 +135,7 @@ const MultiSelectSubjects: React.FC<MultiSelectSubjectsProps> = ({
         <DropdownMenuTrigger asChild disabled={disabled}>
           <Button 
             variant="outline" 
-            className="w-full justify-between"
+            className="w-full justify-between rounded-full border-foreground"
             type="button"
           >
             {selectedSubjects.length === 0 
@@ -143,13 +146,13 @@ const MultiSelectSubjects: React.FC<MultiSelectSubjectsProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-80 max-h-80 overflow-y-auto" align="start">
-          {Object.entries(subjectsByCategory).map(([category, categorySubjects], categoryIndex) => (
-            <div key={category}>
+          {orderedGroups.map((label, categoryIndex) => (
+            <div key={label}>
               {categoryIndex > 0 && <DropdownMenuSeparator />}
               <DropdownMenuLabel className="font-medium text-sm">
-                {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || category}
+                {label}
               </DropdownMenuLabel>
-              {categorySubjects.map((subject) => (
+              {subjectsByLevel[label].map((subject) => (
                 <DropdownMenuCheckboxItem
                   key={subject.id}
                   checked={selectedSubjectIds.includes(subject.id)}

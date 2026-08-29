@@ -71,11 +71,11 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
 
   return (
     <AlertDialog open={isOpen && tutor !== null} onOpenChange={onClose}>
-      <AlertDialogContent>
+      <AlertDialogContent className="cc-dialog rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         {tutor && (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>
+              <AlertDialogTitle className="font-heading text-2xl font-extrabold tracking-tight">
                 {isHardDelete
                   ? 'Permanently Delete Tutor'
                   : 'Deactivate Tutor'}
@@ -105,7 +105,7 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
               </AlertDialogDescription>
             </AlertDialogHeader>
 
-            <div className="flex items-center space-x-2 my-4">
+            <div className="my-4 flex items-center space-x-2 rounded-[1.25rem] bg-pastel-sand/50 p-3">
               <Switch
                 id="hard-delete-mode"
                 checked={isHardDelete}
@@ -115,13 +115,13 @@ const DeleteTutorDialog: React.FC<DeleteTutorDialogProps> = ({
             </div>
 
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeleting} className="h-11 rounded-full border border-foreground px-5">Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => {
                   e.preventDefault();
                   handleDelete();
                 }}
-                className={isHardDelete ? "bg-destructive hover:bg-destructive/90" : ""}
+                className={`h-11 rounded-full px-6 ${isHardDelete ? "bg-destructive hover:bg-destructive/90" : "bg-foreground text-background hover:opacity-90"}`}
                 disabled={isDeleting}
               >
                 {isDeleting

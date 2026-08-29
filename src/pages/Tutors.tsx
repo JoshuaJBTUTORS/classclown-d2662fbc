@@ -12,7 +12,9 @@ import DeleteTutorDialog from '@/components/tutors/DeleteTutorDialog';
 import { toast } from '@/hooks/use-toast';
 import { Tutor } from '@/types/tutor';
 import { cn } from '@/lib/utils';
+import { getSubjectCategoryTone as tone, sortSubjectNames } from '@/utils/subjectLevelOrder';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
+
 import {
   Pagination,
   PaginationContent,
@@ -35,15 +37,8 @@ const avatarTones = [
 ];
 
 /** Stable pastel tone per subject category (matches calendar year-group colouring). */
-const getSubjectCategoryTone = (subject: string): string => {
-  const s = subject.trim().toLowerCase();
-  if (s.startsWith('11 plus')) return 'bg-pastel-lilac';
-  if (s.startsWith('early ks2') || s.startsWith('ks2') || s.startsWith('sats')) return 'bg-pastel-mint';
-  if (s.startsWith('ks3')) return 'bg-pastel-sky';
-  if (s.startsWith('gcse') || s.startsWith('year 11')) return 'bg-pastel-butter';
-  if (s.startsWith('a-level') || s.startsWith('a level')) return 'bg-pastel-blush';
-  return 'bg-pastel-sand';
-};
+const getSubjectCategoryTone = tone;
+
 
 interface TutorWithSubjects extends Tutor {
   subjects?: string[];
@@ -126,12 +121,21 @@ const Tutors = () => {
             return { ...tutor, subjects: [] };
           }
 
-          const subjects = subjectsData?.map(ts => ts.subjects?.name).filter(Boolean) || [];
+          const subjects = sortSubjectNames(
+            (subjectsData?.map(ts => ts.subjects?.name).filter(Boolean) || []) as string[]
+          );
           return { ...tutor, subjects };
         })
       );
 
-      setTutors(tutorsWithSubjects);
+      const sorted = [...tutorsWithSubjects].sort((a, b) => {
+        const first = (a.first_name ?? '').localeCompare(b.first_name ?? '', undefined, { sensitivity: 'base' });
+        if (first !== 0) return first;
+        return (a.last_name ?? '').localeCompare(b.last_name ?? '', undefined, { sensitivity: 'base' });
+      });
+
+      setTutors(sorted);
+
     } catch (error) {
       console.error('Error in fetchTutors:', error);
       toast({
@@ -290,11 +294,8 @@ const Tutors = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className={cn(
-        "flex flex-col flex-1 transition-all duration-300 w-full",
-        "lg:ml-0",
-        sidebarOpen && "lg:ml-64"
-      )}>
+      <div className="flex min-w-0 flex-1 flex-col">
+
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
           {/* Header */}
@@ -436,7 +437,7 @@ const Tutors = () => {
                               className="w-auto max-w-xs rounded-[1.25rem] border-2 border-foreground/10 bg-card p-3 shadow-[var(--shadow-soft-lg)]"
                             >
                               <div className="flex flex-wrap gap-1.5">
-                                {tutor.subjects.map((subject, sIdx) => (
+                                {sortSubjectNames(tutor.subjects).map((subject, sIdx) => (
                                   <span
                                     key={sIdx}
                                     className={cn(

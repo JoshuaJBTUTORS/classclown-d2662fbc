@@ -4,11 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, Plus, X } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Tutor, AvailabilitySlot } from '@/types/tutor';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import SubjectSelector from './SubjectSelector';
 import MultiSelectSubjects from './MultiSelectSubjects';
+import AvailabilityScheduleEditor from './AvailabilityScheduleEditor';
 
 interface EditTutorFormProps {
   tutor: Tutor | null;
@@ -64,16 +64,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-const daysOfWeek = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday'
-];
 
 const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
@@ -212,6 +202,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
     form.setValue('availability', updatedSlots);
   };
 
+  const reorderAvailabilitySlots = (from: number, to: number) => {
+    const updatedSlots = [...availabilitySlots];
+    const [moved] = updatedSlots.splice(from, 1);
+    updatedSlots.splice(to, 0, moved);
+    setAvailabilitySlots(updatedSlots);
+    form.setValue('availability', updatedSlots);
+  };
+
   const onSubmit = async (data: FormData) => {
     if (!tutor) return;
     
@@ -327,9 +325,14 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="cc-dialog sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>Edit Tutor</DialogTitle>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+              <Pencil className="h-5 w-5" />
+            </span>
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Edit Tutor</DialogTitle>
+          </div>
         </DialogHeader>
         
         <Form {...form}>
@@ -434,74 +437,13 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
             </div>
             
             {/* Availability Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Availability Schedule</h3>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={addAvailabilitySlot}
-                  className="flex items-center gap-1"
-                >
-                  <Plus className="h-4 w-4" /> Add Time Slot
-                </Button>
-              </div>
-              
-              {availabilitySlots.length === 0 ? (
-                <div className="text-center py-4 border border-dashed rounded-md text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto opacity-50 mb-2" />
-                  <p>No availability schedules added yet.</p>
-                  <p className="text-sm">Click "Add Time Slot" to specify when this tutor is available.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {availabilitySlots.map((slot) => (
-                    <div key={slot.id} className="flex items-center gap-2 p-3 border rounded-md bg-muted/20">
-                      <div className="flex-1">
-                        <Select 
-                          value={slot.day_of_week} 
-                          onValueChange={(value) => updateAvailabilitySlot(slot.id, 'day_of_week', value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select day" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {daysOfWeek.map((day) => (
-                              <SelectItem key={day} value={day}>{day}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex-1">
-                        <Input 
-                          type="time" 
-                          value={slot.start_time} 
-                          onChange={(e) => updateAvailabilitySlot(slot.id, 'start_time', e.target.value)} 
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input 
-                          type="time" 
-                          value={slot.end_time} 
-                          onChange={(e) => updateAvailabilitySlot(slot.id, 'end_time', e.target.value)} 
-                        />
-                      </div>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => removeAvailabilitySlot(slot.id)}
-                        className="flex-shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Remove</span>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <AvailabilityScheduleEditor
+              slots={availabilitySlots}
+              onAdd={addAvailabilitySlot}
+              onRemove={removeAvailabilitySlot}
+              onUpdate={updateAvailabilitySlot}
+              onReorder={reorderAvailabilitySlots}
+            />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -574,18 +516,22 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
               )}
             />
             
-            <DialogFooter>
-              <Button
+            <DialogFooter className="gap-2 sm:gap-2">
+              <button
                 type="button"
-                variant="outline"
                 onClick={onClose}
                 disabled={loading}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50"
               >
                 Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+              >
                 {loading ? "Updating..." : "Update Tutor"}
-              </Button>
+              </button>
             </DialogFooter>
           </form>
         </Form>

@@ -5,9 +5,8 @@ import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { Clock, Plus, X } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AvailabilitySlot } from '@/types/tutor';
 import SubjectSelector from './SubjectSelector';
 import MultiSelectSubjects from './MultiSelectSubjects';
+import AvailabilityScheduleEditor from './AvailabilityScheduleEditor';
 
 interface AddTutorFormProps {
   isOpen: boolean;
@@ -129,6 +129,15 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     setAvailabilitySlots(updatedSlots);
     form.setValue('availability', updatedSlots);
   };
+
+  const reorderAvailabilitySlots = (from: number, to: number) => {
+    const updatedSlots = [...availabilitySlots];
+    const [moved] = updatedSlots.splice(from, 1);
+    updatedSlots.splice(to, 0, moved);
+    setAvailabilitySlots(updatedSlots);
+    form.setValue('availability', updatedSlots);
+  };
+
 
   // Improved function to create profile and role with enhanced error handling
   const createProfileAndRole = async (userId: string, firstName: string, lastName: string) => {
@@ -409,25 +418,23 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     }
   };
 
-  const daysOfWeek = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday'
-  ];
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+      <DialogContent className="cc-dialog sm:max-w-[600px] max-h-[90vh] flex flex-col rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Add New Tutor</DialogTitle>
-          <DialogDescription>
-            Enter the tutor's details below to add them to the system.
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+              <UserPlus className="h-5 w-5" />
+            </span>
+            <div className="space-y-1 text-left">
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Add New Tutor</DialogTitle>
+              <DialogDescription>
+                Enter the tutor's details below to add them to the system.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
+
         
         <div className="flex-1 overflow-y-auto pr-2">
           <Form {...form}>
@@ -555,74 +562,14 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                 )}
               />
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Availability Schedule</h3>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={addAvailabilitySlot}
-                    className="flex items-center gap-1"
-                  >
-                    <Plus className="h-4 w-4" /> Add Time Slot
-                  </Button>
-                </div>
-                
-                {availabilitySlots.length === 0 ? (
-                  <div className="text-center py-4 border border-dashed rounded-md text-muted-foreground">
-                    <Clock className="h-8 w-8 mx-auto opacity-50 mb-2" />
-                    <p className="text-sm">No availability schedules added yet.</p>
-                    <p className="text-xs">Click "Add Time Slot" to specify when this tutor is available.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {availabilitySlots.map((slot) => (
-                      <div key={slot.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/20">
-                        <div className="flex-1">
-                          <Select 
-                            value={slot.day_of_week} 
-                            onValueChange={(value) => updateAvailabilitySlot(slot.id, 'day_of_week', value)}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select day" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {daysOfWeek.map((day) => (
-                                <SelectItem key={day} value={day}>{day}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex-1">
-                          <Input 
-                            type="time" 
-                            value={slot.start_time} 
-                            onChange={(e) => updateAvailabilitySlot(slot.id, 'start_time', e.target.value)} 
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <Input 
-                            type="time" 
-                            value={slot.end_time} 
-                            onChange={(e) => updateAvailabilitySlot(slot.id, 'end_time', e.target.value)} 
-                          />
-                        </div>
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => removeAvailabilitySlot(slot.id)}
-                          className="flex-shrink-0"
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove</span>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <AvailabilityScheduleEditor
+                slots={availabilitySlots}
+                onAdd={addAvailabilitySlot}
+                onRemove={removeAvailabilitySlot}
+                onUpdate={updateAvailabilitySlot}
+                onReorder={reorderAvailabilitySlots}
+              />
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -752,22 +699,23 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           </Form>
         </div>
 
-        <DialogFooter className="flex-shrink-0 pt-4 border-t">
-          <Button
+        <DialogFooter className="flex-shrink-0 gap-2 pt-4 sm:gap-2">
+          <button
             type="button"
-            variant="outline"
             onClick={onClose}
             disabled={loading}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50"
           >
             Cancel
-          </Button>
-          <Button 
-            type="submit" 
+          </button>
+          <button
+            type="submit"
             disabled={loading}
             onClick={form.handleSubmit(onSubmit)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create Tutor"}
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

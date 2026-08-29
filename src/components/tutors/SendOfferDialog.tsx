@@ -73,9 +73,9 @@ export default function SendOfferDialog({ isOpen, onClose, defaultName, defaultE
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="cc-dialog max-w-lg rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>Send Offer Letter</DialogTitle>
+          <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Send Offer Letter</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -111,12 +111,12 @@ export default function SendOfferDialog({ isOpen, onClose, defaultName, defaultE
             <Textarea id="intro" rows={3} value={customIntro} onChange={(e) => setCustomIntro(e.target.value)} />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button>
-          <Button onClick={handleSend} disabled={submitting}>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <button type="button" onClick={onClose} disabled={submitting} className="inline-flex h-11 items-center justify-center rounded-full border border-foreground px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50">Cancel</button>
+          <button type="button" onClick={handleSend} disabled={submitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50">
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Send Offer
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { Tutor } from '@/types/tutor';
+import { sortSubjectNames, getSubjectCategoryTone } from '@/utils/subjectLevelOrder';
 
 interface ViewTutorProfileProps {
   tutor: Tutor | null;
@@ -41,9 +42,9 @@ const ViewTutorProfile: React.FC<ViewTutorProfileProps> = ({ tutor, isOpen, onCl
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="cc-dialog sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">{tutor.first_name} {tutor.last_name}'s Profile</DialogTitle>
+          <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">{tutor.first_name} {tutor.last_name}'s Profile</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
@@ -92,8 +93,8 @@ const ViewTutorProfile: React.FC<ViewTutorProfileProps> = ({ tutor, isOpen, onCl
               <h3 className="font-medium text-sm text-muted-foreground mb-1">Specialities</h3>
               <div className="flex flex-wrap gap-2 mt-1">
                 {tutor.specialities && tutor.specialities.length > 0 ? (
-                  tutor.specialities.map((speciality, i) => (
-                    <Badge key={i} variant="secondary">
+                  sortSubjectNames(tutor.specialities).map((speciality, i) => (
+                    <Badge key={i} variant="secondary" className={`rounded-full border-0 px-3 py-1 text-foreground ${getSubjectCategoryTone(speciality)}`}>
                       {speciality}
                     </Badge>
                   ))
