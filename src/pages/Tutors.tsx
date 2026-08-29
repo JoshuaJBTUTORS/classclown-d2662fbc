@@ -121,12 +121,21 @@ const Tutors = () => {
             return { ...tutor, subjects: [] };
           }
 
-          const subjects = subjectsData?.map(ts => ts.subjects?.name).filter(Boolean) || [];
+          const subjects = sortSubjectNames(
+            (subjectsData?.map(ts => ts.subjects?.name).filter(Boolean) || []) as string[]
+          );
           return { ...tutor, subjects };
         })
       );
 
-      setTutors(tutorsWithSubjects);
+      const sorted = [...tutorsWithSubjects].sort((a, b) => {
+        const first = (a.first_name ?? '').localeCompare(b.first_name ?? '', undefined, { sensitivity: 'base' });
+        if (first !== 0) return first;
+        return (a.last_name ?? '').localeCompare(b.last_name ?? '', undefined, { sensitivity: 'base' });
+      });
+
+      setTutors(sorted);
+
     } catch (error) {
       console.error('Error in fetchTutors:', error);
       toast({
