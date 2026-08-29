@@ -56,7 +56,7 @@ const Tutors = () => {
   const [isDeleteTutorOpen, setIsDeleteTutorOpen] = useState(false);
   const [isSendOfferOpen, setIsSendOfferOpen] = useState(false);
   const [offerTutor, setOfferTutor] = useState<Tutor | null>(null);
-  const { isOwner } = useAuth();
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
   // Handle window resize to adjust sidebar behavior
   useEffect(() => {
