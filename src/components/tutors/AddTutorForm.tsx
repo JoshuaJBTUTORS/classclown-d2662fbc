@@ -130,6 +130,15 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     form.setValue('availability', updatedSlots);
   };
 
+  const reorderAvailabilitySlots = (from: number, to: number) => {
+    const updatedSlots = [...availabilitySlots];
+    const [moved] = updatedSlots.splice(from, 1);
+    updatedSlots.splice(to, 0, moved);
+    setAvailabilitySlots(updatedSlots);
+    form.setValue('availability', updatedSlots);
+  };
+
+
   // Improved function to create profile and role with enhanced error handling
   const createProfileAndRole = async (userId: string, firstName: string, lastName: string) => {
     try {
