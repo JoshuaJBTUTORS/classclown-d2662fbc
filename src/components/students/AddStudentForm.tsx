@@ -25,6 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { UserPlus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -32,6 +33,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
+const chipOutline =
+  'inline-flex items-center justify-center gap-2 rounded-full px-5 h-11 text-sm font-medium bg-transparent text-foreground border border-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:opacity-50 disabled:pointer-events-none';
+const pillDark =
+  'inline-flex items-center justify-center gap-2 rounded-full px-6 h-11 text-sm font-medium bg-foreground text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none';
+const iconChip =
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
 
 interface AddStudentFormProps {
   isOpen: boolean;
@@ -174,12 +182,19 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="cc-dialog sm:max-w-[500px] rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>Add New Student</DialogTitle>
-          <DialogDescription>
-            Create a new student account. You can optionally link them to an existing parent.
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <span className={iconChip}>
+              <UserPlus className="h-5 w-5" />
+            </span>
+            <div className="space-y-1">
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Add New Student</DialogTitle>
+              <DialogDescription>
+                Create a new student account. You can optionally link them to an existing parent.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         
         <Form {...form}>
