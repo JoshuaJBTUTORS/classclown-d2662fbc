@@ -420,7 +420,7 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="cc-dialog sm:max-w-[600px] max-h-[90vh] flex flex-col rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
+      <DialogContent className="cc-dialog flex max-h-[92dvh] w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-[var(--radius-soft)] border-0 p-4 shadow-[var(--shadow-soft-lg)] sm:max-w-[600px] sm:p-8">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">

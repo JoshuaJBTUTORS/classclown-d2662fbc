@@ -325,18 +325,19 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="cc-dialog sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
-        <DialogHeader>
+      <DialogContent className="cc-dialog flex max-h-[92dvh] w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-[var(--radius-soft)] border-0 p-4 shadow-[var(--shadow-soft-lg)] sm:max-w-[600px] sm:p-8">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-              <Pencil className="h-5 w-5" />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground sm:h-11 sm:w-11">
+              <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Edit Tutor</DialogTitle>
+            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight sm:text-2xl">Edit Tutor</DialogTitle>
           </div>
         </DialogHeader>
-        
+
+        <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1 sm:mt-4 sm:pr-2">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -516,25 +517,28 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
               )}
             />
             
-            <DialogFooter className="gap-2 sm:gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={loading}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
-              >
-                {loading ? "Updating..." : "Update Tutor"}
-              </button>
-            </DialogFooter>
           </form>
         </Form>
+        </div>
+
+        <DialogFooter className="flex-shrink-0 gap-2 border-t border-foreground/10 pt-3 sm:gap-2 sm:pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            onClick={form.handleSubmit(onSubmit)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {loading ? "Updating..." : "Update Tutor"}
+          </button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
