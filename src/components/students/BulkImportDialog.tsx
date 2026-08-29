@@ -208,7 +208,7 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
             </div>
 
             {duplicates.length > 0 && (
-              <Alert>
+              <Alert className="rounded-[var(--radius-soft)] border-0 bg-pastel-blush text-pastel-blush-foreground">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Duplicates Found:</strong>
