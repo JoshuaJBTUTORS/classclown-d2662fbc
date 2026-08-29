@@ -11,8 +11,11 @@ import {
   Check,
   AlertCircle,
   Clock,
-  Info
+  Info,
+  ArrowRight
 } from 'lucide-react';
+import { DoodleBook, DoodleCalendar, DoodleCheck } from '@/components/calendar/LessonDoodles';
+
 
 import { Button } from '@/components/ui/button';
 import { 
