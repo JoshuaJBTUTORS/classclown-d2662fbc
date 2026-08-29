@@ -303,14 +303,14 @@ const LinkStudentToParentForm: React.FC<LinkStudentToParentFormProps> = ({
               
               {/* Parent Dropdown */}
               {showParentDropdown && parentSearch && !selectedParent && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
-                  <div className="max-h-60 overflow-auto p-1">
+                <div className="absolute z-50 mt-2 w-full rounded-[1.25rem] border-0 bg-popover shadow-[var(--shadow-soft-lg)]">
+                  <div className="max-h-60 overflow-auto p-2">
                     {filteredParents.length > 0 ? (
                       filteredParents.map((parent) => (
                         <div
                           key={parent.id}
                           onClick={() => selectParent(parent)}
-                          className="flex cursor-pointer items-center gap-2 rounded-sm p-2 hover:bg-accent"
+                          className="flex cursor-pointer items-center gap-2 rounded-full px-3 py-2 hover:bg-muted"
                         >
                           <Users className="h-4 w-4 text-muted-foreground" />
                           <div>
@@ -335,26 +335,32 @@ const LinkStudentToParentForm: React.FC<LinkStudentToParentFormProps> = ({
             
             {/* Selected Parent Display */}
             {selectedParent && (
-              <div className="flex items-center gap-2 rounded-md border p-2 bg-muted/50">
-                <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 rounded-full px-4 py-2 bg-pastel-lilac text-pastel-lilac-foreground">
+                <Users className="h-4 w-4" />
                 <span className="text-sm">
                   <strong>{selectedParent.first_name} {selectedParent.last_name}</strong>
-                  <span className="text-muted-foreground"> - {selectedParent.email}</span>
+                  <span className="opacity-70"> - {selectedParent.email}</span>
                 </span>
               </div>
             )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-5 h-11 text-sm font-medium bg-transparent text-foreground border border-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5"
+            >
               Cancel
-            </Button>
-            <Button 
-              onClick={onSubmit} 
+            </button>
+            <button
+              type="button"
+              onClick={onSubmit}
               disabled={isSubmitting || !selectedStudent || !selectedParent}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-6 h-11 text-sm font-medium bg-foreground text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none"
             >
               {isSubmitting ? 'Linking...' : 'Link Student'}
-            </Button>
+            </button>
           </div>
         </div>
       </DialogContent>
