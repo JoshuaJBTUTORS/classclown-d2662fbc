@@ -47,8 +47,12 @@ const StudentsList: React.FC = () => {
   const { students, isLoading } = useStudentData();
 
   const q = searchQuery.trim().toLowerCase();
+  const byName = (a: any, b: any) =>
+    (a.first_name || '').localeCompare(b.first_name || '', undefined, { sensitivity: 'base' }) ||
+    (a.last_name || '').localeCompare(b.last_name || '', undefined, { sensitivity: 'base' });
+  const sortedStudents = [...students].sort(byName);
   const filteredStudents = q
-    ? students.filter((s) => {
+    ? sortedStudents.filter((s) => {
         const name = `${s.first_name ?? ''} ${s.last_name ?? ''}`.toLowerCase();
         return (
           name.includes(q) ||
@@ -57,7 +61,7 @@ const StudentsList: React.FC = () => {
           (s.grade ?? '').toLowerCase().includes(q)
         );
       })
-    : students;
+    : sortedStudents;
 
   const statePanel = (content: React.ReactNode) => (
     <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">

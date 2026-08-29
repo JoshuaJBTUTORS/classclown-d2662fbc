@@ -140,6 +140,7 @@ const Students = () => {
       }
 
       const { data: studentsData, error: studentsError } = await studentsQuery
+        .order('first_name', { ascending: true })
         .order('last_name', { ascending: true });
 
       console.log('Students query result:', { studentsData, studentsError });
@@ -270,9 +271,12 @@ const Students = () => {
   }, [user, userRole, parentProfile]);
 
   // Tab classification: trial students vs everyone else
-  const trialStudents = students.filter((s) => (s.status || 'active') === 'trial');
-  const activeStudents = students.filter((s) => (s.status || 'active') !== 'trial');
-  const tabStudents = activeTab === 'trial' ? trialStudents : activeStudents;
+  const sortByName = (a: Student, b: Student) =>
+    (a.first_name || '').localeCompare(b.first_name || '', undefined, { sensitivity: 'base' }) ||
+    (a.last_name || '').localeCompare(b.last_name || '', undefined, { sensitivity: 'base' });
+  const trialStudents = students.filter((s) => (s.status || 'active') === 'trial').sort(sortByName);
+  const activeStudents = students.filter((s) => (s.status || 'active') !== 'trial').sort(sortByName);
+  const tabStudents = (activeTab === 'trial' ? trialStudents : activeStudents);
 
   // Filter students based on search query
   const query = searchQuery.trim().toLowerCase();
