@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { Clock, Plus, X } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -37,6 +37,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AvailabilitySlot } from '@/types/tutor';
 import SubjectSelector from './SubjectSelector';
 import MultiSelectSubjects from './MultiSelectSubjects';
+import AvailabilityScheduleEditor from './AvailabilityScheduleEditor';
 
 interface AddTutorFormProps {
   isOpen: boolean;
@@ -699,22 +700,23 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
           </Form>
         </div>
 
-        <DialogFooter className="flex-shrink-0 pt-4 border-t">
-          <Button
+        <DialogFooter className="flex-shrink-0 gap-2 pt-4 sm:gap-2">
+          <button
             type="button"
-            variant="outline"
             onClick={onClose}
             disabled={loading}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50"
           >
             Cancel
-          </Button>
-          <Button 
-            type="submit" 
+          </button>
+          <button
+            type="submit"
             disabled={loading}
             onClick={form.handleSubmit(onSubmit)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create Tutor"}
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
