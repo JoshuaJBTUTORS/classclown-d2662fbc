@@ -592,78 +592,186 @@ const Students = () => {
 
           <div className="space-y-6">
               {isLoading ? (
-                <div className="space-y-3 py-2">
+                <div className="space-y-2 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
+                    <Skeleton key={i} className="h-14 w-full rounded-[1.25rem]" />
                   ))}
                 </div>
               ) : currentStudents.length === 0 ? (
-                <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-10 text-center sm:p-14">
-                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-background/70 text-pastel-sand-foreground">
-                    {searchQuery ? <Search className="h-7 w-7" /> : <Users className="h-7 w-7" />}
-                  </div>
-                  <h3 className="mb-3 font-heading text-2xl font-bold tracking-tight text-pastel-sand-foreground">
-                    {searchQuery ? 'No results found' : isParent ? 'No children yet' : 'No clients yet'}
-                  </h3>
-                  <p className="mx-auto max-w-md text-sm leading-relaxed text-pastel-sand-foreground/80">
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
+                  {searchQuery ? (
+                    <Search className="h-8 w-8 text-foreground/70" />
+                  ) : (
+                    <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                  )}
+                  <p className="text-sm text-muted-foreground">
                     {searchQuery
-                      ? `Nothing matched "${searchQuery}". Try a different name, email, or subject.`
-                      : isParent
-                        ? "Your children's profiles will appear here."
-                        : 'Add your first client to get started.'}
+                      ? `No clients match "${searchQuery}".`
+                      : activeTab === 'trial'
+                        ? 'No trial clients.'
+                        : isParent
+                          ? "Your children's profiles will appear here."
+                          : 'No clients yet. Add your first client to get started.'}
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {currentStudents.map((student, index) => {
-                    const subjects =
-                      typeof student.subjects === 'string' && student.subjects
-                        ? student.subjects.split(',').map((s) => s.trim()).filter(Boolean)
-                        : Array.isArray(student.subjects)
-                          ? (student.subjects as string[])
-                          : [];
+                <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+                  <div className="space-y-2">
+                    {/* Column headers (desktop) */}
+                    <div
+                      className={cn(
+                        'hidden gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid',
+                        isParent
+                          ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,0.7fr)_96px]'
+                          : 'grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,0.7fr)_96px]'
+                      )}
+                    >
+                      <span>Name</span>
+                      <span>Email</span>
+                      {!isParent && <span>Parent</span>}
+                      <span>Subjects</span>
+                      <span>Status</span>
+                      <span className="text-right">Actions</span>
+                    </div>
 
-                    return (
-                      <StudentCard
-                        key={student.id}
-                        index={index}
-                        showParent={!isParent}
-                        student={{
-                          id: String(student.id),
+                    {currentStudents.map((student, i) => {
+                      const subjects =
+                        typeof student.subjects === 'string' && student.subjects
+                          ? student.subjects.split(',').map((s) => s.trim()).filter(Boolean)
+                          : Array.isArray(student.subjects)
+                            ? (student.subjects as string[])
+                            : [];
 
-                          name: `${student.first_name} ${student.last_name}`.trim(),
-                          email: student.email,
-                          parentName: student.parentName,
-                          parentEmail: student.parentEmail,
-                          status: student.status,
-                          subjects,
-                          hasLogin: Boolean(student.user_id),
-                        }}
-                        onOpen={() => handleViewClick(student)}
-                        onEdit={() => handleEditClick(student)}
-                        onEditParent={
-                          (isAdmin || isOwner) && student.parent_id
-                            ? () => handleEditParentClick(student)
-                            : undefined
-                        }
-                        onDelete={
-                          isAdmin || isOwner ? () => handleDeleteClick(student) : undefined
-                        }
-                      />
-                    );
-                  })}
+                      return (
+                        <div
+                          key={student.id}
+                          className={cn(
+                            'group grid w-full grid-cols-1 items-center gap-2 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/70 lg:gap-4',
+                            isParent
+                              ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,0.7fr)_96px]'
+                              : 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,0.7fr)_96px]'
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleViewClick(student)}
+                            className="flex min-w-0 items-center gap-3 text-left"
+                          >
+                            <span
+                              className={cn(
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground',
+                                avatarTones[i % avatarTones.length]
+                              )}
+                            >
+                              {initials(student.first_name, student.last_name)}
+                            </span>
+                            <span className="truncate font-semibold text-foreground">
+                              {student.first_name} {student.last_name}
+                            </span>
+                          </button>
+
+                          <span className="truncate pl-12 text-sm text-muted-foreground lg:pl-0">
+                            {student.email || '—'}
+                          </span>
+                          {!isParent && (
+                            <span className="truncate pl-12 text-sm text-muted-foreground lg:pl-0">
+                              {student.parentName || '—'}
+                            </span>
+                          )}
+                          <span className="flex flex-wrap items-center gap-1.5 pl-12 lg:pl-0">
+                            {subjects.length === 0 ? (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            ) : (
+                              <>
+                                {subjects.slice(0, 2).map((subject) => (
+                                  <span
+                                    key={subject}
+                                    className="rounded-full bg-pastel-lilac px-2.5 py-0.5 text-xs font-medium text-foreground"
+                                  >
+                                    {subject}
+                                  </span>
+                                ))}
+                                {subjects.length > 2 && (
+                                  <span className="rounded-full bg-pastel-lilac px-2.5 py-0.5 text-xs font-medium text-foreground">
+                                    +{subjects.length - 2}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </span>
+
+                          <span className="pl-12 lg:pl-0">
+                            <span
+                              className={cn(
+                                'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize',
+                                statusTone(student.status)
+                              )}
+                            >
+                              {student.status || 'active'}
+                            </span>
+                          </span>
+
+                          <span className="flex items-center justify-end gap-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label="Client actions"
+                                  className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground transition-colors hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Options</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleViewClick(student)}>
+                                  View Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditClick(student)}>
+                                  Edit Student
+                                </DropdownMenuItem>
+                                {(isAdmin || isOwner) && student.parent_id && (
+                                  <DropdownMenuItem onClick={() => handleEditParentClick(student)}>
+                                    Edit Parent
+                                  </DropdownMenuItem>
+                                )}
+                                {(isAdmin || isOwner) && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteClick(student)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      Delete Client
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <button
+                              type="button"
+                              onClick={() => handleViewClick(student)}
+                              aria-label={`Open ${student.first_name} ${student.last_name}`}
+                              className="hidden h-9 w-9 items-center justify-center rounded-full bg-foreground text-background opacity-0 transition-opacity duration-200 group-hover:opacity-100 lg:flex"
+                            >
+                              <DoodleArrow className="h-4 w-4" />
+                            </button>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-              
-              
-              
+
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-4 flex justify-center">
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious 
+                        <PaginationPrevious
                           onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                           className={cn(
                             "cursor-pointer",
@@ -671,11 +779,11 @@ const Students = () => {
                           )}
                         />
                       </PaginationItem>
-                      
+
                       {renderPaginationItems()}
-                      
+
                       <PaginationItem>
-                        <PaginationNext 
+                        <PaginationNext
                           onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                           className={cn(
                             "cursor-pointer",
