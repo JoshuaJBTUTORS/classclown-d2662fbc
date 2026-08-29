@@ -96,6 +96,7 @@ const AdminList: React.FC = () => {
 
       adminList.sort(
         (a, b) =>
+          (a.role === 'owner' ? 0 : 1) - (b.role === 'owner' ? 0 : 1) ||
           (a.first_name || '').localeCompare(b.first_name || '', undefined, {
             sensitivity: 'base',
           }) ||
