@@ -10,8 +10,11 @@ import {
   Clock, 
   Plus, 
   Filter,
-  Download 
+  Download,
+  ArrowRight
 } from 'lucide-react';
+import { DoodleBook, DoodleCalendar, DoodleClock, DoodleClipboard } from '@/components/calendar/LessonDoodles';
+
 
 import { Button } from '@/components/ui/button';
 import { 
