@@ -321,7 +321,7 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
               control={form.control}
               name="createStudentLogin"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[var(--radius-soft)] bg-pastel-sky p-4">
                   <FormControl>
                     <Checkbox 
                       checked={field.value}
@@ -356,18 +356,18 @@ const AddStudentForm: React.FC<AddStudentFormProps> = ({ isOpen, onClose, onSucc
               />
             )}
 
-            <DialogFooter>
-              <Button
+            <DialogFooter className="gap-2 sm:gap-2">
+              <button
                 type="button"
-                variant="outline"
                 onClick={onClose}
                 disabled={loading}
+                className={chipOutline}
               >
                 Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
+              </button>
+              <button type="submit" disabled={loading} className={pillDark}>
                 {loading ? "Creating..." : "Create Student"}
-              </Button>
+              </button>
             </DialogFooter>
           </form>
         </Form>
