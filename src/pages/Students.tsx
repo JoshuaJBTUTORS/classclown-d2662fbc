@@ -5,6 +5,13 @@ import Sidebar from '@/components/navigation/Sidebar';
 import StudentsHero from '@/components/students/StudentsHero';
 import StudentCard from '@/components/students/StudentCard';
 import { Button } from '@/components/ui/button';
+const chipBase = cn(
+  'inline-flex items-center gap-2.5 rounded-full pl-2 pr-4 h-11 text-sm font-medium transition-all duration-200',
+  'bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+);
+const chipIcon =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Search, Upload, ChevronDown, Users, UserPlus, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -459,23 +466,27 @@ const Students = () => {
             actions={
               <>
                 {(isAdmin || isOwner) && (
-                  <Button
-                    variant="outline"
+                  <button
+                    type="button"
                     onClick={() => navigate('/onboarding')}
-                    className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]"
+                    className={chipBase}
                   >
-                    <UserPlus className="h-4 w-4" />
+                    <span className={chipIcon}>
+                      <UserPlus className="h-4 w-4" />
+                    </span>
                     Cleo Onboarding
-                  </Button>
+                  </button>
                 )}
                 {(isAdmin || isOwner) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]">
-                        <Plus className="h-4 w-4" />
+                      <button type="button" className={chipBase}>
+                        <span className={chipIcon}>
+                          <Plus className="h-4 w-4" />
+                        </span>
                         Add New
                         <ChevronDown className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem 
