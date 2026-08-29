@@ -5,6 +5,15 @@ import Sidebar from '@/components/navigation/Sidebar';
 import StudentsHero from '@/components/students/StudentsHero';
 import StudentCard from '@/components/students/StudentCard';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+const chipBase = cn(
+  'inline-flex items-center gap-2.5 rounded-full pl-2 pr-4 h-11 text-sm font-medium transition-all duration-200',
+  'bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+);
+const chipIcon =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Search, Upload, ChevronDown, Users, UserPlus, User } from 'lucide-react';
 import { toast } from 'sonner';
