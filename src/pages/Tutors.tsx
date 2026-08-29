@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, PlusIcon, Trash2, Mail, Loader2 } from 'lucide-react';
+import { Edit, PlusIcon, Trash2, Mail, Loader2, ChevronDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 import { supabase } from '@/integrations/supabase/client';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
@@ -32,6 +33,17 @@ const avatarTones = [
   'bg-pastel-blush',
   'bg-pastel-sky',
 ];
+
+/** Stable pastel tone per subject category (matches calendar year-group colouring). */
+const getSubjectCategoryTone = (subject: string): string => {
+  const s = subject.trim().toLowerCase();
+  if (s.startsWith('11 plus')) return 'bg-pastel-lilac';
+  if (s.startsWith('early ks2') || s.startsWith('ks2') || s.startsWith('sats')) return 'bg-pastel-mint';
+  if (s.startsWith('ks3')) return 'bg-pastel-sky';
+  if (s.startsWith('gcse') || s.startsWith('year 11')) return 'bg-pastel-butter';
+  if (s.startsWith('a-level') || s.startsWith('a level')) return 'bg-pastel-blush';
+  return 'bg-pastel-sand';
+};
 
 interface TutorWithSubjects extends Tutor {
   subjects?: string[];
@@ -377,7 +389,7 @@ const Tutors = () => {
               <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
                 <div className="space-y-2">
                   {/* Column headers (desktop) */}
-                  <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.6fr)_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+                  <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1.8fr)_auto_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
                     <span>Name</span>
                     <span>Email</span>
                     <span>Subjects</span>
@@ -387,7 +399,7 @@ const Tutors = () => {
                   {currentTutors.map((tutor: TutorWithSubjects, i: number) => (
                     <div
                       key={tutor.id}
-                      className="grid grid-cols-1 items-center gap-3 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/70 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.6fr)_auto] lg:gap-4"
+                      className="grid grid-cols-1 items-center gap-3 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/70 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.8fr)_auto_auto] lg:gap-4"
                     >
                       <span className="flex min-w-0 items-center gap-3">
                         <span
@@ -407,19 +419,37 @@ const Tutors = () => {
                         {tutor.email}
                       </span>
 
-                      <span className="flex flex-wrap gap-1.5 pl-12 lg:pl-0">
+                      <span className="flex pl-12 lg:pl-0">
                         {tutor.subjects && tutor.subjects.length > 0 ? (
-                          tutor.subjects.map((subject, sIdx) => (
-                            <span
-                              key={sIdx}
-                              className={cn(
-                                'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
-                                avatarTones[sIdx % avatarTones.length]
-                              )}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1.5 rounded-full border-2 border-foreground bg-transparent px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-foreground/[0.04]"
+                              >
+                                {tutor.subjects.length} {tutor.subjects.length === 1 ? 'subject' : 'subjects'}
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              align="start"
+                              className="w-auto max-w-xs rounded-[1.25rem] border-2 border-foreground/10 bg-card p-3 shadow-[var(--shadow-soft-lg)]"
                             >
-                              {subject}
-                            </span>
-                          ))
+                              <div className="flex flex-wrap gap-1.5">
+                                {tutor.subjects.map((subject, sIdx) => (
+                                  <span
+                                    key={sIdx}
+                                    className={cn(
+                                      'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
+                                      getSubjectCategoryTone(subject)
+                                    )}
+                                  >
+                                    {subject}
+                                  </span>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-muted/60 px-3 py-1 text-xs font-semibold text-muted-foreground">
                             N/A
