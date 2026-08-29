@@ -116,7 +116,7 @@ export default function SendOfferDialog({ isOpen, onClose, defaultName, defaultE
           <button type="button" onClick={handleSend} disabled={submitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50">
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Send Offer
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
