@@ -192,14 +192,15 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
         {step === 'preview' && previewData && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">Import Preview</h3>
+              <h3 className="text-lg font-heading font-extrabold tracking-tight">Import Preview</h3>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep('upload')}>
+                <Button variant="outline" onClick={() => setStep('upload')} className="rounded-full border-foreground bg-transparent hover:bg-foreground/5 transition-all duration-200 hover:-translate-y-0.5">
                   Back
                 </Button>
-                <Button 
+                <Button
                   onClick={handleImport}
                   disabled={!canProceedWithImport}
+                  className="rounded-full bg-foreground text-background hover:opacity-90 transition-all duration-200 hover:-translate-y-0.5"
                 >
                   Proceed with Import
                 </Button>
@@ -244,46 +245,46 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="text-center p-4 rounded-[var(--radius-soft)] bg-pastel-mint text-pastel-mint-foreground">
+                <div className="text-2xl font-heading font-extrabold">
                   {importResult.parentsCreated}
                 </div>
-                <div className="text-sm text-green-600">Parents Created</div>
+                <div className="text-sm">Parents Created</div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
+              <div className="text-center p-4 rounded-[var(--radius-soft)] bg-pastel-sky text-pastel-sky-foreground">
+                <div className="text-2xl font-heading font-extrabold">
                   {importResult.studentsCreated}
                 </div>
-                <div className="text-sm text-blue-600">Students Created</div>
+                <div className="text-sm">Students Created</div>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">
+              <div className="text-center p-4 rounded-[var(--radius-soft)] bg-pastel-lilac text-pastel-lilac-foreground">
+                <div className="text-2xl font-heading font-extrabold">
                   {importResult.authAccountsCreated || 0}
                 </div>
-                <div className="text-sm text-purple-600">Login Accounts</div>
+                <div className="text-sm">Login Accounts</div>
               </div>
             </div>
 
             {(importResult.authAccountsCreated || 0) > 0 && (
-              <Alert>
+              <Alert className="rounded-[var(--radius-soft)] border-0 bg-pastel-mint text-pastel-mint-foreground">
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Login accounts created successfully!</strong> 
-                  <br />Default password: <code className="bg-gray-100 px-1 rounded">classbeyond123!</code>
+                  <strong>Login accounts created successfully!</strong>
+                  <br />Default password: <code className="bg-background/60 px-1 rounded">classbeyond123!</code>
                   <br />Users should change their passwords after first login.
                 </AlertDescription>
               </Alert>
             )}
 
             {importResult.errors.length > 0 && (
-              <Alert>
+              <Alert className="rounded-[var(--radius-soft)] border-0 bg-pastel-blush text-pastel-blush-foreground">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   <div className="flex items-center justify-between">
                     <span>
                       <strong>{importResult.errors.length} errors occurred during import.</strong>
                     </span>
-                    <Button size="sm" variant="outline" onClick={handleDownloadErrors}>
+                    <Button size="sm" variant="outline" onClick={handleDownloadErrors} className="rounded-full border-foreground bg-transparent hover:bg-foreground/5">
                       <Download className="h-4 w-4 mr-2" />
                       Download Error Report
                     </Button>
@@ -293,7 +294,7 @@ export const BulkImportDialog: React.FC<BulkImportDialogProps> = ({
             )}
 
             <div className="flex justify-center">
-              <Button onClick={handleClose}>Close</Button>
+              <Button onClick={handleClose} className="rounded-full bg-foreground text-background hover:opacity-90 transition-all duration-200 hover:-translate-y-0.5">Close</Button>
             </div>
           </div>
         )}
