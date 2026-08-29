@@ -34,6 +34,17 @@ const avatarTones = [
   'bg-pastel-sky',
 ];
 
+/** Stable pastel tone per subject category (matches calendar year-group colouring). */
+const getSubjectCategoryTone = (subject: string): string => {
+  const s = subject.trim().toLowerCase();
+  if (s.startsWith('11 plus')) return 'bg-pastel-lilac';
+  if (s.startsWith('early ks2') || s.startsWith('ks2') || s.startsWith('sats')) return 'bg-pastel-mint';
+  if (s.startsWith('ks3')) return 'bg-pastel-sky';
+  if (s.startsWith('gcse') || s.startsWith('year 11')) return 'bg-pastel-butter';
+  if (s.startsWith('a-level') || s.startsWith('a level')) return 'bg-pastel-blush';
+  return 'bg-pastel-sand';
+};
+
 interface TutorWithSubjects extends Tutor {
   subjects?: string[];
 }
