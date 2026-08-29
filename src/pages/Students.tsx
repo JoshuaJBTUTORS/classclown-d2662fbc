@@ -459,23 +459,27 @@ const Students = () => {
             actions={
               <>
                 {(isAdmin || isOwner) && (
-                  <Button
-                    variant="outline"
+                  <button
+                    type="button"
                     onClick={() => navigate('/onboarding')}
-                    className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]"
+                    className={chipBase}
                   >
-                    <UserPlus className="h-4 w-4" />
+                    <span className={chipIcon}>
+                      <UserPlus className="h-4 w-4" />
+                    </span>
                     Cleo Onboarding
-                  </Button>
+                  </button>
                 )}
                 {(isAdmin || isOwner) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button className="flex items-center gap-2 rounded-full shadow-[var(--shadow-soft)]">
-                        <Plus className="h-4 w-4" />
+                      <button type="button" className={chipBase}>
+                        <span className={chipIcon}>
+                          <Plus className="h-4 w-4" />
+                        </span>
                         Add New
                         <ChevronDown className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem 
