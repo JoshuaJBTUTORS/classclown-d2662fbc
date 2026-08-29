@@ -12,7 +12,9 @@ import DeleteTutorDialog from '@/components/tutors/DeleteTutorDialog';
 import { toast } from '@/hooks/use-toast';
 import { Tutor } from '@/types/tutor';
 import { cn } from '@/lib/utils';
+import { getSubjectCategoryTone as tone, sortSubjectNames } from '@/utils/subjectLevelOrder';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
+
 import {
   Pagination,
   PaginationContent,
