@@ -517,25 +517,28 @@ const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, o
               )}
             />
             
-            <DialogFooter className="gap-2 sm:gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={loading}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
-              >
-                {loading ? "Updating..." : "Update Tutor"}
-              </button>
-            </DialogFooter>
           </form>
         </Form>
+        </div>
+
+        <DialogFooter className="flex-shrink-0 gap-2 border-t border-foreground/10 pt-3 sm:gap-2 sm:pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent px-5 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            onClick={form.handleSubmit(onSubmit)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {loading ? "Updating..." : "Update Tutor"}
+          </button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
