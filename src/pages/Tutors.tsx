@@ -292,9 +292,9 @@ const Tutors = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 w-full flex-col min-h-screen bg-background">
 
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
