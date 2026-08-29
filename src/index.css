@@ -2654,3 +2654,38 @@
 .calendar-soft .fc-timegrid-now-indicator-line {
   border-color: hsl(var(--pastel-blush-foreground)) !important;
 }
+
+/* ===== ClassClown dialog form language (scoped via .cc-dialog on DialogContent) ===== */
+.cc-dialog input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.cc-dialog button[role='combobox'] {
+  height: 2.75rem;
+  border-radius: 9999px;
+  border: none;
+  background-color: hsl(var(--muted));
+  box-shadow: none;
+}
+
+.cc-dialog textarea {
+  border-radius: 1.25rem;
+  border: none;
+  background-color: hsl(var(--muted));
+  box-shadow: none;
+}
+
+.cc-dialog input:not([type='checkbox']):focus-visible,
+.cc-dialog textarea:focus-visible,
+.cc-dialog button[role='combobox']:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--foreground) / 0.35);
+}
+
+.cc-dialog label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.cc-dialog .cc-panel {
+  border-radius: var(--radius-soft);
+  border: none;
+  box-shadow: var(--shadow-soft);
+}
