@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tutor } from '@/types/tutor';
 import { cn } from '@/lib/utils';
-import { DoodleMail, DoodlePhone, DoodleCalendar, DoodleSparkle } from '@/components/doodles/LessonDoodles';
+import { DoodleCalendar, DoodleSparkle } from '@/components/calendar/LessonDoodles';
+import { Mail, Phone } from 'lucide-react';
 
 interface ViewTutorProfileProps {
   tutor: Tutor | null;
@@ -82,14 +83,14 @@ const ViewTutorProfile: React.FC<ViewTutorProfileProps> = ({ tutor, isOpen, onCl
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Email Address</p>
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  <DoodleMail className="h-3.5 w-3.5 shrink-0 text-foreground/60" />
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-foreground/60" />
                   <span className="truncate">{tutor.email}</span>
                 </p>
               </div>
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Phone Number</p>
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  <DoodlePhone className="h-3.5 w-3.5 shrink-0 text-foreground/60" />
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-foreground/60" />
                   {tutor.phone || 'Not provided'}
                 </p>
               </div>
