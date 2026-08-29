@@ -5,9 +5,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from '@/components/ui/badge';
 import { Tutor } from '@/types/tutor';
-import { sortSubjectNames, getSubjectCategoryTone } from '@/utils/subjectLevelOrder';
+import { cn } from '@/lib/utils';
+import { DoodleMail, DoodlePhone, DoodleCalendar, DoodleSparkle } from '@/components/doodles/LessonDoodles';
 
 interface ViewTutorProfileProps {
   tutor: Tutor | null;
@@ -15,123 +15,105 @@ interface ViewTutorProfileProps {
   onClose: () => void;
 }
 
-const generateStars = (rating: number | null) => {
-  if (rating === null) return '☆☆☆☆☆';
-  
-  const fullStars = Math.floor(rating);
-  const remainder = rating - fullStars;
-  const stars = [];
-  
-  for (let i = 0; i < fullStars; i++) {
-    stars.push('★');
+const avatarTones = ['bg-pastel-mint', 'bg-pastel-lilac', 'bg-pastel-butter', 'bg-pastel-sky', 'bg-pastel-blush'];
+
+const statusTone = (status?: string) => {
+  switch (status) {
+    case 'active':
+      return 'bg-pastel-mint text-foreground';
+    case 'pending':
+      return 'bg-pastel-butter text-foreground';
+    default:
+      return 'bg-pastel-sand text-foreground';
   }
-  
-  if (remainder >= 0.5) {
-    stars.push('★');
-  }
-  
-  while (stars.length < 5) {
-    stars.push('☆');
-  }
-  
-  return stars.join('');
 };
+
+const formatJoinedDate = (value?: string | null) => {
+  if (!value) return 'Not recorded';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+    <p className="mt-0.5 text-sm font-medium text-foreground">{children}</p>
+  </div>
+);
 
 const ViewTutorProfile: React.FC<ViewTutorProfileProps> = ({ tutor, isOpen, onClose }) => {
   if (!tutor) return null;
 
+  const initials = `${tutor.first_name?.[0] ?? ''}${tutor.last_name?.[0] ?? ''}`.toUpperCase();
+  const tone = avatarTones[(tutor.first_name?.length ?? 0) % avatarTones.length];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="cc-dialog sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
+      <DialogContent className="cc-dialog sm:max-w-[560px] max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">{tutor.first_name} {tutor.last_name}'s Profile</DialogTitle>
-        </DialogHeader>
-        
-        <div className="grid gap-6 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Title</h3>
-              <p className="text-base">{tutor.title || 'No title'}</p>
-            </div>
-            <div>
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Status</h3>
-              <Badge 
-                variant={
-                  tutor.status === 'active' ? 'default' : 
-                  tutor.status === 'pending' ? 'outline' : 'secondary'
-                } 
-                className="capitalize"
-              >
+          <div className="flex items-center gap-4">
+            <span className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-extrabold text-foreground', tone)}>
+              {initials}
+            </span>
+            <div className="min-w-0">
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">
+                {tutor.first_name} {tutor.last_name}'s Profile
+              </DialogTitle>
+              <span className={cn('mt-1.5 inline-flex items-center rounded-full px-3 py-1 text-xs font-bold capitalize', statusTone(tutor.status))}>
                 {tutor.status}
-              </Badge>
+              </span>
             </div>
           </div>
-          
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Contact Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
+        </DialogHeader>
+
+        <div className="mt-4 space-y-4">
+          {/* Contact */}
+          <section className="rounded-2xl bg-pastel-sand/50 p-4 sm:p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <DoodleSparkle className="h-4 w-4 text-foreground/70" />
+              <h2 className="font-heading text-sm font-extrabold tracking-tight">Contact Information</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Full Name">
+                {tutor.title ? `${tutor.title} ` : ''}{tutor.first_name} {tutor.last_name}
+              </Field>
+              <Field label="Title">{tutor.title || 'No title'}</Field>
               <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Full Name</h3>
-                <p className="text-base">
-                  {tutor.title ? `${tutor.title} ` : ''}{tutor.first_name} {tutor.last_name}
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Email Address</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <DoodleMail className="h-3.5 w-3.5 shrink-0 text-foreground/60" />
+                  <span className="truncate">{tutor.email}</span>
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Email Address</h3>
-                <p className="text-base">{tutor.email}</p>
-              </div>
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Phone Number</h3>
-                <p className="text-base">{tutor.phone || 'Not provided'}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Academic Information</h2>
-            <div className="pl-2">
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Specialities</h3>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {tutor.specialities && tutor.specialities.length > 0 ? (
-                  sortSubjectNames(tutor.specialities).map((speciality, i) => (
-                    <Badge key={i} variant="secondary" className={`rounded-full border-0 px-3 py-1 text-foreground ${getSubjectCategoryTone(speciality)}`}>
-                      {speciality}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground">No specialities listed</p>
-                )}
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Phone Number</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <DoodlePhone className="h-3.5 w-3.5 shrink-0 text-foreground/60" />
+                  {tutor.phone || 'Not provided'}
+                </p>
               </div>
             </div>
-            
-            {tutor.education && (
-              <div className="pl-2 mt-4">
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Education</h3>
-                <p className="text-base">{tutor.education}</p>
-              </div>
-            )}
-          </div>
-          
+          </section>
+
+          {/* Biography */}
           {tutor.bio && (
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Biography</h2>
-              <p className="text-base pl-2">{tutor.bio}</p>
-            </div>
+            <section className="rounded-2xl bg-pastel-sky/40 p-4 sm:p-5">
+              <h2 className="mb-2 font-heading text-sm font-extrabold tracking-tight">Biography</h2>
+              <p className="text-sm leading-relaxed text-foreground/90">{tutor.bio}</p>
+            </section>
           )}
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Joined */}
+          <section className="flex items-center gap-3 rounded-2xl bg-pastel-lilac/50 p-4 sm:p-5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-card">
+              <DoodleCalendar className="h-4 w-4 text-foreground/70" />
+            </span>
             <div>
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Rating</h3>
-              <div className="flex items-center gap-1">
-                <span className="text-amber-500">{generateStars(tutor.rating)}</span>
-                <span className="font-medium">{tutor.rating || 'Not yet rated'}</span>
-              </div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Joined</p>
+              <p className="text-sm font-semibold text-foreground">{formatJoinedDate(tutor.joined_date)}</p>
             </div>
-            <div>
-              <h3 className="font-medium text-sm text-muted-foreground mb-1">Joined Date</h3>
-              <p className="text-base">{tutor.joined_date}</p>
-            </div>
-          </div>
+          </section>
         </div>
       </DialogContent>
     </Dialog>
