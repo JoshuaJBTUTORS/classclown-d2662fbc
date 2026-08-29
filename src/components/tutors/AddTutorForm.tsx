@@ -555,74 +555,14 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
                 )}
               />
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Availability Schedule</h3>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={addAvailabilitySlot}
-                    className="flex items-center gap-1"
-                  >
-                    <Plus className="h-4 w-4" /> Add Time Slot
-                  </Button>
-                </div>
-                
-                {availabilitySlots.length === 0 ? (
-                  <div className="text-center py-4 border border-dashed rounded-md text-muted-foreground">
-                    <Clock className="h-8 w-8 mx-auto opacity-50 mb-2" />
-                    <p className="text-sm">No availability schedules added yet.</p>
-                    <p className="text-xs">Click "Add Time Slot" to specify when this tutor is available.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {availabilitySlots.map((slot) => (
-                      <div key={slot.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/20">
-                        <div className="flex-1">
-                          <Select 
-                            value={slot.day_of_week} 
-                            onValueChange={(value) => updateAvailabilitySlot(slot.id, 'day_of_week', value)}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select day" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {daysOfWeek.map((day) => (
-                                <SelectItem key={day} value={day}>{day}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex-1">
-                          <Input 
-                            type="time" 
-                            value={slot.start_time} 
-                            onChange={(e) => updateAvailabilitySlot(slot.id, 'start_time', e.target.value)} 
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <Input 
-                            type="time" 
-                            value={slot.end_time} 
-                            onChange={(e) => updateAvailabilitySlot(slot.id, 'end_time', e.target.value)} 
-                          />
-                        </div>
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => removeAvailabilitySlot(slot.id)}
-                          className="flex-shrink-0"
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove</span>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <AvailabilityScheduleEditor
+                slots={availabilitySlots}
+                onAdd={addAvailabilitySlot}
+                onRemove={removeAvailabilitySlot}
+                onUpdate={updateAvailabilitySlot}
+                onReorder={reorderAvailabilitySlots}
+              />
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
