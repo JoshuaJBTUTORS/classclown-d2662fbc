@@ -111,7 +111,7 @@ const MultiSelectSubjects: React.FC<MultiSelectSubjectsProps> = ({
   return (
     <div className="space-y-3">
       {/* Display selected subjects as badges */}
-      <div className="flex min-h-[2.5rem] flex-wrap items-center gap-1.5 rounded-[1.25rem] bg-muted/40 p-2">
+      <div className="flex max-h-28 min-h-[2.5rem] flex-wrap items-center gap-1.5 overflow-y-auto rounded-[1.25rem] bg-muted/40 p-2">
         {selectedSubjects.length > 0 ? sortSubjectsByLevel(selectedSubjects, (s) => s.name).map((subject) => (
           <Badge key={subject.id} variant="secondary" className={`flex items-center gap-1 rounded-full border-0 px-3 py-1 text-foreground ${getSubjectCategoryTone(subject.name)}`}>
             {subject.name}
