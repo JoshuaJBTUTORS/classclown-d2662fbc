@@ -389,7 +389,7 @@ const Tutors = () => {
               <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
                 <div className="space-y-2">
                   {/* Column headers (desktop) */}
-                  <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.6fr)_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+                  <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1.8fr)_auto_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
                     <span>Name</span>
                     <span>Email</span>
                     <span>Subjects</span>
@@ -399,7 +399,7 @@ const Tutors = () => {
                   {currentTutors.map((tutor: TutorWithSubjects, i: number) => (
                     <div
                       key={tutor.id}
-                      className="grid grid-cols-1 items-center gap-3 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/70 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.6fr)_auto] lg:gap-4"
+                      className="grid grid-cols-1 items-center gap-3 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/70 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.8fr)_auto_auto] lg:gap-4"
                     >
                       <span className="flex min-w-0 items-center gap-3">
                         <span
