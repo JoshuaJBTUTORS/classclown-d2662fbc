@@ -141,7 +141,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
 
             {hasStudents && (
               <button type="button" className={actionClass} onClick={() => setShowRevisionNotes(true)}>
-                <Sparkles className="h-4 w-4" />
+                <DoodleSparkle className="h-4 w-4" />
                 Revision Notes
               </button>
             )}
