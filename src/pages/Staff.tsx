@@ -26,12 +26,12 @@ const Staff: React.FC = () => {
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <MobileMenuButton toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-      <div className="flex">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <div className="flex-1">
-          <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <div className="flex min-w-0 w-full flex-1 flex-col">
+        <main className="flex-1 p-4 md:p-8">
+          <div className="w-full">
             <div className="flex flex-col gap-2">
               <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
                 Staff
@@ -63,7 +63,7 @@ const Staff: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
 
       <CreateAdminDialog
