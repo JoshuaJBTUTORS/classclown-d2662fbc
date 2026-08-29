@@ -10,8 +10,11 @@ import {
   Clock, 
   Plus, 
   Filter,
-  Download 
+  Download,
+  ArrowRight
 } from 'lucide-react';
+import { DoodleBook, DoodleCalendar, DoodleClock, DoodleClipboard } from '@/components/calendar/LessonDoodles';
+
 
 import { Button } from '@/components/ui/button';
 import { 
@@ -315,25 +318,25 @@ const HomeworkManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex-1">
           <div className="relative">
             <Input
               placeholder="Search homework and submissions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-11 h-11 rounded-full border-2 border-foreground/80 bg-background focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <FileText className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <DoodleClipboard className="absolute left-4 top-3 h-5 w-5 text-foreground/70" />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[190px] h-11 rounded-full border-2 border-foreground/80 bg-pastel-butter text-pastel-butter-foreground font-medium">
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-2xl border-2 border-foreground/80">
               <SelectItem value="all">All Homework</SelectItem>
               <SelectItem value="upcoming">Upcoming Due Dates</SelectItem>
               <SelectItem value="past">Past Due Dates</SelectItem>
@@ -341,8 +344,11 @@ const HomeworkManager: React.FC = () => {
               <SelectItem value="ungraded">Ungraded Submissions</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button onClick={() => setIsAssigningHomework(true)} className="gap-2">
+
+          <Button
+            onClick={() => setIsAssigningHomework(true)}
+            className="gap-2 h-11 rounded-full bg-foreground text-background hover:bg-foreground/90 px-5"
+          >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Assign Homework</span>
             <span className="sm:hidden">Assign</span>
@@ -351,141 +357,151 @@ const HomeworkManager: React.FC = () => {
       </div>
 
       <Tabs defaultValue="assigned">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="assigned">Assigned Homework</TabsTrigger>
-          <TabsTrigger value="submissions">Submissions</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 h-12 rounded-full border-2 border-foreground/80 bg-background p-1">
+          <TabsTrigger
+            value="assigned"
+            className="rounded-full data-[state=active]:bg-foreground data-[state=active]:text-background font-medium"
+          >
+            Assigned Homework
+          </TabsTrigger>
+          <TabsTrigger
+            value="submissions"
+            className="rounded-full data-[state=active]:bg-foreground data-[state=active]:text-background font-medium"
+          >
+            Submissions
+          </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="assigned" className="mt-4">
+        <TabsContent value="assigned" className="mt-5">
           {isLoading ? (
-            <div className="py-8 text-center">Loading homework assignments...</div>
+            <div className="py-10 text-center text-muted-foreground">Loading homework assignments...</div>
           ) : filteredHomeworks.length === 0 ? (
-            <div className="py-8 text-center">
-              <Book className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No homework assignments found</p>
+            <div className="rounded-[1.5rem] border-2 border-dashed border-foreground/30 bg-pastel-sand/40 py-12 text-center">
+              <DoodleBook className="h-10 w-10 mx-auto text-foreground/70 mb-3" />
+              <p className="font-semibold">No homework assignments found</p>
               <p className="text-sm text-muted-foreground mt-1">
                 You can only see homework for lessons you teach or manage.
               </p>
-              <Button variant="outline" onClick={() => setIsAssigningHomework(true)} className="mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsAssigningHomework(true)}
+                className="mt-5 rounded-full border-2 border-foreground/80 bg-transparent hover:bg-foreground/5"
+              >
                 Assign New Homework
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredHomeworks.map((homework) => (
-                <Card 
-                  key={homework.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                <div
+                  key={homework.id}
                   onClick={() => viewHomeworkDetails(homework.id)}
+                  className="group relative cursor-pointer rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-sky p-5 pb-14 transition-transform hover:-translate-y-0.5"
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-base">{homework.title}</CardTitle>
-                        <CardDescription className="line-clamp-1">
-                          {homework.lesson?.title || 'Unknown Lesson'}
-                        </CardDescription>
-                      </div>
-                      {homework.attachment_url && (
-                        <Badge variant="secondary" className="text-xs">
-                          {homework.attachment_type?.toUpperCase() || 'FILE'}
-                        </Badge>
-                      )}
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-base leading-snug text-pastel-sky-foreground">{homework.title}</h3>
+                      <p className="text-sm text-pastel-sky-foreground/70 line-clamp-1 mt-0.5">
+                        {homework.lesson?.title || 'Unknown Lesson'}
+                      </p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      By {getTutorName(homework)}
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5" />
-                        <span>
-                          {homework.due_date ? format(parseISO(homework.due_date), 'MMM d, yyyy') : 'No due date'}
-                        </span>
-                      </div>
-                      
-                      <Badge variant="outline" className="text-xs gap-1">
-                        <FileText className="h-3 w-3" />
-                        {homework.submission_count} {homework.submission_count === 1 ? 'submission' : 'submissions'}
+                    {homework.attachment_url && (
+                      <Badge className="rounded-full border-2 border-foreground/80 bg-background text-foreground text-[10px] hover:bg-background">
+                        {homework.attachment_type?.toUpperCase() || 'FILE'}
                       </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+                    )}
+                  </div>
+
+                  <div className="text-sm text-pastel-sky-foreground/80 mt-3">
+                    By {getTutorName(homework)}
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap mt-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-foreground/70 bg-background/70 px-3 py-1 text-xs font-medium">
+                      <DoodleCalendar className="h-3.5 w-3.5" />
+                      {homework.due_date ? format(parseISO(homework.due_date), 'MMM d, yyyy') : 'No due date'}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-foreground/70 bg-background/70 px-3 py-1 text-xs font-medium">
+                      <DoodleClipboard className="h-3.5 w-3.5" />
+                      {homework.submission_count} {homework.submission_count === 1 ? 'submission' : 'submissions'}
+                    </span>
+                  </div>
+
+                  <span className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background transition-transform group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
               ))}
             </div>
           )}
         </TabsContent>
         
-        <TabsContent value="submissions" className="mt-4">
+        <TabsContent value="submissions" className="mt-5">
           {filteredSubmissions.length === 0 ? (
-            <div className="py-8 text-center">
-              <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No homework submissions found</p>
+            <div className="rounded-[1.5rem] border-2 border-dashed border-foreground/30 bg-pastel-sand/40 py-12 text-center">
+              <DoodleClipboard className="h-10 w-10 mx-auto text-foreground/70 mb-3" />
+              <p className="font-semibold">No homework submissions found</p>
               <p className="text-sm text-muted-foreground mt-1">
                 You can only see submissions for lessons you teach or manage.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredSubmissions.map((submission) => (
-                <Card 
-                  key={submission.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredSubmissions.map((submission) => {
+                const isGraded = submission.status === 'graded';
+                return (
+                <div
+                  key={submission.id}
                   onClick={() => viewSubmissionDetails(submission.id)}
+                  className={`group relative cursor-pointer rounded-[1.5rem] border-2 border-foreground/80 p-5 pb-14 transition-transform hover:-translate-y-0.5 ${isGraded ? 'bg-pastel-mint' : 'bg-pastel-butter'}`}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-base">{submission.homework?.title || 'Unknown Homework'}</CardTitle>
-                        <CardDescription className="line-clamp-1">
-                          {getStudentName(submission)}
-                        </CardDescription>
-                      </div>
-                      <Badge 
-                        variant={submission.status === 'graded' ? 'default' : 'outline'}
-                        className="text-xs"
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-base leading-snug">{submission.homework?.title || 'Unknown Homework'}</h3>
+                      <p className="text-sm opacity-70 line-clamp-1 mt-0.5">
+                        {getStudentName(submission)}
+                      </p>
+                    </div>
+                    <Badge className={`rounded-full border-2 border-foreground/80 text-[10px] ${isGraded ? 'bg-foreground text-background hover:bg-foreground' : 'bg-background text-foreground hover:bg-background'}`}>
+                      {isGraded ? 'Graded' : 'Submitted'}
+                    </Badge>
+                  </div>
+
+                  <div className="text-sm opacity-80 mt-3">
+                    {submission.homework?.lesson?.title || 'Unknown Lesson'}
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap mt-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-foreground/70 bg-background/70 px-3 py-1 text-xs font-medium">
+                      <DoodleClock className="h-3.5 w-3.5" />
+                      {format(parseISO(submission.submitted_at), 'MMM d, yyyy')}
+                    </span>
+                    {submission.attachment_url && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1.5 rounded-full border-2 border-foreground/70 bg-background/70 px-3 py-1 text-xs font-medium hover:bg-background"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(submission.attachment_url, '_blank');
+                        }}
                       >
-                        {submission.status === 'graded' ? 'Graded' : 'Submitted'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      {submission.homework?.lesson?.title || 'Unknown Lesson'}
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5" />
-                        <span>
-                          {format(parseISO(submission.submitted_at), 'MMM d, yyyy')}
-                        </span>
-                      </div>
-                      
-                      {submission.attachment_url && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-7 gap-1 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(submission.attachment_url, '_blank');
-                          }}
-                        >
-                          <Download className="h-3 w-3" />
-                          File
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        <Download className="h-3 w-3" />
+                        File
+                      </button>
+                    )}
+                  </div>
+
+                  <span className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background transition-transform group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
       </Tabs>
+
 
       <AssignHomeworkDialog 
         isOpen={isAssigningHomework}

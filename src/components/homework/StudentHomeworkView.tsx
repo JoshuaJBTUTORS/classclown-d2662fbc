@@ -11,8 +11,11 @@ import {
   Check,
   AlertCircle,
   Clock,
-  Info
+  Info,
+  ArrowRight
 } from 'lucide-react';
+import { DoodleBook, DoodleCalendar, DoodleCheck } from '@/components/calendar/LessonDoodles';
+
 
 import { Button } from '@/components/ui/button';
 import { 
@@ -314,112 +317,113 @@ const StudentHomeworkView: React.FC<StudentHomeworkProps> = ({ studentId }) => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-2xl font-bold tracking-tight">
           {userRole === 'parent' ? "Your Child's Homework" : "Your Homework"}
         </h2>
-        <Button variant="outline" onClick={() => {
-          console.log("Refreshing homework assignments");
-          fetchHomework();
-        }}>
+        <Button
+          variant="outline"
+          className="rounded-full border-2 border-foreground/80 bg-transparent hover:bg-foreground/5 h-11 px-5"
+          onClick={() => {
+            console.log("Refreshing homework assignments");
+            fetchHomework();
+          }}
+        >
           Refresh Assignments
         </Button>
       </div>
 
       {loadError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {loadError}
-          </AlertDescription>
-        </Alert>
+        <div className="rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-blush p-5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 mt-0.5 text-pastel-blush-foreground" />
+            <div>
+              <p className="font-semibold text-pastel-blush-foreground">Error</p>
+              <p className="text-sm text-pastel-blush-foreground/80 mt-0.5">{loadError}</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {isLoading ? (
-        <div className="py-8 text-center">Loading homework assignments...</div>
+        <div className="py-10 text-center text-muted-foreground">Loading homework assignments...</div>
       ) : homeworks.length === 0 ? (
-        <div className="py-8 text-center">
-          <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-          <p className="text-muted-foreground">No homework assignments found</p>
+        <div className="rounded-[1.5rem] border-2 border-dashed border-foreground/30 bg-pastel-sand/40 py-12 text-center">
+          <DoodleBook className="h-10 w-10 mx-auto text-foreground/70 mb-3" />
+          <p className="font-semibold">No homework assignments found</p>
           <p className="text-sm text-muted-foreground mt-1">
             Student ID: {studentId || 'Unknown'}
           </p>
         </div>
       ) : (
         <>
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Information</AlertTitle>
-            <AlertDescription>
+          <div className="rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-lilac p-4 flex items-start gap-3">
+            <Info className="h-5 w-5 mt-0.5 text-pastel-lilac-foreground" />
+            <p className="text-sm text-pastel-lilac-foreground">
               Click on any homework card to submit work or view existing submissions.
-            </AlertDescription>
-          </Alert>
+            </p>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {homeworks.map((homework) => {
               const hasSubmission = Boolean(homework.submission);
+              const isGraded = hasSubmission && homework.submission?.status === 'graded';
               const isOverdue = homework.due_date && isPast(parseISO(homework.due_date)) && !hasSubmission;
-              
+              const tone = isOverdue
+                ? 'bg-pastel-blush'
+                : isGraded
+                  ? 'bg-pastel-mint'
+                  : hasSubmission
+                    ? 'bg-pastel-butter'
+                    : 'bg-pastel-sky';
+
               return (
-                <Card key={homework.id} className={`
-                  ${isOverdue ? 'border-red-200 bg-red-50/50' : ''}
-                  ${hasSubmission && homework.submission?.status === 'graded' ? 'border-green-200 bg-green-50/50' : ''}
-                  hover:shadow-md transition-shadow cursor-pointer
-                `}
-                onClick={() => openHomeworkDialog(homework)}>
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-base line-clamp-1">{homework.title}</CardTitle>
-                      {homework.attachment_url && (
-                        <Badge variant="secondary" className="text-xs">
-                          {homework.attachment_type?.toUpperCase() || 'FILE'}
-                        </Badge>
-                      )}
-                    </div>
-                    <CardDescription className="line-clamp-1">
-                      {homework.lesson.title}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      Teacher: {homework.lesson.tutor.first_name} {homework.lesson.tutor.last_name}
-                    </div>
-                    
-                    {homework.due_date && (
-                      <div className={`flex items-center gap-1 text-sm mb-2 ${isOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
-                        {isOverdue ? <AlertCircle className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
-                        <span>
-                          Due: {format(parseISO(homework.due_date), 'MMM d, yyyy')}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {hasSubmission && (
-                      <Badge variant={homework.submission?.status === 'graded' ? 'default' : 'outline'} className="mb-2">
-                        {homework.submission?.status === 'graded' ? 'Graded' : 'Submitted'}
+                <div
+                  key={homework.id}
+                  onClick={() => openHomeworkDialog(homework)}
+                  className={`group relative cursor-pointer rounded-[1.5rem] border-2 border-foreground/80 p-5 pb-14 transition-transform hover:-translate-y-0.5 ${tone}`}
+                >
+                  <div className="flex justify-between items-start gap-3">
+                    <h3 className="font-semibold text-base leading-snug line-clamp-2">{homework.title}</h3>
+                    {homework.attachment_url && (
+                      <Badge className="rounded-full border-2 border-foreground/80 bg-background text-foreground text-[10px] hover:bg-background shrink-0">
+                        {homework.attachment_type?.toUpperCase() || 'FILE'}
                       </Badge>
                     )}
-                  </CardContent>
-                  <CardFooter className="flex justify-between pt-0">
-                    {hasSubmission ? (
-                      <div className="w-full text-center">
-                        <p className="text-sm text-muted-foreground">
-                          Click to view submission
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="w-full text-center">
-                        <p className="text-sm text-muted-foreground">
-                          Click to submit homework
-                        </p>
-                      </div>
+                  </div>
+                  <p className="text-sm opacity-70 line-clamp-1 mt-0.5">{homework.lesson.title}</p>
+
+                  <div className="text-sm opacity-80 mt-3">
+                    Teacher: {homework.lesson.tutor.first_name} {homework.lesson.tutor.last_name}
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap mt-3">
+                    {homework.due_date && (
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border-2 border-foreground/70 px-3 py-1 text-xs font-medium ${isOverdue ? 'bg-foreground text-background' : 'bg-background/70'}`}>
+                        {isOverdue ? <AlertCircle className="h-3.5 w-3.5" /> : <DoodleCalendar className="h-3.5 w-3.5" />}
+                        Due {format(parseISO(homework.due_date), 'MMM d, yyyy')}
+                      </span>
                     )}
-                  </CardFooter>
-                </Card>
+                    {hasSubmission && (
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border-2 border-foreground/70 px-3 py-1 text-xs font-medium ${isGraded ? 'bg-foreground text-background' : 'bg-background/70'}`}>
+                        <DoodleCheck className="h-3.5 w-3.5" />
+                        {isGraded ? 'Graded' : 'Submitted'}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs opacity-70 mt-4">
+                    {hasSubmission ? 'Click to view submission' : 'Click to submit homework'}
+                  </p>
+
+                  <span className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background transition-transform group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
               );
             })}
           </div>
         </>
+
       )}
 
       {/* Submit Homework Dialog */}
