@@ -1,28 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, PlusIcon, Trash2, Mail } from 'lucide-react';
+import { Edit, PlusIcon, Trash2, Mail, Loader2 } from 'lucide-react';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
-import PageTitle from '@/components/ui/PageTitle';
 import AddTutorForm from '@/components/tutors/AddTutorForm';
 import ViewTutorProfile from '@/components/tutors/ViewTutorProfile';
 import EditTutorForm from '@/components/tutors/EditTutorForm';
 import DeleteTutorDialog from '@/components/tutors/DeleteTutorDialog';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Tutor } from '@/types/tutor';
 import { cn } from '@/lib/utils';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { 
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -31,6 +21,17 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
+
+const initials = (first?: string | null, last?: string | null) =>
+  `${(first ?? '').charAt(0)}${(last ?? '').charAt(0)}`.toUpperCase() || '?';
+
+const avatarTones = [
+  'bg-pastel-mint',
+  'bg-pastel-lilac',
+  'bg-pastel-butter',
+  'bg-pastel-blush',
+  'bg-pastel-sky',
+];
 
 interface TutorWithSubjects extends Tutor {
   subjects?: string[];
@@ -55,7 +56,7 @@ const Tutors = () => {
   const [isDeleteTutorOpen, setIsDeleteTutorOpen] = useState(false);
   const [isSendOfferOpen, setIsSendOfferOpen] = useState(false);
   const [offerTutor, setOfferTutor] = useState<Tutor | null>(null);
-  const { isOwner } = useAuth();
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
   // Handle window resize to adjust sidebar behavior
   useEffect(() => {
@@ -159,17 +160,28 @@ const Tutors = () => {
     fetchTutors();
   };
 
+  // Tab classification: tutors with no subjects (shown as N/A) are "inactive"
+  const hasSubjects = (t: TutorWithSubjects) => (t.subjects?.length ?? 0) > 0;
+  const activeTutors = tutors.filter(hasSubjects);
+  const inactiveTutors = tutors.filter((t) => !hasSubjects(t));
+  const tabTutors = activeTab === 'active' ? activeTutors : inactiveTutors;
+
   // Pagination calculations
   const itemsPerPage = 50;
-  const totalItems = tutors.length;
+  const totalItems = tabTutors.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentTutors = tutors.slice(startIndex, endIndex);
+  const currentTutors = tabTutors.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTabChange = (tab: 'active' | 'inactive') => {
+    setActiveTab(tab);
+    setCurrentPage(1);
   };
 
   const renderPaginationItems = () => {
@@ -273,118 +285,211 @@ const Tutors = () => {
       )}>
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <PageTitle>Tutors</PageTitle>
+          {/* Header */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
+                Tutors
+              </h1>
+              {tutors.length > 0 && (
+                <span className="mt-2 inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-foreground">
+                  {tutors.length}
+                </span>
+              )}
+            </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                asChild
-                className="flex items-center gap-1"
+              <a
+                href="/admin/sent-offers"
+                className="inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-transparent px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/[0.04]"
               >
-                <a href="/admin/sent-offers"><Mail className="h-4 w-4" /> Tutor Onboarding</a>
-              </Button>
-              <Button 
+                <Mail className="h-4 w-4" /> Tutor Onboarding
+              </a>
+              <button
+                type="button"
                 onClick={() => setIsAddTutorOpen(true)}
-                className="flex items-center gap-1"
+                className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition-opacity hover:opacity-90"
               >
                 <PlusIcon className="h-4 w-4" /> Add Tutor
-              </Button>
+              </button>
             </div>
           </div>
 
+          {/* Tabs */}
+          {!isLoading && tutors.length > 0 && (
+            <div className="mb-4 flex items-center gap-2">
+              {(
+                [
+                  { key: 'active' as const, label: 'Active', count: activeTutors.length },
+                  { key: 'inactive' as const, label: 'Inactive', count: inactiveTutors.length },
+                ]
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => handleTabChange(tab.key)}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-full border-2 border-foreground px-4 py-2 text-sm font-semibold transition-colors',
+                    activeTab === tab.key
+                      ? 'bg-foreground text-background'
+                      : 'bg-transparent text-foreground hover:bg-foreground/[0.04]'
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      'inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold',
+                      activeTab === tab.key
+                        ? 'bg-background/20 text-background'
+                        : 'bg-pastel-lilac text-foreground'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {isLoading ? (
-            <p>Loading tutors...</p>
+            <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : tutors.length === 0 ? (
-            <p>No tutors found.</p>
+            <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
+              <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+              <p className="text-sm text-muted-foreground">No tutors found.</p>
+            </div>
+          ) : currentTutors.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
+              <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+              <p className="text-sm text-muted-foreground">
+                {activeTab === 'active'
+                  ? 'No tutors with subjects assigned.'
+                  : 'No tutors without subjects.'}
+              </p>
+            </div>
           ) : (
             <div>
               <div className="mb-4 text-sm text-muted-foreground">
-                Showing {currentTutors.length} of {totalItems} tutors
+                Showing {currentTutors.length} of {totalItems} {activeTab.toLowerCase()} tutors
                 {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
               </div>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">Title</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Subjects</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentTutors.map((tutor: TutorWithSubjects) => (
-                    <TableRow key={tutor.id}>
-                      <TableCell className="font-medium">{tutor.title || 'N/A'}</TableCell>
-                      <TableCell>{tutor.first_name} {tutor.last_name}</TableCell>
-                      <TableCell>{tutor.email}</TableCell>
-                      <TableCell>{tutor.subjects && tutor.subjects.length > 0 ? tutor.subjects.join(', ') : 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setOfferTutor(tutor); setIsSendOfferOpen(true); }}
-                            title="Send offer letter"
-                          >
-                            <Mail className="h-4 w-4" />
-                            <span className="sr-only">Send Offer</span>
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleDeleteTutor(tutor)}
-                            className="text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleEditTutor(tutor)}
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            onClick={() => handleViewTutor(tutor)}
-                          >
-                            View
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+                <div className="space-y-2">
+                  {/* Column headers (desktop) */}
+                  <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.6fr)_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+                    <span>Name</span>
+                    <span>Email</span>
+                    <span>Subjects</span>
+                    <span className="text-right">Actions</span>
+                  </div>
+
+                  {currentTutors.map((tutor: TutorWithSubjects, i: number) => (
+                    <div
+                      key={tutor.id}
+                      className="grid grid-cols-1 items-center gap-3 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/70 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.6fr)_auto] lg:gap-4"
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span
+                          className={cn(
+                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground',
+                            avatarTones[i % avatarTones.length]
+                          )}
+                        >
+                          {initials(tutor.first_name, tutor.last_name)}
+                        </span>
+                        <span className="truncate font-semibold text-foreground">
+                          {tutor.title ? `${tutor.title} ` : ''}{tutor.first_name} {tutor.last_name}
+                        </span>
+                      </span>
+
+                      <span className="truncate pl-12 text-sm text-muted-foreground lg:pl-0">
+                        {tutor.email}
+                      </span>
+
+                      <span className="flex flex-wrap gap-1.5 pl-12 lg:pl-0">
+                        {tutor.subjects && tutor.subjects.length > 0 ? (
+                          tutor.subjects.map((subject, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className={cn(
+                                'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
+                                avatarTones[sIdx % avatarTones.length]
+                              )}
+                            >
+                              {subject}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-muted/60 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                            N/A
+                          </span>
+                        )}
+                      </span>
+
+                      <span className="flex justify-start gap-2 pl-12 lg:justify-end lg:pl-0">
+                        <button
+                          type="button"
+                          onClick={() => { setOfferTutor(tutor); setIsSendOfferOpen(true); }}
+                          title="Send offer letter"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-foreground text-foreground transition-colors hover:bg-foreground/[0.04]"
+                        >
+                          <Mail className="h-4 w-4" />
+                          <span className="sr-only">Send Offer</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTutor(tutor)}
+                          title="Delete tutor"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-foreground text-destructive transition-colors hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEditTutor(tutor)}
+                          title="Edit tutor"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-foreground text-foreground transition-colors hover:bg-foreground/[0.04]"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleViewTutor(tutor)}
+                          className="inline-flex items-center rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+                        >
+                          View
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              
+
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-4 flex justify-center">
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious 
+                        <PaginationPrevious
                           onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                           className={cn(
-                            "cursor-pointer",
+                            "cursor-pointer rounded-full",
                             currentPage === 1 && "pointer-events-none opacity-50"
                           )}
                         />
                       </PaginationItem>
-                      
+
                       {renderPaginationItems()}
-                      
+
                       <PaginationItem>
-                        <PaginationNext 
+                        <PaginationNext
                           onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                           className={cn(
-                            "cursor-pointer",
+                            "cursor-pointer rounded-full",
                             currentPage === totalPages && "pointer-events-none opacity-50"
                           )}
                         />
