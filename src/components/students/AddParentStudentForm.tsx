@@ -359,36 +359,34 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
             </Card>
 
             {/* Students Section */}
-            <Card>
+            <Card className="rounded-[var(--radius-soft)] border-0 bg-pastel-lilac shadow-[var(--shadow-soft)]">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Students ({fields.length})</CardTitle>
-                  <Button
+                  <CardTitle className="text-lg font-heading font-extrabold tracking-tight text-pastel-lilac-foreground">Students ({fields.length})</CardTitle>
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={addStudent}
                     disabled={fields.length >= 6}
-                    className="flex items-center gap-2"
+                    className="inline-flex items-center gap-2 rounded-full border border-foreground bg-transparent px-4 h-9 text-sm font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <Plus className="h-4 w-4" />
                     Add Student
-                  </Button>
+                  </button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {fields.map((field, index) => (
-                  <Card key={field.id} className="relative border-l-4 border-l-primary/20">
+                  <Card key={field.id} className="relative rounded-[var(--radius-soft)] border-0 bg-background/70">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-md">Student {index + 1}</CardTitle>
+                        <CardTitle className="text-md font-heading font-bold">Student {index + 1}</CardTitle>
                         {fields.length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => removeStudent(index)}
-                            className="text-destructive hover:text-destructive"
+                            className="text-destructive hover:text-destructive rounded-full"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -474,7 +472,7 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
                         control={form.control}
                         name={`students.${index}.createStudentLogin`}
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[var(--radius-soft)] bg-pastel-sky p-4">
                             <FormControl>
                               <Checkbox 
                                 checked={field.value}
@@ -498,18 +496,22 @@ const AddParentStudentForm: React.FC<AddParentStudentFormProps> = ({ isOpen, onC
               </CardContent>
             </Card>
 
-            <DialogFooter>
-              <Button
+            <DialogFooter className="gap-2 sm:gap-2">
+              <button
                 type="button"
-                variant="outline"
                 onClick={onClose}
                 disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-5 h-11 text-sm font-medium bg-transparent text-foreground border border-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5 disabled:opacity-50 disabled:pointer-events-none"
               >
                 Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 h-11 text-sm font-medium bg-foreground text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none"
+              >
                 {loading ? "Creating..." : `Create Family Account (${fields.length} student${fields.length !== 1 ? 's' : ''})`}
-              </Button>
+              </button>
             </DialogFooter>
           </form>
         </Form>
