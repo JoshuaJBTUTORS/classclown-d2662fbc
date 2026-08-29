@@ -457,14 +457,32 @@ const Students = () => {
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 p-4 md:p-6">
           <div className="mx-auto w-full max-w-7xl space-y-6">
-          <StudentsHero
-            title={isParent ? 'My Children' : 'Clients'}
-            totalCount={students.length}
-            activeCount={students.filter((s) => s.status === 'active').length}
-            trialCount={students.filter((s) => s.status === 'trial').length}
-            actions={
-              <>
-                {(isAdmin || isOwner) && (
+          {/* Header */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex items-center gap-3">
+              <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
+                {isParent ? 'My Children' : 'Clients'}
+              </h1>
+              {students.length > 0 && (
+                <span className="mt-2 inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-foreground">
+                  {students.length}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-72">
+                <span className="pointer-events-none absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleSearch className="h-4 w-4" />
+                </span>
+                <input
+                  placeholder={isParent ? 'Search children...' : 'Search clients...'}
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="h-11 w-full rounded-full border-2 border-foreground bg-transparent pl-12 pr-5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:bg-foreground/[0.03]"
+                />
+              </div>
+              {(isAdmin || isOwner) && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => navigate('/onboarding')}
@@ -475,8 +493,6 @@ const Students = () => {
                     </span>
                     Cleo Onboarding
                   </button>
-                )}
-                {(isAdmin || isOwner) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" className={chipBase}>
@@ -488,35 +504,35 @@ const Students = () => {
                       </button>
                     </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsAddFamilyDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <Users className="h-4 w-4" />
                       Add Family
                     </DropdownMenuItem>
-                     <DropdownMenuItem 
+                     <DropdownMenuItem
                       onClick={() => setIsAddToParentDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <UserPlus className="h-4 w-4" />
                       Add to Parent
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsLinkStudentDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <UserPlus className="h-4 w-4" />
                       Link Existing Student
                     </DropdownMenuItem>
-                     <DropdownMenuItem 
+                     <DropdownMenuItem
                       onClick={() => setIsAddDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
                       <User className="h-4 w-4" />
                       Add Client Only
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsAddParentOnlyDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
@@ -524,7 +540,7 @@ const Students = () => {
                       Add Parent Only
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setIsBulkImportDialogOpen(true)}
                       className="flex items-center gap-2"
                     >
@@ -533,10 +549,46 @@ const Students = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                   </DropdownMenu>
-                )}
-              </>
-            }
-          />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          {!isLoading && students.length > 0 && (
+            <div className="flex items-center gap-2">
+              {(
+                [
+                  { key: 'active' as const, label: 'Active', count: activeStudents.length },
+                  { key: 'trial' as const, label: 'Trial', count: trialStudents.length },
+                ]
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => handleTabChange(tab.key)}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-full border-2 border-foreground px-4 py-2 text-sm font-semibold transition-colors',
+                    activeTab === tab.key
+                      ? 'bg-foreground text-background'
+                      : 'bg-transparent text-foreground hover:bg-foreground/[0.04]'
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      'inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold',
+                      activeTab === tab.key
+                        ? 'bg-background/20 text-background'
+                        : 'bg-pastel-lilac text-foreground'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-6">
               {isLoading ? (
