@@ -2,34 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
-import StudentsHero from '@/components/students/StudentsHero';
-import StudentCard from '@/components/students/StudentCard';
-import { Button } from '@/components/ui/button';
-const chipBase = cn(
-  'inline-flex items-center gap-2.5 rounded-full pl-2 pr-4 h-11 text-sm font-medium transition-all duration-200',
-  'bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-);
-const chipIcon =
-  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Upload, ChevronDown, Users, UserPlus, User } from 'lucide-react';
+import { Plus, ChevronDown, Users, UserPlus, User, Upload, MoreHorizontal, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,8 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import EditStudentForm from '@/components/students/EditStudentForm';
 import ViewStudentProfile from '@/components/students/ViewStudentProfile';
 import { Student } from '@/types/student';
@@ -52,10 +26,10 @@ import AddParentOnlyForm from '@/components/parents/AddParentOnlyForm';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { BulkImportDialog } from '@/components/students/BulkImportDialog';
 import { useAuth } from '@/contexts/AuthContext';
-
 import { studentDataService } from '@/services/studentDataService';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
-import { 
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -64,6 +38,54 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
+
+const chipBase = cn(
+  'inline-flex items-center gap-2.5 rounded-full pl-2 pr-4 h-11 text-sm font-medium transition-all duration-200',
+  'bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+);
+const chipIcon =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
+
+const stroke = {
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const DoodleSearch: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M11 4.2c3.6-.3 6.4 2.4 6.3 5.9-.1 3.3-2.8 5.8-6.1 5.7-3.4-.1-5.9-2.7-5.8-6C5.5 6.7 7.9 4.4 11 4.2z" />
+    <path d="M15.4 14.6c1.6 1.5 3 3.1 4.3 4.9" />
+  </svg>
+);
+
+const DoodleArrow: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M4.8 12.2c4.7-.4 9.4-.5 14.1-.3" />
+    <path d="M14.2 7.3c1.8 1.5 3.4 3 4.8 4.7-1.5 1.6-3.1 3.1-4.9 4.5" />
+  </svg>
+);
+
+const initials = (first?: string | null, last?: string | null) =>
+  `${(first ?? '').charAt(0)}${(last ?? '').charAt(0)}`.toUpperCase() || '?';
+
+const avatarTones = [
+  'bg-pastel-mint',
+  'bg-pastel-lilac',
+  'bg-pastel-butter',
+  'bg-pastel-blush',
+  'bg-pastel-sky',
+];
+
+const statusTone = (status?: string) => {
+  const s = status || 'active';
+  if (s === 'trial') return 'bg-pastel-butter text-pastel-butter-foreground';
+  if (s === 'active') return 'bg-pastel-mint text-pastel-mint-foreground';
+  return 'bg-muted text-muted-foreground';
+};
 
 const Students = () => {
   const navigate = useNavigate();
