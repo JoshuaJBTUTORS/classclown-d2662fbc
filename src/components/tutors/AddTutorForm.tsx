@@ -418,25 +418,23 @@ const AddTutorForm: React.FC<AddTutorFormProps> = ({ isOpen, onClose, onSuccess 
     }
   };
 
-  const daysOfWeek = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday'
-  ];
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+      <DialogContent className="cc-dialog sm:max-w-[600px] max-h-[90vh] flex flex-col rounded-[var(--radius-soft)] border-0 shadow-[var(--shadow-soft-lg)] p-6 sm:p-8">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Add New Tutor</DialogTitle>
-          <DialogDescription>
-            Enter the tutor's details below to add them to the system.
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+              <UserPlus className="h-5 w-5" />
+            </span>
+            <div className="space-y-1 text-left">
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Add New Tutor</DialogTitle>
+              <DialogDescription>
+                Enter the tutor's details below to add them to the system.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
+
         
         <div className="flex-1 overflow-y-auto pr-2">
           <Form {...form}>
