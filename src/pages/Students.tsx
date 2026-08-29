@@ -156,7 +156,6 @@ const Students = () => {
       if (!studentsData || studentsData.length === 0) {
         console.log('No students found in database');
         setStudents([]);
-        setFilteredStudents([]);
         setIsLoading(false);
         return;
       }
@@ -252,7 +251,6 @@ const Students = () => {
       console.log('Total students to display:', formattedStudents.length);
       
       setStudents(formattedStudents);
-      setFilteredStudents(formattedStudents);
     } catch (error) {
       console.error('Error in fetchStudents:', error);
       toast.error('Failed to load students. Please try again.');
@@ -271,25 +269,33 @@ const Students = () => {
     }
   }, [user, userRole, parentProfile]);
 
+  // Tab classification: trial students vs everyone else
+  const trialStudents = students.filter((s) => (s.status || 'active') === 'trial');
+  const activeStudents = students.filter((s) => (s.status || 'active') !== 'trial');
+  const tabStudents = activeTab === 'trial' ? trialStudents : activeStudents;
+
   // Filter students based on search query
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredStudents(students);
-    } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = students.filter(
+  const query = searchQuery.trim().toLowerCase();
+  const filteredStudents = query
+    ? tabStudents.filter(
         (student) =>
           (student.first_name || '').toLowerCase().includes(query) ||
           (student.last_name || '').toLowerCase().includes(query) ||
           (student.email || '').toLowerCase().includes(query) ||
           (typeof student.subjects === 'string' && student.subjects.toLowerCase().includes(query)) ||
           (student.parentName && student.parentName.toLowerCase().includes(query))
-      );
-      setFilteredStudents(filtered);
-    }
-    // Reset to first page when filtering
+      )
+    : tabStudents;
+
+  const handleTabChange = (tab: 'active' | 'trial') => {
+    setActiveTab(tab);
     setCurrentPage(1);
-  }, [searchQuery, students]);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   // Pagination calculations
   const itemsPerPage = 50;
@@ -443,35 +449,6 @@ const Students = () => {
     setIsEditParentDialogOpen(false);
   };
 
-  // Helper function to get status badge variant and text
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'trial':
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-pastel-butter px-3 py-1 text-pastel-butter-foreground">
-            Trial
-          </Badge>
-        );
-      case 'active':
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-pastel-mint px-3 py-1 text-pastel-mint-foreground">
-            Active
-          </Badge>
-        );
-      case 'inactive':
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
-            Inactive
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="rounded-full border-0 bg-muted px-3 py-1 text-muted-foreground">
-            {status}
-          </Badge>
-        );
-    }
-  };
 
   return (
     <>
