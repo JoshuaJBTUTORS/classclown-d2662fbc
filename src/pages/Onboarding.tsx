@@ -6,6 +6,8 @@ import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UserPlus, ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { DoodleCalendar, DoodleClock } from '@/components/calendar/LessonDoodles';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -318,18 +320,22 @@ const Onboarding: React.FC = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-col flex-1 w-full">
         <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 p-4 md:p-6 max-w-4xl mx-auto w-full">
+        <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
           <div className="flex items-center gap-3 mb-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/students')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/students')}
+              className="rounded-full border-2 border-foreground/80 bg-transparent hover:bg-foreground/5 h-9 px-4"
+            >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back
             </Button>
           </div>
-          <PageTitle
-            title="Onboarding"
-            subtitle="Follow the steps to onboard a new client"
-            className="mb-6"
-          />
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Onboarding</h1>
+            <p className="text-muted-foreground mt-2">Follow the steps to onboard a new client</p>
+          </div>
 
           {/* Stepper */}
           <div className="flex items-center justify-between mb-8">
@@ -350,25 +356,30 @@ const Onboarding: React.FC = () => {
                   >
                     <div
                       className={cn(
-                        'h-10 w-10 rounded-full flex items-center justify-center border-2 font-semibold text-sm transition',
+                        'h-11 w-11 rounded-full flex items-center justify-center border-2 border-foreground/80 font-semibold text-sm transition',
                         isDone
-                          ? 'bg-primary border-primary text-primary-foreground'
+                          ? 'bg-foreground text-background'
                           : isActive
-                          ? 'border-primary text-primary bg-background'
-                          : 'border-muted-foreground/30 text-muted-foreground bg-background'
+                          ? 'bg-pastel-butter text-pastel-butter-foreground'
+                          : 'bg-background text-muted-foreground border-foreground/25'
                       )}
                     >
                       {isDone ? <Check className="h-5 w-5" /> : step.id}
                     </div>
                     <div className="text-center">
-                      <div className={cn('text-sm font-medium', isActive ? 'text-foreground' : 'text-muted-foreground')}>
+                      <div className={cn('text-sm font-semibold', isActive ? 'text-foreground' : 'text-muted-foreground')}>
                         {step.label}
                       </div>
                       <div className="text-xs text-muted-foreground hidden sm:block">{step.description}</div>
                     </div>
                   </button>
                   {i < STEPS.length - 1 && (
-                    <div className={cn('h-0.5 flex-1 mx-2', completed.includes(step.id) ? 'bg-primary' : 'bg-muted')} />
+                    <div
+                      className={cn(
+                        'h-[3px] rounded-full flex-1 mx-2 mb-8',
+                        completed.includes(step.id) ? 'bg-foreground' : 'bg-foreground/15'
+                      )}
+                    />
                   )}
                 </React.Fragment>
               );
@@ -377,40 +388,42 @@ const Onboarding: React.FC = () => {
 
           {/* Step 1 */}
           {currentStep === 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <div className="rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-sky p-6">
+              <div className="flex items-start gap-3 mb-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-foreground/80 bg-background">
                   <UserPlus className="h-5 w-5" />
-                  Step 1: Select completed proposal
-                </CardTitle>
-                <CardDescription>
-                  Pick a signed proposal — we'll auto-create the parent account using the details on file.
-                  Default password: <code className="text-xs">classbeyond123!</code>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-pastel-sky-foreground">Step 1: Select completed proposal</h2>
+                  <p className="text-sm text-pastel-sky-foreground/80 mt-1">
+                    Pick a signed proposal — we'll auto-create the parent account using the details on file.
+                    Default password: <code className="text-xs">classbeyond123!</code>
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4">
                 {createdEmail && (
-                  <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-md p-3">
+                  <div className="flex items-center gap-2 text-sm rounded-2xl border-2 border-foreground/80 bg-pastel-mint text-pastel-mint-foreground p-3">
                     <Check className="h-4 w-4" />
                     Parent account created for <strong>{createdEmail}</strong>.
                   </div>
                 )}
 
                 {createError && (
-                  <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-3">
+                  <div className="text-sm rounded-2xl border-2 border-foreground/80 bg-pastel-blush text-pastel-blush-foreground p-3">
                     <strong className="block mb-1">Couldn't create parent account</strong>
                     {createError}
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Completed proposal</label>
+                  <label className="text-sm font-semibold text-pastel-sky-foreground">Completed proposal</label>
                   <Select
                     value={selectedProposalId}
                     onValueChange={setSelectedProposalId}
                     disabled={loadingProposals || creating}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 rounded-full border-2 border-foreground/80 bg-background">
                       <SelectValue
                         placeholder={
                           loadingProposals
@@ -421,7 +434,7 @@ const Onboarding: React.FC = () => {
                         }
                       />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-2xl border-2 border-foreground/80">
                       {proposals.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {(p.recipient_name || 'Unnamed').trim()} — {p.recipient_email}
@@ -433,52 +446,67 @@ const Onboarding: React.FC = () => {
                 </div>
 
                 {selectedProposal && (
-                  <div className="rounded-md border p-3 text-sm space-y-1">
+                  <div className="rounded-2xl border-2 border-foreground/70 bg-background/70 p-4 text-sm space-y-1">
                     <div><span className="text-muted-foreground">Name:</span> {selectedProposal.recipient_name}</div>
                     <div><span className="text-muted-foreground">Email:</span> {selectedProposal.recipient_email}</div>
                     <div><span className="text-muted-foreground">Phone:</span> {selectedProposal.recipient_phone || '—'}</div>
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     onClick={handleCreateFromProposal}
                     disabled={!selectedProposal || creating || completed.includes(1)}
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90 h-11 px-5"
                   >
                     {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {completed.includes(1) ? 'Parent account created' : 'Create parent account'}
                   </Button>
 
-                  <Button variant="outline" onClick={loadProposals} disabled={loadingProposals || creating}>
+                  <Button
+                    variant="outline"
+                    onClick={loadProposals}
+                    disabled={loadingProposals || creating}
+                    className="rounded-full border-2 border-foreground/80 bg-transparent hover:bg-foreground/5 h-11 px-5"
+                  >
                     Refresh list
                   </Button>
                   {completed.includes(1) && (
-                    <Button variant="secondary" onClick={() => setCurrentStep(2)}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setCurrentStep(2)}
+                      className="rounded-full border-2 border-foreground/80 bg-background hover:bg-foreground/5 h-11 px-5"
+                    >
                       Continue
                     </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Step 2 */}
           {currentStep === 2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Step 2: Sessions offered on the proposal</CardTitle>
-                <CardDescription>
-                  Make a note of the sessions offered — these are the times agreed on the signed proposal.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+            <div className="rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-butter p-6">
+              <div className="flex items-start gap-3 mb-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-foreground/80 bg-background">
+                  <DoodleClock className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-pastel-butter-foreground">Step 2: Sessions offered on the proposal</h2>
+                  <p className="text-sm text-pastel-butter-foreground/80 mt-1">
+                    Make a note of the sessions offered — these are the times agreed on the signed proposal.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4">
                 {!createdProposal ? (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-pastel-butter-foreground/80">
                     Complete step 1 first to load the proposal's sessions.
                   </div>
                 ) : (
                   <>
-                    <div className="rounded-md border p-3 text-sm grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="rounded-2xl border-2 border-foreground/70 bg-background/70 p-4 text-sm grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div><span className="text-muted-foreground">Parent:</span> {createdProposal.recipient_name}</div>
                       <div><span className="text-muted-foreground">Subject:</span> {createdProposal.subject || '—'}</div>
                       <div><span className="text-muted-foreground">Lesson type:</span> {createdProposal.lesson_type || '—'}</div>
@@ -487,21 +515,21 @@ const Onboarding: React.FC = () => {
                       <div><span className="text-muted-foreground">Payment cycle:</span> {createdProposal.payment_cycle || '—'}</div>
                     </div>
 
-                    <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
-                      <div className="text-sm font-medium text-amber-900 mb-1">Internal notes from the proposal</div>
+                    <div className="rounded-2xl border-2 border-foreground/80 bg-pastel-sand p-4">
+                      <div className="text-sm font-semibold text-pastel-sand-foreground mb-1">Internal notes from the proposal</div>
                       {createdProposal.internal_notes ? (
-                        <p className="text-sm text-amber-900 whitespace-pre-wrap">{createdProposal.internal_notes}</p>
+                        <p className="text-sm text-pastel-sand-foreground whitespace-pre-wrap">{createdProposal.internal_notes}</p>
                       ) : (
-                        <p className="text-sm text-amber-900/70">No internal notes on this proposal.</p>
+                        <p className="text-sm text-pastel-sand-foreground/70">No internal notes on this proposal.</p>
                       )}
                     </div>
 
                     <div>
-                      <div className="text-sm font-medium mb-2">Sessions</div>
+                      <div className="text-sm font-semibold mb-2 text-pastel-butter-foreground">Sessions</div>
                       {Array.isArray(createdProposal.lesson_times) && createdProposal.lesson_times.length > 0 ? (
                         <ul className="space-y-2">
                           {createdProposal.lesson_times.map((lt, i) => (
-                            <li key={i} className="rounded-md border p-3 text-sm flex flex-wrap gap-x-6 gap-y-1">
+                            <li key={i} className="rounded-2xl border-2 border-foreground/70 bg-background/70 p-3 text-sm flex flex-wrap gap-x-6 gap-y-1">
                               <div><span className="text-muted-foreground">Day:</span> {lt.day || '—'}</div>
                               <div><span className="text-muted-foreground">Time:</span> {lt.time || '—'}</div>
                               <div><span className="text-muted-foreground">Duration:</span> {lt.duration ? `${lt.duration} min` : '—'}</div>
@@ -510,40 +538,52 @@ const Onboarding: React.FC = () => {
                           ))}
                         </ul>
                       ) : (
-                        <div className="text-sm text-muted-foreground">No sessions listed on this proposal.</div>
+                        <div className="text-sm text-pastel-butter-foreground/70">No sessions listed on this proposal.</div>
                       )}
                     </div>
                   </>
                 )}
 
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)}>Back</Button>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(1)}
+                    className="rounded-full border-2 border-foreground/80 bg-transparent hover:bg-foreground/5 h-11 px-5"
+                  >
+                    Back
+                  </Button>
                   <Button
                     onClick={() => {
                       setCompleted((c) => Array.from(new Set([...c, 2])));
                       setCurrentStep(3);
                     }}
                     disabled={!createdProposal}
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90 h-11 px-5"
                   >
                     Continue
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {currentStep === 3 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Step 3: Add lessons in the calendar</CardTitle>
-                <CardDescription>
-                  Open the calendar in a new tab and schedule the sessions agreed on the proposal.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+            <div className="rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-mint p-6">
+              <div className="flex items-start gap-3 mb-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-foreground/80 bg-background">
+                  <DoodleCalendar className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-pastel-mint-foreground">Step 3: Add lessons in the calendar</h2>
+                  <p className="text-sm text-pastel-mint-foreground/80 mt-1">
+                    Open the calendar in a new tab and schedule the sessions agreed on the proposal.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4">
                 {createdProposal && (
-                  <div className="rounded-md border p-3 text-sm">
-                    <div className="font-medium mb-1">Reminder — sessions to schedule</div>
+                  <div className="rounded-2xl border-2 border-foreground/70 bg-background/70 p-4 text-sm">
+                    <div className="font-semibold mb-1">Reminder — sessions to schedule</div>
                     <div className="text-muted-foreground mb-2">
                       Parent: {createdProposal.recipient_name} · Subject: {createdProposal.subject || '—'} · Type: {createdProposal.lesson_type || '—'}
                     </div>
@@ -562,11 +602,17 @@ const Onboarding: React.FC = () => {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={handleOpenCalendar}>Add lessons</Button>
+                  <Button
+                    onClick={handleOpenCalendar}
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90 h-11 px-5"
+                  >
+                    Add lessons
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={handleAddedLessons}
                     disabled={pushingTicket}
+                    className="rounded-full border-2 border-foreground/80 bg-transparent hover:bg-foreground/5 h-11 px-5"
                   >
                     {pushingTicket ? (
                       <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Finishing…</>
@@ -577,12 +623,19 @@ const Onboarding: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" onClick={() => setCurrentStep(2)}>Back</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(2)}
+                    className="rounded-full border-2 border-foreground/80 bg-transparent hover:bg-foreground/5 h-11 px-5"
+                  >
+                    Back
+                  </Button>
                 </div>
 
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
+
 
 
         </main>
