@@ -8,7 +8,6 @@ import { Pencil } from 'lucide-react';
 import { Tutor, AvailabilitySlot } from '@/types/tutor';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -65,16 +64,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-const daysOfWeek = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday'
-];
 
 const EditTutorForm: React.FC<EditTutorFormProps> = ({ tutor, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
