@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
-import { Users, Video, FileText, User, Play, Calendar, Sparkles } from 'lucide-react';
+import { Users, Video, FileText, User, Play, Calendar } from 'lucide-react';
+import { DoodleSparkle } from '@/components/calendar/LessonDoodles';
 import { cn } from '@/lib/utils';
 import { ScribbleStroke } from '@/components/lessonPlans/ScribbleStroke';
 import { getPastelTone } from '@/components/lessonPlans/pastelPalette';
@@ -140,7 +141,7 @@ const LessonSummaryCard: React.FC<LessonSummaryCardProps> = ({ lesson }) => {
 
             {hasStudents && (
               <button type="button" className={actionClass} onClick={() => setShowRevisionNotes(true)}>
-                <Sparkles className="h-4 w-4" />
+                <DoodleSparkle className="h-4 w-4" />
                 Revision Notes
               </button>
             )}
