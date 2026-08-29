@@ -90,9 +90,9 @@ const statusTone = (status?: string) => {
 const Students = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'active' | 'trial'>('active');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddFamilyDialogOpen, setIsAddFamilyDialogOpen] = useState(false);
   const [isAddToParentDialogOpen, setIsAddToParentDialogOpen] = useState(false);
