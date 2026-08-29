@@ -153,26 +153,30 @@ const Homework: React.FC = () => {
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-col flex-1 w-full">
         <MobileMenuButton toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
-          <PageTitle 
-            title="Homework" 
-            subtitle={userRole === 'tutor' || userRole === 'admin' || userRole === 'owner'
-              ? "Manage homework assignments and submissions" 
-              : userRole === 'parent'
-                ? "View your child's homework assignments"
-                : "View and submit your homework assignments"}
-          />
+        <main className="flex-1 p-4 md:p-8">
+          <div className="mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Homework</h1>
+            <p className="text-muted-foreground mt-2">
+              {userRole === 'tutor' || userRole === 'admin' || userRole === 'owner'
+                ? "Manage homework assignments and submissions"
+                : userRole === 'parent'
+                  ? "View your child's homework assignments"
+                  : "View and submit your homework assignments"}
+            </p>
+          </div>
 
           {isLoading ? (
-            <div className="py-10 text-center">Loading...</div>
+            <div className="py-10 text-center text-muted-foreground">Loading...</div>
           ) : error ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                {error}
-              </AlertDescription>
-            </Alert>
+            <div className="rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-blush p-5">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 mt-0.5 text-pastel-blush-foreground" />
+                <div>
+                  <p className="font-semibold text-pastel-blush-foreground">Error</p>
+                  <p className="text-sm text-pastel-blush-foreground/80 mt-0.5">{error}</p>
+                </div>
+              </div>
+            </div>
           ) : userRole === 'tutor' || userRole === 'admin' || userRole === 'owner' ? (
             <HomeworkManager />
           ) : (userRole === 'student' || userRole === 'parent') && selectedStudentId ? (
@@ -183,7 +187,7 @@ const Homework: React.FC = () => {
                   <select 
                     value={selectedStudentId} 
                     onChange={(e) => setSelectedStudentId(Number(e.target.value))}
-                    className="w-full max-w-xs p-2 border border-input bg-background rounded-md"
+                    className="w-full max-w-xs h-11 px-4 rounded-full border-2 border-foreground/80 bg-pastel-butter text-pastel-butter-foreground font-medium"
                   >
                     {students.map((student) => (
                       <option key={student.id} value={student.id}>
@@ -196,15 +200,20 @@ const Homework: React.FC = () => {
               <StudentHomeworkView studentId={selectedStudentId} />
             </>
           ) : (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Access Error</AlertTitle>
-              <AlertDescription>
-                Unable to determine your role or student information. Please contact support.
-              </AlertDescription>
-            </Alert>
+            <div className="rounded-[1.5rem] border-2 border-foreground/80 bg-pastel-blush p-5">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 mt-0.5 text-pastel-blush-foreground" />
+                <div>
+                  <p className="font-semibold text-pastel-blush-foreground">Access Error</p>
+                  <p className="text-sm text-pastel-blush-foreground/80 mt-0.5">
+                    Unable to determine your role or student information. Please contact support.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </main>
+
       </div>
     </>
   );
