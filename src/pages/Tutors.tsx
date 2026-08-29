@@ -419,19 +419,37 @@ const Tutors = () => {
                         {tutor.email}
                       </span>
 
-                      <span className="flex flex-wrap gap-1.5 pl-12 lg:pl-0">
+                      <span className="flex pl-12 lg:pl-0">
                         {tutor.subjects && tutor.subjects.length > 0 ? (
-                          tutor.subjects.map((subject, sIdx) => (
-                            <span
-                              key={sIdx}
-                              className={cn(
-                                'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
-                                avatarTones[sIdx % avatarTones.length]
-                              )}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1.5 rounded-full border-2 border-foreground bg-transparent px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-foreground/[0.04]"
+                              >
+                                {tutor.subjects.length} {tutor.subjects.length === 1 ? 'subject' : 'subjects'}
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              align="start"
+                              className="w-auto max-w-xs rounded-[1.25rem] border-2 border-foreground/10 bg-card p-3 shadow-[var(--shadow-soft-lg)]"
                             >
-                              {subject}
-                            </span>
-                          ))
+                              <div className="flex flex-wrap gap-1.5">
+                                {tutor.subjects.map((subject, sIdx) => (
+                                  <span
+                                    key={sIdx}
+                                    className={cn(
+                                      'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
+                                      getSubjectCategoryTone(subject)
+                                    )}
+                                  >
+                                    {subject}
+                                  </span>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-muted/60 px-3 py-1 text-xs font-semibold text-muted-foreground">
                             N/A
