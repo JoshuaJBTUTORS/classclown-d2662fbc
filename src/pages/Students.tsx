@@ -140,6 +140,7 @@ const Students = () => {
       }
 
       const { data: studentsData, error: studentsError } = await studentsQuery
+        .order('first_name', { ascending: true })
         .order('last_name', { ascending: true });
 
       console.log('Students query result:', { studentsData, studentsError });

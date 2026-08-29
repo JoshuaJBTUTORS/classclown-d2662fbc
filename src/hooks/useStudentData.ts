@@ -15,6 +15,7 @@ export const useStudentData = () => {
         .from('students')
         .select('*')
         .or('status.eq.active,status.is.null,status.eq.')
+        .order('first_name', { ascending: true })
         .order('last_name', { ascending: true });
 
       if (error) throw error;
