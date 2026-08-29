@@ -3930,6 +3930,7 @@ export type Database = {
           has_cleo_hub_access: boolean | null
           has_completed_trial: boolean | null
           id: string
+          job_title: string | null
           last_name: string | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
@@ -3952,6 +3953,7 @@ export type Database = {
           has_cleo_hub_access?: boolean | null
           has_completed_trial?: boolean | null
           id: string
+          job_title?: string | null
           last_name?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
@@ -3974,6 +3976,7 @@ export type Database = {
           has_cleo_hub_access?: boolean | null
           has_completed_trial?: boolean | null
           id?: string
+          job_title?: string | null
           last_name?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
