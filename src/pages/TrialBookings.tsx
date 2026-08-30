@@ -430,9 +430,6 @@ const TrialBookings = () => {
                 <span className="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/70 bg-pastel-butter text-foreground">
                   <DoodleSparkle className="h-5 w-5" />
                 </span>
-                <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
-                  Trial Lesson Requests
-                </h2>
               </div>
 
               <Tabs value={sourceTab} onValueChange={(v) => setSourceTab(v as typeof sourceTab)} className="mb-4">
