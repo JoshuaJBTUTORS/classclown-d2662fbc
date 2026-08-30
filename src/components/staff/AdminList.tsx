@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { resolveAvatarSrc } from '@/lib/cleoAvatars';
+import EditAdminDialog, { EditAdminTarget } from '@/components/staff/EditAdminDialog';
 
 interface AdminUser {
   id: string;
@@ -10,6 +11,7 @@ interface AdminUser {
   last_name: string;
   avatar_url: string | null;
   job_title: string | null;
+  is_active: boolean;
   role: string;
 }
 
@@ -56,6 +58,8 @@ const initials = (first?: string | null, last?: string | null) =>
 const AdminList: React.FC = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'active' | 'inactive'>('active');
+  const [editing, setEditing] = useState<EditAdminTarget | null>(null);
 
   useEffect(() => {
     fetchAdmins();
@@ -78,7 +82,7 @@ const AdminList: React.FC = () => {
       const userIds = userRolesData.map((item) => item.user_id);
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar_url, job_title')
+        .select('id, first_name, last_name, avatar_url, job_title, is_active')
         .in('id', userIds);
 
       const adminList = userRolesData.map((roleItem) => {
@@ -90,6 +94,7 @@ const AdminList: React.FC = () => {
           last_name: profile?.last_name || '',
           avatar_url: profile?.avatar_url ?? null,
           job_title: profile?.job_title ?? null,
+          is_active: profile?.is_active ?? true,
           role: roleItem.role,
         };
       });
