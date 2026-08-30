@@ -4925,6 +4925,27 @@ export type Database = {
           },
         ]
       }
+      students_archive_2026_08: {
+        Row: {
+          archived_at: string
+          reason: string
+          row_data: Json
+          student_id: number
+        }
+        Insert: {
+          archived_at?: string
+          reason?: string
+          row_data: Json
+          student_id: number
+        }
+        Update: {
+          archived_at?: string
+          reason?: string
+          row_data?: Json
+          student_id?: number
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           category: string
