@@ -438,7 +438,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       <FormItem>
                         <FormLabel>Title</FormLabel>
                         <FormControl>
-                          <Input placeholder="Math Tutoring Session" {...field} />
+                          <Input placeholder="Math Tutoring Session" className="h-11 rounded-full border-foreground/15 px-4" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -453,11 +453,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         <FormLabel>Subject</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-11 rounded-full border-foreground/15 px-4">
                               <SelectValue placeholder="Select a subject" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="rounded-2xl border-foreground/10 shadow-[var(--shadow-soft)]">
                             {LESSON_SUBJECTS.map((subject) => (
                               <SelectItem key={subject} value={subject}>
                                 {subject}
@@ -479,7 +479,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         <FormControl>
                           <Textarea
                             placeholder="Details about the tutoring session"
-                            className="resize-none"
+                            className="resize-none rounded-2xl border-foreground/15 px-4 py-3"
                             {...field}
                           />
                         </FormControl>
