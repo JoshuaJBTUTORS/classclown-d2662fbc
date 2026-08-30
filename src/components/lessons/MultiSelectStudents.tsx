@@ -64,7 +64,7 @@ const MultiSelectStudents: React.FC<MultiSelectStudentsProps> = ({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between h-auto min-h-[42px] px-3 py-2"
+            className="w-full justify-between h-auto min-h-[44px] px-4 py-2 rounded-full border-foreground/15 bg-transparent hover:bg-pastel-sky/50"
             disabled={disabled}
           >
             <div className="flex flex-wrap gap-1 flex-1">
@@ -79,7 +79,7 @@ const MultiSelectStudents: React.FC<MultiSelectStudentsProps> = ({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+        <PopoverContent className="w-full p-0 rounded-2xl border-foreground/10 shadow-[var(--shadow-soft-lg)]" align="start">
           <Command>
             <CommandInput placeholder="Search students..." />
             <CommandList>
@@ -134,7 +134,7 @@ const MultiSelectStudents: React.FC<MultiSelectStudentsProps> = ({
           {selectedStudentNames.map((name, index) => {
             const studentId = selectedStudents[index];
             return (
-              <Badge key={studentId} variant="secondary" className="text-xs">
+              <Badge key={studentId} variant="secondary" className="text-xs rounded-full bg-pastel-lilac text-pastel-lilac-foreground hover:bg-pastel-lilac">
                 {name}
                 <button
                   type="button"

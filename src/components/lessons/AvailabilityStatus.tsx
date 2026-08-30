@@ -21,7 +21,7 @@ const AvailabilityStatus: React.FC<AvailabilityStatusProps> = ({
 }) => {
   if (isChecking) {
     return (
-      <Alert className={`border-blue-200 bg-blue-50 ${className}`}>
+      <Alert className={`rounded-[var(--radius-soft)] border-0 bg-pastel-sky text-pastel-sky-foreground ${className}`}>
         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
         <AlertDescription className="text-blue-800">
           Checking availability...
@@ -36,7 +36,7 @@ const AvailabilityStatus: React.FC<AvailabilityStatusProps> = ({
 
   if (checkResult.isAvailable) {
     return (
-      <Alert className={`border-green-200 bg-green-50 ${className}`}>
+      <Alert className={`rounded-[var(--radius-soft)] border-0 bg-pastel-mint ${className}`}>
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-green-800">
           <div className="flex items-center gap-2">
@@ -51,7 +51,7 @@ const AvailabilityStatus: React.FC<AvailabilityStatusProps> = ({
   }
 
   return (
-    <Alert className={`border-red-200 bg-red-50 ${className}`}>
+    <Alert className={`rounded-[var(--radius-soft)] border-0 bg-pastel-blush ${className}`}>
       <XCircle className="h-4 w-4 text-red-600" />
       <AlertDescription className="text-red-800">
         <div className="space-y-3">
@@ -72,7 +72,7 @@ const AvailabilityStatus: React.FC<AvailabilityStatusProps> = ({
           </ul>
 
           {checkResult.hasAlternatives && checkResult.alternativeTutors && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="mt-4 p-3 bg-pastel-sky rounded-2xl">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-blue-600" />
                 <span className="font-medium text-blue-800">
@@ -82,7 +82,7 @@ const AvailabilityStatus: React.FC<AvailabilityStatusProps> = ({
               
               <div className="space-y-2">
                 {checkResult.alternativeTutors.slice(0, 3).map((tutor) => (
-                  <div key={tutor.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                  <div key={tutor.id} className="flex items-center justify-between gap-2 p-2 bg-card rounded-xl shadow-[var(--shadow-soft)]">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900">
@@ -109,7 +109,7 @@ const AvailabilityStatus: React.FC<AvailabilityStatusProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => onSelectAlternativeTutor(tutor.id, `${tutor.first_name} ${tutor.last_name}`)}
-                        className="ml-2"
+                        className="ml-2 rounded-full border-foreground/20 bg-transparent"
                       >
                         Select
                       </Button>

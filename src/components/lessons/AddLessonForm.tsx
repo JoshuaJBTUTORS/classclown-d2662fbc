@@ -388,9 +388,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open && !isLoading) onClose();
     }}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-[600px] max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-[var(--radius-soft)] border-0 p-4 sm:p-6 shadow-[var(--shadow-soft-lg)]">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-heading text-xl sm:text-2xl font-extrabold tracking-tight">
             {form.watch('isReviewRoom') ? 'Add Review Room Session' : 'Add New Lesson'}
           </DialogTitle>
           <DialogDescription>
@@ -402,8 +402,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
 
         {isLoading && !form.formState.isSubmitting ? (
           <div className="flex justify-center items-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2">{loadingStep}</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-foreground/15 border-t-foreground"></div>
+            <span className="ml-2 text-sm text-muted-foreground">{loadingStep}</span>
           </div>
         ) : (
           <Form {...form}>
@@ -412,10 +412,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 control={form.control}
                 name="isReviewRoom"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border-2 border-primary/30 bg-primary/5 p-4">
+                  <FormItem className="flex flex-row items-center justify-between gap-3 space-y-0 rounded-[var(--radius-soft)] bg-pastel-mint p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Review Room Session</FormLabel>
-                      <div className="text-sm text-muted-foreground">
+                      <FormLabel className="text-base font-heading font-bold text-pastel-mint-foreground">Review Room Session</FormLabel>
+                      <div className="text-sm text-pastel-mint-foreground/70">
                         Free GCSE revision — only tutor & time needed. Auto-recurs weekly indefinitely.
                       </div>
                     </div>
@@ -438,7 +438,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       <FormItem>
                         <FormLabel>Title</FormLabel>
                         <FormControl>
-                          <Input placeholder="Math Tutoring Session" {...field} />
+                          <Input placeholder="Math Tutoring Session" className="h-11 rounded-full border-foreground/15 px-4" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -453,11 +453,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         <FormLabel>Subject</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-11 rounded-full border-foreground/15 px-4">
                               <SelectValue placeholder="Select a subject" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="rounded-2xl border-foreground/10 shadow-[var(--shadow-soft)]">
                             {LESSON_SUBJECTS.map((subject) => (
                               <SelectItem key={subject} value={subject}>
                                 {subject}
@@ -479,7 +479,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         <FormControl>
                           <Textarea
                             placeholder="Details about the tutoring session"
-                            className="resize-none"
+                            className="resize-none rounded-2xl border-foreground/15 px-4 py-3"
                             {...field}
                           />
                         </FormControl>
@@ -502,11 +502,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-11 rounded-full border-foreground/15 px-4">
                             <SelectValue placeholder="Select a tutor" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="rounded-2xl border-foreground/10 shadow-[var(--shadow-soft)]">
                           {tutors.map((tutor) => (
                             <SelectItem key={tutor.id} value={tutor.id}>
                               {tutor.first_name} {tutor.last_name}
@@ -524,8 +524,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     control={form.control}
                     name="isGroup"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
-                        <FormLabel>Group Session</FormLabel>
+                      <FormItem className="flex flex-row items-center justify-between gap-2 space-y-0 rounded-full bg-pastel-sky px-4 h-11">
+                        <FormLabel className="text-pastel-sky-foreground font-medium">Group Session</FormLabel>
                         <FormControl>
                           <Switch
                             checked={field.value}
@@ -571,23 +571,23 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
-                           <Button
-                              variant={"outline"}
-                              className={cn(
-                                "pl-3 text-left font-normal w-full h-[42px]",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
+                            <Button
+                               variant={"outline"}
+                               className={cn(
+                                 "px-4 text-left font-normal w-full h-11 rounded-full border-foreground/15 bg-transparent hover:bg-pastel-sky/50",
+                                 !field.value && "text-muted-foreground"
+                               )}
+                             >
+                               {field.value ? (
+                                 format(field.value, "PPP")
+                               ) : (
+                                 <span>Pick a date</span>
+                               )}
+                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 rounded-[var(--radius-soft)] border-foreground/10 shadow-[var(--shadow-soft-lg)]" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value}
@@ -609,7 +609,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     <FormItem>
                       <FormLabel>Start Time</FormLabel>
                       <FormControl>
-                        <Input type="time" className="h-[42px]" {...field} />
+                        <Input type="time" className="h-11 rounded-full border-foreground/15 px-4" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -623,7 +623,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     <FormItem>
                       <FormLabel>End Time</FormLabel>
                       <FormControl>
-                        <Input type="time" className="h-[42px]" {...field} />
+                        <Input type="time" className="h-11 rounded-full border-foreground/15 px-4" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -632,15 +632,15 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
               </div>
 
               {!form.watch('isReviewRoom') && (
-              <div className="space-y-4 border-t pt-4">
+              <div className="space-y-4 border-t border-foreground/10 pt-4">
                 <FormField
                   control={form.control}
                   name="isRecurring"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border p-3">
+                    <FormItem className="flex flex-row items-center justify-between gap-3 space-y-0 rounded-[var(--radius-soft)] bg-pastel-lilac p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Recurring Lesson</FormLabel>
-                        <div className="text-sm text-muted-foreground">
+                        <FormLabel className="text-base font-heading font-bold text-pastel-lilac-foreground">Recurring Lesson</FormLabel>
+                        <div className="text-sm text-pastel-lilac-foreground/70">
                           Create a series of lessons that repeat automatically
                         </div>
                       </div>
@@ -655,7 +655,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 />
 
                 {form.watch('isRecurring') && (
-                  <div className="space-y-4 ml-4 border-l-2 border-gray-200 pl-4">
+                  <div className="space-y-4 ml-2 sm:ml-4 border-l-2 border-pastel-lilac pl-4">
                     <FormField
                       control={form.control}
                       name="recurrenceInterval"
@@ -664,11 +664,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                           <FormLabel>Recurrence Pattern</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
-                              <SelectTrigger>
+                             <SelectTrigger className="h-11 rounded-full border-foreground/15 px-4">
                                 <SelectValue placeholder="Select how often to repeat" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="rounded-2xl border-foreground/10 shadow-[var(--shadow-soft)]">
                               <SelectItem value="daily">Daily</SelectItem>
                               <SelectItem value="weekly">Weekly</SelectItem>
                               <SelectItem value="biweekly">Bi-weekly (Every 2 weeks)</SelectItem>
@@ -718,7 +718,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                                 <FormControl>
                                   <Button
                                     variant={"outline"}
-                                    className="pl-3 text-left font-normal w-full"
+                                    className="px-4 text-left font-normal w-full h-11 rounded-full border-foreground/15 bg-transparent hover:bg-pastel-sky/50"
                                   >
                                     {field.value ? (
                                       format(field.value, "PPP")
@@ -729,7 +729,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                                   </Button>
                                 </FormControl>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
+                              <PopoverContent className="w-auto p-0 rounded-[var(--radius-soft)] border-foreground/10 shadow-[var(--shadow-soft-lg)]" align="start">
                                 <Calendar
                                   mode="single"
                                   selected={field.value}
@@ -751,15 +751,15 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
               )}
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Availability Check</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-heading font-bold">Availability Check</label>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={handleManualAvailabilityCheck}
                     disabled={isChecking}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent"
                   >
                     {isChecking ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -777,11 +777,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 />
               </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="rounded-full border-foreground/20 bg-transparent w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="rounded-full bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto">
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
