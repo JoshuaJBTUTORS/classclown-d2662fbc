@@ -974,8 +974,13 @@ const AgentCleo: React.FC = () => {
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
               {messages.map((m) =>
                 m.role === 'user' ? (
-                  <div key={m.id} className="flex justify-end">
+                  <div key={m.id} className="flex justify-end items-end gap-2">
                     <div className="max-w-[85%] bg-[#1a1a1a] text-white dark:bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">{m.content}</div>
+                    <UserAvatar
+                      avatarUrl={profile?.avatar_url}
+                      name={firstName}
+                      className="w-7 h-7 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-xs font-semibold text-white"
+                    />
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
