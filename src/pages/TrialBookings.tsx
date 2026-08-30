@@ -372,43 +372,63 @@ const TrialBookings = () => {
 
 
   return (
-    <>
-      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex flex-col flex-1 w-full">
-        <MobileMenuButton toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <PageTitle 
-              title="Trial Bookings" 
-              subtitle="Manage trial lesson requests"
-              className="mb-4 md:mb-0"
-            />
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="flex items-center gap-1">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
-          </div>
+    <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
+      <MobileMenuButton toggleSidebar={toggleSidebar} />
+      <div className="flex">
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className="min-w-0 w-full flex-1">
+          <main className="px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+                    Trial Bookings
+                  </h1>
+                  <span className="mt-2 inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-foreground">
+                    {filteredBookings.length}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Manage trial lesson requests
+                </p>
+              </div>
 
-          <Card className="mb-8">
-            <CardHeader className="pb-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <CardTitle>Trial Lesson Requests</CardTitle>
-                <Button asChild variant="outline" size="sm" className="gap-1.5 w-fit">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-11 rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-semibold text-foreground shadow-none hover:bg-foreground/[0.04]"
+                >
                   <Link to="/review-room" target="_blank">
-                    <Sparkles className="h-4 w-4" />
+                    <DoodleSparkle className="mr-2 h-4 w-4" />
                     Review Room
                   </Link>
                 </Button>
+                <Button
+                  variant="outline"
+                  className="h-11 rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-semibold text-foreground shadow-none hover:bg-foreground/[0.04]"
+                >
+                  <DoodleDownload className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+
+            <section className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/70 bg-pastel-butter text-foreground">
+                  <DoodleSparkle className="h-5 w-5" />
+                </span>
+                <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                  Trial Lesson Requests
+                </h2>
+              </div>
+
               <Tabs value={sourceTab} onValueChange={(v) => setSourceTab(v as typeof sourceTab)} className="mb-4">
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="trial">Trial Lessons</TabsTrigger>
-                  <TabsTrigger value="review_room">Review Room</TabsTrigger>
+                <TabsList className="h-auto rounded-full border-2 border-foreground/10 bg-pastel-sand/50 p-1">
+                  <TabsTrigger className="rounded-full px-4 data-[state=active]:bg-foreground data-[state=active]:text-background" value="all">All</TabsTrigger>
+                  <TabsTrigger className="rounded-full px-4 data-[state=active]:bg-foreground data-[state=active]:text-background" value="trial">Trial Lessons</TabsTrigger>
+                  <TabsTrigger className="rounded-full px-4 data-[state=active]:bg-foreground data-[state=active]:text-background" value="review_room">Review Room</TabsTrigger>
                 </TabsList>
               </Tabs>
 
@@ -418,10 +438,14 @@ const TrialBookings = () => {
                   onValueChange={setReviewRoomDayTab}
                   className="mb-4"
                 >
-                  <TabsList>
-                    <TabsTrigger value="all">All Days</TabsTrigger>
+                  <TabsList className="h-auto flex-wrap rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-sky/40 p-1">
+                    <TabsTrigger className="rounded-full px-4 data-[state=active]:bg-foreground data-[state=active]:text-background" value="all">All Days</TabsTrigger>
                     {REVIEW_ROOM_DAYS.map((d) => (
-                      <TabsTrigger key={d.date} value={d.date}>
+                      <TabsTrigger
+                        key={d.date}
+                        value={d.date}
+                        className="rounded-full px-4 data-[state=active]:bg-foreground data-[state=active]:text-background"
+                      >
                         {d.label}
                       </TabsTrigger>
                     ))}
@@ -429,349 +453,333 @@ const TrialBookings = () => {
                 </Tabs>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by parent name, child name, or email..."
-                      className="pl-8"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                    <DoodleSearch className="h-4 w-4" />
+                  </span>
+                  <Input
+                    placeholder="Search by parent name, child name, or email..."
+                    className="h-12 rounded-full border-2 border-foreground bg-transparent pl-12 pr-5 text-sm shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-                <div className="w-full sm:w-[180px]">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-full sm:w-[180px]">
-                  <Select value={referralFilter} onValueChange={(v) => setReferralFilter(v as typeof referralFilter)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by referral" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Referrals</SelectItem>
-                      <SelectItem value="referred">Referred only</SelectItem>
-                      <SelectItem value="not_referred">Not referred</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-12 rounded-full border-2 border-foreground bg-transparent px-5 shadow-none focus:ring-0">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={referralFilter} onValueChange={(v) => setReferralFilter(v as typeof referralFilter)}>
+                  <SelectTrigger className="h-12 rounded-full border-2 border-foreground bg-transparent px-5 shadow-none focus:ring-0">
+                    <SelectValue placeholder="Filter by referral" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="all">All Referrals</SelectItem>
+                    <SelectItem value="referred">Referred only</SelectItem>
+                    <SelectItem value="not_referred">Not referred</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            </section>
 
-              <div className="rounded-md border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Parent Name</TableHead>
-                      <TableHead>Child Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>
-                        {sourceTab === 'review_room' ? 'Sessions' : 'Preferred Date'}
-                      </TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Referral</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          Loading trial bookings...
-                        </TableCell>
-                      </TableRow>
-                    ) : sourceTab === 'review_room' ? (
-                      (() => {
-                        // Group by lowercased email
-                        const groups = new Map<string, TrialBooking[]>();
-                        for (const b of filteredBookings) {
-                          const key = (b.email || '').toLowerCase();
-                          if (!groups.has(key)) groups.set(key, []);
-                          groups.get(key)!.push(b);
-                        }
-                        const groupArr = Array.from(groups.values()).sort((a, b) =>
-                          (a[0].parent_name || '').localeCompare(b[0].parent_name || ''),
-                        );
+            <section className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-pastel-sand/60 px-6 py-14 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Loading trial bookings...</p>
+                </div>
+              ) : sourceTab === 'review_room' ? (
+                reviewGroups.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-pastel-sand/60 px-6 py-14 text-center">
+                    <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                    <p className="text-sm text-muted-foreground">No Review Room bookings found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1.25fr)_minmax(0,1.25fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_minmax(0,0.75fr)_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+                      <span>Family</span>
+                      <span>Contact</span>
+                      <span>Sessions</span>
+                      <span>Status</span>
+                      <span>Referral</span>
+                      <span>Submitted</span>
+                      <span className="text-right">Actions</span>
+                    </div>
 
-                        if (groupArr.length === 0) {
-                          return (
-                            <TableRow>
-                              <TableCell colSpan={8} className="h-24 text-center">
-                                No Review Room bookings found
-                              </TableCell>
-                            </TableRow>
-                          );
-                        }
+                    {reviewGroups.map((group, groupIndex) => {
+                      const head = group[0];
+                      const pendingCount = group.filter((g) => g.status === 'pending').length;
+                      const approvedCount = group.filter((g) => g.status === 'approved').length;
+                      const rejectedCount = group.filter((g) => g.status === 'rejected').length;
+                      const aggregateStatus =
+                        pendingCount > 0
+                          ? 'pending'
+                          : approvedCount > 0
+                            ? 'approved'
+                            : rejectedCount > 0
+                              ? 'rejected'
+                              : group[0].status;
+                      const sortedSessions = [...group].sort((a, b) =>
+                        `${a.preferred_date}${a.preferred_time}`.localeCompare(
+                          `${b.preferred_date}${b.preferred_time}`,
+                        ),
+                      );
 
-                        return groupArr.map((group) => {
-                          const head = group[0];
-                          const pendingCount = group.filter((g) => g.status === 'pending').length;
-                          const approvedCount = group.filter((g) => g.status === 'approved').length;
-                          const rejectedCount = group.filter((g) => g.status === 'rejected').length;
-                          const aggregateStatus =
-                            pendingCount > 0
-                              ? 'pending'
-                              : approvedCount > 0
-                                ? 'approved'
-                                : rejectedCount > 0
-                                  ? 'rejected'
-                                  : group[0].status;
+                      return (
+                        <div
+                          key={`grp-${head.email}`}
+                          className="grid grid-cols-1 gap-4 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/60 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.25fr)_minmax(0,1.25fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_minmax(0,0.75fr)_auto] lg:items-center"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground', avatarTones[groupIndex % avatarTones.length])}>
+                              {initialsFromName(head.parent_name)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-foreground">{head.parent_name}</p>
+                              <p className="truncate text-sm text-muted-foreground">Child: {head.child_name}</p>
+                            </div>
+                          </div>
 
-                          const sortedSessions = [...group].sort((a, b) =>
-                            `${a.preferred_date}${a.preferred_time}`.localeCompare(
-                              `${b.preferred_date}${b.preferred_time}`,
-                            ),
-                          );
+                          <div className="min-w-0 pl-13 lg:pl-0">
+                            <p className="truncate text-sm text-foreground">{head.email}</p>
+                            <p className="truncate text-sm text-muted-foreground">{head.phone || 'No phone provided'}</p>
+                          </div>
 
-                          return (
-                            <TableRow key={`grp-${head.email}`}>
-                              <TableCell className="font-medium">{head.parent_name}</TableCell>
-                              <TableCell>{head.child_name}</TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-1 text-sm">
-                                    <Mail className="h-3 w-3" />
-                                    {head.email}
-                                  </div>
-                                  {head.phone && (
-                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                      <Phone className="h-3 w-3" />
-                                      {head.phone}
-                                    </div>
+                          <div className="min-w-0 pl-13 lg:pl-0">
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              {group.length} session{group.length === 1 ? '' : 's'}
+                            </span>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {sortedSessions.slice(0, 4).map((session) => (
+                                <span
+                                  key={session.id}
+                                  className={cn(
+                                    'inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold',
+                                    getStatusTone(session.status),
+                                    session.status === 'rejected' && 'line-through opacity-75',
                                   )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col gap-1 max-w-[260px]">
-                                  <span className="text-xs text-muted-foreground">
-                                    {group.length} session{group.length === 1 ? '' : 's'}
-                                  </span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {sortedSessions.slice(0, 4).map((s) => (
-                                      <Badge
-                                        key={s.id}
-                                        variant="outline"
-                                        className={cn(
-                                          'text-[10px] font-normal',
-                                          s.status === 'approved' && 'border-green-300 bg-green-50 text-green-800',
-                                          s.status === 'rejected' && 'border-red-300 bg-red-50 text-red-700 line-through',
-                                          s.status === 'pending' && 'border-yellow-300 bg-yellow-50 text-yellow-800',
-                                        )}
-                                      >
-                                        {s.preferred_date
-                                          ? format(parseISO(s.preferred_date), 'MMM d')
-                                          : '?'}{' '}
-                                        {s.preferred_time?.slice(0, 5)}
-                                      </Badge>
-                                    ))}
-                                    {sortedSessions.length > 4 && (
-                                      <Badge variant="outline" className="text-[10px] font-normal">
-                                        +{sortedSessions.length - 4} more
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col gap-1">
-                                  <Badge className={getStatusColor(aggregateStatus)}>
-                                    {aggregateStatus.charAt(0).toUpperCase() + aggregateStatus.slice(1)}
-                                  </Badge>
-                                  {(approvedCount > 0 || rejectedCount > 0) && pendingCount > 0 && (
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {pendingCount} pending · {approvedCount} approved
-                                    </span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {head.referral_code ? (
-                                  <Badge variant="secondary" title={`Referred with code ${head.referral_code}`}>
-                                    Referred
-                                  </Badge>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4 text-muted-foreground" />
-                                  <span>{format(parseISO(head.created_at), 'MMM d, yyyy')}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => viewBookingDetails(head)}
-                                    title="View first session details"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => resendConfirmation(head)}
-                                    disabled={resendingId === head.id}
-                                    className="text-blue-600 hover:text-blue-800"
-                                    title="Resend confirmation email"
-                                  >
-                                    <BellRing className="h-4 w-4" />
-                                  </Button>
-                                  {pendingCount > 0 && (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setReviewRoomGroup(group)}
-                                        className="text-green-600 hover:text-green-800"
-                                        title={`Approve ${pendingCount} session${pendingCount === 1 ? '' : 's'}`}
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={async () => {
-                                          for (const s of group.filter((g) => g.status === 'pending')) {
-                                            await updateBookingStatus(s.id, 'rejected');
-                                          }
-                                        }}
-                                        className="text-red-600 hover:text-red-800"
-                                        title="Reject all pending"
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        });
-                      })()
-                    ) : filteredBookings.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          No trial bookings found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredBookings.map((booking) => (
-                        <TableRow key={booking.id}>
-                          <TableCell className="font-medium">{booking.parent_name}</TableCell>
-                          <TableCell>{booking.child_name}</TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1 text-sm">
-                                <Mail className="h-3 w-3" />
-                                {booking.email}
-                              </div>
-                              {booking.phone && (
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <Phone className="h-3 w-3" />
-                                  {booking.phone}
-                                </div>
+                                >
+                                  {session.preferred_date ? format(parseISO(session.preferred_date), 'MMM d') : '?'} {session.preferred_time?.slice(0, 5)}
+                                </span>
+                              ))}
+                              {sortedSessions.length > 4 && (
+                                <span className="inline-flex items-center rounded-full bg-pastel-sand px-2.5 py-1 text-[10px] font-semibold text-pastel-sand-foreground">
+                                  +{sortedSessions.length - 4} more
+                                </span>
                               )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {booking.preferred_date ? (
-                              <div className="flex items-center gap-1">
-                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                                <span>{format(parseISO(booking.preferred_date), 'MMM d, yyyy')}</span>
-                                {booking.preferred_time && (
-                                  <span className="text-muted-foreground">at {booking.preferred_time}</span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">Not specified</span>
+                          </div>
+
+                          <div className="pl-13 lg:pl-0">
+                            <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', getStatusTone(aggregateStatus))}>
+                              {statusLabel(aggregateStatus)}
+                            </span>
+                            {(approvedCount > 0 || rejectedCount > 0) && pendingCount > 0 && (
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                {pendingCount} pending · {approvedCount} approved
+                              </p>
                             )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(booking.status)}>
-                              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {booking.referral_code ? (
-                              <Badge variant="secondary" title={`Referred with code ${booking.referral_code}`}>
+                          </div>
+
+                          <div className="pl-13 lg:pl-0">
+                            {head.referral_code ? (
+                              <span className="inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-pastel-lilac-foreground" title={`Referred with code ${head.referral_code}`}>
                                 Referred
-                              </Badge>
+                              </span>
                             ) : (
                               <span className="text-sm text-muted-foreground">—</span>
                             )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span>{format(parseISO(booking.created_at), 'MMM d, yyyy')}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => viewBookingDetails(booking)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => resendConfirmation(booking)}
-                                disabled={resendingId === booking.id}
-                                className="text-blue-600 hover:text-blue-800"
-                                title="Resend confirmation email"
-                              >
-                                <BellRing className="h-4 w-4" />
-                              </Button>
-                              {booking.status === 'pending' && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openApprovalDialog(booking)}
-                                    className="text-green-600 hover:text-green-800"
-                                  >
-                                    <UserPlus className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => updateBookingStatus(booking.id, 'rejected')}
-                                    className="text-red-600 hover:text-red-800"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
+                          </div>
+
+                          <div className="flex items-center gap-2 pl-13 text-sm text-muted-foreground lg:pl-0">
+                            <DoodleClock className="h-4 w-4 shrink-0" />
+                            <span>{format(parseISO(head.created_at), 'MMM d, yyyy')}</span>
+                          </div>
+
+                          <div className="flex flex-wrap justify-start gap-2 pl-13 lg:justify-end lg:pl-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => viewBookingDetails(head)}
+                              title="View first session details"
+                              className={actionButtonClass}
+                            >
+                              <DoodleEye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => resendConfirmation(head)}
+                              disabled={resendingId === head.id}
+                              className={actionButtonClass}
+                              title="Resend confirmation email"
+                            >
+                              {resendingId === head.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <DoodleBell className="h-4 w-4" />}
+                            </Button>
+                            {pendingCount > 0 && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setReviewRoomGroup(group)}
+                                  className={actionButtonClass}
+                                  title={`Approve ${pendingCount} session${pendingCount === 1 ? '' : 's'}`}
+                                >
+                                  <DoodleCheck className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    for (const s of group.filter((g) => g.status === 'pending')) {
+                                      await updateBookingStatus(s.id, 'rejected');
+                                    }
+                                  }}
+                                  className={cn(actionButtonClass, 'text-destructive hover:bg-destructive/10')}
+                                  title="Reject all pending"
+                                >
+                                  <DoodleX className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : filteredBookings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-pastel-sand/60 px-6 py-14 text-center">
+                  <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                  <p className="text-sm text-muted-foreground">No trial bookings found</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_minmax(0,0.75fr)_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+                    <span>Family</span>
+                    <span>Contact</span>
+                    <span>Preferred Date</span>
+                    <span>Status</span>
+                    <span>Referral</span>
+                    <span>Submitted</span>
+                    <span className="text-right">Actions</span>
+                  </div>
+
+                  {filteredBookings.map((booking, bookingIndex) => (
+                    <div
+                      key={booking.id}
+                      className="grid grid-cols-1 gap-4 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/60 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_minmax(0,0.75fr)_auto] lg:items-center"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground', avatarTones[bookingIndex % avatarTones.length])}>
+                          {initialsFromName(booking.parent_name)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-foreground">{booking.parent_name}</p>
+                          <p className="truncate text-sm text-muted-foreground">Child: {booking.child_name}</p>
+                        </div>
+                      </div>
+
+                      <div className="min-w-0 pl-13 lg:pl-0">
+                        <p className="truncate text-sm text-foreground">{booking.email}</p>
+                        <p className="truncate text-sm text-muted-foreground">{booking.phone || 'No phone provided'}</p>
+                      </div>
+
+                      <div className="pl-13 lg:pl-0">
+                        {booking.preferred_date ? (
+                          <div className="flex items-center gap-2 text-sm text-foreground">
+                            <DoodleCalendar className="h-4 w-4 shrink-0 text-foreground/70" />
+                            <span>{format(parseISO(booking.preferred_date), 'MMM d, yyyy')}</span>
+                            {booking.preferred_time && (
+                              <span className="text-muted-foreground">at {booking.preferred_time}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not specified</span>
+                        )}
+                      </div>
+
+                      <div className="pl-13 lg:pl-0">
+                        <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', getStatusTone(booking.status))}>
+                          {statusLabel(booking.status)}
+                        </span>
+                      </div>
+
+                      <div className="pl-13 lg:pl-0">
+                        {booking.referral_code ? (
+                          <span className="inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-pastel-lilac-foreground" title={`Referred with code ${booking.referral_code}`}>
+                            Referred
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 pl-13 text-sm text-muted-foreground lg:pl-0">
+                        <DoodleClock className="h-4 w-4 shrink-0" />
+                        <span>{format(parseISO(booking.created_at), 'MMM d, yyyy')}</span>
+                      </div>
+
+                      <div className="flex flex-wrap justify-start gap-2 pl-13 lg:justify-end lg:pl-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => viewBookingDetails(booking)}
+                          title="View booking details"
+                          className={actionButtonClass}
+                        >
+                          <DoodleEye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => resendConfirmation(booking)}
+                          disabled={resendingId === booking.id}
+                          className={actionButtonClass}
+                          title="Resend confirmation email"
+                        >
+                          {resendingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <DoodleBell className="h-4 w-4" />}
+                        </Button>
+                        {booking.status === 'pending' && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openApprovalDialog(booking)}
+                              title="Approve booking"
+                              className={actionButtonClass}
+                            >
+                              <DoodleUserPlus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateBookingStatus(booking.id, 'rejected')}
+                              title="Reject booking"
+                              className={cn(actionButtonClass, 'text-destructive hover:bg-destructive/10')}
+                            >
+                              <DoodleX className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </main>
+        </div>
       </div>
+
 
       {/* Booking Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
