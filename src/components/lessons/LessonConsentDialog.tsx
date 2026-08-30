@@ -134,12 +134,12 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-foreground/10 pt-4 sm:flex-row sm:justify-end sm:gap-3">
+        <div className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-foreground/15 pt-4 sm:flex-row sm:justify-end sm:gap-3">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={hasAccepted}
-            className="rounded-full border-2 border-foreground/15 bg-transparent hover:bg-pastel-sand/60"
+            className="rounded-full border border-foreground bg-transparent text-foreground hover:bg-foreground/5"
           >
             Cancel
           </Button>
