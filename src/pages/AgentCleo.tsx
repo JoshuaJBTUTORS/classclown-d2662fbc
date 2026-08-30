@@ -14,6 +14,13 @@ import {
 import { useAgentCleoThreads } from '@/hooks/useAgentCleoThreads';
 import { AgentCleoThreadList } from '@/components/agentCleo/AgentCleoThreadList';
 import DailySnapshot from '@/components/agentCleo/DailySnapshot';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 
 const Typewriter: React.FC<{ text: string; speed?: number; className?: string }> = ({ text, speed = 90, className }) => {
   const [count, setCount] = useState(0);
