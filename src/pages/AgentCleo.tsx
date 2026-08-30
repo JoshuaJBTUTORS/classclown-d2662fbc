@@ -29,21 +29,21 @@ const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
       ul: ({ node, ...p }) => <ul className="list-disc pl-5 my-2 space-y-1" {...p} />,
       ol: ({ node, ...p }) => <ol className="list-decimal pl-5 my-2 space-y-1" {...p} />,
       li: ({ node, ...p }) => <li className="leading-relaxed" {...p} />,
-      strong: ({ node, ...p }) => <strong className="font-semibold text-white" {...p} />,
+      strong: ({ node, ...p }) => <strong className="font-semibold text-[#1a1a1a] dark:text-white" {...p} />,
       em: ({ node, ...p }) => <em className="italic" {...p} />,
-      a: ({ node, ...p }) => <a className="text-teal-400 underline hover:text-teal-300" target="_blank" rel="noreferrer" {...p} />,
+      a: ({ node, ...p }) => <a className="text-teal-600 underline hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300" target="_blank" rel="noreferrer" {...p} />,
       code: ({ node, className, children, ...p }: any) => {
         const inline = !className;
         return inline
-          ? <code className="bg-white/10 rounded px-1 py-0.5 text-[0.85em]" {...p}>{children}</code>
+          ? <code className="bg-black/5 dark:bg-white/10 rounded px-1 py-0.5 text-[0.85em]" {...p}>{children}</code>
           : <code className={className} {...p}>{children}</code>;
       },
-      pre: ({ node, ...p }) => <pre className="bg-black/40 rounded-lg p-3 my-2 overflow-x-auto text-sm" {...p} />,
-      blockquote: ({ node, ...p }) => <blockquote className="border-l-2 border-white/20 pl-3 my-2 text-[#c5c5d2]" {...p} />,
-      hr: () => <hr className="my-4 border-white/10" />,
+      pre: ({ node, ...p }) => <pre className="bg-[#efe9dc] dark:bg-black/40 rounded-lg p-3 my-2 overflow-x-auto text-sm" {...p} />,
+      blockquote: ({ node, ...p }) => <blockquote className="border-l-2 border-black/15 dark:border-white/20 pl-3 my-2 text-[#55555e] dark:text-[#c5c5d2]" {...p} />,
+      hr: () => <hr className="my-4 border-black/10 dark:border-white/10" />,
       table: ({ node, ...p }) => <div className="my-2 overflow-x-auto"><table className="min-w-full text-sm border-collapse" {...p} /></div>,
-      th: ({ node, ...p }) => <th className="border border-white/15 px-2 py-1 text-left font-semibold" {...p} />,
-      td: ({ node, ...p }) => <td className="border border-white/15 px-2 py-1" {...p} />,
+      th: ({ node, ...p }) => <th className="border border-black/15 dark:border-white/15 px-2 py-1 text-left font-semibold" {...p} />,
+      td: ({ node, ...p }) => <td className="border border-black/15 dark:border-white/15 px-2 py-1" {...p} />,
     }}
   >
     {children}
