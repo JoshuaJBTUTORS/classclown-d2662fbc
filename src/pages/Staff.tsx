@@ -26,7 +26,7 @@ const Staff: React.FC = () => {
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen min-w-0 w-full flex-1 bg-background">
       <MobileMenuButton toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="flex min-w-0 w-full flex-1 flex-col">
