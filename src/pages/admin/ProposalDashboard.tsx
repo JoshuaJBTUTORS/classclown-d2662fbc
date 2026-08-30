@@ -217,11 +217,18 @@ export default function ProposalDashboard() {
     return matchesSearch && matchesStatus;
   });
 
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredProposals.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pagedProposals = filteredProposals.slice(pageStart, pageStart + PAGE_SIZE);
+
   const statePanel = (content: React.ReactNode) => (
     <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
       {content}
     </div>
   );
+
 
   return (
     <SidebarProvider>
