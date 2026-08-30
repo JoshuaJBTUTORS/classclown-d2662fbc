@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
+
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,6 +44,18 @@ export type ProposalFormData = z.infer<typeof proposalSchema>;
 export type LessonTimeRow = { day: string; time: string; duration: number; subject: string; price: number };
 
 export const DEFAULT_LESSON_PRICE = 45;
+
+const sectionClass = 'rounded-[var(--radius-soft)] bg-pastel-sand/40 p-5 sm:p-6';
+const sectionTitle = 'font-heading text-lg font-extrabold tracking-tight text-foreground mb-4';
+const labelClass = 'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+const controlClass =
+  'h-12 rounded-full border-2 border-foreground bg-background px-4 text-sm focus-visible:ring-0 focus-visible:ring-offset-0';
+const menuClass = 'rounded-2xl border-2 border-foreground';
+const outlinePill =
+  'inline-flex h-12 items-center rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-50';
+const solidPill =
+  'inline-flex h-12 items-center rounded-full bg-foreground px-6 text-sm font-semibold text-background transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0';
+
 
 export function emptyLessonTime(price = DEFAULT_LESSON_PRICE): LessonTimeRow {
   return { day: '', time: '', duration: 60, subject: '', price };
@@ -131,222 +143,243 @@ export default function ProposalForm({
           onSubmit={form.handleSubmit((data) => onSubmit(data, validLessonTimes(lessonTimes)))}
           className="space-y-6 pt-6"
         >
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="recipientName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Recipient Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="recipientEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Recipient Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="john@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="recipientPhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Recipient Phone (Optional)</FormLabel>
-                  <FormControl>
-                    <Input type="tel" placeholder="+44 7123 456789" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="lessonType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lesson Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+          <section className={sectionClass}>
+            <h2 className={sectionTitle}>Recipient details</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="recipientName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Recipient Name</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select lesson type" />
-                      </SelectTrigger>
+                      <Input className={controlClass} placeholder="John Doe" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="1-to-1 Online">1-to-1 Online</SelectItem>
-                      <SelectItem value="1-to-1 In-Person">1-to-1 In-Person</SelectItem>
-                      <SelectItem value="Group Session">Small Group Session</SelectItem>
-                      <SelectItem value="Large Group Session">Large Group Session</SelectItem>
-                      <SelectItem value="Mixed">Mixed (1-to-1 &amp; Group)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="subject"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subject</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Mathematics" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="paymentCycle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Cycle</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+              <FormField
+                control={form.control}
+                name="recipientEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Recipient Email</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select payment cycle" />
-                      </SelectTrigger>
+                      <Input className={controlClass} type="email" placeholder="john@example.com" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Per Lesson">Per Lesson</SelectItem>
-                      <SelectItem value="Monthly">Monthly</SelectItem>
-                      <SelectItem value="Termly">Termly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="contractTerm"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contract Term</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select contract term" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="month_to_month">Month to Month</SelectItem>
-                    <SelectItem value="3_months">3 Months</SelectItem>
-                    <SelectItem value="12_months">12 Months</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  During the term, sessions cannot be reduced and plans cannot be downgraded (upgrades are always
-                  allowed). Auto-renews at term end. Clients must give 30 days' notice before the end date to cancel.
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <FormLabel>Lesson Times</FormLabel>
-              <Button type="button" variant="outline" size="sm" onClick={addLessonTime}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Time
-              </Button>
+              <FormField
+                control={form.control}
+                name="recipientPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Recipient Phone (Optional)</FormLabel>
+                    <FormControl>
+                      <Input className={controlClass} type="tel" placeholder="+44 7123 456789" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+          </section>
 
-            {lessonTimes.map((lessonTime, index) => (
-              <div key={index} className="flex gap-4 items-end">
-                <div className="flex-1 grid grid-cols-5 gap-4">
-                  <div>
-                    <FormLabel>Day</FormLabel>
-                    <Select value={lessonTime.day} onValueChange={(value) => updateLessonTime(index, 'day', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select day" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                          <SelectItem key={day} value={day}>
-                            {day}
-                          </SelectItem>
-                        ))}
+          <section className={sectionClass}>
+            <h2 className={sectionTitle}>Lesson details &amp; pricing</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="lessonType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Lesson Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className={controlClass}>
+                          <SelectValue placeholder="Select lesson type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={menuClass}>
+                        <SelectItem value="1-to-1 Online">1-to-1 Online</SelectItem>
+                        <SelectItem value="1-to-1 In-Person">1-to-1 In-Person</SelectItem>
+                        <SelectItem value="Group Session">Small Group Session</SelectItem>
+                        <SelectItem value="Large Group Session">Large Group Session</SelectItem>
+                        <SelectItem value="Mixed">Mixed (1-to-1 &amp; Group)</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <div>
-                    <FormLabel>Time</FormLabel>
-                    <Input
-                      type="time"
-                      value={lessonTime.time}
-                      onChange={(e) => updateLessonTime(index, 'time', e.target.value)}
-                    />
-                  </div>
+              <FormField
+                control={form.control}
+                name="subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Subject</FormLabel>
+                    <FormControl>
+                      <Input className={controlClass} placeholder="Mathematics" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <div>
-                    <FormLabel>Duration (min)</FormLabel>
-                    <Input
-                      type="number"
-                      value={lessonTime.duration}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
-                      }}
-                    />
-                  </div>
+              <FormField
+                control={form.control}
+                name="paymentCycle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Payment Cycle</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className={controlClass}>
+                          <SelectValue placeholder="Select payment cycle" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={menuClass}>
+                        <SelectItem value="Per Lesson">Per Lesson</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="Termly">Termly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <div>
-                    <FormLabel>Subject</FormLabel>
-                    <Input
-                      placeholder="e.g., Maths, English"
-                      value={lessonTime.subject}
-                      onChange={(e) => updateLessonTime(index, 'subject', e.target.value)}
-                    />
-                  </div>
+              <FormField
+                control={form.control}
+                name="contractTerm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Contract Term</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className={controlClass}>
+                          <SelectValue placeholder="Select contract term" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className={menuClass}>
+                        <SelectItem value="month_to_month">Month to Month</SelectItem>
+                        <SelectItem value="3_months">3 Months</SelectItem>
+                        <SelectItem value="12_months">12 Months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                  <div>
-                    <FormLabel>Price (£)</FormLabel>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={lessonTime.price}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        updateLessonTime(index, 'price', value === '' ? 0 : parseFloat(value) || 0);
-                      }}
-                    />
+            <p className="mt-3 rounded-[1.25rem] bg-background/70 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+              During the term, sessions cannot be reduced and plans cannot be downgraded (upgrades are always
+              allowed). Auto-renews at term end. Clients must give 30 days' notice before the end date to cancel.
+            </p>
+          </section>
+
+          <section className={sectionClass}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className={sectionTitle}>Lesson times</h2>
+              <button type="button" onClick={addLessonTime} className={outlinePill}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Time
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {lessonTimes.map((lessonTime, index) => (
+                <div
+                  key={index}
+                  className="rounded-[1.25rem] bg-background/70 p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                      <div>
+                        <FormLabel className={labelClass}>Day</FormLabel>
+                        <Select value={lessonTime.day} onValueChange={(value) => updateLessonTime(index, 'day', value)}>
+                          <SelectTrigger className={controlClass}>
+                            <SelectValue placeholder="Select day" />
+                          </SelectTrigger>
+                          <SelectContent className={menuClass}>
+                            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                              <SelectItem key={day} value={day}>
+                                {day}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <FormLabel className={labelClass}>Time</FormLabel>
+                        <Input
+                          className={controlClass}
+                          type="time"
+                          value={lessonTime.time}
+                          onChange={(e) => updateLessonTime(index, 'time', e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <FormLabel className={labelClass}>Duration (min)</FormLabel>
+                        <Input
+                          className={`${controlClass} tabular-nums`}
+                          type="number"
+                          value={lessonTime.duration}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <FormLabel className={labelClass}>Subject</FormLabel>
+                        <Input
+                          className={controlClass}
+                          placeholder="e.g., Maths, English"
+                          value={lessonTime.subject}
+                          onChange={(e) => updateLessonTime(index, 'subject', e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <FormLabel className={labelClass}>Price (£)</FormLabel>
+                        <Input
+                          className={`${controlClass} text-right tabular-nums`}
+                          type="number"
+                          step="0.01"
+                          value={lessonTime.price}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            updateLessonTime(index, 'price', value === '' ? 0 : parseFloat(value) || 0);
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {lessonTimes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeLessonTime(index)}
+                        title="Remove lesson time"
+                        className="mt-7 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-destructive text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                {lessonTimes.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeLessonTime(index)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
 
             <FormField
               control={form.control}
@@ -357,69 +390,80 @@ export default function ProposalForm({
                 </FormItem>
               )}
             />
-          </div>
+          </section>
 
-          {/* Daily Homework Practice Option */}
-          <div className="rounded-lg border border-border bg-muted/30 p-4">
+          <section className={sectionClass}>
+            <h2 className={sectionTitle}>Options &amp; notes</h2>
+
+            {/* Daily Homework Practice Option */}
+            <div className="rounded-[1.25rem] bg-background/70 p-4">
+              <FormField
+                control={form.control}
+                name="dailyHomeworkOptIn"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        className="mt-1 h-5 w-5 rounded-md border-2 border-foreground"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <FormLabel className="flex cursor-pointer items-center gap-2 text-base font-semibold">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pastel-butter">
+                            <BookOpen className="h-4 w-4 text-foreground" />
+                          </span>
+                          Include Daily Homework Practice
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Daily homework assignments across all subjects
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-pastel-mint px-3 py-1 text-sm font-semibold tabular-nums text-foreground">
+                        £12.99/mo
+                      </span>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Internal notes */}
             <FormField
               control={form.control}
-              name="dailyHomeworkOptIn"
+              name="internalNotes"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormItem className="mt-4">
+                  <FormLabel className={labelClass}>Internal notes (not shown to the client)</FormLabel>
                   <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    <Textarea
+                      rows={4}
+                      className="rounded-[1.25rem] border-2 border-foreground bg-background px-4 py-3 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                      placeholder="Anything the onboarding team needs to know about this proposal..."
+                      {...field}
+                    />
                   </FormControl>
-                  <div className="flex-1 flex items-center justify-between">
-                    <div className="space-y-1">
-                      <FormLabel className="text-base font-medium flex items-center gap-2 cursor-pointer">
-                        <BookOpen className="h-4 w-4 text-primary" />
-                        Include Daily Homework Practice
-                      </FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Daily homework assignments across all subjects
-                      </p>
-                    </div>
-                    <span className="text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                      £12.99/mo
-                    </span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    These notes are shown to staff during Cleo Onboarding, never to the recipient.
+                  </p>
+                  <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
+          </section>
 
-          {/* Internal notes */}
-          <FormField
-            control={form.control}
-            name="internalNotes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Internal notes (not shown to the client)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    rows={4}
-                    placeholder="Anything the onboarding team needs to know about this proposal..."
-                    {...field}
-                  />
-                </FormControl>
-                <p className="text-sm text-muted-foreground">
-                  These notes are shown to staff during Cleo Onboarding, never to the recipient.
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex gap-4">
-            <Button type="button" variant="outline" onClick={onCancel}>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={onCancel} className={outlinePill}>
               Cancel
-            </Button>
-            <Button type="submit" disabled={busy}>
+            </button>
+            <button type="submit" disabled={busy} className={solidPill}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitLabel}
-            </Button>
+            </button>
             {secondaryAction && (
-              <Button type="button" variant="secondary" disabled={busy} onClick={handleSecondary}>
+              <button type="button" disabled={busy} onClick={handleSecondary} className={outlinePill}>
                 {secondaryAction.isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -431,7 +475,7 @@ export default function ProposalForm({
                     {secondaryAction.label}
                   </>
                 )}
-              </Button>
+              </button>
             )}
           </div>
         </form>
@@ -439,3 +483,4 @@ export default function ProposalForm({
     </>
   );
 }
+

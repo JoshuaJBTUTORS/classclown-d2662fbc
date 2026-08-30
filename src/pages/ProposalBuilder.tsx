@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
 import ProposalForm, {
   DEFAULT_LESSON_PRICE,
   LessonTimeRow,
@@ -90,25 +90,37 @@ export default function ProposalBuilder() {
   };
 
   return (
-    <div className="container max-w-4xl py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create Lesson Proposal</CardTitle>
-          <CardDescription>
+    <div className="min-w-0 w-full flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
+            Create Proposal
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Create a personalized lesson proposal to send to parents/students
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
 
-        <CardContent>
-          <ProposalForm
-            defaultValues={defaultValues}
-            onSubmit={onSubmit}
-            isSubmitting={isSubmitting}
-            submitLabel="Create & Send Proposal"
-            onCancel={() => navigate(-1)}
-          />
-        </CardContent>
-      </Card>
+        <button
+          type="button"
+          onClick={() => navigate('/admin/proposals')}
+          className="inline-flex h-12 w-fit items-center gap-2 rounded-full border-2 border-foreground px-5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          All Proposals
+        </button>
+      </div>
+
+      <div className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+        <ProposalForm
+          defaultValues={defaultValues}
+          onSubmit={onSubmit}
+          isSubmitting={isSubmitting}
+          submitLabel="Create & Send Proposal"
+          onCancel={() => navigate(-1)}
+        />
+      </div>
     </div>
   );
 }
+
