@@ -26,11 +26,11 @@ const chipBase =
 
 const chipOutlined = cn(
   chipBase,
-  'pl-2 pr-3 gap-2 bg-transparent text-foreground border border-foreground hover:bg-foreground/5',
+  'pl-1.5 pr-3 gap-1.5 bg-transparent text-foreground border border-foreground hover:bg-foreground/5',
 );
 
 const chipIcon =
-  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-foreground';
 
 const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
   lessonTitle,
@@ -54,7 +54,7 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
     : null;
 
   return (
-    <div className="border-b border-foreground/15 bg-card px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-3 shadow-[var(--shadow-soft)]">
+    <div className="border-b border-foreground/10 bg-card px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-3 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
       {/* Left: Leave */}
       <div className="flex shrink-0 items-center">
         <Button
