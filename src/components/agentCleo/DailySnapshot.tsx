@@ -41,11 +41,15 @@ interface TileProps {
 const Tile: React.FC<TileProps> = ({ icon, label, value, sub, loading, onClick }) => (
   <button
     onClick={onClick}
-    className="text-left p-4 rounded-2xl border border-black/10 bg-white/70 hover:bg-white dark:border-white/10 dark:bg-transparent dark:hover:bg-white/5 transition-colors"
+    className="text-left p-4 rounded-3xl border border-black/70 bg-transparent hover:-translate-y-0.5 hover:bg-black/5 dark:border-white/50 dark:hover:bg-white/5 transition-all duration-200"
   >
-    <div className="flex items-center gap-2 text-[#6b6b76] dark:text-[#8e8ea0] text-xs mb-2">
-      {icon}
-      <span>{label}</span>
+    <div className="flex items-center gap-2.5 mb-3">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-black/60 text-black dark:border-white/50 dark:text-white">
+        {icon}
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b76] dark:text-[#8e8ea0]">
+        {label}
+      </span>
     </div>
     {loading ? (
       <div className="h-8 w-12 rounded bg-black/10 dark:bg-white/10 animate-pulse" />
@@ -55,6 +59,7 @@ const Tile: React.FC<TileProps> = ({ icon, label, value, sub, loading, onClick }
     <div className="text-xs text-[#6b6b76] dark:text-[#8e8ea0] mt-2">{loading ? ' ' : sub}</div>
   </button>
 );
+
 
 interface GoalRowProps {
   label: string;
