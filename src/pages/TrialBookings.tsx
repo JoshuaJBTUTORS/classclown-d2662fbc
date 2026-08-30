@@ -347,15 +347,29 @@ const TrialBookings = () => {
     setIsApprovalOpen(true);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusTone = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-pastel-butter text-pastel-butter-foreground';
+      case 'approved': return 'bg-pastel-mint text-pastel-mint-foreground';
+      case 'rejected': return 'bg-pastel-blush text-pastel-blush-foreground';
+      case 'completed': return 'bg-pastel-sky text-pastel-sky-foreground';
+      default: return 'bg-pastel-sand text-pastel-sand-foreground';
     }
   };
+
+  const statusLabel = (status: string) => status.charAt(0).toUpperCase() + status.slice(1);
+
+  const actionButtonClass = 'flex h-9 w-9 items-center justify-center rounded-full border-2 border-foreground bg-transparent text-foreground transition-colors hover:bg-foreground/[0.04] disabled:opacity-40';
+
+  const reviewGroups = Array.from(
+    filteredBookings.reduce((groups, booking) => {
+      const key = (booking.email || '').toLowerCase();
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(booking);
+      return groups;
+    }, new Map<string, TrialBooking[]>()).values()
+  ).sort((a, b) => (a[0].parent_name || '').localeCompare(b[0].parent_name || ''));
+
 
   return (
     <>
