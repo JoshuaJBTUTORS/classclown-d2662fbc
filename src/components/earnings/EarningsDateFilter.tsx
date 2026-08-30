@@ -46,6 +46,21 @@ export const EarningsDateFilter = ({
   const triggerClass =
     'h-11 w-full justify-start rounded-full border-2 border-foreground/10 bg-card px-4 text-left font-normal hover:bg-card hover:text-foreground';
 
+  const currentPeriod = getMonthlyEarningsPeriod(new Date());
+  const previousMonthAnchor = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 15);
+  const previousPeriod = getMonthlyEarningsPeriod(previousMonthAnchor);
+
+  const suggestions = [
+    { label: 'Current Pay Period', period: currentPeriod },
+    { label: 'Previous Pay Period', period: previousPeriod }
+  ];
+
+  const isSameDay = (a: Date | null, b: Date) =>
+    !!a && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+  const isSuggestionActive = (period: { start: Date; end: Date }) =>
+    isSameDay(dateRange.from, period.start) && isSameDay(dateRange.to, period.end);
+
   return (
     <section className="animate-fade-in rounded-[var(--radius-soft)] bg-pastel-sky/40 p-4 shadow-[var(--shadow-soft)] sm:p-6">
       <div className="mb-4 flex items-center gap-3 px-1">
