@@ -339,7 +339,7 @@ const WelcomeOnboarding: React.FC = () => {
         <div className="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-pastel-blush opacity-50 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-[1600px]">
+      <div className="relative mx-auto flex w-full max-w-[1600px] min-h-[calc(100vh-3rem)] flex-col">
         <div className="mb-6 flex items-center justify-between">
           <span className="rounded-full border-2 border-foreground/90 bg-card px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground">
             Getting started
@@ -354,7 +354,7 @@ const WelcomeOnboarding: React.FC = () => {
           </Button>
         </div>
 
-        <div className={`${cardTone} p-6 shadow-[6px_6px_0_0_hsl(var(--foreground)/0.9)] sm:p-10`}>
+        <div className={`${cardTone} flex-1 flex flex-col p-6 shadow-[6px_6px_0_0_hsl(var(--foreground)/0.9)] sm:p-10`}>
           {renderBody()}
 
           {/* Progress dots (clickable to jump between steps) */}
