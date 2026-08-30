@@ -2,7 +2,7 @@ import React from 'react';
 import {
   DoodleCalendar,
   DoodleClipboard,
-  DoodleSparkle,
+  DoodleWave,
   DoodleCheck,
   DoodlePeople,
 } from '@/components/calendar/LessonDoodles';
