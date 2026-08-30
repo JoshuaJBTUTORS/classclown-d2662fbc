@@ -495,9 +495,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   
   return <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[var(--radius-soft)] border-0 p-6 shadow-[var(--shadow-soft-lg)]">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-[var(--radius-soft)] border-0 p-4 sm:p-6 shadow-[var(--shadow-soft-lg)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 font-heading text-2xl font-extrabold tracking-tight">
+            <DialogTitle className="flex flex-wrap items-center gap-3 font-heading text-xl sm:text-2xl font-extrabold tracking-tight">
               <DoodleCalendar className="h-6 w-6 shrink-0 text-foreground" />
               {lesson?.title || 'Loading...'}
               {isRecurringInstance && <span className="ml-1 rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-pastel-lilac-foreground">
@@ -525,7 +525,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               <Loader2 className="h-8 w-8 animate-spin" />
             </div> : lesson ? <div className="space-y-6">
               {/* Lesson Progress Tracking - Only for teachers and not demo sessions */}
-              {isTeacherRole && <div className="rounded-[var(--radius-soft)] bg-pastel-sky p-6">
+              {isTeacherRole && <div className="rounded-[var(--radius-soft)] bg-pastel-sky p-4 sm:p-6">
                     <h3 className="font-heading text-lg font-extrabold tracking-tight mb-4 flex items-center gap-2 text-pastel-sky-foreground">
                       <DoodleCheck className="h-5 w-5" />
                       Lesson Completion Progress
@@ -577,7 +577,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
               {/* Basic Information */}
-              <div className="rounded-[var(--radius-soft)] bg-card p-6 space-y-3 shadow-[var(--shadow-soft)]">
+              <div className="rounded-[var(--radius-soft)] bg-card p-4 sm:p-6 space-y-3 shadow-[var(--shadow-soft)]">
                   {lesson.description && <p className="text-sm text-muted-foreground">{lesson.description}</p>}
                   
                   <div className="flex items-center gap-2">
@@ -618,8 +618,8 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               </div>
 
               {/* Video Conference Section */}
-              <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
-                  <div className="flex items-center gap-2 mb-4">
+              <div className="rounded-[var(--radius-soft)] bg-card p-4 sm:p-6 shadow-[var(--shadow-soft)]">
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
                     <DoodleVideo className="h-5 w-5" />
                     <h3 className="font-heading text-lg font-extrabold tracking-tight">Video Conference</h3>
                     {isTeacherRole ? <div className="flex items-center gap-1 px-3 py-1 bg-pastel-sky text-pastel-sky-foreground rounded-full text-xs font-semibold ml-auto">
@@ -655,7 +655,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
               </div>
 
               {/* Students Section with Attendance - Only show if there are valid students */}
-              {validStudents.length > 0 && <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+              {validStudents.length > 0 && <div className="rounded-[var(--radius-soft)] bg-card p-4 sm:p-6 shadow-[var(--shadow-soft)]">
                     <h3 className="font-heading text-lg font-extrabold tracking-tight mb-3 flex items-center gap-2">
                       <DoodlePeople className="h-5 w-5" />
                       Students ({validStudents.length})
@@ -679,7 +679,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                 </div>}
 
               {/* Show warning if there are students with missing data */}
-              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-6">
+              {lesson.lesson_students && validStudents.length < lesson.lesson_students.length && <div className="rounded-[var(--radius-soft)] bg-pastel-sand p-4 sm:p-6">
                     <div className="flex items-start gap-2">
                       <DoodleAlert className="h-4 w-4 text-pastel-sand-foreground mt-0.5 flex-shrink-0" />
                       <div className="text-sm text-pastel-sand-foreground">
@@ -694,7 +694,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
               {/* Homework Section */}
-              {homeworkStatus.exists && <div className="rounded-[var(--radius-soft)] bg-card p-6 shadow-[var(--shadow-soft)]">
+              {homeworkStatus.exists && <div className="rounded-[var(--radius-soft)] bg-card p-4 sm:p-6 shadow-[var(--shadow-soft)]">
                     <h3 className="font-heading text-lg font-extrabold tracking-tight mb-3 flex items-center gap-2">
                       <DoodleBook className="h-5 w-5" />
                       Assigned Homework
@@ -729,16 +729,16 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                   {lesson.is_recurring}
                 </div>
                 
-                <div className="flex flex-wrap justify-end gap-2">
-                  {canEditLesson && <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-2 w-full sm:w-auto">
+                  {canEditLesson && <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent w-full sm:w-auto justify-center">
                       <Edit className="h-4 w-4" />
                       Edit Lesson
                     </Button>}
-                  {canDeleteLesson && <Button variant="outline" onClick={() => setIsDeleteDialogOpen(true)} className="flex items-center gap-2 rounded-full border-destructive/30 bg-transparent text-destructive hover:text-destructive">
+                  {canDeleteLesson && <Button variant="outline" onClick={() => setIsDeleteDialogOpen(true)} className="flex items-center gap-2 rounded-full border-destructive/30 bg-transparent text-destructive hover:text-destructive w-full sm:w-auto justify-center">
                       <Trash2 className="h-4 w-4" />
                       Delete Lesson
                     </Button>}
-                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent">
+                   {isTeacherRole && <Button variant="outline" onClick={() => setIsResourcesDialogOpen(true)} className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent w-full sm:w-auto justify-center">
                       <FileUp className="h-4 w-4" />
                       Submit Resources
                     </Button>}
@@ -819,7 +819,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
       <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
-        <DialogContent className="max-w-md rounded-[var(--radius-soft)] border-0 p-6 shadow-[var(--shadow-soft-lg)]">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-md rounded-[var(--radius-soft)] border-0 p-4 sm:p-6 shadow-[var(--shadow-soft-lg)]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
               <DoodleClipboard className="h-5 w-5" />
