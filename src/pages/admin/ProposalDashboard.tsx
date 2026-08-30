@@ -97,10 +97,16 @@ export default function ProposalDashboard() {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [extendTarget, setExtendTarget] = useState<Proposal | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Proposal | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     loadProposals();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter]);
+
 
   const loadProposals = async () => {
     try {
