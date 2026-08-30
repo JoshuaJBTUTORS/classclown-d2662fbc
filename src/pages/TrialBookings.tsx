@@ -370,6 +370,20 @@ const TrialBookings = () => {
     }, new Map<string, TrialBooking[]>()).values()
   ).sort((a, b) => (a[0].parent_name || '').localeCompare(b[0].parent_name || ''));
 
+  // Pagination
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sourceTab, reviewRoomDayTab, searchQuery, statusFilter, referralFilter]);
+
+  const isReviewTab = sourceTab === 'review_room';
+  const totalItems = isReviewTab ? reviewGroups.length : filteredBookings.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedReviewGroups = reviewGroups.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pagedBookings = filteredBookings.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
 
   return (
     <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
@@ -388,9 +402,6 @@ const TrialBookings = () => {
                     {filteredBookings.length}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Manage trial lesson requests
-                </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -514,7 +525,7 @@ const TrialBookings = () => {
                       <span className="text-right">Actions</span>
                     </div>
 
-                    {reviewGroups.map((group, groupIndex) => {
+                    {pagedReviewGroups.map((group, groupIndex) => {
                       const head = group[0];
                       const pendingCount = group.filter((g) => g.status === 'pending').length;
                       const approvedCount = group.filter((g) => g.status === 'approved').length;
@@ -673,7 +684,7 @@ const TrialBookings = () => {
                     <span className="text-right">Actions</span>
                   </div>
 
-                  {filteredBookings.map((booking, bookingIndex) => (
+                  {pagedBookings.map((booking, bookingIndex) => (
                     <div
                       key={booking.id}
                       className="grid grid-cols-1 gap-4 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/60 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_minmax(0,0.75fr)_auto] lg:items-center"
@@ -773,6 +784,31 @@ const TrialBookings = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {!isLoading && totalPages > 1 && (
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                  <span className="inline-flex items-center rounded-full bg-pastel-sand px-3 py-1 text-xs font-semibold text-foreground">
+                    Page {safePage} of {totalPages}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
+                      className="h-10 rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-semibold text-foreground shadow-none hover:bg-foreground/[0.04] disabled:opacity-40"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                      className="h-10 rounded-full bg-foreground px-5 text-sm font-semibold text-background hover:bg-foreground/90 disabled:opacity-40"
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               )}
             </section>
