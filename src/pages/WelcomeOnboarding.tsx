@@ -357,13 +357,16 @@ const WelcomeOnboarding: React.FC = () => {
         <div className={`${cardTone} p-6 shadow-[6px_6px_0_0_hsl(var(--foreground)/0.9)] sm:p-10`}>
           {renderBody()}
 
-          {/* Progress dots */}
+          {/* Progress dots (clickable to jump between steps) */}
           <div className="mt-10 flex items-center justify-center gap-2">
             {Array.from({ length: totalSteps }).map((_, i) => (
-              <span
+              <button
                 key={i}
+                type="button"
+                onClick={() => goToStep(i)}
+                aria-label={`Go to step ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === step ? 'w-8 bg-foreground' : 'w-4 bg-foreground/20'
+                  i === step ? 'w-8 bg-foreground' : 'w-4 bg-foreground/20 hover:bg-foreground/40'
                 }`}
               />
             ))}
