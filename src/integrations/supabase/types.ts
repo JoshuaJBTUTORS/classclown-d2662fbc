@@ -3936,6 +3936,7 @@ export type Database = {
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
           phone_number: string | null
+          platform_tour_completed_at: string | null
           preferred_difficulty: string | null
           preferred_subjects: string[] | null
           region: string | null
@@ -3960,6 +3961,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           phone_number?: string | null
+          platform_tour_completed_at?: string | null
           preferred_difficulty?: string | null
           preferred_subjects?: string[] | null
           region?: string | null
@@ -3984,6 +3986,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           phone_number?: string | null
+          platform_tour_completed_at?: string | null
           preferred_difficulty?: string | null
           preferred_subjects?: string[] | null
           region?: string | null
@@ -4862,6 +4865,7 @@ export type Database = {
           last_name: string | null
           parent_id: string | null
           phone: string | null
+          school: string | null
           status: string | null
           student_id: string | null
           subjects: string | null
@@ -4869,6 +4873,7 @@ export type Database = {
           user_id: string | null
           whatsapp_enabled: boolean | null
           whatsapp_number: string | null
+          year_group: string | null
         }
         Insert: {
           account_type?: string | null
@@ -4880,6 +4885,7 @@ export type Database = {
           last_name?: string | null
           parent_id?: string | null
           phone?: string | null
+          school?: string | null
           status?: string | null
           student_id?: string | null
           subjects?: string | null
@@ -4887,6 +4893,7 @@ export type Database = {
           user_id?: string | null
           whatsapp_enabled?: boolean | null
           whatsapp_number?: string | null
+          year_group?: string | null
         }
         Update: {
           account_type?: string | null
@@ -4898,6 +4905,7 @@ export type Database = {
           last_name?: string | null
           parent_id?: string | null
           phone?: string | null
+          school?: string | null
           status?: string | null
           student_id?: string | null
           subjects?: string | null
@@ -4905,6 +4913,7 @@ export type Database = {
           user_id?: string | null
           whatsapp_enabled?: boolean | null
           whatsapp_number?: string | null
+          year_group?: string | null
         }
         Relationships: [
           {
