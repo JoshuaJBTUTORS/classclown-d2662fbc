@@ -176,14 +176,16 @@ const AdminList: React.FC = () => {
             </div>
           ))}
         </div>
-      ) : admins.length === 0 ? (
+      ) : visibleAdmins.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
           <DoodlePeople className="h-10 w-10 text-foreground/70" />
-          <p className="text-sm text-muted-foreground">No administrative staff found</p>
+          <p className="text-sm text-muted-foreground">
+            No {tab} administrative staff found
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
-          {admins.map((admin, i) => {
+          {visibleAdmins.map((admin, i) => {
             const avatarSrc = resolveAvatarSrc(admin.avatar_url);
             const isOwner = admin.role === 'owner';
             const name =
@@ -222,26 +224,51 @@ const AdminList: React.FC = () => {
                   </div>
                 </div>
 
-                <span
-                  className={cn(
-                    'inline-flex w-fit items-center gap-1.5 self-start rounded-full border-2 border-foreground px-3 py-1 text-xs font-semibold text-foreground sm:self-auto',
-                    isOwner ? 'bg-pastel-butter' : 'bg-background'
-                  )}
-                >
-                  {isOwner ? (
-                    <DoodleCrown className="h-3.5 w-3.5" />
-                  ) : (
-                    <DoodleShield className="h-3.5 w-3.5" />
-                  )}
-                  {roleLabel(admin.role)}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      'inline-flex w-fit items-center gap-1.5 rounded-full border-2 border-foreground px-3 py-1 text-xs font-semibold text-foreground',
+                      isOwner ? 'bg-pastel-butter' : 'bg-background'
+                    )}
+                  >
+                    {isOwner ? (
+                      <DoodleCrown className="h-3.5 w-3.5" />
+                    ) : (
+                      <DoodleShield className="h-3.5 w-3.5" />
+                    )}
+                    {roleLabel(admin.role)}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditing({
+                        id: admin.id,
+                        first_name: admin.first_name,
+                        last_name: admin.last_name,
+                        job_title: admin.job_title,
+                        is_active: admin.is_active,
+                      })
+                    }
+                    className="inline-flex items-center rounded-full border-2 border-foreground bg-background px-3.5 py-1 text-xs font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-mint"
+                  >
+                    Edit
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <EditAdminDialog
+        admin={editing}
+        onClose={() => setEditing(null)}
+        onSaved={fetchAdmins}
+      />
     </div>
   );
 };
+
 
 export default AdminList;
