@@ -502,11 +502,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-11 rounded-full border-foreground/15 px-4">
                             <SelectValue placeholder="Select a tutor" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="rounded-2xl border-foreground/10 shadow-[var(--shadow-soft)]">
                           {tutors.map((tutor) => (
                             <SelectItem key={tutor.id} value={tutor.id}>
                               {tutor.first_name} {tutor.last_name}
@@ -524,8 +524,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     control={form.control}
                     name="isGroup"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-end justify-between space-x-2 space-y-0 rounded-md border p-3 h-[42px]">
-                        <FormLabel>Group Session</FormLabel>
+                      <FormItem className="flex flex-row items-center justify-between gap-2 space-y-0 rounded-full bg-pastel-sky px-4 h-11">
+                        <FormLabel className="text-pastel-sky-foreground font-medium">Group Session</FormLabel>
                         <FormControl>
                           <Switch
                             checked={field.value}
@@ -571,23 +571,23 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
-                           <Button
-                              variant={"outline"}
-                              className={cn(
-                                "pl-3 text-left font-normal w-full h-[42px]",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
+                            <Button
+                               variant={"outline"}
+                               className={cn(
+                                 "px-4 text-left font-normal w-full h-11 rounded-full border-foreground/15 bg-transparent hover:bg-pastel-sky/50",
+                                 !field.value && "text-muted-foreground"
+                               )}
+                             >
+                               {field.value ? (
+                                 format(field.value, "PPP")
+                               ) : (
+                                 <span>Pick a date</span>
+                               )}
+                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 rounded-[var(--radius-soft)] border-foreground/10 shadow-[var(--shadow-soft-lg)]" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value}
@@ -609,7 +609,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     <FormItem>
                       <FormLabel>Start Time</FormLabel>
                       <FormControl>
-                        <Input type="time" className="h-[42px]" {...field} />
+                        <Input type="time" className="h-11 rounded-full border-foreground/15 px-4" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -623,7 +623,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     <FormItem>
                       <FormLabel>End Time</FormLabel>
                       <FormControl>
-                        <Input type="time" className="h-[42px]" {...field} />
+                        <Input type="time" className="h-11 rounded-full border-foreground/15 px-4" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
