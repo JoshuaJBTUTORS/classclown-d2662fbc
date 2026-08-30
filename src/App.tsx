@@ -40,6 +40,9 @@ import ReferFriend from './pages/ReferFriend';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import MainLayout from './components/layout/MainLayout';
+import WelcomeOnboarding from './pages/WelcomeOnboarding';
+import OnboardingGate from './components/routing/OnboardingGate';
+
 import SubscriptionManagement from './pages/SubscriptionManagement';
 import CourseDetail from './pages/CourseDetail';
 import ModuleDetail from './pages/ModuleDetail';
@@ -143,18 +146,22 @@ function App() {
                <Route path="/agent-cleo" element={<ProtectedRoute><AgentCleo /></ProtectedRoute>} />
                <Route path="/agent-cleo/:threadId" element={<ProtectedRoute><AgentCleo /></ProtectedRoute>} />
 
-                
+                <Route path="/welcome" element={<ProtectedRoute><WelcomeOnboarding /></ProtectedRoute>} />
+
                 {/* Main App Layout - all main application routes - Restricted on heycleo.io */}
                 <Route
                   path="/*"
                   element={
                     <DomainRouteGuard>
                       <ProtectedRoute>
-                        <MainLayout />
+                        <OnboardingGate>
+                          <MainLayout />
+                        </OnboardingGate>
                       </ProtectedRoute>
                     </DomainRouteGuard>
                   }
                 >
+
                   <Route path="calendar" element={<Calendar />} />
                   
                   <Route 
