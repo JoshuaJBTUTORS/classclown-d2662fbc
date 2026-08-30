@@ -9,6 +9,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { DatesSetArg } from '@fullcalendar/core';
 import { useTutorAvailability } from '@/hooks/useTutorAvailability';
 import { format, startOfDay, endOfDay, addHours, parseISO, eachDayOfInterval } from 'date-fns';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface CalendarDisplayProps {
   isLoading: boolean;
@@ -169,10 +170,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
       <div className="flex-1 relative calendar-container calendar-soft">
         {isLoading ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
-            <div className="rounded-[var(--radius-soft)] border-2 border-dashed border-pastel-sky bg-pastel-sky/40 px-8 py-6 text-center">
-              <p className="font-heading text-base font-semibold text-pastel-sky-foreground">Loading your week…</p>
-              <p className="mt-1 text-xs text-muted-foreground">Fetching lessons and tutor availability</p>
-            </div>
+            <LoadingHand text="Loading your week…" />
           </div>
         ) : (
 

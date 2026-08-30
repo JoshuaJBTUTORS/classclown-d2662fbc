@@ -6,6 +6,7 @@ import LessonDetailsDialog from './LessonDetailsDialog';
 import TeacherViewNavigation from './TeacherViewNavigation';
 import { convertUTCToUK } from '@/utils/timezone';
 import { useTutorAvailability } from '@/hooks/useTutorAvailability';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface TeacherCalendarViewProps {
   events: any[];
@@ -130,7 +131,7 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoadingHand />
       </div>
     );
   }
