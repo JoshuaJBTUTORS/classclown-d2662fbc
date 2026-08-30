@@ -360,8 +360,16 @@ function App() {
                   <Route 
                     path="tutor-content" 
                     element={
-                      <ProtectedRoute allowedRoles={['tutor']}>
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <TutorContentPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="key-contacts" 
+                    element={
+                      <ProtectedRoute allowedRoles={['tutor']}>
+                        <KeyContacts />
                       </ProtectedRoute>
                     } 
                   />
