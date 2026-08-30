@@ -751,15 +751,15 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
               )}
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Availability Check</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-heading font-bold">Availability Check</label>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={handleManualAvailabilityCheck}
                     disabled={isChecking}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent"
                   >
                     {isChecking ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -777,11 +777,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 />
               </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="rounded-full border-foreground/20 bg-transparent w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="rounded-full bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto">
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
