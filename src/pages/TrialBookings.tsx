@@ -370,6 +370,20 @@ const TrialBookings = () => {
     }, new Map<string, TrialBooking[]>()).values()
   ).sort((a, b) => (a[0].parent_name || '').localeCompare(b[0].parent_name || ''));
 
+  // Pagination
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sourceTab, reviewRoomDayTab, searchQuery, statusFilter, referralFilter]);
+
+  const isReviewTab = sourceTab === 'review_room';
+  const totalItems = isReviewTab ? reviewGroups.length : filteredBookings.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedReviewGroups = reviewGroups.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pagedBookings = filteredBookings.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
 
   return (
     <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
@@ -388,9 +402,6 @@ const TrialBookings = () => {
                     {filteredBookings.length}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Manage trial lesson requests
-                </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
