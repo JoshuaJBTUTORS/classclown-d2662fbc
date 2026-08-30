@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Target, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { DoodleCircle } from '@/components/calendar/LessonDoodles';
 import { useToast } from '@/hooks/use-toast';
 
 interface EarningGoalSetterProps {
@@ -47,57 +47,68 @@ export const EarningGoalSetter = ({ currentGoal, onGoalSet, isLoading }: Earning
   };
 
   return (
-    <Card className="animate-fade-in">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-primary" />
-          Set Earning Goal
-        </CardTitle>
-        <CardDescription>
-          Set a target amount to track your progress and stay motivated
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Target Amount (£)</Label>
-              <div className="relative">
-                <Input
-                  id="amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="1000"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="pl-6"
-                  disabled={isLoading}
-                />
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">£</span>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="period">Period</Label>
-              <Select value={period} onValueChange={(value: 'weekly' | 'monthly') => setPeriod(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+    <section className="animate-fade-in rounded-[var(--radius-soft)] bg-pastel-butter/50 p-4 shadow-[var(--shadow-soft)] sm:p-6">
+      <div className="mb-4 flex items-center gap-3 px-1">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 bg-card text-foreground">
+          <DoodleCircle className="h-4 w-4" />
+        </span>
+        <div>
+          <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+            Set Earning Goal
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Set a target amount to track your progress and stay motivated
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="amount" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Target Amount (£)
+            </Label>
+            <div className="relative">
+              <Input
+                id="amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="1000"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-11 rounded-full border-2 border-foreground/10 bg-card pl-7 pr-4 focus-visible:ring-1 focus-visible:ring-foreground/20"
+                disabled={isLoading}
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span>
             </div>
           </div>
           
-          <Button type="submit" disabled={isLoading} className="w-full">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            {currentGoal ? 'Update Goal' : 'Set Goal'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <div className="space-y-1.5">
+            <Label htmlFor="period" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Period
+            </Label>
+            <Select value={period} onValueChange={(value: 'weekly' | 'monthly') => setPeriod(value)}>
+              <SelectTrigger className="h-11 rounded-full border-2 border-foreground/10 bg-card px-4">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-[1.25rem] border-2 border-foreground/10 bg-card">
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="w-full rounded-full bg-foreground px-6 text-background hover:bg-foreground/90"
+        >
+          <TrendingUp className="mr-2 h-4 w-4" />
+          {currentGoal ? 'Update Goal' : 'Set Goal'}
+        </Button>
+      </form>
+    </section>
   );
 };

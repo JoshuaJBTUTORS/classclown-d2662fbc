@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { CalendarIcon, X } from 'lucide-react';
-import { format, addMonths } from 'date-fns';
+import { DoodleCalendar } from '@/components/calendar/LessonDoodles';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface EarningsDateFilterProps {
@@ -42,36 +42,44 @@ export const EarningsDateFilter = ({
     }
   };
 
+  const triggerClass =
+    'h-11 w-full justify-start rounded-full border-2 border-foreground/10 bg-card px-4 text-left font-normal hover:bg-card hover:text-foreground';
+
   return (
-    <Card className="animate-fade-in">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5 text-primary" />
-          Date Range Filter
-        </CardTitle>
-        <CardDescription>
-          Select your custom earnings period
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="from-date">From Date</Label>
+    <section className="animate-fade-in rounded-[var(--radius-soft)] bg-pastel-sky/40 p-4 shadow-[var(--shadow-soft)] sm:p-6">
+      <div className="mb-4 flex items-center gap-3 px-1">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 bg-card text-foreground">
+          <DoodleCalendar className="h-4 w-4" />
+        </span>
+        <div>
+          <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+            Date Range Filter
+          </h2>
+          <p className="text-xs text-muted-foreground">Select your custom earnings period</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="from-date" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              From Date
+            </Label>
             <Popover open={fromPopoverOpen} onOpenChange={setFromPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   id="from-date"
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateRange.from && "text-muted-foreground"
-                  )}
+                  className={cn(triggerClass, !dateRange.from && 'text-muted-foreground')}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? format(dateRange.from, "PPP") : "Pick a start date"}
+                  {dateRange.from ? format(dateRange.from, 'PPP') : 'Pick a start date'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent
+                className="w-auto rounded-[1.25rem] border-2 border-foreground/10 bg-card p-0 shadow-[var(--shadow-soft)]"
+                align="start"
+              >
                 <Calendar
                   mode="single"
                   selected={dateRange.from || undefined}
@@ -79,11 +87,9 @@ export const EarningsDateFilter = ({
                   initialFocus
                   className="pointer-events-auto"
                   disabled={(date) => {
-                    // Disable dates after 'to' date if set
                     if (dateRange.to) {
                       return date > dateRange.to;
                     }
-                    // Disable future dates
                     return date > new Date();
                   }}
                 />
@@ -91,23 +97,25 @@ export const EarningsDateFilter = ({
             </Popover>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="to-date">To Date</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="to-date" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              To Date
+            </Label>
             <Popover open={toPopoverOpen} onOpenChange={setToPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   id="to-date"
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateRange.to && "text-muted-foreground"
-                  )}
+                  className={cn(triggerClass, !dateRange.to && 'text-muted-foreground')}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.to ? format(dateRange.to, "PPP") : "Pick an end date"}
+                  {dateRange.to ? format(dateRange.to, 'PPP') : 'Pick an end date'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent
+                className="w-auto rounded-[1.25rem] border-2 border-foreground/10 bg-card p-0 shadow-[var(--shadow-soft)]"
+                align="start"
+              >
                 <Calendar
                   mode="single"
                   selected={dateRange.to || undefined}
@@ -115,11 +123,9 @@ export const EarningsDateFilter = ({
                   initialFocus
                   className="pointer-events-auto"
                   disabled={(date) => {
-                    // Disable dates before 'from' date if set
                     if (dateRange.from) {
                       return date < dateRange.from;
                     }
-                    // Disable future dates
                     return date > new Date();
                   }}
                 />
@@ -129,36 +135,36 @@ export const EarningsDateFilter = ({
         </div>
 
         {(dateRange.from || dateRange.to) && (
-          <div className="flex items-center justify-between pt-2 border-t">
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleClear}
-              className="h-8 px-2 text-xs"
+              className="h-8 rounded-full border border-foreground/15 px-3 text-xs hover:bg-card"
             >
-              <X className="h-3 w-3 mr-1" />
+              <X className="mr-1 h-3 w-3" />
               Clear Filter
             </Button>
           </div>
         )}
 
         {periodDisplay && (
-          <div className="pt-2 space-y-1 text-sm border-t">
+          <div className="space-y-1 rounded-[1.25rem] bg-card/80 p-4 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Payment Period:</span>
-              <span className="font-medium">{periodDisplay}</span>
+              <span className="font-semibold text-foreground">{periodDisplay}</span>
             </div>
             {nextPaymentDate && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Next Payment Date:</span>
-                <span className="font-medium text-primary">
+                <span className="font-semibold text-foreground">
                   {format(nextPaymentDate, 'MMM d, yyyy')}
                 </span>
               </div>
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 };
