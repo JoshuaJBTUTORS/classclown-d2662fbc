@@ -4,21 +4,67 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Check, X, Clock, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { Check, X, Loader2 } from 'lucide-react';
 import { formatInUKTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import { TimeOffFilters } from '@/components/timeOff/TimeOffFilters';
 import { ConflictDetectionDialog } from '@/components/timeOff/ConflictDetectionDialog';
 import { checkTimeOffConflicts, TimeOffConflict } from '@/services/timeOffConflictService';
+import { DoodleClock, DoodleCalendar } from '@/components/calendar/LessonDoodles';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
+
+const stroke = {
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const DoodleCheckCircle: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M12 3.4c4.7-.3 8.4 3.2 8.3 7.9-.1 4.9-3.9 8.8-8.5 8.7-4.8-.1-8.4-4-8.3-8.7.1-4.6 3.8-8.2 8.5-7.9z" />
+    <path d="M8.2 12.2c1.2 1.3 2.3 2.5 3.4 3.8 1.6-2.4 3.2-4.7 4.9-7" />
+  </svg>
+);
+
+const DoodleCross: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M7 7.2c3.2 3 6.4 6.1 9.7 9.3" />
+    <path d="M16.8 7.4c-3.3 2.9-6.5 5.9-9.7 8.9" />
+  </svg>
+);
+
+const initials = (first?: string | null, last?: string | null) =>
+  `${(first ?? '').charAt(0)}${(last ?? '').charAt(0)}`.toUpperCase() || '?';
+
+const avatarTones = [
+  'bg-pastel-mint',
+  'bg-pastel-lilac',
+  'bg-pastel-butter',
+  'bg-pastel-blush',
+  'bg-pastel-sky',
+];
+
+const statusChip = (status: string) => {
+  switch (status) {
+    case 'approved':
+      return 'bg-pastel-mint text-pastel-mint-foreground';
+    case 'denied':
+      return 'bg-pastel-blush text-pastel-blush-foreground';
+    default:
+      return 'bg-pastel-butter text-pastel-butter-foreground';
+  }
+};
+
+const statusLabel = (status: string) =>
+  status === 'approved' ? 'Approved' : status === 'denied' ? 'Denied' : 'Pending';
 
 const TimeOffRequests = () => {
   const { userRole, user } = useAuth();
@@ -27,28 +73,20 @@ const TimeOffRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [actionType, setActionType] = useState<'approve' | 'deny' | null>(null);
-  
+
   // Conflict detection states
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [conflicts, setConflicts] = useState<TimeOffConflict[]>([]);
   const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
   const [hasNoConflicts, setHasNoConflicts] = useState(false);
-  
+
   // Filter states
   const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
-  
+
   const queryClient = useQueryClient();
-
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   // Fetch all tutors for filter dropdown
   const { data: tutors } = useQuery({
@@ -84,14 +122,14 @@ const TimeOffRequests = () => {
 
   // Update time off request mutation
   const updateRequestMutation = useMutation({
-    mutationFn: async ({ 
-      requestId, 
-      status, 
-      adminNotes 
-    }: { 
-      requestId: string; 
-      status: 'approved' | 'denied'; 
-      adminNotes: string 
+    mutationFn: async ({
+      requestId,
+      status,
+      adminNotes
+    }: {
+      requestId: string;
+      status: 'approved' | 'denied';
+      adminNotes: string
     }) => {
       const { data, error } = await supabase
         .from('time_off_requests')
@@ -125,7 +163,7 @@ const TimeOffRequests = () => {
     setSelectedRequest(request);
     setActionType(action);
     setAdminNotes('');
-    
+
     // If approving, check for conflicts first
     if (action === 'approve') {
       await checkForConflicts(request);
@@ -135,16 +173,16 @@ const TimeOffRequests = () => {
   const checkForConflicts = async (request: any) => {
     setIsCheckingConflicts(true);
     setShowConflictDialog(true);
-    
+
     try {
       const conflictResult = await checkTimeOffConflicts(
         request.tutor_id,
         request.start_date,
         request.end_date
       );
-      
+
       setConflicts(conflictResult.conflicts);
-      
+
       if (!conflictResult.hasConflicts) {
         // No conflicts found - keep dialog open to show success message
         setHasNoConflicts(true);
@@ -186,32 +224,21 @@ const TimeOffRequests = () => {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'denied':
-        return <Badge className="bg-red-100 text-red-800">Denied</Badge>;
-      default:
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-    }
-  };
-
   // Filter logic
   const filteredRequests = useMemo(() => {
     if (!timeOffRequests) return [];
-    
+
     return timeOffRequests.filter(request => {
       // Tutor filter
       if (selectedTutors.length > 0 && !selectedTutors.includes(request.tutor_id)) {
         return false;
       }
-      
+
       // Status filter
       if (statusFilter !== 'all' && request.status !== statusFilter) {
         return false;
       }
-      
+
       // Date range filter — match time off periods overlapping the selected range
       const reqStart = new Date(request.start_date);
       const reqEnd = new Date(request.end_date || request.start_date);
@@ -227,7 +254,7 @@ const TimeOffRequests = () => {
         if (reqStart > to) return false;
       }
 
-      
+
       return true;
     });
   }, [timeOffRequests, selectedTutors, statusFilter, startDate, endDate]);
@@ -247,184 +274,255 @@ const TimeOffRequests = () => {
     setEndDate(undefined);
   };
 
+  const pendingCount = filteredRequests.filter(r => r.status === 'pending').length;
+  const approvedCount = filteredRequests.filter(r => r.status === 'approved').length;
+  const deniedCount = filteredRequests.filter(r => r.status === 'denied').length;
+
   if (userRole !== 'admin' && userRole !== 'owner') {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className={cn(
-          "flex flex-col flex-1 transition-all duration-300 w-full",
-          "lg:ml-0",
-          sidebarOpen && "lg:ml-64"
-        )}>
-          <MobileMenuButton toggleSidebar={toggleSidebar} />
-          <main className="flex-1 p-4 md:p-6">
-            <div className="text-center py-8">
-              <h1 className="text-2xl font-bold text-gray-900">Access Denied</h1>
-              <p className="text-gray-600 mt-2">This page is only accessible to admins and owners.</p>
+      <div className="min-h-screen bg-background">
+        <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex">
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <div className="flex-1">
+            <div className="px-4 py-16 text-center sm:px-6">
+              <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">Access Denied</h1>
+              <p className="mt-2 text-muted-foreground">This page is only accessible to admins and owners.</p>
             </div>
-          </main>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className={cn(
-        "flex flex-col flex-1 transition-all duration-300 w-full",
-        "lg:ml-0",
-        sidebarOpen && "lg:ml-64"
-      )}>
-        <MobileMenuButton toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Time Off Requests</h1>
-              <p className="text-gray-600 mt-1">Review and manage tutor time off requests</p>
+    <div className="min-h-screen bg-background">
+      <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="min-w-0 w-full flex-1">
+          <div className="px-4 py-8 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+                  Time Off Requests
+                </h1>
+                <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleClock className="h-4.5 w-4.5 h-5 w-5" />
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">Review and manage tutor time off requests</p>
+            </div>
+
+            {/* Summary chips */}
+            <div className="mt-6 flex flex-wrap gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-butter px-4 py-2 text-sm font-semibold text-pastel-butter-foreground">
+                <DoodleClock className="h-4 w-4" />
+                {pendingCount} Pending
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-mint px-4 py-2 text-sm font-semibold text-pastel-mint-foreground">
+                <DoodleCheckCircle className="h-4 w-4" />
+                {approvedCount} Approved
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-blush px-4 py-2 text-sm font-semibold text-pastel-blush-foreground">
+                <DoodleCross className="h-4 w-4" />
+                {deniedCount} Denied
+              </span>
             </div>
 
             {/* Filters */}
-            <TimeOffFilters
-              selectedTutors={selectedTutors}
-              onTutorChange={setSelectedTutors}
-              statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
-              startDate={startDate}
-              onStartDateChange={setStartDate}
-              endDate={endDate}
-              onEndDateChange={setEndDate}
-              onClearFilters={handleClearFilters}
-              tutors={tutors || []}
-              isLoading={isLoading}
-            />
+            <div className="mt-6">
+              <TimeOffFilters
+                selectedTutors={selectedTutors}
+                onTutorChange={setSelectedTutors}
+                statusFilter={statusFilter}
+                onStatusChange={setStatusFilter}
+                startDate={startDate}
+                onStartDateChange={setStartDate}
+                endDate={endDate}
+                onEndDateChange={setEndDate}
+                onClearFilters={handleClearFilters}
+                tutors={tutors || []}
+                isLoading={isLoading}
+              />
+            </div>
 
             {/* Pending Requests */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-yellow-600" />
-                  Pending Requests ({getPendingRequests().length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="text-center py-4">Loading...</div>
-                ) : getPendingRequests().length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No pending time off requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {getPendingRequests().map((request) => (
-                      <div key={request.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">
+            <section className="mt-8 rounded-[var(--radius-soft)] bg-pastel-butter/50 p-4 shadow-[var(--shadow-soft)] sm:p-6">
+              <div className="mb-4 flex items-center gap-3 px-1">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleClock className="h-4 w-4" />
+                </span>
+                <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                  Pending Requests
+                </h2>
+                <span className="inline-flex items-center rounded-full bg-pastel-butter px-3 py-1 text-xs font-semibold text-pastel-butter-foreground">
+                  {getPendingRequests().length}
+                </span>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : getPendingRequests().length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-card/70 px-6 py-12 text-center">
+                  <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                  <p className="text-sm text-muted-foreground">No pending time off requests</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {getPendingRequests().map((request, i) => (
+                    <div
+                      key={request.id}
+                      className="rounded-[1.25rem] bg-card p-4 shadow-[var(--shadow-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft-lg)] sm:p-5"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span
+                            className={cn(
+                              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground',
+                              avatarTones[i % avatarTones.length]
+                            )}
+                          >
+                            {initials(request.tutor.first_name, request.tutor.last_name)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-foreground">
                               {request.tutor.first_name} {request.tutor.last_name}
                             </p>
-                            <p className="text-sm text-gray-600">{request.tutor.email}</p>
-                            <p className="font-medium mt-1">
+                            <p className="truncate text-sm text-muted-foreground">{request.tutor.email}</p>
+                            <p className="mt-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                              <DoodleCalendar className="h-4 w-4 shrink-0 text-foreground/70" />
                               {formatInUKTime(request.start_date, 'PPP p')} - {formatInUKTime(request.end_date, 'PPP p')}
                             </p>
-                            <p className="text-gray-600 text-sm mt-1">{request.reason}</p>
+                            {request.reason && (
+                              <p className="mt-1 text-sm text-muted-foreground">{request.reason}</p>
+                            )}
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Requested on {formatInUKTime(request.created_at, 'PPP')}
+                            </p>
                           </div>
-                          {getStatusBadge(request.status)}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Requested on {formatInUKTime(request.created_at, 'PPP')}
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleAction(request, 'approve')}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleAction(request, 'deny')}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Deny
-                          </Button>
-                        </div>
+                        <span className={cn('inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold', statusChip(request.status))}>
+                          {statusLabel(request.status)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleAction(request, 'approve')}
+                          className="rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
+                        >
+                          <Check className="mr-1 h-4 w-4" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAction(request, 'deny')}
+                          className="rounded-full border-2 border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
+                        >
+                          <X className="mr-1 h-4 w-4" />
+                          Deny
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
             {/* Processed Requests */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Processed Requests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {getProcessedRequests().length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No processed requests yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {getProcessedRequests().slice(0, 10).map((request) => (
-                      <div key={request.id} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">
+            <section className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+              <div className="mb-4 flex items-center gap-3 px-1">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleCheckCircle className="h-4 w-4" />
+                </span>
+                <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                  Recent Processed Requests
+                </h2>
+              </div>
+
+              {getProcessedRequests().length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-pastel-sand/60 px-6 py-12 text-center">
+                  <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                  <p className="text-sm text-muted-foreground">No processed requests yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {getProcessedRequests().slice(0, 10).map((request, i) => (
+                    <div
+                      key={request.id}
+                      className="rounded-[1.25rem] bg-pastel-sand/40 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sky/50 sm:p-5"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span
+                            className={cn(
+                              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground',
+                              avatarTones[i % avatarTones.length]
+                            )}
+                          >
+                            {initials(request.tutor.first_name, request.tutor.last_name)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-foreground">
                               {request.tutor.first_name} {request.tutor.last_name}
                             </p>
-                            <p className="font-medium text-sm">
+                            <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground">
+                              <DoodleCalendar className="h-4 w-4 shrink-0 text-foreground/70" />
                               {formatInUKTime(request.start_date, 'PPP p')} - {formatInUKTime(request.end_date, 'PPP p')}
                             </p>
-                            <p className="text-gray-600 text-sm mt-1">{request.reason}</p>
+                            {request.reason && (
+                              <p className="mt-1 text-sm text-muted-foreground">{request.reason}</p>
+                            )}
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Requested on {formatInUKTime(request.created_at, 'PPP')}
+                              {request.reviewed_at && (
+                                <span> • Reviewed on {formatInUKTime(request.reviewed_at, 'PPP')}</span>
+                              )}
+                            </p>
                           </div>
-                          {getStatusBadge(request.status)}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Requested on {formatInUKTime(request.created_at, 'PPP')}
-                          {request.reviewed_at && (
-                            <span> • Reviewed on {formatInUKTime(request.reviewed_at, 'PPP')}</span>
-                          )}
-                        </div>
-                        {request.admin_notes && (
-                          <div className="bg-gray-50 p-2 rounded text-sm">
-                            <strong>Admin Notes:</strong> {request.admin_notes}
-                          </div>
-                        )}
+                        <span className={cn('inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold', statusChip(request.status))}>
+                          {statusLabel(request.status)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      {request.admin_notes && (
+                        <div className="mt-3 rounded-xl bg-muted px-3 py-2 text-sm text-foreground">
+                          <strong>Admin Notes:</strong> {request.admin_notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
-        </main>
+        </div>
       </div>
 
       {/* Action Dialog - Only shown for denial or when no conflicts */}
       <Dialog open={!!selectedRequest && actionType === 'deny'} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent>
+        <DialogContent className="cc-dialog rounded-[var(--radius-soft)]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">
               Deny Time Off Request
             </DialogTitle>
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-4">
-              <div>
-                <p className="font-medium">
+              <div className="rounded-[1.25rem] bg-pastel-blush/50 p-4">
+                <p className="font-semibold text-foreground">
                   {selectedRequest.tutor.first_name} {selectedRequest.tutor.last_name}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                  <DoodleCalendar className="h-4 w-4 shrink-0" />
                   {formatInUKTime(selectedRequest.start_date, 'PPP p')} - {formatInUKTime(selectedRequest.end_date, 'PPP p')}
                 </p>
-                <p className="text-sm mt-1">{selectedRequest.reason}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{selectedRequest.reason}</p>
               </div>
               <div>
                 <Label htmlFor="adminNotes">Admin Notes (Optional)</Label>
@@ -435,14 +533,18 @@ const TimeOffRequests = () => {
                   placeholder="Add any notes or comments..."
                 />
               </div>
-              <div className="flex justify-end space-x-3">
-                <Button variant="outline" onClick={() => setSelectedRequest(null)}>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedRequest(null)}
+                  className="rounded-full border-2 border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
+                >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSubmitAction}
                   disabled={updateRequestMutation.isPending}
-                  variant="destructive"
+                  className="rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
                 >
                   {updateRequestMutation.isPending ? 'Processing...' : 'Deny Request'}
                 </Button>
