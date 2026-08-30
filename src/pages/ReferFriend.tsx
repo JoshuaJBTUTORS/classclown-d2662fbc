@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useReferral } from '@/hooks/useReferral';
 import { useAuth } from '@/contexts/AuthContext';
 import ShareLinkCard from '@/components/referral/ShareLinkCard';
@@ -9,12 +9,24 @@ import ReferralForm from '@/components/referral/ReferralForm';
 import ReferralList from '@/components/referral/ReferralList';
 import GiftIllustration from '@/components/referral/GiftIllustration';
 import GetLinkCard from '@/components/referral/GetLinkCard';
+import { DoodleChat, DoodleCoin, DoodleSend, DoodleSpark } from '@/components/progress/ProgressDoodles';
 
 const STEPS = [
-  { emoji: '🔗', title: 'Share your link', copy: 'Send your personal link to a friend' },
-  { emoji: '🎓', title: 'They try a free lesson', copy: 'No cost, no commitment' },
-  { emoji: '💷', title: 'You both get £50', copy: 'Once they join us' },
+  { icon: DoodleChat, title: 'Share your link', copy: 'Send your personal link to a friend' },
+  { icon: DoodleSpark, title: 'They try a free lesson', copy: 'No cost, no commitment' },
+  { icon: DoodleCoin, title: 'You both get £50', copy: 'Once they join us' },
 ];
+
+const pillBase =
+  'inline-flex items-center gap-2 rounded-full px-5 h-11 text-sm font-medium transition-all duration-200 ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+const chipBase = cn(
+  pillBase,
+  'pl-2 pr-4 gap-2.5 bg-transparent text-foreground border border-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
+);
+const chipIcon =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground';
 
 const ReferFriend: React.FC = () => {
   const navigate = useNavigate();
@@ -33,27 +45,31 @@ const ReferFriend: React.FC = () => {
     <div className="min-h-screen bg-background">
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         {user ? (
-          <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')} className="-ml-2">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+          <button type="button" onClick={() => navigate('/calendar')} className={chipBase}>
+            <span className={chipIcon}>
+              <ArrowLeft className="h-4 w-4" />
+            </span>
             Back to my lessons
-          </Button>
+          </button>
         ) : (
-          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="-ml-2">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+          <button type="button" onClick={() => navigate('/auth')} className={chipBase}>
+            <span className={chipIcon}>
+              <ArrowLeft className="h-4 w-4" />
+            </span>
             Log in to my account
-          </Button>
+          </button>
         )}
 
-        <section className="grid items-center gap-8 rounded-2xl border border-border bg-card/90 p-6 shadow-sm backdrop-blur sm:p-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+        <section className="grid items-center gap-8 rounded-3xl border border-foreground/10 bg-card p-6 shadow-[var(--shadow-soft)] sm:p-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
           <div>
-            <span className="inline-flex items-center gap-3 rounded-full border border-border bg-background/70 py-1.5 pl-1.5 pr-4 text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-muted text-base" aria-hidden="true">
-                🎁
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-foreground bg-transparent py-1.5 pl-1.5 pr-4 text-xs font-extrabold uppercase tracking-widest text-foreground">
+              <span className={chipIcon} aria-hidden="true">
+                <DoodleCoin className="h-4 w-4" />
               </span>
               Refer a friend
             </span>
 
-            <h1 className="mt-6 text-[clamp(2.5rem,6vw,4.25rem)] font-bold leading-[0.98] tracking-tighter">
+            <h1 className="mt-6 font-heading text-[clamp(2.5rem,6vw,4.25rem)] font-bold leading-[0.98] tracking-tighter">
               Give £50, <span className="text-primary">get £50</span>
             </h1>
             <p className="mt-4 max-w-xl text-lg text-muted-foreground">
@@ -62,16 +78,19 @@ const ReferFriend: React.FC = () => {
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {STEPS.map(({ emoji, title, copy }) => (
+              {STEPS.map(({ icon: Icon, title, copy }) => (
                 <div
                   key={title}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-background/70 p-4"
+                  className="flex items-center gap-3 rounded-2xl border border-foreground/10 bg-background p-4"
                 >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-muted text-xl" aria-hidden="true">
-                    {emoji}
+                  <span
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-foreground/70 text-foreground"
+                    aria-hidden="true"
+                  >
+                    <Icon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold leading-tight">{title}</p>
+                    <p className="font-heading text-sm font-semibold leading-tight">{title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{copy}</p>
                   </div>
                 </div>
