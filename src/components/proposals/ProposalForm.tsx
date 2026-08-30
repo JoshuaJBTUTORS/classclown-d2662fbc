@@ -45,6 +45,18 @@ export type LessonTimeRow = { day: string; time: string; duration: number; subje
 
 export const DEFAULT_LESSON_PRICE = 45;
 
+const sectionClass = 'rounded-[var(--radius-soft)] bg-pastel-sand/40 p-5 sm:p-6';
+const sectionTitle = 'font-heading text-lg font-extrabold tracking-tight text-foreground mb-4';
+const labelClass = 'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+const controlClass =
+  'h-12 rounded-full border-2 border-foreground bg-background px-4 text-sm focus-visible:ring-0 focus-visible:ring-offset-0';
+const menuClass = 'rounded-2xl border-2 border-foreground';
+const outlinePill =
+  'inline-flex h-12 items-center rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-50';
+const solidPill =
+  'inline-flex h-12 items-center rounded-full bg-foreground px-6 text-sm font-semibold text-background transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0';
+
+
 export function emptyLessonTime(price = DEFAULT_LESSON_PRICE): LessonTimeRow {
   return { day: '', time: '', duration: 60, subject: '', price };
 }
