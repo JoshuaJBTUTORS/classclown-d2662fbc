@@ -14,6 +14,13 @@ import {
 import { useAgentCleoThreads } from '@/hooks/useAgentCleoThreads';
 import { AgentCleoThreadList } from '@/components/agentCleo/AgentCleoThreadList';
 import DailySnapshot from '@/components/agentCleo/DailySnapshot';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 
 const Typewriter: React.FC<{ text: string; speed?: number; className?: string }> = ({ text, speed = 90, className }) => {
   const [count, setCount] = useState(0);
@@ -915,11 +922,30 @@ const AgentCleo: React.FC = () => {
 
 
         <div className="p-3 border-t border-black/5 dark:border-white/5">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold text-white">C</div>
-            <div className="text-sm font-medium">Agent Cleo</div>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center text-xs font-semibold text-white">C</div>
+                <div className="text-sm font-medium">Agent Cleo</div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-52">
+              <DropdownMenuItem onClick={toggleTheme}>
+                {isDark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
+                {isDark ? 'Light mode' : 'Dark mode'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={newChat}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                New chat
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/calendar')}>
+                <LayoutGrid className="w-4 h-4 mr-2" />
+                Open CRM
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
       </aside>
 
       {/* Main area */}
@@ -950,11 +976,13 @@ const AgentCleo: React.FC = () => {
               <UserAvatar
                 avatarUrl={profile?.avatar_url}
                 name={firstName}
-                className="w-14 h-14 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white"
+                className="w-14 h-14 rounded-full object-cover bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-blue-900/15 dark:shadow-blue-900/40 text-2xl font-semibold text-white"
               />
-              <h1 className="text-3xl font-semibold mb-2 min-h-[2.5rem]">
+              <h1 className="text-3xl font-semibold mb-2 min-h-[2.5rem] flex items-center gap-2">
                 <Typewriter text={`Hey${firstName ? ` ${firstName}` : ''}`} />
+                <span className="animate-wave inline-block origin-[70%_80%]" aria-hidden="true">👋</span>
               </h1>
+
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] italic mb-1 max-w-md text-center">“{quote}”</p>
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
 
@@ -979,12 +1007,12 @@ const AgentCleo: React.FC = () => {
                     <UserAvatar
                       avatarUrl={profile?.avatar_url}
                       name={firstName}
-                      className="w-7 h-7 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-xs font-semibold text-white"
+                      className="w-7 h-7 rounded-full object-cover bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center shrink-0 text-xs font-semibold text-white"
                     />
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
                     <div className="flex-1 pt-1 leading-relaxed">
                       {m.content && <MarkdownMessage>{m.content}</MarkdownMessage>}
                       {(m.proposals?.length ?? 0) > 0 && (

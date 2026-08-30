@@ -41,11 +41,15 @@ interface TileProps {
 const Tile: React.FC<TileProps> = ({ icon, label, value, sub, loading, onClick }) => (
   <button
     onClick={onClick}
-    className="text-left p-4 rounded-2xl border border-black/10 bg-white/70 hover:bg-white dark:border-white/10 dark:bg-transparent dark:hover:bg-white/5 transition-colors"
+    className="text-left p-4 rounded-3xl border border-black/70 bg-transparent hover:-translate-y-0.5 hover:bg-black/5 dark:border-white/50 dark:hover:bg-white/5 transition-all duration-200"
   >
-    <div className="flex items-center gap-2 text-[#6b6b76] dark:text-[#8e8ea0] text-xs mb-2">
-      {icon}
-      <span>{label}</span>
+    <div className="flex items-center gap-2.5 mb-3">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-black/60 text-black dark:border-white/50 dark:text-white">
+        {icon}
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b76] dark:text-[#8e8ea0]">
+        {label}
+      </span>
     </div>
     {loading ? (
       <div className="h-8 w-12 rounded bg-black/10 dark:bg-white/10 animate-pulse" />
@@ -55,6 +59,7 @@ const Tile: React.FC<TileProps> = ({ icon, label, value, sub, loading, onClick }
     <div className="text-xs text-[#6b6b76] dark:text-[#8e8ea0] mt-2">{loading ? ' ' : sub}</div>
   </button>
 );
+
 
 interface GoalRowProps {
   label: string;
@@ -97,15 +102,16 @@ const DailySnapshot: React.FC = () => {
   return (
     <div className="w-full max-w-2xl mb-8">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0]">Today · {today}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b76] dark:text-[#8e8ea0]">Today · {today}</span>
         <button
           onClick={refresh}
-          className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-[#6b6b76] dark:text-[#8e8ea0] transition-colors"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/60 text-black hover:-translate-y-0.5 hover:bg-black/5 dark:border-white/50 dark:text-white dark:hover:bg-white/5 transition-all duration-200"
           aria-label="Refresh snapshot"
         >
           <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
         </button>
       </div>
+
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Tile
@@ -142,13 +148,17 @@ const DailySnapshot: React.FC = () => {
         />
       </div>
 
-      <div className="mt-3 p-4 rounded-2xl border border-black/10 bg-white/70 dark:border-white/10 dark:bg-transparent">
+      <div className="mt-3 p-4 rounded-3xl border border-black/70 bg-transparent dark:border-white/50">
         <button
           onClick={() => navigate('/goals')}
-          className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0] hover:text-black dark:hover:text-white transition-colors mb-4"
+          className="inline-flex items-center gap-2 rounded-full border border-black/60 pl-2 pr-4 h-9 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b76] hover:-translate-y-0.5 hover:bg-black/5 hover:text-black dark:border-white/50 dark:text-[#8e8ea0] dark:hover:bg-white/5 dark:hover:text-white transition-all duration-200 mb-4"
         >
-          Team goals <ArrowRight className="w-3 h-3" />
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-black/60 dark:border-white/50">
+            <ArrowRight className="w-3 h-3" />
+          </span>
+          Team goals
         </button>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <GoalRow label="Trials booked" current={data.goalTrials} target={TRIAL_GOAL} loading={loading} />
           <GoalRow label="Lessons this month" current={data.goalLessons} target={LESSONS_GOAL} loading={loading} />
