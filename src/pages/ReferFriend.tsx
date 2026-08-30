@@ -12,9 +12,27 @@ import GetLinkCard from '@/components/referral/GetLinkCard';
 import { DoodleChat, DoodleCoin, DoodleSend, DoodleSpark } from '@/components/progress/ProgressDoodles';
 
 const STEPS = [
-  { icon: DoodleChat, title: 'Share your link', copy: 'Send your personal link to a friend' },
-  { icon: DoodleSpark, title: 'They try a free lesson', copy: 'No cost, no commitment' },
-  { icon: DoodleCoin, title: 'You both get £50', copy: 'Once they join us' },
+  {
+    icon: DoodleChat,
+    title: 'Share your link',
+    copy: 'Send your personal link to a friend',
+    disc: 'bg-pastel-blush',
+    badge: 'bg-pastel-blush',
+  },
+  {
+    icon: DoodleSpark,
+    title: 'They try a free lesson',
+    copy: 'No cost, no commitment',
+    disc: 'bg-pastel-butter',
+    badge: 'bg-pastel-butter',
+  },
+  {
+    icon: DoodleCoin,
+    title: 'You both get £50',
+    copy: 'Once they join us',
+    disc: 'bg-pastel-sky',
+    badge: 'bg-pastel-sky',
+  },
 ];
 
 const pillBase =
