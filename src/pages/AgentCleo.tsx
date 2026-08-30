@@ -15,6 +15,47 @@ import { useAgentCleoThreads } from '@/hooks/useAgentCleoThreads';
 import { AgentCleoThreadList } from '@/components/agentCleo/AgentCleoThreadList';
 import DailySnapshot from '@/components/agentCleo/DailySnapshot';
 
+const Typewriter: React.FC<{ text: string; speed?: number; className?: string }> = ({ text, speed = 90, className }) => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    setCount(0);
+    if (!text) return;
+    const id = setInterval(() => {
+      setCount((c) => {
+        if (c >= text.length) {
+          clearInterval(id);
+          return c;
+        }
+        return c + 1;
+      });
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  return (
+    <span className={className}>
+      {text.slice(0, count)}
+      {count < text.length && <span className="animate-pulse">|</span>}
+    </span>
+  );
+};
+
+const UserAvatar: React.FC<{ avatarUrl?: string | null; name?: string | null; className?: string }> = ({ avatarUrl, name, className }) => {
+  const [errored, setErrored] = useState(false);
+  const initial = (name?.trim()?.[0] || 'Y').toUpperCase();
+  if (avatarUrl && !errored) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name ? `${name}'s profile picture` : 'Your profile picture'}
+        onError={() => setErrored(true)}
+        className={className}
+      />
+    );
+  }
+  return <div className={className}>{initial}</div>;
+};
+
+
 
 
 const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
@@ -906,8 +947,14 @@ const AgentCleo: React.FC = () => {
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {!hasMessages ? (
             <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white">C</div>
-              <h1 className="text-3xl font-semibold mb-2">Hey{firstName ? ` ${firstName}` : ''}</h1>
+              <UserAvatar
+                avatarUrl={profile?.avatar_url}
+                name={firstName}
+                className="w-14 h-14 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white"
+              />
+              <h1 className="text-3xl font-semibold mb-2 min-h-[2.5rem]">
+                <Typewriter text={`Hey${firstName ? ` ${firstName}` : ''}`} />
+              </h1>
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] italic mb-1 max-w-md text-center">“{quote}”</p>
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
 
@@ -927,8 +974,13 @@ const AgentCleo: React.FC = () => {
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
               {messages.map((m) =>
                 m.role === 'user' ? (
-                  <div key={m.id} className="flex justify-end">
+                  <div key={m.id} className="flex justify-end items-end gap-2">
                     <div className="max-w-[85%] bg-[#1a1a1a] text-white dark:bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">{m.content}</div>
+                    <UserAvatar
+                      avatarUrl={profile?.avatar_url}
+                      name={firstName}
+                      className="w-7 h-7 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-xs font-semibold text-white"
+                    />
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
