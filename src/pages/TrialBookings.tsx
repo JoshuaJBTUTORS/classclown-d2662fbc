@@ -2,23 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import Sidebar from '@/components/navigation/Sidebar';
-import PageTitle from '@/components/ui/PageTitle';
 import { Button } from '@/components/ui/button';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
   Select,
@@ -33,20 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
-  Calendar as CalendarIcon, 
-  Download,
-  Search, 
-  Eye,
-  Check,
-  X,
-  Clock,
-  Phone,
-  Mail,
-  UserPlus,
-  Sparkles,
-  BellRing
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -54,7 +25,78 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import TrialBookingApprovalDialogWithAdmin from '@/components/trialBooking/TrialBookingApprovalDialogWithAdmin';
 import ReviewRoomApprovalDialog from '@/components/trialBooking/ReviewRoomApprovalDialog';
+import {
+  DoodleCalendar,
+  DoodleCheck,
+  DoodleClock,
+  DoodlePerson,
+  DoodleSparkle,
+} from '@/components/calendar/LessonDoodles';
+import { DoodleEmpty, DoodleSend } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
+
+const stroke = {
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const DoodleSearch: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M11 4.2c3.6-.3 6.4 2.4 6.3 5.9-.1 3.3-2.8 5.8-6.1 5.7-3.4-.1-5.9-2.7-5.8-6C5.5 6.7 7.9 4.4 11 4.2z" />
+    <path d="M15.4 14.6c1.6 1.5 3 3.1 4.3 4.9" />
+  </svg>
+);
+
+const DoodleEye: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M3.5 12c2.4-4 5.2-6 8.6-6s6.3 2 8.4 6c-2.2 3.9-5.1 5.9-8.5 5.9S5.8 15.9 3.5 12z" />
+    <path d="M12 9.1c1.7-.1 3 1.2 2.9 2.8-.1 1.6-1.4 2.8-3 2.7-1.6-.1-2.8-1.3-2.7-2.9.1-1.5 1.3-2.6 2.8-2.6z" />
+  </svg>
+);
+
+const DoodleX: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M6.2 6.4c3.8 3.8 7.7 7.5 11.6 11.2M17.8 6.2c-3.8 3.9-7.6 7.7-11.4 11.5" />
+  </svg>
+);
+
+const DoodleUserPlus: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M10 4.4c2-.1 3.5 1.4 3.4 3.4-.1 1.8-1.5 3.2-3.4 3.1-1.8-.1-3.2-1.5-3.1-3.4.1-1.8 1.4-3 3.1-3.1z" />
+    <path d="M3.8 19.5c.6-3.4 3-5.3 6.3-5.3 1.5 0 2.8.3 3.9 1" />
+    <path d="M17.8 13.1v6M14.8 16.1h6" />
+  </svg>
+);
+
+const DoodleDownload: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M12 3.8v10.4M7.6 10.2c1.5 1.5 2.9 3 4.4 4.6 1.5-1.6 2.9-3.1 4.4-4.6" />
+    <path d="M4.8 18.8c4.8.5 9.6.5 14.4 0" />
+  </svg>
+);
+
+const DoodleBell: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M6.2 10.3c.1-3.4 2.3-5.5 5.8-5.5s5.7 2.1 5.8 5.5c0 2.1.4 3.7 1.5 5.1-4.5.5-9 .5-13.5 0 1.1-1.4 1.5-3 1.4-5.1z" />
+    <path d="M10 18.7c.5 1.1 1.1 1.6 2 1.6s1.5-.5 2-1.6" />
+  </svg>
+);
+
+const avatarTones = [
+  'bg-pastel-mint',
+  'bg-pastel-lilac',
+  'bg-pastel-butter',
+  'bg-pastel-blush',
+  'bg-pastel-sky',
+];
+
+const initialsFromName = (name?: string | null) => {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  return `${parts[0]?.charAt(0) || ''}${parts[1]?.charAt(0) || ''}`.toUpperCase() || '?';
+};
 
 interface TrialBooking {
   id: string;
