@@ -479,15 +479,20 @@ const TimeOffRequests = () => {
 
       {/* Action Dialog - Only shown for denial or when no conflicts */}
       <Dialog open={!!selectedRequest && actionType === 'deny'} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent className="cc-dialog rounded-[var(--radius-soft)]">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">
-              Deny Time Off Request
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)] border-2 border-foreground/10 p-6">
           {selectedRequest && (
             <div className="space-y-4">
-              <div className="rounded-[1.25rem] bg-pastel-blush/50 p-4">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-blush text-pastel-blush-foreground">
+                  <X className="h-8 w-8" strokeWidth={2.5} />
+                </span>
+                <DialogHeader>
+                  <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">
+                    Deny Time Off Request
+                  </DialogTitle>
+                </DialogHeader>
+              </div>
+              <div className="rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-blush/40 p-4">
                 <p className="font-semibold text-foreground">
                   {selectedRequest.tutor.first_name} {selectedRequest.tutor.last_name}
                 </p>
@@ -497,16 +502,17 @@ const TimeOffRequests = () => {
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">{selectedRequest.reason}</p>
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="adminNotes">Admin Notes (Optional)</Label>
                 <Textarea
                   id="adminNotes"
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder="Add any notes or comments..."
+                  className="min-h-[96px] rounded-2xl"
                 />
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
                   onClick={() => setSelectedRequest(null)}
