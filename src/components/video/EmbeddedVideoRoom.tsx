@@ -18,6 +18,7 @@ interface EmbeddedVideoRoomProps {
   roomUrl: string;
   spaceId?: string;
   lessonTitle?: string;
+  lessonStartTime?: string;
   onExit: () => void;
   className?: string;
   lessonId?: string;
