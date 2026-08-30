@@ -76,6 +76,35 @@ export const EarningsDateFilter = ({
       </div>
 
       <div className="space-y-4">
+        <div className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Suggested pay period
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map(({ label, period }) => {
+              const active = isSuggestionActive(period);
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => onDateRangeChange({ from: period.start, to: period.end })}
+                  className={cn(
+                    'flex flex-col items-start rounded-full border-2 px-4 py-2 text-left transition-all duration-200 hover:-translate-y-0.5',
+                    active
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-foreground/15 bg-card text-foreground hover:border-foreground/40'
+                  )}
+                >
+                  <span className="text-xs font-bold">{label}</span>
+                  <span className={cn('text-[11px]', active ? 'text-background/80' : 'text-muted-foreground')}>
+                    {formatPeriodDisplay(period.start, period.end)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="from-date" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
