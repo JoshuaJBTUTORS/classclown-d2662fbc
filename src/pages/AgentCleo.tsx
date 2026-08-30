@@ -405,11 +405,24 @@ const CREATE_LESSON_URL = `${FUNCTIONS_BASE_URL}/functions/v1/agent-cleo-create-
 const AgentCleo: React.FC = () => {
   const { threadId } = useParams<{ threadId?: string }>();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const {
     threads, loadingThreads, loadMessages, createThread, saveMessage, renameThread, deleteThread,
   } = useAgentCleoThreads();
 
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    try { return localStorage.getItem('agent-cleo-theme') === 'dark'; } catch { return false; }
+  });
+  const toggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('agent-cleo-theme', next ? 'dark' : 'light'); } catch { /* ignore */ }
+      return next;
+    });
+  };
+  const firstName = profile?.first_name?.trim() || null;
+  const quote = quoteOfTheDay();
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
