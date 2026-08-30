@@ -30,6 +30,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   roomUrl,
   spaceId,
   lessonTitle = "Video Room",
+  lessonStartTime,
   onExit,
   className = "",
   lessonId,
