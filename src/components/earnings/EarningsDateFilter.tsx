@@ -74,17 +74,44 @@ export const EarningsDateFilter = ({
             type="button"
             onClick={() => onDateRangeChange({ from: suggestedPeriod.start, to: suggestedPeriod.end })}
             className={cn(
-              'flex w-full flex-col items-start rounded-full border-2 px-4 py-2 text-left transition-all duration-200 hover:-translate-y-0.5',
+              'flex w-full items-center justify-between gap-3 rounded-full border-2 px-4 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 cursor-pointer',
               isSuggestionActive(suggestedPeriod)
                 ? 'border-foreground bg-foreground text-background'
-                : 'border-foreground/15 bg-card text-foreground hover:border-foreground/40'
+                : 'border-foreground/15 bg-card text-foreground hover:border-foreground/40 hover:bg-foreground/[0.03]'
             )}
           >
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Suggested Pay Period
+            <span className="flex items-center gap-3">
+              <span
+                className={cn(
+                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border',
+                  isSuggestionActive(suggestedPeriod) ? 'border-background/40 text-background' : 'border-foreground/15 text-foreground'
+                )}
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </span>
+              <span className="flex flex-col">
+                <span
+                  className={cn(
+                    'text-xs font-semibold uppercase tracking-wide',
+                    isSuggestionActive(suggestedPeriod) ? 'text-background/80' : 'text-muted-foreground'
+                  )}
+                >
+                  Suggested Pay Period
+                </span>
+                <span className="text-sm font-bold">
+                  {format(suggestedPeriod.start, 'd MMM')} – {format(suggestedPeriod.end, 'd MMM')}
+                </span>
+              </span>
             </span>
-            <span className={cn('text-sm font-bold', isSuggestionActive(suggestedPeriod) ? 'text-background' : 'text-foreground')}>
-              {format(suggestedPeriod.start, 'd MMM')} – {format(suggestedPeriod.end, 'd MMM')}
+            <span
+              className={cn(
+                'shrink-0 rounded-full px-3 py-1 text-xs font-bold',
+                isSuggestionActive(suggestedPeriod)
+                  ? 'bg-background text-foreground'
+                  : 'bg-foreground text-background'
+              )}
+            >
+              {isSuggestionActive(suggestedPeriod) ? 'Active' : 'Apply'}
             </span>
           </button>
         </div>
