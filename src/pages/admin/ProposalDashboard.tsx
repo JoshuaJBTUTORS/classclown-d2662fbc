@@ -21,7 +21,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminProposalSidebar } from '@/components/admin/AdminProposalSidebar';
-import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail, Clock } from 'lucide-react';
+import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail, Clock, MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 import { format } from 'date-fns';
 import ExtendOfferDialog from '@/components/proposals/ExtendOfferDialog';
 import { resolveDiscountDeadline } from '@/components/proposals/discountDeadline';
@@ -396,53 +404,10 @@ export default function ProposalDashboard() {
                             : '—'}
                         </span>
 
-                        <div className="flex flex-wrap items-center gap-2 pl-12 xl:flex-nowrap xl:justify-end xl:pl-0">
-
-                          {['sent', 'viewed', 'agreed'].includes(proposal.status) && (
-                            <button
-                              type="button"
-                              className={iconButton}
-                              onClick={() => resendProposal(proposal)}
-                              disabled={resendingId === proposal.id}
-                              title="Resend email and WhatsApp"
-                            >
-                              {resendingId === proposal.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Mail className="h-4 w-4" />
-                              )}
-                            </button>
-                          )}
+                        <div className="flex items-center gap-2 pl-12 xl:justify-end xl:pl-0">
                           <button
                             type="button"
-                            className={iconButton}
-                            onClick={() => setExtendTarget(proposal)}
-                            title={`Extend discounted rate (ends ${format(
-                              new Date(deadline),
-                              'd MMM yyyy, HH:mm'
-                            )})`}
-                          >
-                            <Clock className={cn('h-4 w-4', expired && 'text-destructive')} />
-                          </button>
-                          <button
-                            type="button"
-                            className={iconButton}
-                            onClick={() => navigate(`/admin/proposals/edit/${proposal.id}`)}
-                            title="Edit proposal"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className={iconButton}
-                            onClick={() => copyProposalLink(proposal)}
-                            title="Copy proposal link"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className={iconButton}
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-transform hover:-translate-y-0.5"
                             onClick={() => {
                               const url = `https://classclowncrm.com/proposal/${proposal.id}/${proposal.access_token}`;
                               window.open(url, '_blank');
@@ -451,15 +416,67 @@ export default function ProposalDashboard() {
                           >
                             <ExternalLink className="h-4 w-4" />
                           </button>
-                          <button
-                            type="button"
-                            className={cn(iconButton, 'border-destructive text-destructive hover:bg-destructive')}
-                            onClick={() => setDeleteTarget(proposal)}
-                            title="Delete proposal"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button type="button" className={iconButton} title="More actions">
+                                {resendingId === proposal.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <MoreHorizontal className="h-4 w-4" />
+                                )}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-64 rounded-2xl border-2 border-foreground bg-card p-1"
+                            >
+                              {['sent', 'viewed', 'agreed'].includes(proposal.status) && (
+                                <DropdownMenuItem
+                                  className="rounded-xl font-medium"
+                                  disabled={resendingId === proposal.id}
+                                  onClick={() => resendProposal(proposal)}
+                                >
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Resend email & WhatsApp
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                className="rounded-xl font-medium"
+                                onClick={() => setExtendTarget(proposal)}
+                              >
+                                <Clock className={cn('mr-2 h-4 w-4', expired && 'text-destructive')} />
+                                <span className="flex-1">Extend discounted rate</span>
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  {format(new Date(deadline), 'd MMM, HH:mm')}
+                                </span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="rounded-xl font-medium"
+                                onClick={() => navigate(`/admin/proposals/edit/${proposal.id}`)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit proposal
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="rounded-xl font-medium"
+                                onClick={() => copyProposalLink(proposal)}
+                              >
+                                <Copy className="mr-2 h-4 w-4" />
+                                Copy proposal link
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="rounded-xl font-medium text-destructive focus:text-destructive"
+                                onClick={() => setDeleteTarget(proposal)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete proposal
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
+
                       </div>
                     );
                   })}
