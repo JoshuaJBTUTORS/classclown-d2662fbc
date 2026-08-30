@@ -16,14 +16,15 @@ Slide 8  School progress     -> uploading reports, tracking school grades
 Slide 9  All set             -> "Go to my calendar" button
 ```
 
-- Skip is available on every slide except the details slide (details must be filled before finishing).
+- Onboarding is mandatory: there is no Skip. Parents and students cannot reach any part of the app until they finish it.
 - Students see one details form for themselves; parents see one block per linked child.
-- Returning users (accounts that already existed before this feature) see the same flow — they can skip the tour slides but still complete the details slide once.
-- Once finished or skipped, the user never sees it again; it can be reopened later from Settings via a "Replay tour" link.
+- Returning users (accounts that already existed before this feature) go through the same flow once.
+- Once completed, the user never sees it again; it can be reopened later from Settings via a "Replay tour" link.
 
 ## Where it appears
 
-A small guard inside the main app layout: if the signed-in user has role `parent` or `student` and their profile has not completed onboarding, they are redirected to `/welcome`. Admins, owners and tutors are unaffected. The existing admin `/onboarding` page (proposal → parent creation) is untouched.
+A guard inside the main app layout: if the signed-in user has role `parent` or `student` and their profile has not completed onboarding, every route redirects to `/welcome`, and `/welcome` itself is the only page they can open until the details are saved and the tour slides are finished. Signing out remains available from the onboarding page. Admins, owners and tutors are unaffected. The existing admin `/onboarding` page (proposal → parent creation) is untouched.
+
 
 ## Data collected
 
