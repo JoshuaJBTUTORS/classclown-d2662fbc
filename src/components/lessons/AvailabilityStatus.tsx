@@ -109,7 +109,7 @@ const AvailabilityStatus: React.FC<AvailabilityStatusProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => onSelectAlternativeTutor(tutor.id, `${tutor.first_name} ${tutor.last_name}`)}
-                        className="ml-2"
+                        className="ml-2 rounded-full border-foreground/20 bg-transparent"
                       >
                         Select
                       </Button>
