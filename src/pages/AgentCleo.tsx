@@ -959,7 +959,7 @@ const AgentCleo: React.FC = () => {
                                 </button>
                               </div>
                               {m.batchMessage && (
-                                <div className="w-full text-xs text-[#8e8ea0]">{m.batchMessage}</div>
+                                <div className="w-full text-xs text-[#6b6b76] dark:text-[#8e8ea0]">{m.batchMessage}</div>
                               )}
                             </div>
                           )}
@@ -993,13 +993,13 @@ const AgentCleo: React.FC = () => {
                       )}
                       {m.toolStatus && (
 
-                        <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#8e8ea0] bg-white/5 rounded-full px-3 py-1.5">
+                        <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0] bg-black/5 dark:bg-white/5 rounded-full px-3 py-1.5">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           {m.toolStatus}
                         </div>
                       )}
                       {!m.content && !m.toolStatus && loading && (
-                        <div className="inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+                        <div className="inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0]">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           Thinking…
                         </div>
