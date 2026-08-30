@@ -107,9 +107,7 @@ export default function ProposalView() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingHand fullScreen />
-      </div>
+      <LoadingHand fullScreen />
     );
   }
 

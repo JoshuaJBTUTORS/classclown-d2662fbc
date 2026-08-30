@@ -264,8 +264,7 @@ const CourseCheckout = () => {
 
           {isLoadingPayment ? (
             <div className="flex items-center justify-center py-12">
-              <LoadingHand fullScreen />
-              <span className="ml-3 text-gray-600">Loading payment form...</span>
+              <LoadingHand text="Loading payment form..." />
             </div>
           ) : paymentError ? (
             <div className="border border-red-200 bg-red-50 rounded-lg p-6">
