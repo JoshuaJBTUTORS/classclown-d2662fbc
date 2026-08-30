@@ -327,17 +327,18 @@ export default function ProposalDashboard() {
                 )
               ) : (
                 <div className="space-y-2">
-                  <div className="hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.6fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground xl:grid">
+                  <div className={cn('hidden px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground xl:grid', gridCols)}>
                     <span>Recipient</span>
                     <span>Subject</span>
                     <span>Lesson Type</span>
-                    <span>Price</span>
-                    <span>Status</span>
-                    <span>Sent</span>
+                    <span className="text-right">Price</span>
+                    <span className="text-center">Status</span>
+                    <span className="text-center">Sent</span>
                     <span className="text-right">Actions</span>
                   </div>
 
-                  {filteredProposals.map((proposal, i) => {
+                  {pagedProposals.map((proposal, i) => {
+
                     const deadline = resolveDiscountDeadline(proposal);
                     const expired = deadline <= Date.now();
                     return (
