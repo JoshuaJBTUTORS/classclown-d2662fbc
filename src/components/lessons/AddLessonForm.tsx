@@ -388,9 +388,9 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open && !isLoading) onClose();
     }}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-[600px] max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-[var(--radius-soft)] border-0 p-4 sm:p-6 shadow-[var(--shadow-soft-lg)]">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-heading text-xl sm:text-2xl font-extrabold tracking-tight">
             {form.watch('isReviewRoom') ? 'Add Review Room Session' : 'Add New Lesson'}
           </DialogTitle>
           <DialogDescription>
@@ -402,8 +402,8 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
 
         {isLoading && !form.formState.isSubmitting ? (
           <div className="flex justify-center items-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2">{loadingStep}</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-foreground/15 border-t-foreground"></div>
+            <span className="ml-2 text-sm text-muted-foreground">{loadingStep}</span>
           </div>
         ) : (
           <Form {...form}>
@@ -412,10 +412,10 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 control={form.control}
                 name="isReviewRoom"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border-2 border-primary/30 bg-primary/5 p-4">
+                  <FormItem className="flex flex-row items-center justify-between gap-3 space-y-0 rounded-[var(--radius-soft)] bg-pastel-mint p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Review Room Session</FormLabel>
-                      <div className="text-sm text-muted-foreground">
+                      <FormLabel className="text-base font-heading font-bold text-pastel-mint-foreground">Review Room Session</FormLabel>
+                      <div className="text-sm text-pastel-mint-foreground/70">
                         Free GCSE revision — only tutor & time needed. Auto-recurs weekly indefinitely.
                       </div>
                     </div>
