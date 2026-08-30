@@ -148,13 +148,17 @@ const DailySnapshot: React.FC = () => {
         />
       </div>
 
-      <div className="mt-3 p-4 rounded-2xl border border-black/10 bg-white/70 dark:border-white/10 dark:bg-transparent">
+      <div className="mt-3 p-4 rounded-3xl border border-black/70 bg-transparent dark:border-white/50">
         <button
           onClick={() => navigate('/goals')}
-          className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0] hover:text-black dark:hover:text-white transition-colors mb-4"
+          className="inline-flex items-center gap-2 rounded-full border border-black/60 pl-2 pr-4 h-9 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b76] hover:-translate-y-0.5 hover:bg-black/5 hover:text-black dark:border-white/50 dark:text-[#8e8ea0] dark:hover:bg-white/5 dark:hover:text-white transition-all duration-200 mb-4"
         >
-          Team goals <ArrowRight className="w-3 h-3" />
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-black/60 dark:border-white/50">
+            <ArrowRight className="w-3 h-3" />
+          </span>
+          Team goals
         </button>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <GoalRow label="Trials booked" current={data.goalTrials} target={TRIAL_GOAL} loading={loading} />
           <GoalRow label="Lessons this month" current={data.goalLessons} target={LESSONS_GOAL} loading={loading} />
