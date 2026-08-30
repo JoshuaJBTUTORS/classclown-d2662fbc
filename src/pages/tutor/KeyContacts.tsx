@@ -85,11 +85,6 @@ const KeyContacts = () => {
                 <DoodleSpeech className="h-5 w-5" />
               </span>
             </div>
-            <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Please reach out in order, starting with your first contact. If they are unavailable, move on to the next
-              person on the list.
-            </p>
-
             <div className="mt-8 space-y-4">
               {CONTACTS.map((contact, index) => (
                 <section
