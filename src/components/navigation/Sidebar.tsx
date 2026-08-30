@@ -174,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: DoodleFilm,
           label: 'Content Creation',
           href: '/tutor-content',
-          roles: ['tutor'],
+          roles: ['admin', 'owner'],
         },
       ]
     },
