@@ -17,21 +17,21 @@ const STEPS = [
     title: 'Share your link',
     copy: 'Send your personal link to a friend',
     disc: 'bg-pastel-sky',
-    badge: 'bg-pastel-sky',
+    badge: 'bg-background',
   },
   {
     icon: DoodleSpark,
     title: 'They try a free lesson',
     copy: 'No cost, no commitment',
     disc: 'bg-foreground/5',
-    badge: 'bg-foreground/5',
+    badge: 'bg-background',
   },
   {
     icon: DoodleCoin,
     title: 'You both get £50',
     copy: 'Once they join us',
     disc: 'bg-background',
-    badge: 'bg-foreground',
+    badge: 'bg-background',
   },
 ];
 
