@@ -256,17 +256,10 @@ export default function ProposalDashboard() {
           <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
                 <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
                   Lesson Proposals
                 </h1>
-                {proposals.length > 0 && (
-                  <span className="mt-2 inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-foreground">
-                    {filteredProposals.length === proposals.length
-                      ? proposals.length
-                      : `${filteredProposals.length}/${proposals.length}`}
-                  </span>
-                )}
               </div>
 
               <button
