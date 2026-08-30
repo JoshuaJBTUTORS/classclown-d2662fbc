@@ -56,7 +56,9 @@ export const TOUR_SLIDES: TourSlide[] = [
   },
 ];
 
-export const WelcomeIntroIcon = DoodleSparkle;
+export const WelcomeIntroIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <DoodleWave className={className} />
+);
 export const AllSetIcon = DoodleCheck;
 
 /** Year group options offered on the details step. */
