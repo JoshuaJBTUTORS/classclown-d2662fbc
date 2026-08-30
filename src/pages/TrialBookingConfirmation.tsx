@@ -1,9 +1,6 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Home, Clock, Phone, Mail } from 'lucide-react';
+import { Check, Home, Clock, Phone, Mail, Sparkles, Star } from 'lucide-react';
 
 const TrialBookingConfirmation: React.FC = () => {
   const navigate = useNavigate();
@@ -13,65 +10,117 @@ const TrialBookingConfirmation: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-green-100 rounded-full p-3">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl text-green-800">
-              Trial Lesson Request Submitted!
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-28 -left-28 h-[380px] w-[380px] rounded-full bg-pastel-mint/40 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-32 -right-24 h-[420px] w-[420px] rounded-full bg-pastel-sky/40 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/3 -right-20 h-[260px] w-[260px] rounded-full bg-pastel-butter/40 blur-3xl"
+      />
+
+      <div className="relative container mx-auto px-4 py-12">
+        <div className="mx-auto max-w-2xl">
+          <div className="rounded-[28px] border-2 border-black bg-card p-6 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] sm:p-10">
+            {/* Success badge */}
             <div className="text-center">
-              <p className="text-gray-600 mb-6">
-                Thank you for your trial lesson request. We've received your information and will review it shortly.
+              <div className="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center">
+                <Sparkles className="absolute -left-2 -top-1 h-5 w-5 text-amber-400" />
+                <Star className="absolute -right-2 top-2 h-4 w-4 text-pastel-lilac" />
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-black bg-pastel-mint shadow-[0_4px_0_rgba(0,0,0,0.9)]">
+                  <Check className="h-8 w-8 text-black" strokeWidth={3} />
+                </div>
+              </div>
+
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Request received
+              </p>
+              <h1 className="mt-1 font-heading text-2xl font-extrabold tracking-tight sm:text-3xl">
+                Trial Lesson Request Submitted!
+              </h1>
+              <svg className="mx-auto mt-2 h-2.5 w-28" viewBox="0 0 112 10" fill="none">
+                <path
+                  d="M2 6C22 1.5 42 8.5 62 5s40-2 48 1"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  className="text-pastel-lilac"
+                />
+              </svg>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                Thank you for your trial lesson request. We've received your
+                information and will review it shortly.
               </p>
             </div>
 
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-              <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+            {/* What happens next */}
+            <div className="mt-8 rounded-2xl border border-black/10 bg-pastel-butter/40 p-5 sm:p-6">
+              <h2 className="flex items-center gap-2 font-heading text-base font-bold">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-pastel-butter">
+                  <Clock className="h-4 w-4" />
+                </span>
                 What happens next?
-              </h3>
-              <ul className="space-y-2 text-sm text-orange-800">
-                <li>• Our team will review your trial lesson request</li>
-                <li>• We'll contact you within 24 hours to confirm your booking</li>
-                <li>• Once approved, we'll assign a qualified tutor to your lesson</li>
-                <li>• You'll receive the video lesson link before your appointment</li>
-                <li>• Your trial lesson is completely free - no payment required</li>
+              </h2>
+              <ul className="mt-4 space-y-2.5 text-sm text-foreground/80">
+                {[
+                  'Our team will review your trial lesson request',
+                  "We'll contact you within 24 hours to confirm your booking",
+                  "Once approved, we'll assign a qualified tutor to your lesson",
+                  "You'll receive the video lesson link before your appointment",
+                  'Your trial lesson is completely free - no payment required',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-black/60" />
+                    <span>{item}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="font-semibold text-blue-900 mb-3">Need help or have questions?</h3>
-              <div className="space-y-2 text-sm text-blue-800">
-                <div className="flex items-center gap-2">
+            {/* Contact */}
+            <div className="mt-4 rounded-2xl border border-black/10 bg-pastel-sky/40 p-5 sm:p-6">
+              <h2 className="flex items-center gap-2 font-heading text-base font-bold">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-pastel-sky">
                   <Phone className="h-4 w-4" />
+                </span>
+                Need help or have questions?
+              </h2>
+              <div className="mt-4 space-y-2.5 text-sm text-foreground/80">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-card">
+                    <Phone className="h-3.5 w-3.5" />
+                  </span>
                   <span>Call us: +44 01438582848</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span>Email: enquiries@classbeyondacademy.io</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-card">
+                    <Mail className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="break-all">
+                    Email: enquiries@classbeyondacademy.io
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="text-center pt-4">
-              <Button 
+            {/* Action */}
+            <div className="mt-8 text-center">
+              <button
+                type="button"
                 onClick={handleGoHome}
-                className="bg-[#e94b7f] hover:bg-[#d63d6f] text-white px-8 py-2 flex items-center gap-2 mx-auto"
+                className="inline-flex items-center gap-2 rounded-full border border-black bg-black px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black/85"
               >
                 <Home className="h-4 w-4" />
                 Back to Home
-              </Button>
+              </button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
