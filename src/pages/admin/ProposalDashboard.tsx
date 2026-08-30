@@ -344,7 +344,10 @@ export default function ProposalDashboard() {
                     return (
                       <div
                         key={proposal.id}
-                        className="grid grid-cols-1 items-center gap-2 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-colors duration-200 hover:bg-pastel-sky/60 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.6fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] xl:gap-4"
+                        className={cn(
+                          'grid grid-cols-1 items-center gap-2 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-3.5 transition-colors duration-200 hover:bg-pastel-sky/60 xl:min-h-[68px]',
+                          gridCols
+                        )}
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <span
@@ -356,29 +359,35 @@ export default function ProposalDashboard() {
                             {initials(proposal.recipient_name)}
                           </span>
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-foreground">
+                            <p className="truncate font-semibold leading-tight text-foreground">
                               {proposal.recipient_name}
                             </p>
-                            <p className="truncate text-sm text-muted-foreground">
+                            <p className="truncate text-sm leading-tight text-muted-foreground">
                               {proposal.recipient_email}
                             </p>
                           </div>
                         </div>
 
-                        <span className="truncate pl-12 text-sm text-foreground xl:pl-0">
+                        <span
+                          title={proposal.subject}
+                          className="truncate pl-12 text-sm text-foreground xl:pl-0"
+                        >
                           {proposal.subject}
                         </span>
-                        <span className="truncate pl-12 text-sm text-muted-foreground xl:pl-0">
+                        <span
+                          title={proposal.lesson_type}
+                          className="truncate pl-12 text-sm text-muted-foreground xl:pl-0"
+                        >
                           {proposal.lesson_type}
                         </span>
-                        <span className="pl-12 text-sm font-semibold text-foreground xl:pl-0">
+                        <span className="pl-12 text-sm font-semibold tabular-nums text-foreground xl:pl-0 xl:text-right">
                           £{proposal.price_per_lesson.toFixed(2)}
                         </span>
 
-                        <span className="pl-12 xl:pl-0">
+                        <span className="pl-12 xl:flex xl:justify-center xl:pl-0">
                           <span
                             className={cn(
-                              'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
+                              'inline-flex min-w-[86px] items-center justify-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
                               statusTones[proposal.status] || 'bg-pastel-sand'
                             )}
                           >
@@ -386,13 +395,14 @@ export default function ProposalDashboard() {
                           </span>
                         </span>
 
-                        <span className="pl-12 text-sm text-muted-foreground xl:pl-0">
+                        <span className="pl-12 text-sm tabular-nums text-muted-foreground xl:pl-0 xl:text-center">
                           {proposal.sent_at
                             ? format(new Date(proposal.sent_at), 'MMM d, yyyy')
                             : '—'}
                         </span>
 
-                        <div className="flex flex-wrap items-center gap-2 pl-12 xl:justify-end xl:pl-0">
+                        <div className="flex flex-wrap items-center gap-2 pl-12 xl:flex-nowrap xl:justify-end xl:pl-0">
+
                           {['sent', 'viewed', 'agreed'].includes(proposal.status) && (
                             <button
                               type="button"
