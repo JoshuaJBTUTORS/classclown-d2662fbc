@@ -111,6 +111,7 @@ export default function VideoRoom() {
         roomUrl={stableParticipantUrl}
         spaceId={lesson?.lesson_space_space_id}
         lessonTitle={lesson?.title}
+        lessonStartTime={lesson?.start_time}
         onExit={handleLeaveRoom}
         className="h-screen"
         lessonId={lessonId}
