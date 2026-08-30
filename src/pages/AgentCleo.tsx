@@ -831,35 +831,36 @@ const AgentCleo: React.FC = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-[#212121] text-[#ececec] antialiased">
+    <div className={isDark ? 'dark' : ''}>
+    <div className="fixed inset-0 z-50 flex bg-[#f6f2e9] text-[#2b2b2b] dark:bg-[#212121] dark:text-[#ececec] antialiased">
       {/* Sidebar */}
       <aside
-        className={`${sidebarOpen ? 'w-64' : 'w-0'} shrink-0 overflow-hidden bg-[#171717] transition-all duration-200 ease-out flex flex-col`}
+        className={`${sidebarOpen ? 'w-64' : 'w-0'} shrink-0 overflow-hidden bg-white/70 dark:bg-[#171717] border-r border-black/5 dark:border-r-0 transition-all duration-200 ease-out flex flex-col`}
       >
         <div className="flex items-center justify-between px-3 py-3">
-          <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close sidebar">
+          <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors" aria-label="Close sidebar">
             <Menu className="w-5 h-5" />
           </button>
-          <button onClick={newChat} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="New chat">
+          <button onClick={newChat} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors" aria-label="New chat">
             <Plus className="w-5 h-5" />
           </button>
         </div>
 
         <div className="px-2">
-          <button onClick={newChat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors">
+          <button onClick={newChat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-sm font-medium transition-colors">
             <MessageSquare className="w-4 h-4" />
             New chat
           </button>
           <button
             onClick={() => navigate('/calendar')}
-            className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors"
+            className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-sm font-medium transition-colors"
           >
             <LayoutGrid className="w-4 h-4" />
             Open CRM
           </button>
         </div>
 
-        <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#8e8ea0] uppercase tracking-wider">Recent</div>
+        <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#6b6b76] dark:text-[#8e8ea0] uppercase tracking-wider">Recent</div>
         <nav className="flex-1 px-2 overflow-y-auto space-y-0.5">
           <AgentCleoThreadList
             threads={threads}
@@ -872,9 +873,9 @@ const AgentCleo: React.FC = () => {
         </nav>
 
 
-        <div className="p-3 border-t border-white/5">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold">C</div>
+        <div className="p-3 border-t border-black/5 dark:border-white/5">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold text-white">C</div>
             <div className="text-sm font-medium">Agent Cleo</div>
           </div>
         </div>
@@ -884,31 +885,40 @@ const AgentCleo: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="flex items-center gap-2 px-3 h-14 shrink-0">
           {!sidebarOpen && (
-            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Open sidebar">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors" aria-label="Open sidebar">
               <Menu className="w-5 h-5" />
             </button>
           )}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/10 cursor-default">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-default">
             <span className="font-semibold">Agent Cleo</span>
-            <span className="text-[#8e8ea0] text-sm">CRM · read-only</span>
+            <span className="text-[#6b6b76] dark:text-[#8e8ea0] text-sm">CRM · read-only</span>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="ml-auto p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </header>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {!hasMessages ? (
             <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/40 text-2xl font-semibold">C</div>
-              <h1 className="text-3xl font-semibold mb-2">How can I help today?</h1>
-              <p className="text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white">C</div>
+              <h1 className="text-3xl font-semibold mb-2">Hey{firstName ? ` ${firstName}` : ''}</h1>
+              <p className="text-[#6b6b76] dark:text-[#8e8ea0] italic mb-1 max-w-md text-center">“{quote}”</p>
+              <p className="text-[#6b6b76] dark:text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
 
               <DailySnapshot />
 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 {SUGGESTIONS.map((s) => (
-                  <button key={s.title} onClick={() => { setInput(s.title); textareaRef.current?.focus(); }} className="text-left p-4 rounded-2xl border border-white/10 hover:bg-white/5 transition-colors">
+                  <button key={s.title} onClick={() => { setInput(s.title); textareaRef.current?.focus(); }} className="text-left p-4 rounded-2xl border border-black/10 bg-white/70 hover:bg-white dark:border-white/10 dark:bg-transparent dark:hover:bg-white/5 transition-colors">
                     <div className="font-medium mb-0.5">{s.title}</div>
-                    <div className="text-sm text-[#8e8ea0]">{s.subtitle}</div>
+                    <div className="text-sm text-[#6b6b76] dark:text-[#8e8ea0]">{s.subtitle}</div>
                   </button>
                 ))}
               </div>
