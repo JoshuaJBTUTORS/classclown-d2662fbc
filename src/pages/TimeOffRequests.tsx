@@ -292,7 +292,7 @@ const TimeOffRequests = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
       <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -309,22 +309,6 @@ const TimeOffRequests = () => {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">Review and manage tutor time off requests</p>
-            </div>
-
-            {/* Summary chips */}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-butter px-4 py-2 text-sm font-semibold text-pastel-butter-foreground">
-                <DoodleClock className="h-4 w-4" />
-                {pendingCount} Pending
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-mint px-4 py-2 text-sm font-semibold text-pastel-mint-foreground">
-                <DoodleCheckCircle className="h-4 w-4" />
-                {approvedCount} Approved
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-blush px-4 py-2 text-sm font-semibold text-pastel-blush-foreground">
-                <DoodleCross className="h-4 w-4" />
-                {deniedCount} Denied
-              </span>
             </div>
 
             {/* Filters */}
