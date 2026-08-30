@@ -783,86 +783,105 @@ const TrialBookings = () => {
 
       {/* Booking Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Trial Booking Details</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="cc-dialog max-h-[90dvh] max-w-2xl overflow-y-auto rounded-[var(--radius-soft)] border-2 border-foreground/10 p-6">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-lilac text-pastel-lilac-foreground">
+              <DoodlePerson className="h-8 w-8" />
+            </span>
+            <DialogHeader>
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">
+                Trial Booking Details
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
           {selectedBooking && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="mt-5 space-y-4">
+              <div className="grid gap-3 rounded-[1.25rem] bg-pastel-sand/50 p-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium">Parent Name</label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.parent_name}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parent Name</p>
+                  <p className="mt-1 font-semibold text-foreground">{selectedBooking.parent_name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Child Name</label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.child_name}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.email}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Phone</label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.phone || 'Not provided'}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Child Name</p>
+                  <p className="mt-1 font-semibold text-foreground">{selectedBooking.child_name}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid gap-3 rounded-[1.25rem] bg-pastel-sky/50 p-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium">Preferred Date</label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</p>
+                  <p className="mt-1 break-all text-sm text-foreground">{selectedBooking.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone</p>
+                  <p className="mt-1 text-sm text-foreground">{selectedBooking.phone || 'Not provided'}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 rounded-[1.25rem] bg-pastel-butter/60 p-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preferred Date</p>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground">
+                    <DoodleCalendar className="h-4 w-4 shrink-0" />
                     {selectedBooking.preferred_date ? format(parseISO(selectedBooking.preferred_date), 'MMM d, yyyy') : 'Not specified'}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Demo Session Time</label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.preferred_time || 'Not specified'}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Demo Session Time</p>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-medium text-foreground">
+                    <DoodleClock className="h-4 w-4 shrink-0" />
+                    {selectedBooking.preferred_time || 'Not specified'}
+                  </p>
                 </div>
               </div>
+
               {selectedBooking.lesson_time && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-3 rounded-[1.25rem] bg-pastel-mint/60 p-4 sm:grid-cols-2">
                   <div>
-                    <label className="text-sm font-medium">Lesson Time</label>
-                    <p className="text-sm text-muted-foreground">{selectedBooking.lesson_time}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lesson Time</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">{selectedBooking.lesson_time}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Time Difference</label>
-                    <p className="text-sm text-muted-foreground">15 minutes demo + lesson</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Time Difference</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">15 minutes demo + lesson</p>
                   </div>
                 </div>
               )}
+
               {selectedBooking.message && (
-                <div>
-                  <label className="text-sm font-medium">Message</label>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedBooking.message}</p>
+                <div className="rounded-[1.25rem] bg-pastel-sky/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{selectedBooking.message}</p>
                 </div>
               )}
+
               {selectedBooking.referral_code && (
-                <div className="rounded-md border bg-muted/50 p-3">
-                  <label className="text-sm font-medium">Referral</label>
-                  <p className="text-sm text-muted-foreground">
-                    Booked via referral code <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">{selectedBooking.referral_code}</code>
+                <div className="rounded-[1.25rem] bg-pastel-lilac p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-pastel-lilac-foreground/80">Referral</p>
+                  <p className="mt-2 text-sm text-pastel-lilac-foreground">
+                    Booked via referral code <code className="rounded-full bg-background/60 px-2 py-0.5 text-xs font-mono">{selectedBooking.referral_code}</code>
                   </p>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid gap-3 rounded-[1.25rem] bg-card p-4 shadow-[var(--shadow-soft)] sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <Badge className={getStatusColor(selectedBooking.status)}>
-                    {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
-                  </Badge>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</p>
+                  <span className={cn('mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', getStatusTone(selectedBooking.status))}>
+                    {statusLabel(selectedBooking.status)}
+                  </span>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Submitted</label>
-                  <p className="text-sm text-muted-foreground">{format(parseISO(selectedBooking.created_at), 'MMM d, yyyy h:mm a')}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Submitted</p>
+                  <p className="mt-2 text-sm text-foreground">{format(parseISO(selectedBooking.created_at), 'MMM d, yyyy h:mm a')}</p>
                 </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
 
       {/* Approval Dialog */}
       <TrialBookingApprovalDialogWithAdmin
