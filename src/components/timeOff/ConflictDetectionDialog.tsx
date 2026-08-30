@@ -34,13 +34,15 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
   if (isLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="cc-dialog max-w-2xl rounded-[var(--radius-soft)]">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">Checking for Conflicts</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="mr-3 h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="text-muted-foreground">Checking for scheduling conflicts...</span>
+        <DialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)] border-2 border-foreground/10 p-6">
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-butter text-pastel-butter-foreground">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </span>
+            <DialogHeader>
+              <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Checking for Conflicts</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">Checking for scheduling conflicts...</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -51,27 +53,27 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
   if (hasNoConflicts && conflicts.length === 0) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)]">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">No Conflicts Found</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)] border-2 border-foreground/10 p-6">
           <div className="space-y-4">
-            <div className="flex items-center justify-center py-4">
-              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-pastel-mint text-pastel-mint-foreground">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-mint text-pastel-mint-foreground">
                 <DoodleCheck className="h-10 w-10" />
               </span>
+              <DialogHeader>
+                <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">No Conflicts Found</DialogTitle>
+              </DialogHeader>
             </div>
-            <div className="space-y-2 text-center">
-              <p className="text-lg font-semibold text-foreground">No scheduling conflicts detected</p>
+            <div className="space-y-2 rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-mint/40 p-4 text-center">
+              <p className="font-semibold text-foreground">No scheduling conflicts detected</p>
               <p className="text-sm text-muted-foreground">
-                The time off request for <strong>{tutorName}</strong> during{' '}
-                <strong>{timeOffPeriod}</strong> does not conflict with any existing lessons.
+                The time off request for <strong className="text-foreground">{tutorName}</strong> during{' '}
+                <strong className="text-foreground">{timeOffPeriod}</strong> does not conflict with any existing lessons.
               </p>
               <p className="text-sm text-muted-foreground">
                 The request can be approved safely.
               </p>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-2 pt-1">
               <Button
                 variant="outline"
                 onClick={onClose}
@@ -95,30 +97,29 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
   // Show conflicts that need resolution in calendar
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="cc-dialog max-h-[80vh] max-w-3xl rounded-[var(--radius-soft)]">
-        <DialogHeader>
-          <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">Scheduling Conflicts Detected</DialogTitle>
-        </DialogHeader>
-
-        <div className="mt-2 flex items-start gap-3 rounded-[1.25rem] bg-pastel-blush/60 p-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pastel-blush text-pastel-blush-foreground">
-            <DoodleAlert className="h-5 w-5" />
+      <DialogContent className="cc-dialog max-h-[85vh] max-w-3xl rounded-[var(--radius-soft)] border-2 border-foreground/10 p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-blush text-pastel-blush-foreground">
+            <DoodleAlert className="h-6 w-6" />
           </span>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">Scheduling Conflicts Detected</DialogTitle>
+          </DialogHeader>
+        </div>
+
+        <div className="mt-4 rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-blush/40 p-4">
           <p className="text-sm text-foreground">
             Found <strong>{conflicts.length}</strong> lesson{conflicts.length !== 1 ? 's' : ''} that conflict with the time off request for <strong>{tutorName}</strong> during {timeOffPeriod}.
           </p>
-        </div>
-
-        <div className="my-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             Please resolve these conflicts in the calendar before approving this time off request.
             You can reassign tutors or reschedule lessons as needed.
           </p>
         </div>
 
-        <div className="max-h-[400px] space-y-3 overflow-y-auto pr-2">
+        <div className="mt-4 max-h-[400px] space-y-3 overflow-y-auto pr-2">
           {conflicts.map((conflict) => (
-            <div key={conflict.id} className="rounded-[1.25rem] bg-pastel-sand/40 p-4">
+            <div key={conflict.id} className="rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-sand/40 p-4">
               <p className="font-semibold text-foreground">{conflict.title}</p>
               <div className="mt-3 space-y-2">
                 <div className="grid grid-cols-1 gap-2 text-sm text-foreground sm:grid-cols-2">
