@@ -146,6 +146,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           href: '/time-off',
           roles: ['tutor'],
         },
+        {
+          icon: DoodleSpeech,
+          label: 'Key Contacts',
+          href: '/key-contacts',
+          roles: ['tutor'],
+        },
       ]
     },
     {
