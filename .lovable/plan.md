@@ -16,11 +16,11 @@ Rows 829 and 830 are the duplicates.
 
 ## Why they exist
 
-They are not created by the app's forms or by any edge function — no student insert path produces a row with no surname, no email, `account_type = 'trial'` and `status = 'active'` while setting a `subjects` string.
+The duplicate rows (829, 830) belong to a contiguous block of **101 rows with IDs 808–908** that all share the same unusual shape: `account_type='trial'`, `status='active'`, a populated `subjects` string, **no `user_id`**, and almost no email/last name (only 1 of 101 has an email, 28 of 101 have a last name). No application form or edge function produces a row shaped this way — every real insert path sets an email, a surname, or a `user_id`. Within the block, `parent_id` is monotonically non-decreasing with consecutive same-parent rows, i.e. rows are grouped by parent with one row per subject.
 
-They came from a one-off bulk import: student IDs **808–908** are a single contiguous block of 73 such rows, ordered by parent UUID, one row per parent/subject combination. Only one row in that whole block (ID 907) is attached to any lesson. So the import created a fresh student row per parent/subject instead of matching against the children that already existed for that parent — Manju already had Amelia and Daniel, so she ended up with a second copy of each.
+That shape and ordering is what a single batch insert produces, so this block was almost certainly created by one bulk operation. I could not find a migration file or code path that created it, so I can't say definitively whether it was a checked-in script or a manual SQL run in the dashboard — treat "bulk import" as an inference from the data, not a traced source.
 
-This is a data problem, not a live bug: nothing in the current codebase will create more of these rows.
+Only one row in the whole block (ID 907) is attached to any lesson, so the duplicates are safe to merge/remove. Because the block predates the current code and nothing in the app recreates it, this is a data problem, not a live bug — no code change will stop it recurring because no code is producing it now.
 
 ## Proposed clean-up
 
