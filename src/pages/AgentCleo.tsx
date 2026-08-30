@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowUp, Plus, MessageSquare, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid, Sun, Moon } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AudioRecorder } from '@/utils/audioRecorder';
@@ -120,6 +121,31 @@ const SUGGESTIONS = [
   { title: 'How many trial lessons this month?', subtitle: 'booked, attended, no-shows' },
   { title: 'Which proposals are pending?', subtitle: 'sent but not yet signed' },
 ];
+
+const DAILY_QUOTES = [
+  'Small steps every day add up to big results.',
+  'Every lesson you plan changes someone’s trajectory.',
+  'Progress, not perfection — you’re doing great.',
+  'The best time to help a student is today.',
+  'Great teaching starts with great organisation. You’ve got this.',
+  'One calm, clear day at a time.',
+  'Your work today becomes someone’s breakthrough tomorrow.',
+  'Consistency is quiet, but it wins.',
+  'A well-run day is a gift to every family you support.',
+  'Keep going — the details you handle matter more than you know.',
+  'Today is a good day to make a difference.',
+  'Clarity beats chaos. You’re building clarity.',
+  'Every family you onboard is a new story beginning.',
+  'Done is better than perfect — keep the momentum.',
+];
+
+// Deterministic daily pick — rotates once per day, no backend needed.
+const quoteOfTheDay = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
+};
 
 const TOOL_LABELS: Record<string, string> = {
   list_schema: 'Reading schema…',
