@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowUp, Plus, MessageSquare, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid } from 'lucide-react';
+import { ArrowUp, Plus, MessageSquare, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid, Sun, Moon } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AudioRecorder } from '@/utils/audioRecorder';
@@ -28,21 +29,21 @@ const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
       ul: ({ node, ...p }) => <ul className="list-disc pl-5 my-2 space-y-1" {...p} />,
       ol: ({ node, ...p }) => <ol className="list-decimal pl-5 my-2 space-y-1" {...p} />,
       li: ({ node, ...p }) => <li className="leading-relaxed" {...p} />,
-      strong: ({ node, ...p }) => <strong className="font-semibold text-white" {...p} />,
+      strong: ({ node, ...p }) => <strong className="font-semibold text-[#1a1a1a] dark:text-white" {...p} />,
       em: ({ node, ...p }) => <em className="italic" {...p} />,
-      a: ({ node, ...p }) => <a className="text-teal-400 underline hover:text-teal-300" target="_blank" rel="noreferrer" {...p} />,
+      a: ({ node, ...p }) => <a className="text-teal-600 underline hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300" target="_blank" rel="noreferrer" {...p} />,
       code: ({ node, className, children, ...p }: any) => {
         const inline = !className;
         return inline
-          ? <code className="bg-white/10 rounded px-1 py-0.5 text-[0.85em]" {...p}>{children}</code>
+          ? <code className="bg-black/5 dark:bg-white/10 rounded px-1 py-0.5 text-[0.85em]" {...p}>{children}</code>
           : <code className={className} {...p}>{children}</code>;
       },
-      pre: ({ node, ...p }) => <pre className="bg-black/40 rounded-lg p-3 my-2 overflow-x-auto text-sm" {...p} />,
-      blockquote: ({ node, ...p }) => <blockquote className="border-l-2 border-white/20 pl-3 my-2 text-[#c5c5d2]" {...p} />,
-      hr: () => <hr className="my-4 border-white/10" />,
+      pre: ({ node, ...p }) => <pre className="bg-[#efe9dc] dark:bg-black/40 rounded-lg p-3 my-2 overflow-x-auto text-sm" {...p} />,
+      blockquote: ({ node, ...p }) => <blockquote className="border-l-2 border-black/15 dark:border-white/20 pl-3 my-2 text-[#55555e] dark:text-[#c5c5d2]" {...p} />,
+      hr: () => <hr className="my-4 border-black/10 dark:border-white/10" />,
       table: ({ node, ...p }) => <div className="my-2 overflow-x-auto"><table className="min-w-full text-sm border-collapse" {...p} /></div>,
-      th: ({ node, ...p }) => <th className="border border-white/15 px-2 py-1 text-left font-semibold" {...p} />,
-      td: ({ node, ...p }) => <td className="border border-white/15 px-2 py-1" {...p} />,
+      th: ({ node, ...p }) => <th className="border border-black/15 dark:border-white/15 px-2 py-1 text-left font-semibold" {...p} />,
+      td: ({ node, ...p }) => <td className="border border-black/15 dark:border-white/15 px-2 py-1" {...p} />,
     }}
   >
     {children}
@@ -121,6 +122,31 @@ const SUGGESTIONS = [
   { title: 'Which proposals are pending?', subtitle: 'sent but not yet signed' },
 ];
 
+const DAILY_QUOTES = [
+  'Small steps every day add up to big results.',
+  'Every lesson you plan changes someone’s trajectory.',
+  'Progress, not perfection — you’re doing great.',
+  'The best time to help a student is today.',
+  'Great teaching starts with great organisation. You’ve got this.',
+  'One calm, clear day at a time.',
+  'Your work today becomes someone’s breakthrough tomorrow.',
+  'Consistency is quiet, but it wins.',
+  'A well-run day is a gift to every family you support.',
+  'Keep going — the details you handle matter more than you know.',
+  'Today is a good day to make a difference.',
+  'Clarity beats chaos. You’re building clarity.',
+  'Every family you onboard is a new story beginning.',
+  'Done is better than perfect — keep the momentum.',
+];
+
+// Deterministic daily pick — rotates once per day, no backend needed.
+const quoteOfTheDay = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
+};
+
 const TOOL_LABELS: Record<string, string> = {
   list_schema: 'Reading schema…',
   describe_table: 'Inspecting table…',
@@ -163,42 +189,42 @@ const LessonProposalCard: React.FC<{
   );
 
   return (
-    <div className="mt-3 rounded-2xl border border-white/10 bg-[#2a2a2a] overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
-        <CalendarPlus className="w-4 h-4 text-teal-400" />
+    <div className="mt-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#2a2a2a] overflow-hidden">
+      <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center gap-2">
+        <CalendarPlus className="w-4 h-4 text-teal-600 dark:text-teal-400" />
         <span className="font-medium text-sm">Create lesson — needs your approval</span>
       </div>
 
       <dl className="px-4 py-3 text-sm space-y-2">
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Title</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Title</dt>
           <dd className="font-medium">{proposal.title}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Subject</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Subject</dt>
           <dd>{proposal.subject}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Tutor</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Tutor</dt>
           <dd>{proposal.tutor_name}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Student{proposal.student_names.length > 1 ? 's' : ''}</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Student{proposal.student_names.length > 1 ? 's' : ''}</dt>
           <dd>{proposal.student_names.join(', ')}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">When</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">When</dt>
           <dd>
             {fmtLondon(proposal.start_time)} – {fmtTime(proposal.end_time)}{' '}
-            <span className="text-[#8e8ea0]">({mins} min, UK time)</span>
+            <span className="text-[#6b6b76] dark:text-[#8e8ea0]">({mins} min, UK time)</span>
           </dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Type</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Type</dt>
           <dd>{proposal.is_group ? 'Group lesson' : '1-1 lesson'}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Repeats</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Repeats</dt>
           <dd>
             {proposal.recurring
               ? `${proposal.recurring.interval} × ${proposal.recurring.occurrences} occurrences`
@@ -207,16 +233,16 @@ const LessonProposalCard: React.FC<{
         </div>
         {proposal.description && (
           <div className="flex gap-3">
-            <dt className="w-28 shrink-0 text-[#8e8ea0]">Notes</dt>
-            <dd className="text-[#c5c5d2]">{proposal.description}</dd>
+            <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Notes</dt>
+            <dd className="text-[#55555e] dark:text-[#c5c5d2]">{proposal.description}</dd>
           </div>
         )}
       </dl>
 
       {proposal.warnings && proposal.warnings.length > 0 && (
         <div className="mx-4 mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-          <div className="text-xs font-medium text-amber-300 mb-1">Tutor availability check</div>
-          <ul className="list-disc pl-4 text-xs text-amber-200/90 space-y-1">
+          <div className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-1">Tutor availability check</div>
+          <ul className="list-disc pl-4 text-xs text-amber-800/90 dark:text-amber-200/90 space-y-1">
             {proposal.warnings.map((w) => (
               <li key={w}>{w}</li>
             ))}
@@ -226,7 +252,7 @@ const LessonProposalCard: React.FC<{
 
       {message && (
         <div
-          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
+          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-600 dark:text-emerald-400' : state === 'error' ? 'text-red-600 dark:text-red-400' : 'text-[#6b6b76] dark:text-[#8e8ea0]'}`}
         >
           {message}
         </div>
@@ -242,7 +268,7 @@ const LessonProposalCard: React.FC<{
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5 text-sm transition-colors"
+            className="px-4 py-2 rounded-xl border border-black/15 hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5 text-sm transition-colors"
           >
             Cancel
           </button>
@@ -250,7 +276,7 @@ const LessonProposalCard: React.FC<{
       )}
 
       {state === 'confirming' && (
-        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0]">
           <Loader2 className="w-3 h-3 animate-spin" />
           Creating…
         </div>
@@ -275,28 +301,28 @@ const LessonEditProposalCard: React.FC<{
   const locked = state !== 'pending' && state !== 'error';
 
   return (
-    <div className="mt-3 rounded-2xl border border-white/10 bg-[#2a2a2a] overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
-        <CalendarCog className="w-4 h-4 text-amber-400" />
+    <div className="mt-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#2a2a2a] overflow-hidden">
+      <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center gap-2">
+        <CalendarCog className="w-4 h-4 text-amber-500 dark:text-amber-400" />
         <span className="font-medium text-sm">Edit lesson — needs your approval</span>
       </div>
 
       <div className="px-4 py-3 text-sm space-y-3">
-        <div className="text-[#c5c5d2]">
-          <span className="font-medium text-white">{proposal.lesson_title || 'Lesson'}</span>{' '}
-          <span className="text-[#8e8ea0]">· {fmtLondon(proposal.lesson_start_time)}</span>
+        <div className="text-[#55555e] dark:text-[#c5c5d2]">
+          <span className="font-medium text-[#1a1a1a] dark:text-white">{proposal.lesson_title || 'Lesson'}</span>{' '}
+          <span className="text-[#6b6b76] dark:text-[#8e8ea0]">· {fmtLondon(proposal.lesson_start_time)}</span>
         </div>
 
-        <div className="rounded-xl border border-white/10 divide-y divide-white/5">
+        <div className="rounded-xl border border-black/10 dark:border-white/10 divide-y divide-black/5 dark:divide-white/5">
           {proposal.changes.map((c) => (
             <div key={c.field} className="px-3 py-2">
-              <div className="text-xs uppercase tracking-wide text-[#8e8ea0] mb-1">{c.label}</div>
+              <div className="text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0] mb-1">{c.label}</div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="line-through text-[#8e8ea0]">
+                <span className="line-through text-[#6b6b76] dark:text-[#8e8ea0]">
                   {c.field === 'time' ? fmtRange(c.before) : c.before}
                 </span>
-                <span className="text-[#8e8ea0]">→</span>
-                <span className="font-medium text-white">
+                <span className="text-[#6b6b76] dark:text-[#8e8ea0]">→</span>
+                <span className="font-medium text-[#1a1a1a] dark:text-white">
                   {c.field === 'time' ? fmtRange(c.after) : c.after}
                 </span>
               </div>
@@ -305,7 +331,7 @@ const LessonEditProposalCard: React.FC<{
         </div>
 
         <div className="flex gap-3">
-          <span className="w-28 shrink-0 text-[#8e8ea0]">Applies to</span>
+          <span className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Applies to</span>
           <span>
             {proposal.scope === 'all_future_lessons'
               ? `This and all future occurrences (${proposal.affected_count} lesson${proposal.affected_count === 1 ? '' : 's'})`
@@ -314,7 +340,7 @@ const LessonEditProposalCard: React.FC<{
         </div>
 
         {proposal.side_effects.length > 0 && (
-          <ul className="list-disc pl-5 text-xs text-amber-300/90 space-y-1">
+          <ul className="list-disc pl-5 text-xs text-amber-700/90 dark:text-amber-300/90 space-y-1">
             {proposal.side_effects.map((s) => (
               <li key={s}>{s}</li>
             ))}
@@ -323,8 +349,8 @@ const LessonEditProposalCard: React.FC<{
 
         {proposal.warnings && proposal.warnings.length > 0 && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-            <div className="text-xs font-medium text-amber-300 mb-1">Tutor availability check</div>
-            <ul className="list-disc pl-4 text-xs text-amber-200/90 space-y-1">
+            <div className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-1">Tutor availability check</div>
+            <ul className="list-disc pl-4 text-xs text-amber-800/90 dark:text-amber-200/90 space-y-1">
               {proposal.warnings.map((w) => (
                 <li key={w}>{w}</li>
               ))}
@@ -335,7 +361,7 @@ const LessonEditProposalCard: React.FC<{
 
       {message && (
         <div
-          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
+          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-600 dark:text-emerald-400' : state === 'error' ? 'text-red-600 dark:text-red-400' : 'text-[#6b6b76] dark:text-[#8e8ea0]'}`}
         >
           {message}
         </div>
@@ -351,7 +377,7 @@ const LessonEditProposalCard: React.FC<{
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5 text-sm transition-colors"
+            className="px-4 py-2 rounded-xl border border-black/15 hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5 text-sm transition-colors"
           >
             Cancel
           </button>
@@ -359,7 +385,7 @@ const LessonEditProposalCard: React.FC<{
       )}
 
       {state === 'confirming' && (
-        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0]">
           <Loader2 className="w-3 h-3 animate-spin" />
           Applying…
         </div>
@@ -379,11 +405,24 @@ const CREATE_LESSON_URL = `${FUNCTIONS_BASE_URL}/functions/v1/agent-cleo-create-
 const AgentCleo: React.FC = () => {
   const { threadId } = useParams<{ threadId?: string }>();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const {
     threads, loadingThreads, loadMessages, createThread, saveMessage, renameThread, deleteThread,
   } = useAgentCleoThreads();
 
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    try { return localStorage.getItem('agent-cleo-theme') === 'dark'; } catch { return false; }
+  });
+  const toggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('agent-cleo-theme', next ? 'dark' : 'light'); } catch { /* ignore */ }
+      return next;
+    });
+  };
+  const firstName = profile?.first_name?.trim() || null;
+  const quote = quoteOfTheDay();
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -792,35 +831,36 @@ const AgentCleo: React.FC = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-[#212121] text-[#ececec] antialiased">
+    <div className={isDark ? 'dark' : ''}>
+    <div className="fixed inset-0 z-50 flex bg-[#f6f2e9] text-[#2b2b2b] dark:bg-[#212121] dark:text-[#ececec] antialiased">
       {/* Sidebar */}
       <aside
-        className={`${sidebarOpen ? 'w-64' : 'w-0'} shrink-0 overflow-hidden bg-[#171717] transition-all duration-200 ease-out flex flex-col`}
+        className={`${sidebarOpen ? 'w-64' : 'w-0'} shrink-0 overflow-hidden bg-white/70 dark:bg-[#171717] border-r border-black/5 dark:border-r-0 transition-all duration-200 ease-out flex flex-col`}
       >
         <div className="flex items-center justify-between px-3 py-3">
-          <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close sidebar">
+          <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors" aria-label="Close sidebar">
             <Menu className="w-5 h-5" />
           </button>
-          <button onClick={newChat} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="New chat">
+          <button onClick={newChat} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors" aria-label="New chat">
             <Plus className="w-5 h-5" />
           </button>
         </div>
 
         <div className="px-2">
-          <button onClick={newChat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors">
+          <button onClick={newChat} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-sm font-medium transition-colors">
             <MessageSquare className="w-4 h-4" />
             New chat
           </button>
           <button
             onClick={() => navigate('/calendar')}
-            className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm font-medium transition-colors"
+            className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-sm font-medium transition-colors"
           >
             <LayoutGrid className="w-4 h-4" />
             Open CRM
           </button>
         </div>
 
-        <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#8e8ea0] uppercase tracking-wider">Recent</div>
+        <div className="px-3 mt-6 mb-2 text-xs font-medium text-[#6b6b76] dark:text-[#8e8ea0] uppercase tracking-wider">Recent</div>
         <nav className="flex-1 px-2 overflow-y-auto space-y-0.5">
           <AgentCleoThreadList
             threads={threads}
@@ -833,9 +873,9 @@ const AgentCleo: React.FC = () => {
         </nav>
 
 
-        <div className="p-3 border-t border-white/5">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 cursor-pointer">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold">C</div>
+        <div className="p-3 border-t border-black/5 dark:border-white/5">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold text-white">C</div>
             <div className="text-sm font-medium">Agent Cleo</div>
           </div>
         </div>
@@ -845,31 +885,40 @@ const AgentCleo: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="flex items-center gap-2 px-3 h-14 shrink-0">
           {!sidebarOpen && (
-            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Open sidebar">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors" aria-label="Open sidebar">
               <Menu className="w-5 h-5" />
             </button>
           )}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/10 cursor-default">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-default">
             <span className="font-semibold">Agent Cleo</span>
-            <span className="text-[#8e8ea0] text-sm">CRM · read-only</span>
+            <span className="text-[#6b6b76] dark:text-[#8e8ea0] text-sm">CRM · read-only</span>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="ml-auto p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </header>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {!hasMessages ? (
             <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/40 text-2xl font-semibold">C</div>
-              <h1 className="text-3xl font-semibold mb-2">How can I help today?</h1>
-              <p className="text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white">C</div>
+              <h1 className="text-3xl font-semibold mb-2">Hey{firstName ? ` ${firstName}` : ''}</h1>
+              <p className="text-[#6b6b76] dark:text-[#8e8ea0] italic mb-1 max-w-md text-center">“{quote}”</p>
+              <p className="text-[#6b6b76] dark:text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
 
               <DailySnapshot />
 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 {SUGGESTIONS.map((s) => (
-                  <button key={s.title} onClick={() => { setInput(s.title); textareaRef.current?.focus(); }} className="text-left p-4 rounded-2xl border border-white/10 hover:bg-white/5 transition-colors">
+                  <button key={s.title} onClick={() => { setInput(s.title); textareaRef.current?.focus(); }} className="text-left p-4 rounded-2xl border border-black/10 bg-white/70 hover:bg-white dark:border-white/10 dark:bg-transparent dark:hover:bg-white/5 transition-colors">
                     <div className="font-medium mb-0.5">{s.title}</div>
-                    <div className="text-sm text-[#8e8ea0]">{s.subtitle}</div>
+                    <div className="text-sm text-[#6b6b76] dark:text-[#8e8ea0]">{s.subtitle}</div>
                   </button>
                 ))}
               </div>
@@ -879,7 +928,7 @@ const AgentCleo: React.FC = () => {
               {messages.map((m) =>
                 m.role === 'user' ? (
                   <div key={m.id} className="flex justify-end">
-                    <div className="max-w-[85%] bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">{m.content}</div>
+                    <div className="max-w-[85%] bg-[#1a1a1a] text-white dark:bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">{m.content}</div>
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
@@ -889,8 +938,8 @@ const AgentCleo: React.FC = () => {
                       {(m.proposals?.length ?? 0) > 0 && (
                         <div>
                           {m.proposals!.length > 1 && (
-                            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
-                              <span className="text-sm text-[#c5c5d2]">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-black/10 bg-white dark:border-white/10 dark:bg-[#262626] px-4 py-3">
+                              <span className="text-sm text-[#55555e] dark:text-[#c5c5d2]">
                                 {m.proposals!.length} proposals need your approval
                               </span>
                               <div className="ml-auto flex gap-2">
@@ -904,20 +953,20 @@ const AgentCleo: React.FC = () => {
                                 <button
                                   onClick={() => cancelAll(m)}
                                   disabled={!m.proposals!.some((p) => p.state === 'pending' || p.state === 'error')}
-                                  className="px-3 py-1.5 rounded-xl border border-white/15 hover:bg-white/5 disabled:opacity-40 text-sm transition-colors"
+                                  className="px-3 py-1.5 rounded-xl border border-black/15 hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5 disabled:opacity-40 text-sm transition-colors"
                                 >
                                   Cancel all
                                 </button>
                               </div>
                               {m.batchMessage && (
-                                <div className="w-full text-xs text-[#8e8ea0]">{m.batchMessage}</div>
+                                <div className="w-full text-xs text-[#6b6b76] dark:text-[#8e8ea0]">{m.batchMessage}</div>
                               )}
                             </div>
                           )}
                           {m.proposals!.map((entry, i) => (
                             <div key={entry.id}>
                               {m.proposals!.length > 1 && (
-                                <div className="mt-3 text-xs uppercase tracking-wide text-[#8e8ea0]">
+                                <div className="mt-3 text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0]">
                                   Proposal {i + 1} of {m.proposals!.length}
                                 </div>
                               )}
@@ -944,13 +993,13 @@ const AgentCleo: React.FC = () => {
                       )}
                       {m.toolStatus && (
 
-                        <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#8e8ea0] bg-white/5 rounded-full px-3 py-1.5">
+                        <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0] bg-black/5 dark:bg-white/5 rounded-full px-3 py-1.5">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           {m.toolStatus}
                         </div>
                       )}
                       {!m.content && !m.toolStatus && loading && (
-                        <div className="inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+                        <div className="inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0]">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           Thinking…
                         </div>
@@ -965,7 +1014,7 @@ const AgentCleo: React.FC = () => {
 
         <div className="px-4 pb-4">
           <div className="max-w-3xl mx-auto">
-            <div className="relative flex items-end bg-[#2f2f2f] rounded-3xl border border-white/5 shadow-lg">
+            <div className="relative flex items-end bg-white dark:bg-[#2f2f2f] rounded-3xl border border-black/10 dark:border-white/5 shadow-lg shadow-black/5 dark:shadow-black/30">
               <textarea
                 ref={textareaRef}
                 value={recordingState === 'recording' ? `Recording… ${formatDuration(recordingDuration)}` : input}
@@ -974,13 +1023,13 @@ const AgentCleo: React.FC = () => {
                 rows={1}
                 readOnly={recordingState !== 'idle'}
                 placeholder={recordingState === 'processing' ? 'Transcribing…' : 'Message Agent Cleo'}
-                className="flex-1 bg-transparent resize-none px-5 py-4 pr-32 outline-none placeholder:text-[#8e8ea0] max-h-[220px]"
+                className="flex-1 bg-transparent resize-none px-5 py-4 pr-32 outline-none placeholder:text-[#6b6b76] dark:placeholder:text-[#8e8ea0] max-h-[220px]"
               />
               <div className="absolute right-2.5 bottom-2.5 flex items-center gap-2">
                 {recordingState === 'recording' && (
                   <button
                     onClick={cancelRecording}
-                    className="w-9 h-9 rounded-full border border-white/15 text-white/70 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    className="w-9 h-9 rounded-full border border-black/15 text-black/60 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10 flex items-center justify-center transition-colors"
                     aria-label="Cancel recording"
                     title="Cancel recording"
                   >
@@ -993,7 +1042,7 @@ const AgentCleo: React.FC = () => {
                   className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-40 ${
                     recordingState === 'recording'
                       ? 'bg-red-500 text-white animate-pulse'
-                      : 'border border-white/15 text-white/70 hover:bg-white/10'
+                      : 'border border-black/15 text-black/60 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
                   }`}
                   aria-label={recordingState === 'recording' ? 'Stop recording' : 'Record voice message'}
                   title={recordingState === 'recording' ? 'Stop and transcribe' : 'Record voice message'}
@@ -1007,17 +1056,18 @@ const AgentCleo: React.FC = () => {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || loading || recordingState !== 'idle'}
-                  className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center disabled:bg-white/20 disabled:text-white/40 transition-colors"
+                  className="w-9 h-9 rounded-full bg-[#1a1a1a] text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition-colors"
                   aria-label="Send"
                 >
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
                 </button>
               </div>
             </div>
-            <p className="text-center text-xs text-[#8e8ea0] mt-2">Agent Cleo has read-only access to the CRM database.</p>
+            <p className="text-center text-xs text-[#6b6b76] dark:text-[#8e8ea0] mt-2">Agent Cleo has read-only access to the CRM database.</p>
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
