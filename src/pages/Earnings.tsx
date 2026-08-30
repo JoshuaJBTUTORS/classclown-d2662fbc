@@ -169,17 +169,19 @@ export default function Earnings() {
           <div className="space-y-6 px-4 py-8 sm:px-6 lg:px-8">
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-                  Earnings
-                </h1>
-                <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                  <DoodleSparkle className="h-5 w-5" />
-                </span>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+                    Earnings
+                  </h1>
+                  <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                    <DoodleSparkle className="h-5 w-5" />
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Track your progress towards your earning goals
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground sm:order-none">
-                Track your progress towards your earning goals
-              </p>
               <Button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
