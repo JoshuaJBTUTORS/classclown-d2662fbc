@@ -333,13 +333,13 @@ const WelcomeOnboarding: React.FC = () => {
   const busy = saving || finishing;
 
   return (
-    <div className="relative min-h-screen bg-background px-4 py-10 sm:px-8">
+    <div className="relative min-h-screen bg-background px-6 py-6 sm:px-10 lg:px-16">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-pastel-sky opacity-50 blur-3xl" />
         <div className="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-pastel-blush opacity-50 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-6xl">
+      <div className="relative mx-auto w-full max-w-[1600px]">
         <div className="mb-6 flex items-center justify-between">
           <span className="rounded-full border-2 border-foreground/90 bg-card px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground">
             Getting started
