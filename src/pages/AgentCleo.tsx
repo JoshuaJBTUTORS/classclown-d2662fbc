@@ -928,7 +928,7 @@ const AgentCleo: React.FC = () => {
               {messages.map((m) =>
                 m.role === 'user' ? (
                   <div key={m.id} className="flex justify-end">
-                    <div className="max-w-[85%] bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">{m.content}</div>
+                    <div className="max-w-[85%] bg-[#1a1a1a] text-white dark:bg-[#2f2f2f] rounded-3xl px-5 py-3 whitespace-pre-wrap">{m.content}</div>
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
@@ -938,8 +938,8 @@ const AgentCleo: React.FC = () => {
                       {(m.proposals?.length ?? 0) > 0 && (
                         <div>
                           {m.proposals!.length > 1 && (
-                            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
-                              <span className="text-sm text-[#c5c5d2]">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-black/10 bg-white dark:border-white/10 dark:bg-[#262626] px-4 py-3">
+                              <span className="text-sm text-[#55555e] dark:text-[#c5c5d2]">
                                 {m.proposals!.length} proposals need your approval
                               </span>
                               <div className="ml-auto flex gap-2">
@@ -953,7 +953,7 @@ const AgentCleo: React.FC = () => {
                                 <button
                                   onClick={() => cancelAll(m)}
                                   disabled={!m.proposals!.some((p) => p.state === 'pending' || p.state === 'error')}
-                                  className="px-3 py-1.5 rounded-xl border border-white/15 hover:bg-white/5 disabled:opacity-40 text-sm transition-colors"
+                                  className="px-3 py-1.5 rounded-xl border border-black/15 hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5 disabled:opacity-40 text-sm transition-colors"
                                 >
                                   Cancel all
                                 </button>
