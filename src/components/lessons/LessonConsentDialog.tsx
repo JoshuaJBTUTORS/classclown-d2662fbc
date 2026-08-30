@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Video, Users, Clock, Camera, Mic, AlertTriangle } from 'lucide-react';
+import { Camera, Mic } from 'lucide-react';
+import { DoodleVideo, DoodleClock, DoodlePerson, DoodlePeople, DoodleAlert, DoodleSparkle } from '@/components/calendar/LessonDoodles';
 import { format, parseISO } from 'date-fns';
 
 interface LessonConsentDialogProps {
@@ -42,10 +42,13 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] flex flex-col">
+      <DialogContent className="cc-dialog flex max-h-[92dvh] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[var(--radius-soft)] border-2 border-foreground/10 p-5 sm:max-w-[600px] sm:p-6">
+        <DoodleSparkle className="absolute right-12 top-6 h-5 w-5 text-pastel-lilac-foreground/60" />
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Video className="h-6 w-6 text-blue-600" />
+          <DialogTitle className="flex items-center gap-3 font-heading text-xl">
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-sky">
+              <DoodleVideo className="h-6 w-6 text-pastel-sky-foreground" />
+            </span>
             Join Lesson - Camera & Microphone Agreement
           </DialogTitle>
           <DialogDescription>
@@ -53,59 +56,65 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+        <div className="flex-1 space-y-4 overflow-y-auto pr-1">
           {/* Lesson Details */}
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div>
-                <h3 className="font-medium text-lg">{lesson.title}</h3>
-                {lesson.description && (
-                  <p className="text-sm text-muted-foreground">{lesson.description}</p>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>
-                  Teacher: {lesson.tutor?.first_name} {lesson.tutor?.last_name}
-                </span>
-              </div>
-
-              {lesson.is_group && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>Group lesson • {lesson.lesson_students?.length || 0} students</span>
-                </div>
+          <div className="space-y-3 rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-sand/50 p-4">
+            <div>
+              <h3 className="font-heading text-lg font-semibold">{lesson.title}</h3>
+              {lesson.description && (
+                <p className="text-sm text-muted-foreground">{lesson.description}</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Updated Camera Rules */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-pastel-butter">
+                <DoodleClock className="h-4 w-4 text-pastel-butter-foreground" />
+              </span>
+              <span>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-pastel-mint">
+                <DoodlePerson className="h-4 w-4 text-pastel-mint-foreground" />
+              </span>
+              <span>
+                Teacher: {lesson.tutor?.first_name} {lesson.tutor?.last_name}
+              </span>
+            </div>
+
+            {lesson.is_group && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-pastel-lilac">
+                  <DoodlePeople className="h-4 w-4 text-pastel-lilac-foreground" />
+                </span>
+                <span>Group lesson • {lesson.lesson_students?.length || 0} students</span>
+              </div>
+            )}
+          </div>
+
+          {/* Camera Rules */}
+          <div className="rounded-[1.25rem] border-2 border-pastel-blush-foreground/20 bg-pastel-blush/50 p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <span className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 border-pastel-blush-foreground/20 bg-pastel-blush">
+                <DoodleAlert className="h-5 w-5 text-pastel-blush-foreground" />
+              </span>
               <div className="space-y-3">
-                <h4 className="font-medium text-red-800">
+                <h4 className="font-heading font-semibold text-pastel-blush-foreground">
                   Important: Camera & Microphone Requirements
                 </h4>
-                <div className="text-sm text-red-700 space-y-3">
+                <div className="space-y-3 text-sm text-pastel-blush-foreground/90">
                   <div className="flex items-start gap-2">
-                    <Camera className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <Camera className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <span>
                       <strong>Please ensure your camera is working and remains on for the entire duration of the lesson</strong>, unless previously agreed upon with your instructor.
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Mic className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <Mic className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <span>Your microphone should be ready to use when called upon by your teacher.</span>
                   </div>
-                  <div className="bg-red-100 p-3 rounded border border-red-300">
-                    <p className="text-sm text-red-800 font-medium">
+                  <div className="rounded-xl border border-pastel-blush-foreground/25 bg-pastel-blush/70 p-3">
+                    <p className="text-sm font-medium text-pastel-blush-foreground">
                       ⚠️ <strong>Important Notice:</strong> Failure to comply with the camera policy may result in removal from the lesson.
                     </p>
                   </div>
@@ -115,8 +124,8 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
           </div>
 
           {/* Student Welcome */}
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-sky/50 p-4">
+            <p className="text-sm text-pastel-sky-foreground">
               <strong>Welcome, {studentName}!</strong>
               <br />
               By clicking "I Accept & Join Lesson" below, you confirm that you understand and agree to follow the camera and microphone requirements.
@@ -125,22 +134,23 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex-shrink-0 flex gap-3 justify-end pt-4 border-t">
+        <div className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-foreground/10 pt-4 sm:flex-row sm:justify-end sm:gap-3">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={hasAccepted}
+            className="rounded-full border-2 border-foreground/15 bg-transparent hover:bg-pastel-sand/60"
           >
             Cancel
           </Button>
           <Button
             onClick={handleAcceptClick}
             disabled={hasAccepted}
-            className="min-w-[180px]"
+            className="min-w-[180px] rounded-full bg-foreground text-background hover:bg-foreground/90"
           >
             {hasAccepted ? (
               <span className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                 Joining...
               </span>
             ) : (
