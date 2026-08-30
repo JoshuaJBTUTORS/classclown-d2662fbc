@@ -1,19 +1,32 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminProposalSidebar } from '@/components/admin/AdminProposalSidebar';
 import { Loader2, Plus, Copy, ExternalLink, Trash2, Pencil, Mail, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import ExtendOfferDialog from '@/components/proposals/ExtendOfferDialog';
 import { resolveDiscountDeadline } from '@/components/proposals/discountDeadline';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
+import { cn } from '@/lib/utils';
 
 interface Proposal {
   id: string;
@@ -34,6 +47,47 @@ interface Proposal {
   discount_deadline?: string | null;
 }
 
+const stroke = {
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const DoodleSearch: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M11 4.2c3.6-.3 6.4 2.4 6.3 5.9-.1 3.3-2.8 5.8-6.1 5.7-3.4-.1-5.9-2.7-5.8-6C5.5 6.7 7.9 4.4 11 4.2z" />
+    <path d="M15.4 14.6c1.6 1.5 3 3.1 4.3 4.9" />
+  </svg>
+);
+
+const initials = (name?: string | null) => {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  return `${parts[0].charAt(0)}${parts.length > 1 ? parts[parts.length - 1].charAt(0) : ''}`.toUpperCase();
+};
+
+const avatarTones = [
+  'bg-pastel-mint',
+  'bg-pastel-lilac',
+  'bg-pastel-butter',
+  'bg-pastel-blush',
+  'bg-pastel-sky',
+];
+
+const statusTones: Record<string, string> = {
+  draft: 'bg-pastel-sand',
+  sent: 'bg-pastel-sky',
+  viewed: 'bg-pastel-lilac',
+  agreed: 'bg-pastel-mint',
+  completed: 'bg-foreground text-background',
+  declined: 'bg-pastel-blush',
+};
+
+const iconButton =
+  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-foreground bg-background text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-50';
+
 export default function ProposalDashboard() {
   const navigate = useNavigate();
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -42,6 +96,7 @@ export default function ProposalDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [extendTarget, setExtendTarget] = useState<Proposal | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Proposal | null>(null);
 
   useEffect(() => {
     loadProposals();
@@ -72,7 +127,7 @@ export default function ProposalDashboard() {
   const copyProposalLink = async (proposal: Proposal) => {
     const baseUrl = 'https://classclowncrm.com';
     const proposalUrl = `${baseUrl}/proposal/${proposal.id}/${proposal.access_token}`;
-    
+
     try {
       await navigator.clipboard.writeText(proposalUrl);
       toast({
@@ -127,10 +182,6 @@ export default function ProposalDashboard() {
   };
 
   const deleteProposal = async (proposalId: string) => {
-    if (!confirm('Are you sure you want to delete this proposal?')) {
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('lesson_proposals')
@@ -155,23 +206,6 @@ export default function ProposalDashboard() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      draft: 'outline',
-      sent: 'secondary',
-      viewed: 'default',
-      agreed: 'default',
-      completed: 'default',
-      declined: 'destructive',
-    };
-
-    return (
-      <Badge variant={variants[status] || 'default'}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
   const filteredProposals = proposals.filter((proposal) => {
     const matchesSearch =
       proposal.recipient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -183,160 +217,213 @@ export default function ProposalDashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  const statePanel = (content: React.ReactNode) => (
+    <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
+      {content}
+    </div>
+  );
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AdminProposalSidebar 
-          totalProposals={proposals.length} 
-          filteredCount={filteredProposals.length} 
+      <div className="flex min-h-screen w-full bg-background">
+        <AdminProposalSidebar
+          totalProposals={proposals.length}
+          filteredCount={filteredProposals.length}
         />
-        
-        <div className="flex-1">
-          <header className="h-12 flex items-center border-b bg-background sticky top-0 z-10">
-            <SidebarTrigger className="ml-2" />
+
+        <div className="min-w-0 w-full flex-1">
+          <header className="sticky top-0 z-10 flex h-12 items-center border-b border-foreground/10 bg-background">
+            <SidebarTrigger className="ml-2 rounded-full" />
           </header>
 
-          <div className="container py-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Lesson Proposals</h1>
-                <p className="text-muted-foreground">Manage and track all lesson proposals</p>
+          <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
+                  Lesson Proposals
+                </h1>
+                {proposals.length > 0 && (
+                  <span className="mt-2 inline-flex items-center rounded-full bg-pastel-lilac px-3 py-1 text-xs font-semibold text-foreground">
+                    {filteredProposals.length === proposals.length
+                      ? proposals.length
+                      : `${filteredProposals.length}/${proposals.length}`}
+                  </span>
+                )}
               </div>
-              <Button onClick={() => navigate('/admin/proposals/create')}>
-                <Plus className="h-4 w-4 mr-2" />
+
+              <button
+                type="button"
+                onClick={() => navigate('/admin/proposals/create')}
+                className="inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-transform hover:-translate-y-0.5"
+              >
+                <Plus className="h-4 w-4" />
                 Create Proposal
-              </Button>
+              </button>
             </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Proposals</CardTitle>
-          <CardDescription>
-            View and manage proposals sent to potential students
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by name, email, or subject..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="viewed">Viewed</SelectItem>
-                <SelectItem value="agreed">Agreed</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Filters */}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:max-w-md">
+                <span className="pointer-events-none absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleSearch className="h-4 w-4" />
+                </span>
+                <input
+                  placeholder="Search by name, email, or subject..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-12 w-full rounded-full border-2 border-foreground bg-transparent pl-12 pr-5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:bg-foreground/[0.03]"
+                />
+              </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Recipient</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Lesson Type</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Sent</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProposals.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      {proposals.length === 0
-                        ? 'No proposals created yet'
-                        : 'No proposals match your filters'}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredProposals.map((proposal) => (
-                    <TableRow key={proposal.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{proposal.recipient_name}</p>
-                          <p className="text-sm text-muted-foreground">{proposal.recipient_email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{proposal.subject}</TableCell>
-                      <TableCell>{proposal.lesson_type}</TableCell>
-                      <TableCell>£{proposal.price_per_lesson.toFixed(2)}</TableCell>
-                      <TableCell>{getStatusBadge(proposal.status)}</TableCell>
-                      <TableCell>
-                        {proposal.sent_at ? format(new Date(proposal.sent_at), 'MMM d, yyyy') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                            {['sent', 'viewed', 'agreed'].includes(proposal.status) && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => resendProposal(proposal)}
-                                disabled={resendingId === proposal.id}
-                                title="Resend email and WhatsApp"
-                              >
-                                {resendingId === proposal.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Mail className="h-4 w-4" />
-                                )}
-                              </Button>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-12 w-full rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-semibold sm:w-56">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-2 border-foreground">
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="viewed">Viewed</SelectItem>
+                  <SelectItem value="agreed">Agreed</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="declined">Declined</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* List surface */}
+            <div className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+              {loading ? (
+                statePanel(<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />)
+              ) : proposals.length === 0 ? (
+                statePanel(
+                  <>
+                    <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                    <p className="text-sm text-muted-foreground">No proposals created yet</p>
+                  </>
+                )
+              ) : filteredProposals.length === 0 ? (
+                statePanel(
+                  <>
+                    <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                    <p className="text-sm text-muted-foreground">
+                      No proposals match your filters
+                    </p>
+                  </>
+                )
+              ) : (
+                <div className="space-y-2">
+                  <div className="hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.6fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] gap-4 px-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground xl:grid">
+                    <span>Recipient</span>
+                    <span>Subject</span>
+                    <span>Lesson Type</span>
+                    <span>Price</span>
+                    <span>Status</span>
+                    <span>Sent</span>
+                    <span className="text-right">Actions</span>
+                  </div>
+
+                  {filteredProposals.map((proposal, i) => {
+                    const deadline = resolveDiscountDeadline(proposal);
+                    const expired = deadline <= Date.now();
+                    return (
+                      <div
+                        key={proposal.id}
+                        className="grid grid-cols-1 items-center gap-2 rounded-[1.25rem] bg-pastel-sand/40 px-4 py-4 transition-colors duration-200 hover:bg-pastel-sky/60 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.6fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] xl:gap-4"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span
+                            className={cn(
+                              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-foreground',
+                              avatarTones[i % avatarTones.length]
                             )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setExtendTarget(proposal)}
-                              title={`Extend discounted rate (ends ${format(
-                                new Date(resolveDiscountDeadline(proposal)),
-                                'd MMM yyyy, HH:mm'
-                              )})`}
+                          >
+                            {initials(proposal.recipient_name)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-foreground">
+                              {proposal.recipient_name}
+                            </p>
+                            <p className="truncate text-sm text-muted-foreground">
+                              {proposal.recipient_email}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className="truncate pl-12 text-sm text-foreground xl:pl-0">
+                          {proposal.subject}
+                        </span>
+                        <span className="truncate pl-12 text-sm text-muted-foreground xl:pl-0">
+                          {proposal.lesson_type}
+                        </span>
+                        <span className="pl-12 text-sm font-semibold text-foreground xl:pl-0">
+                          £{proposal.price_per_lesson.toFixed(2)}
+                        </span>
+
+                        <span className="pl-12 xl:pl-0">
+                          <span
+                            className={cn(
+                              'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-foreground',
+                              statusTones[proposal.status] || 'bg-pastel-sand'
+                            )}
+                          >
+                            {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
+                          </span>
+                        </span>
+
+                        <span className="pl-12 text-sm text-muted-foreground xl:pl-0">
+                          {proposal.sent_at
+                            ? format(new Date(proposal.sent_at), 'MMM d, yyyy')
+                            : '—'}
+                        </span>
+
+                        <div className="flex flex-wrap items-center gap-2 pl-12 xl:justify-end xl:pl-0">
+                          {['sent', 'viewed', 'agreed'].includes(proposal.status) && (
+                            <button
+                              type="button"
+                              className={iconButton}
+                              onClick={() => resendProposal(proposal)}
+                              disabled={resendingId === proposal.id}
+                              title="Resend email and WhatsApp"
                             >
-                              <Clock
-                                className={`h-4 w-4 ${
-                                  resolveDiscountDeadline(proposal) <= Date.now() ? 'text-destructive' : ''
-                                }`}
-                              />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => navigate(`/admin/proposals/edit/${proposal.id}`)}
-                              title="Edit proposal"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => copyProposalLink(proposal)}
-                              title="Copy proposal link"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                              {resendingId === proposal.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={iconButton}
+                            onClick={() => setExtendTarget(proposal)}
+                            title={`Extend discounted rate (ends ${format(
+                              new Date(deadline),
+                              'd MMM yyyy, HH:mm'
+                            )})`}
+                          >
+                            <Clock className={cn('h-4 w-4', expired && 'text-destructive')} />
+                          </button>
+                          <button
+                            type="button"
+                            className={iconButton}
+                            onClick={() => navigate(`/admin/proposals/edit/${proposal.id}`)}
+                            title="Edit proposal"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className={iconButton}
+                            onClick={() => copyProposalLink(proposal)}
+                            title="Copy proposal link"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className={iconButton}
                             onClick={() => {
                               const url = `https://classclowncrm.com/proposal/${proposal.id}/${proposal.access_token}`;
                               window.open(url, '_blank');
@@ -344,38 +431,65 @@ export default function ProposalDashboard() {
                             title="View proposal"
                           >
                             <ExternalLink className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteProposal(proposal.id)}
+                          </button>
+                          <button
+                            type="button"
+                            className={cn(iconButton, 'border-destructive text-destructive hover:bg-destructive')}
+                            onClick={() => setDeleteTarget(proposal)}
                             title="Delete proposal"
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <p>Showing {filteredProposals.length} of {proposals.length} proposals</p>
+              {!loading && proposals.length > 0 && (
+                <p className="mt-4 px-1 text-sm text-muted-foreground">
+                  Showing {filteredProposals.length} of {proposals.length} proposals
+                </p>
+              )}
             </div>
-          </CardContent>
-        </Card>
           </div>
         </div>
       </div>
+
       <ExtendOfferDialog
         open={!!extendTarget}
         onOpenChange={(open) => !open && setExtendTarget(null)}
         proposal={extendTarget}
         onExtended={loadProposals}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="rounded-[var(--radius-soft)] border-2 border-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading text-2xl font-extrabold">
+              Delete proposal
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this proposal?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-11 rounded-full border-2 border-foreground bg-transparent px-5 font-semibold">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="h-11 rounded-full bg-destructive px-5 font-semibold text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) deleteProposal(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
