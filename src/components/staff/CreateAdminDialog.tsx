@@ -18,9 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
