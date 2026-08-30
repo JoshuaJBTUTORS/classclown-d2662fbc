@@ -632,15 +632,15 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
               </div>
 
               {!form.watch('isReviewRoom') && (
-              <div className="space-y-4 border-t pt-4">
+              <div className="space-y-4 border-t border-foreground/10 pt-4">
                 <FormField
                   control={form.control}
                   name="isRecurring"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border p-3">
+                    <FormItem className="flex flex-row items-center justify-between gap-3 space-y-0 rounded-[var(--radius-soft)] bg-pastel-lilac p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Recurring Lesson</FormLabel>
-                        <div className="text-sm text-muted-foreground">
+                        <FormLabel className="text-base font-heading font-bold text-pastel-lilac-foreground">Recurring Lesson</FormLabel>
+                        <div className="text-sm text-pastel-lilac-foreground/70">
                           Create a series of lessons that repeat automatically
                         </div>
                       </div>
@@ -655,7 +655,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                 />
 
                 {form.watch('isRecurring') && (
-                  <div className="space-y-4 ml-4 border-l-2 border-gray-200 pl-4">
+                  <div className="space-y-4 ml-2 sm:ml-4 border-l-2 border-pastel-lilac pl-4">
                     <FormField
                       control={form.control}
                       name="recurrenceInterval"
@@ -664,11 +664,11 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                           <FormLabel>Recurrence Pattern</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
-                              <SelectTrigger>
+                             <SelectTrigger className="h-11 rounded-full border-foreground/15 px-4">
                                 <SelectValue placeholder="Select how often to repeat" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="rounded-2xl border-foreground/10 shadow-[var(--shadow-soft)]">
                               <SelectItem value="daily">Daily</SelectItem>
                               <SelectItem value="weekly">Weekly</SelectItem>
                               <SelectItem value="biweekly">Bi-weekly (Every 2 weeks)</SelectItem>
@@ -718,7 +718,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                                 <FormControl>
                                   <Button
                                     variant={"outline"}
-                                    className="pl-3 text-left font-normal w-full"
+                                    className="px-4 text-left font-normal w-full h-11 rounded-full border-foreground/15 bg-transparent hover:bg-pastel-sky/50"
                                   >
                                     {field.value ? (
                                       format(field.value, "PPP")
@@ -729,7 +729,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                                   </Button>
                                 </FormControl>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
+                              <PopoverContent className="w-auto p-0 rounded-[var(--radius-soft)] border-foreground/10 shadow-[var(--shadow-soft-lg)]" align="start">
                                 <Calendar
                                   mode="single"
                                   selected={field.value}
