@@ -315,16 +315,17 @@ const WelcomeOnboarding: React.FC = () => {
 
         <div className="mt-6 rounded-[1.25rem] border-2 border-foreground/90 bg-card shadow-[4px_4px_0_0_hsl(var(--foreground)/0.9)] p-5">
           <ul className="space-y-3">
-          {slide.points.map((point) => (
-            <li
-              key={point}
-              className="flex items-start gap-3 rounded-[1.25rem] border-2 border-foreground/90 bg-background/70 p-4 text-sm text-foreground"
-            >
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-foreground" />
-              <span>{point}</span>
-            </li>
-          ))}
-        </ul>
+            {slide.points.map((point) => (
+              <li
+                key={point}
+                className="flex items-start gap-3 rounded-[1.25rem] border-2 border-foreground/90 bg-background/70 p-4 text-sm text-foreground"
+              >
+                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-foreground" />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     );
   };
