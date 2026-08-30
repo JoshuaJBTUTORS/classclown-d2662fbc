@@ -16,22 +16,22 @@ const STEPS = [
     icon: DoodleChat,
     title: 'Share your link',
     copy: 'Send your personal link to a friend',
-    disc: 'bg-pastel-blush',
-    badge: 'bg-pastel-blush',
+    disc: 'bg-pastel-sky',
+    badge: 'bg-pastel-sky',
   },
   {
     icon: DoodleSpark,
     title: 'They try a free lesson',
     copy: 'No cost, no commitment',
-    disc: 'bg-pastel-butter',
-    badge: 'bg-pastel-butter',
+    disc: 'bg-foreground/5',
+    badge: 'bg-foreground/5',
   },
   {
     icon: DoodleCoin,
     title: 'You both get £50',
     copy: 'Once they join us',
-    disc: 'bg-pastel-sky',
-    badge: 'bg-pastel-sky',
+    disc: 'bg-background',
+    badge: 'bg-foreground',
   },
 ];
 
@@ -78,13 +78,13 @@ const ReferFriend: React.FC = () => {
           </button>
         )}
 
-        <section className="relative overflow-hidden rounded-3xl border border-foreground bg-pastel-mint p-6 shadow-[var(--shadow-soft)] sm:p-10">
+        <section className="relative overflow-hidden rounded-3xl border border-foreground bg-pastel-sky p-6 shadow-[var(--shadow-soft)] sm:p-10">
           <div
-            className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-pastel-butter/70 blur-3xl"
+            className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-pastel-sky/70 blur-3xl"
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute -bottom-28 right-10 h-80 w-80 rounded-full bg-pastel-blush/60 blur-3xl"
+            className="pointer-events-none absolute -bottom-28 right-10 h-80 w-80 rounded-full bg-pastel-sky/50 blur-3xl"
             aria-hidden="true"
           />
           <DoodleSpark
@@ -96,7 +96,7 @@ const ReferFriend: React.FC = () => {
             <div>
               <span className="inline-flex items-center gap-2.5 rounded-full border border-foreground bg-background py-1.5 pl-1.5 pr-4 text-xs font-extrabold uppercase tracking-widest text-foreground">
                 <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground bg-pastel-butter text-foreground"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground bg-pastel-sky text-foreground"
                   aria-hidden="true"
                 >
                   <DoodleCoin className="h-4 w-4" />
@@ -106,10 +106,10 @@ const ReferFriend: React.FC = () => {
 
               <h1 className="mt-6 font-heading text-[clamp(2.5rem,6vw,4.25rem)] font-bold leading-[0.98] tracking-tighter">
                 <span className="block sm:inline">Give £50,</span>{' '}
-                <span className="relative inline-block text-primary">
+                <span className="relative inline-block text-foreground">
                   get £50
                   <svg
-                    className="absolute -bottom-2 left-0 h-3 w-full text-primary"
+                    className="absolute -bottom-2 left-0 h-3 w-full text-foreground"
                     viewBox="0 0 120 12"
                     fill="none"
                     preserveAspectRatio="none"
