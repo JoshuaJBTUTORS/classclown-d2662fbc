@@ -148,13 +148,19 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
     }
   };
 
+  const fieldClass =
+    'w-full rounded-full border-2 border-foreground bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:bg-pastel-butter/40';
+  const labelClass = 'text-sm font-semibold text-foreground';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-h-[92dvh] overflow-y-auto rounded-[var(--radius-soft)] border-2 border-foreground bg-card p-5 sm:max-w-md sm:p-6">
         <DialogHeader>
-          <DialogTitle>Create Admin Account</DialogTitle>
+          <DialogTitle className="font-heading text-2xl font-extrabold text-foreground">
+            Create Admin Account
+          </DialogTitle>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -162,9 +168,9 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel className={labelClass}>First Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <input className={fieldClass} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -176,9 +182,9 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel className={labelClass}>Last Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <input className={fieldClass} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -190,24 +196,24 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className={labelClass}>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} />
+                    <input type="email" className={fieldClass} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="startTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Time</FormLabel>
+                    <FormLabel className={labelClass}>Start Time</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <input type="time" className={fieldClass} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -219,9 +225,9 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
                 name="endTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Time</FormLabel>
+                    <FormLabel className={labelClass}>End Time</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <input type="time" className={fieldClass} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,8 +240,8 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
               name="availability"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Available Days</FormLabel>
-                  <div className="grid grid-cols-4 gap-2">
+                  <FormLabel className={labelClass}>Available Days</FormLabel>
+                  <div className="flex flex-wrap gap-2 pt-1">
                     {[
                       { value: 1, label: 'Mon' },
                       { value: 2, label: 'Tue' },
@@ -244,55 +250,58 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({ isOpen, onClose }
                       { value: 5, label: 'Fri' },
                       { value: 6, label: 'Sat' },
                       { value: 0, label: 'Sun' },
-                    ].map((day) => (
-                      <div key={day.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={field.value?.includes(day.value)}
-                          onCheckedChange={(checked) => {
-                            const newValue = checked
-                              ? [...(field.value || []), day.value]
-                              : field.value?.filter((v) => v !== day.value) || [];
+                    ].map((day) => {
+                      const selected = field.value?.includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => {
+                            const newValue = selected
+                              ? field.value?.filter((v) => v !== day.value) || []
+                              : [...(field.value || []), day.value];
                             field.onChange(newValue);
                           }}
-                        />
-                        <label className="text-sm">{day.label}</label>
-                      </div>
-                    ))}
+                          className={cn(
+                            'rounded-full border-2 border-foreground px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5',
+                            selected
+                              ? 'bg-pastel-mint text-foreground'
+                              : 'bg-background text-foreground'
+                          )}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
                   </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex gap-2 pt-4">
-              <Button
+            <div className="flex gap-3 pt-2">
+              <button
                 type="button"
-                variant="outline"
                 onClick={onClose}
-                className="flex-1"
+                className="flex-1 rounded-full border-2 border-foreground bg-background px-5 py-2.5 text-sm font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-sand"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 type="submit"
                 disabled={isCreating}
-                className="flex-1"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-foreground bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60"
               >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Admin'
-                )}
-              </Button>
+                {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isCreating ? 'Creating...' : 'Create Admin'}
+              </button>
             </div>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
+
 };
 
 export default CreateAdminDialog;
