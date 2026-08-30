@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Trash2, BookOpen } from 'lucide-react';
+import { Loader2, Plus, Trash2, BookOpen, GripVertical } from 'lucide-react';
 import OptimiseProposalPanel from '@/components/proposals/OptimiseProposalPanel';
 
 export const lessonTimeSchema = z.object({
@@ -99,6 +99,20 @@ export default function ProposalForm({
     : [emptyLessonTime(defaultValues.pricePerLesson ?? DEFAULT_LESSON_PRICE)];
 
   const [lessonTimes, setLessonTimes] = useState<LessonTimeRow[]>(initialTimes);
+  const [rowIds, setRowIds] = useState<string[]>(() =>
+    initialTimes.map(() => Math.random().toString(36).slice(2)),
+  );
+  const [numDrafts, setNumDrafts] = useState<Record<string, string>>({});
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [draggableIndex, setDraggableIndex] = useState<number | null>(null);
+
+  const newId = () => Math.random().toString(36).slice(2);
+
+  const commit = (next: LessonTimeRow[]) => {
+    setLessonTimes(next);
+    form.setValue('lessonTimes', next);
+  };
 
   const form = useForm<ProposalFormData>({
     resolver: zodResolver(proposalSchema),
@@ -107,22 +121,55 @@ export default function ProposalForm({
 
   const addLessonTime = () => {
     const next = [...lessonTimes, emptyLessonTime(defaultValues.pricePerLesson ?? DEFAULT_LESSON_PRICE)];
-    setLessonTimes(next);
-    form.setValue('lessonTimes', next);
+    setRowIds((ids) => [...ids, newId()]);
+    commit(next);
   };
 
   const removeLessonTime = (index: number) => {
     const next = lessonTimes.filter((_, i) => i !== index);
-    setLessonTimes(next);
-    form.setValue('lessonTimes', next);
+    setRowIds((ids) => ids.filter((_, i) => i !== index));
+    commit(next);
   };
 
   const updateLessonTime = (index: number, field: keyof LessonTimeRow, value: string | number) => {
     const next = [...lessonTimes];
     next[index] = { ...next[index], [field]: value };
-    setLessonTimes(next);
-    form.setValue('lessonTimes', next);
+    commit(next);
   };
+
+  const setNumericField = (
+    index: number,
+    field: 'price' | 'duration',
+    raw: string,
+    fallback: number,
+  ) => {
+    const key = `${rowIds[index]}-${field}`;
+    setNumDrafts((d) => ({ ...d, [key]: raw }));
+    const parsed = raw === '' ? fallback : field === 'price' ? parseFloat(raw) : parseInt(raw, 10);
+    updateLessonTime(index, field, Number.isFinite(parsed) ? parsed : fallback);
+  };
+
+  const numericValue = (index: number, field: 'price' | 'duration') => {
+    const key = `${rowIds[index]}-${field}`;
+    const draft = numDrafts[key];
+    if (draft !== undefined) return draft;
+    return String(lessonTimes[index][field] ?? '');
+  };
+
+  const reorderRows = (from: number, to: number) => {
+    if (from === to) return;
+    const nextTimes = [...lessonTimes];
+    const [movedTime] = nextTimes.splice(from, 1);
+    nextTimes.splice(to, 0, movedTime);
+    setRowIds((ids) => {
+      const nextIds = [...ids];
+      const [movedId] = nextIds.splice(from, 1);
+      nextIds.splice(to, 0, movedId);
+      return nextIds;
+    });
+    commit(nextTimes);
+  };
+
 
   const handleSecondary = form.handleSubmit((data) => {
     secondaryAction?.onClick(data, validLessonTimes(lessonTimes));
@@ -297,11 +344,45 @@ export default function ProposalForm({
             <div className="mt-4 space-y-3">
               {lessonTimes.map((lessonTime, index) => (
                 <div
-                  key={index}
-                  className="rounded-[1.25rem] bg-background/70 p-4"
+                  key={rowIds[index] ?? index}
+                  draggable={draggableIndex === index}
+                  onDragStart={(e) => {
+                    setDragIndex(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setDragOverIndex(index);
+                  }}
+                  onDragLeave={() => setDragOverIndex((i) => (i === index ? null : i))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragIndex !== null) reorderRows(dragIndex, index);
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                    setDraggableIndex(null);
+                  }}
+                  className={`rounded-[1.25rem] bg-background/70 p-4 transition-all ${
+                    dragIndex === index ? 'opacity-50' : ''
+                  } ${dragOverIndex === index && dragIndex !== index ? 'ring-2 ring-foreground' : ''}`}
                 >
                   <div className="flex items-start gap-3">
+                    <div
+                      className="mt-7 flex h-11 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-muted-foreground active:cursor-grabbing"
+                      title="Drag to reorder"
+                      onMouseDown={() => setDraggableIndex(index)}
+                      onMouseUp={() => setDraggableIndex(null)}
+                      onTouchStart={() => setDraggableIndex(index)}
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </div>
                     <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+
                       <div>
                         <FormLabel className={labelClass}>Day</FormLabel>
                         <Select value={lessonTime.day} onValueChange={(value) => updateLessonTime(index, 'day', value)}>
@@ -333,12 +414,11 @@ export default function ProposalForm({
                         <Input
                           className={`${controlClass} tabular-nums`}
                           type="number"
-                          value={lessonTime.duration}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
-                          }}
+                          inputMode="numeric"
+                          value={numericValue(index, 'duration')}
+                          onChange={(e) => setNumericField(index, 'duration', e.target.value, 60)}
                         />
+
                       </div>
 
                       <div>
@@ -357,12 +437,11 @@ export default function ProposalForm({
                           className={`${controlClass} text-right tabular-nums`}
                           type="number"
                           step="0.01"
-                          value={lessonTime.price}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            updateLessonTime(index, 'price', value === '' ? 0 : parseFloat(value) || 0);
-                          }}
+                          inputMode="decimal"
+                          value={numericValue(index, 'price')}
+                          onChange={(e) => setNumericField(index, 'price', e.target.value, 0)}
                         />
+
                       </div>
                     </div>
 
