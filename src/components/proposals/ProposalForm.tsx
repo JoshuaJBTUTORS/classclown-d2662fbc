@@ -409,12 +409,11 @@ export default function ProposalForm({
                         <Input
                           className={`${controlClass} tabular-nums`}
                           type="number"
-                          value={lessonTime.duration}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            updateLessonTime(index, 'duration', value === '' ? 60 : parseInt(value) || 60);
-                          }}
+                          inputMode="numeric"
+                          value={numericValue(index, 'duration')}
+                          onChange={(e) => setNumericField(index, 'duration', e.target.value, 60)}
                         />
+
                       </div>
 
                       <div>
