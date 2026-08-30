@@ -38,6 +38,7 @@ import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
 import VideoRoom from './pages/VideoRoom';
 import ReferFriend from './pages/ReferFriend';
 import Blog from './pages/Blog';
+import LoadingPreview from './pages/LoadingPreview';
 import BlogPost from './pages/BlogPost';
 import MainLayout from './components/layout/MainLayout';
 import WelcomeOnboarding from './pages/WelcomeOnboarding';
