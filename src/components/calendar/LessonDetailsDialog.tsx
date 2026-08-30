@@ -749,7 +749,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Button 
                         variant={isProcessed ? "default" : "outline"}
                         onClick={handleProcessLesson}
-                        className={`flex items-center gap-2 rounded-full ${isProcessed ? '' : 'border-foreground/20 bg-transparent'}`}
+                        className={`flex items-center gap-2 rounded-full w-full sm:w-auto justify-center ${isProcessed ? '' : 'border-foreground/20 bg-transparent'}`}
                       >
                         <Play className="h-4 w-4" />
                         Process Lesson
@@ -761,7 +761,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                       <Button
                         variant="outline"
                         onClick={() => setIsTranscriptProposalOpen(true)}
-                        className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent"
+                        className="flex items-center gap-2 rounded-full border-foreground/20 bg-transparent w-full sm:w-auto justify-center"
                       >
                         <Send className="h-4 w-4" />
                         Send Proposal
