@@ -1,12 +1,10 @@
 import React from 'react';
 import {
   DoodleCalendar,
-  DoodleBook,
   DoodleClipboard,
   DoodleSparkle,
   DoodleCheck,
   DoodlePeople,
-  DoodleTag,
 } from '@/components/calendar/LessonDoodles';
 
 export interface TourSlide {
@@ -21,75 +19,39 @@ export interface TourSlide {
 /** Static tour content shown to parents and students during onboarding. */
 export const TOUR_SLIDES: TourSlide[] = [
   {
-    key: 'lessons',
-    title: 'Joining your lessons',
+    key: 'lessons-and-plans',
+    title: 'Lessons & plans',
     subtitle: 'Everything starts on your calendar.',
     tone: 'bg-pastel-sky',
     icon: DoodleCalendar,
     points: [
-      'Open Calendar to see every upcoming lesson.',
-      'Click a lesson to see the tutor, subject and time.',
+      'Open Calendar to see every upcoming lesson — click one to see the tutor, subject and time.',
       'The Join button appears inside the lesson — one click takes you into the classroom.',
+      'Lesson Plans shows the topics your tutor will cover, matched to the exam board and year group.',
     ],
   },
   {
-    key: 'homework',
-    title: 'Finding homework',
-    subtitle: 'Set after each lesson, tracked in one place.',
+    key: 'homework-and-summaries',
+    title: 'Homework & summaries',
+    subtitle: 'Set after each lesson, recapped in one place.',
     tone: 'bg-pastel-butter',
     icon: DoodleClipboard,
     points: [
-      'Homework is attached to the lesson it came from on the calendar.',
-      'Open the lesson to download the task and upload the completed work.',
+      'Homework is attached to the lesson it came from — open the lesson to download the task and upload completed work.',
+      "After every session, Lesson Summaries explains what was covered, how it went and what's next.",
       "We'll nudge you by WhatsApp or email if something is still outstanding.",
     ],
   },
   {
-    key: 'lesson-plans',
-    title: 'Lesson plans',
-    subtitle: 'Know what is being taught before it happens.',
-    tone: 'bg-pastel-lilac',
-    icon: DoodleBook,
-    points: [
-      'Lesson Plans shows the topics your tutor will cover.',
-      'Use it to prepare questions or revise ahead of the session.',
-      'Plans follow the exam board and year group of your child.',
-    ],
-  },
-  {
-    key: 'summaries',
-    title: 'Lesson summaries',
-    subtitle: 'A recap after every session.',
-    tone: 'bg-pastel-mint',
-    icon: DoodleSparkle,
-    points: [
-      'Lesson Summaries explains what was covered and how it went.',
-      'You can see engagement, strengths and next steps.',
-      'Any homework set for the week is listed there too.',
-    ],
-  },
-  {
     key: 'progress',
-    title: 'My children progress',
-    subtitle: 'Track improvement over time.',
-    tone: 'bg-pastel-blush',
+    title: 'Progress',
+    subtitle: 'Track improvement, at tuition and at school.',
+    tone: 'bg-pastel-mint',
     icon: DoodlePeople,
     points: [
-      'Progress brings together attendance, assessments and tutor feedback.',
-      'Compare how each subject is developing week by week.',
+      'Progress brings together attendance, assessments and tutor feedback, week by week.',
+      'Upload school reports and mock results in School Progress so tutors can target the right topics.',
       'Great to review before parents evenings or mocks.',
-    ],
-  },
-  {
-    key: 'school-progress',
-    title: 'School progress',
-    subtitle: 'Share what school is saying.',
-    tone: 'bg-pastel-sand',
-    icon: DoodleTag,
-    points: [
-      'Upload school reports and mock results in School Progress.',
-      'Your tutor uses them to target the right topics.',
-      'We track school grades alongside our own assessments.',
     ],
   },
 ];
