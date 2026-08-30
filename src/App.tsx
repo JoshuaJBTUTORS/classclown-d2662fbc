@@ -130,6 +130,7 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
                 
+                <Route path="/loading-preview" element={<LoadingPreview />} />
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/book-trial-musa" element={<TrialBookingMusa />} />
                 <Route path="/review-room" element={<ReviewRoom />} />
