@@ -99,6 +99,19 @@ export default function ProposalForm({
     : [emptyLessonTime(defaultValues.pricePerLesson ?? DEFAULT_LESSON_PRICE)];
 
   const [lessonTimes, setLessonTimes] = useState<LessonTimeRow[]>(initialTimes);
+  const [rowIds, setRowIds] = useState<string[]>(() =>
+    initialTimes.map(() => Math.random().toString(36).slice(2)),
+  );
+  const [numDrafts, setNumDrafts] = useState<Record<string, string>>({});
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const newId = () => Math.random().toString(36).slice(2);
+
+  const commit = (next: LessonTimeRow[]) => {
+    setLessonTimes(next);
+    form.setValue('lessonTimes', next);
+  };
 
   const form = useForm<ProposalFormData>({
     resolver: zodResolver(proposalSchema),
@@ -107,22 +120,55 @@ export default function ProposalForm({
 
   const addLessonTime = () => {
     const next = [...lessonTimes, emptyLessonTime(defaultValues.pricePerLesson ?? DEFAULT_LESSON_PRICE)];
-    setLessonTimes(next);
-    form.setValue('lessonTimes', next);
+    setRowIds((ids) => [...ids, newId()]);
+    commit(next);
   };
 
   const removeLessonTime = (index: number) => {
     const next = lessonTimes.filter((_, i) => i !== index);
-    setLessonTimes(next);
-    form.setValue('lessonTimes', next);
+    setRowIds((ids) => ids.filter((_, i) => i !== index));
+    commit(next);
   };
 
   const updateLessonTime = (index: number, field: keyof LessonTimeRow, value: string | number) => {
     const next = [...lessonTimes];
     next[index] = { ...next[index], [field]: value };
-    setLessonTimes(next);
-    form.setValue('lessonTimes', next);
+    commit(next);
   };
+
+  const setNumericField = (
+    index: number,
+    field: 'price' | 'duration',
+    raw: string,
+    fallback: number,
+  ) => {
+    const key = `${rowIds[index]}-${field}`;
+    setNumDrafts((d) => ({ ...d, [key]: raw }));
+    const parsed = raw === '' ? fallback : field === 'price' ? parseFloat(raw) : parseInt(raw, 10);
+    updateLessonTime(index, field, Number.isFinite(parsed) ? parsed : fallback);
+  };
+
+  const numericValue = (index: number, field: 'price' | 'duration') => {
+    const key = `${rowIds[index]}-${field}`;
+    const draft = numDrafts[key];
+    if (draft !== undefined) return draft;
+    return String(lessonTimes[index][field] ?? '');
+  };
+
+  const reorderRows = (from: number, to: number) => {
+    if (from === to) return;
+    const nextTimes = [...lessonTimes];
+    const [movedTime] = nextTimes.splice(from, 1);
+    nextTimes.splice(to, 0, movedTime);
+    setRowIds((ids) => {
+      const nextIds = [...ids];
+      const [movedId] = nextIds.splice(from, 1);
+      nextIds.splice(to, 0, movedId);
+      return nextIds;
+    });
+    commit(nextTimes);
+  };
+
 
   const handleSecondary = form.handleSubmit((data) => {
     secondaryAction?.onClick(data, validLessonTimes(lessonTimes));
