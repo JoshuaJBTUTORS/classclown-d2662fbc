@@ -129,6 +129,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
       {/* Header Controls */}
       <VideoRoomHeader
         lessonTitle={lessonTitle}
+        lessonStartTime={lessonStartTime}
         participantCount={1} // Could be dynamic if we track actual participants
         expectedParticipantCount={expectedStudents}
         userRole={isTeacherRole ? 'tutor' : 'student'}
