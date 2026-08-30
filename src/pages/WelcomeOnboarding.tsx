@@ -147,6 +147,15 @@ const WelcomeOnboarding: React.FC = () => {
         })
         .eq('id', user.id);
       if (error) throw error;
+
+      // Push onboarding details to HubSpot (non blocking).
+      supabase.functions
+        .invoke('hubspot-onboarding-sync')
+        .then(({ error: hubspotError }) => {
+          if (hubspotError) console.error('HubSpot onboarding sync failed:', hubspotError);
+        })
+        .catch((hubspotError) => console.error('HubSpot onboarding sync failed:', hubspotError));
+
       await refreshProfile();
       navigate('/calendar', { replace: true });
     } catch (err: any) {
