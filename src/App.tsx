@@ -40,6 +40,9 @@ import ReferFriend from './pages/ReferFriend';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import MainLayout from './components/layout/MainLayout';
+import WelcomeOnboarding from './pages/WelcomeOnboarding';
+import OnboardingGate from './components/routing/OnboardingGate';
+
 import SubscriptionManagement from './pages/SubscriptionManagement';
 import CourseDetail from './pages/CourseDetail';
 import ModuleDetail from './pages/ModuleDetail';
