@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Mail } from 'lucide-react';
 import ProposalForm, {
+import LoadingHand from '@/components/ui/loading-hand';
   DEFAULT_LESSON_PRICE,
   LessonTimeRow,
   ProposalFormData,
@@ -165,7 +166,7 @@ export default function EditProposal() {
   if (isLoading || !defaultValues) {
     return (
       <div className="container max-w-4xl py-8 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingHand fullScreen />
       </div>
     );
   }

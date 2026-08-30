@@ -34,6 +34,7 @@ import {
 } from '@/components/calendar/LessonDoodles';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
+import LoadingHand from '@/components/ui/loading-hand';
 
 const stroke = {
   fill: 'none' as const,
@@ -496,7 +497,7 @@ const TrialBookings = () => {
             <section className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-pastel-sand/60 px-6 py-14 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <LoadingHand />
                   <p className="text-sm text-muted-foreground">Loading trial bookings...</p>
                 </div>
               ) : sourceTab === 'review_room' ? (

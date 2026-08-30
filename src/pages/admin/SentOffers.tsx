@@ -15,6 +15,7 @@ import {
 import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface OfferRow {
   id: string;
@@ -178,7 +179,7 @@ export default function SentOffers() {
       <Card>
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <LoadingHand />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">

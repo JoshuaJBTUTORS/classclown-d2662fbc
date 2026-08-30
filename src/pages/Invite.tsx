@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Gift, Sparkles } from 'lucide-react';
+import LoadingHand from '@/components/ui/loading-hand';
 
 const formSchema = z.object({
   password: z.string().min(8, {
@@ -170,7 +171,7 @@ const Invite = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <LoadingHand fullScreen />
           <p className="text-muted-foreground">Verifying invitation...</p>
         </div>
       </div>

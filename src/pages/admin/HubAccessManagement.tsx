@@ -11,6 +11,7 @@ import { Loader2, Search, CheckCircle2, XCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Sidebar from '@/components/navigation/Sidebar';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface UserWithAccess {
   id: string;
@@ -131,7 +132,7 @@ const HubAccessManagement = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingHand fullScreen />
       </div>
     );
   }
@@ -228,7 +229,7 @@ const HubAccessManagement = () => {
               <CardContent>
                 {isLoading ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <LoadingHand fullScreen />
                   </div>
                 ) : queryError ? (
                   <div className="text-center py-12">

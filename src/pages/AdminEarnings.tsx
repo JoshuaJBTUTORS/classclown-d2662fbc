@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { format, isSameDay } from 'date-fns';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface AdminEarningsData {
   currentEarnings: number;
@@ -147,7 +148,7 @@ const AdminEarnings: React.FC = () => {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <LoadingHand />
         </div>
       </div>
     );

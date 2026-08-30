@@ -13,6 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface EmbeddedVideoRoomProps {
   roomUrl: string;
@@ -160,7 +161,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
             <div className="text-center space-y-4">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+              <LoadingHand />
               <p className="text-sm text-gray-600">
                 Loading video room{isTeacherRole ? ' (Host mode)' : ' (Student mode)'}...
               </p>

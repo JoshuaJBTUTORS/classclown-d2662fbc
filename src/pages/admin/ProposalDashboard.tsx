@@ -35,6 +35,7 @@ import ExtendOfferDialog from '@/components/proposals/ExtendOfferDialog';
 import { resolveDiscountDeadline } from '@/components/proposals/discountDeadline';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface Proposal {
   id: string;
@@ -311,7 +312,7 @@ export default function ProposalDashboard() {
             {/* List surface */}
             <div className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
               {loading ? (
-                statePanel(<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />)
+                statePanel(<LoadingHand />)
               ) : proposals.length === 0 ? (
                 statePanel(
                   <>

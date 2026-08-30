@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useStudentData } from '@/hooks/useStudentData';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
+import LoadingHand from '@/components/ui/loading-hand';
 
 const stroke = {
   fill: 'none' as const,
@@ -106,7 +107,7 @@ const StudentsList: React.FC = () => {
             <div className="mt-8 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
               {isLoading ? (
                 statePanel(
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <LoadingHand />
                 )
               ) : students.length === 0 ? (
                 statePanel(

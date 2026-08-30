@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import AgreementStep from '@/components/proposals/AgreementStep';
 import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
 import ProposalLayout from '@/components/proposals/ProposalLayout';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface Proposal {
   id: string;
@@ -107,7 +108,7 @@ export default function ProposalView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <LoadingHand fullScreen />
       </div>
     );
   }

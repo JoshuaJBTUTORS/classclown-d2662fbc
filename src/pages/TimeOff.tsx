@@ -15,6 +15,7 @@ import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import { DoodleClock, DoodleCalendar } from '@/components/calendar/LessonDoodles';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
+import LoadingHand from '@/components/ui/loading-hand';
 
 const statusChip = (status: string) => {
   switch (status) {
@@ -313,7 +314,7 @@ const TimeOff = () => {
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <LoadingHand />
                 </div>
               ) : timeOffRequests?.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-muted/40 px-6 py-12 text-center">
