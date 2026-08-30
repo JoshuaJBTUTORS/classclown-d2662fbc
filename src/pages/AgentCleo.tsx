@@ -301,28 +301,28 @@ const LessonEditProposalCard: React.FC<{
   const locked = state !== 'pending' && state !== 'error';
 
   return (
-    <div className="mt-3 rounded-2xl border border-white/10 bg-[#2a2a2a] overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
-        <CalendarCog className="w-4 h-4 text-amber-400" />
+    <div className="mt-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#2a2a2a] overflow-hidden">
+      <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center gap-2">
+        <CalendarCog className="w-4 h-4 text-amber-500 dark:text-amber-400" />
         <span className="font-medium text-sm">Edit lesson — needs your approval</span>
       </div>
 
       <div className="px-4 py-3 text-sm space-y-3">
-        <div className="text-[#c5c5d2]">
-          <span className="font-medium text-white">{proposal.lesson_title || 'Lesson'}</span>{' '}
-          <span className="text-[#8e8ea0]">· {fmtLondon(proposal.lesson_start_time)}</span>
+        <div className="text-[#55555e] dark:text-[#c5c5d2]">
+          <span className="font-medium text-[#1a1a1a] dark:text-white">{proposal.lesson_title || 'Lesson'}</span>{' '}
+          <span className="text-[#6b6b76] dark:text-[#8e8ea0]">· {fmtLondon(proposal.lesson_start_time)}</span>
         </div>
 
-        <div className="rounded-xl border border-white/10 divide-y divide-white/5">
+        <div className="rounded-xl border border-black/10 dark:border-white/10 divide-y divide-black/5 dark:divide-white/5">
           {proposal.changes.map((c) => (
             <div key={c.field} className="px-3 py-2">
-              <div className="text-xs uppercase tracking-wide text-[#8e8ea0] mb-1">{c.label}</div>
+              <div className="text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0] mb-1">{c.label}</div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="line-through text-[#8e8ea0]">
+                <span className="line-through text-[#6b6b76] dark:text-[#8e8ea0]">
                   {c.field === 'time' ? fmtRange(c.before) : c.before}
                 </span>
-                <span className="text-[#8e8ea0]">→</span>
-                <span className="font-medium text-white">
+                <span className="text-[#6b6b76] dark:text-[#8e8ea0]">→</span>
+                <span className="font-medium text-[#1a1a1a] dark:text-white">
                   {c.field === 'time' ? fmtRange(c.after) : c.after}
                 </span>
               </div>
@@ -331,7 +331,7 @@ const LessonEditProposalCard: React.FC<{
         </div>
 
         <div className="flex gap-3">
-          <span className="w-28 shrink-0 text-[#8e8ea0]">Applies to</span>
+          <span className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Applies to</span>
           <span>
             {proposal.scope === 'all_future_lessons'
               ? `This and all future occurrences (${proposal.affected_count} lesson${proposal.affected_count === 1 ? '' : 's'})`
@@ -340,7 +340,7 @@ const LessonEditProposalCard: React.FC<{
         </div>
 
         {proposal.side_effects.length > 0 && (
-          <ul className="list-disc pl-5 text-xs text-amber-300/90 space-y-1">
+          <ul className="list-disc pl-5 text-xs text-amber-700/90 dark:text-amber-300/90 space-y-1">
             {proposal.side_effects.map((s) => (
               <li key={s}>{s}</li>
             ))}
@@ -349,8 +349,8 @@ const LessonEditProposalCard: React.FC<{
 
         {proposal.warnings && proposal.warnings.length > 0 && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-            <div className="text-xs font-medium text-amber-300 mb-1">Tutor availability check</div>
-            <ul className="list-disc pl-4 text-xs text-amber-200/90 space-y-1">
+            <div className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-1">Tutor availability check</div>
+            <ul className="list-disc pl-4 text-xs text-amber-800/90 dark:text-amber-200/90 space-y-1">
               {proposal.warnings.map((w) => (
                 <li key={w}>{w}</li>
               ))}
@@ -361,7 +361,7 @@ const LessonEditProposalCard: React.FC<{
 
       {message && (
         <div
-          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
+          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-600 dark:text-emerald-400' : state === 'error' ? 'text-red-600 dark:text-red-400' : 'text-[#6b6b76] dark:text-[#8e8ea0]'}`}
         >
           {message}
         </div>
@@ -377,7 +377,7 @@ const LessonEditProposalCard: React.FC<{
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5 text-sm transition-colors"
+            className="px-4 py-2 rounded-xl border border-black/15 hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5 text-sm transition-colors"
           >
             Cancel
           </button>
@@ -385,7 +385,7 @@ const LessonEditProposalCard: React.FC<{
       )}
 
       {state === 'confirming' && (
-        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0]">
           <Loader2 className="w-3 h-3 animate-spin" />
           Applying…
         </div>
