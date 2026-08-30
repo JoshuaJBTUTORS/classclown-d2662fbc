@@ -175,6 +175,17 @@ const WelcomeOnboarding: React.FC = () => {
 
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
+  // Jump directly to a step via the progress dots. Forward jumps past the
+  // details step require the details to be complete so onboarding stays valid.
+  const goToStep = (target: number) => {
+    if (target === step) return;
+    if (target > detailsStepIndex && !detailsComplete) {
+      toast.error('Please add a school and year group first.');
+      return;
+    }
+    setStep(target);
+  };
+
   const firstName = profile?.first_name || '';
 
   const renderBody = () => {
@@ -302,18 +313,8 @@ const WelcomeOnboarding: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[1.25rem] border-2 border-foreground/90 bg-card shadow-[4px_4px_0_0_hsl(var(--foreground)/0.9)]">
-          <img
-            src={slide.image}
-            alt={`${slide.title} preview`}
-            loading="lazy"
-            width={1280}
-            height={800}
-            className="h-auto w-full object-cover"
-          />
-        </div>
-
-        <ul className="mt-6 space-y-3">
+        <div className="mt-6 rounded-[1.25rem] border-2 border-foreground/90 bg-card shadow-[4px_4px_0_0_hsl(var(--foreground)/0.9)] p-5">
+          <ul className="space-y-3">
           {slide.points.map((point) => (
             <li
               key={point}
