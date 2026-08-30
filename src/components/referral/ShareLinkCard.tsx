@@ -93,7 +93,7 @@ export const ShareLinkCard: React.FC<ShareLinkCardProps> = ({ shareUrl, isLoadin
         </div>
       </div>
 
-      <aside className="rounded-2xl border border-foreground/10 bg-pastel-butter/60 p-6">
+      <aside className="rounded-2xl border border-foreground/10 bg-pastel-blush/60 p-6">
         <div className="mb-4 flex items-center gap-2 font-heading font-bold">
           <DoodleCoin className="h-5 w-5" aria-hidden="true" />
           It&apos;s a win-win
