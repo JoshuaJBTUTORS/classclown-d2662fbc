@@ -18,6 +18,7 @@ interface EmbeddedVideoRoomProps {
   roomUrl: string;
   spaceId?: string;
   lessonTitle?: string;
+  lessonStartTime?: string;
   onExit: () => void;
   className?: string;
   lessonId?: string;
@@ -29,6 +30,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
   roomUrl,
   spaceId,
   lessonTitle = "Video Room",
+  lessonStartTime,
   onExit,
   className = "",
   lessonId,
@@ -127,6 +129,7 @@ const EmbeddedVideoRoom: React.FC<EmbeddedVideoRoomProps> = ({
       {/* Header Controls */}
       <VideoRoomHeader
         lessonTitle={lessonTitle}
+        lessonStartTime={lessonStartTime}
         participantCount={1} // Could be dynamic if we track actual participants
         expectedParticipantCount={expectedStudents}
         userRole={isTeacherRole ? 'tutor' : 'student'}
