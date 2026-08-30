@@ -1,30 +1,57 @@
-# Topic Requests — ClassClown redesign (`/topic-requests`)
+# Redesign Trial Bookings
 
-Visual-only redesign of `src/pages/TopicRequestsApproval.tsx`. All data fetching, filtering, mutations, the `send-topic-request-notification` edge call, role gating, and dialog/confirm workflows stay exactly as they are.
+## Scope
 
-## Changes
+Redesign the existing `/trial-bookings` admin page to match the uploaded ClassClown design language. This is a visual-only update: no booking, approval, rejection, resend, Review Room, routing, permission, or data behaviour will be changed.
 
-### Layout & header
-- Replace the `container mx-auto` shell with a full-width padded layout (`px-4 sm:px-6 lg:px-8`, `w-full min-w-0 flex-1` root so it fills MainLayout's flex row — same fix as `/staff`, `/tutors`, `/time-off-requests`).
-- Add the shared `Sidebar` + `MobileMenuButton` so the page has the same navigation chrome as every other redesigned admin page (currently missing here).
-- Header: `font-heading` extrabold "Topic Request Approval" title with a doodle icon chip, and muted subtitle.
+## Design direction
 
-### Statistics cards
-- Replace the 4 plain Cards with pastel stat chips/cards: Total (sand), Pending (butter), Approved (mint), Denied (blush) — rounded `var(--radius-soft)`, soft shadows, doodle accents.
+Apply the shared ClassClown visual system already used across Students, Tutors, Time Off, and Lesson Summaries:
 
-### Filters card
-- Pastel surface card, doodle filter icon, rounded black-outline inputs/selects consistent with `/time-off-requests` filters. Search/status/subject logic unchanged.
+- Plus Jakarta Sans headings and Inter body text.
+- Soft pastel surfaces using the existing semantic palette: mint, lilac, butter, blush, sky, and sand.
+- Large rounded cards with `1.5rem` radii and soft shadows.
+- Rounded pill filters, tabs, status chips, and action buttons.
+- Hand-drawn doodle icons where appropriate, avoiding generic AI-looking icon styling.
+- Subtle hover lift and fade transitions, without changing click targets or workflow order.
 
-### Request list
-- Each request becomes a rounded pastel card: initials avatar (rotating pastel tones), student name/email, pastel "General Topic Request" chip, status chip (butter=Pending, mint=Approved, blush=Denied), requested-topic quote panel, admin notes panel, submitted/updated timestamps.
-- Loading skeletons and empty state restyled (doodle empty icon, pastel surface).
+## Page updates
 
-### Review dialog & confirm dialogs
-- `cc-dialog` scoped styling: rounded black-outline textarea, pastel topic panel, pill buttons.
-- Deny = outline/pastel-blush button with black-outline Cancel and solid-black confirm; Approve = solid-black pill. AlertDialogs restyled to rounded soft surfaces. Behavior, notifications, and confirm text unchanged.
+1. Rebuild the page header as a full-width ClassClown header with a large "Trial Bookings" title, result-count pill, and Export action.
+2. Replace the current boxed table treatment with a soft card surface and responsive booking rows similar to the redesigned Students and Tutors lists.
+3. Restyle the All, Trial Lessons, and Review Room tabs, including the Review Room day filters.
+4. Redesign search, status filter, and referral filter as rounded outlined controls.
+5. Use consistent pastel status chips:
+   - Pending: butter
+   - Approved: mint
+   - Rejected: blush
+   - Completed: sky
+6. Keep Review Room grouping, session badges, aggregate status logic, and pending/approved counts exactly as they are, but present them in the new visual style.
+7. Restyle row actions for view, resend confirmation, approve, and reject while preserving the same buttons, conditions, titles, and handlers.
+8. Redesign loading and empty states with pastel panels and existing doodle empty-state artwork.
+9. Ensure the page uses the available desktop width correctly and collapses cleanly on mobile.
 
-## What stays the same
-- All queries, mutations, filters, stats calculations, edge-function notification, button labels, and the approve/deny confirmation flow.
+## Dialog updates
+
+Redesign only the appearance of the dialogs reached from this page:
+
+- Trial Booking Details dialog
+- Approve Trial Booking dialog
+- Review Room bulk approval dialog
+
+Use rounded dialog shells, pastel detail panels, doodle-style status visuals, outlined secondary buttons, and black pill primary actions. All form fields, validation, disabled states, approval checks, service calls, notifications, and success/error behaviour remain unchanged.
+
+## Files expected to change
+
+- `src/pages/TrialBookings.tsx`
+- `src/components/trialBooking/TrialBookingApprovalDialogWithAdmin.tsx`
+- `src/components/trialBooking/ReviewRoomApprovalDialog.tsx`
+
+The older `TrialBookingApprovalDialog.tsx` appears unused by this page, so it will be left alone unless inspection during implementation proves it is still reachable.
 
 ## Verification
-- Typecheck + build log pass. (Authenticated screenshot check unavailable — external Supabase auth.)
+
+- Run TypeScript/build checks.
+- Review the compiled page for layout errors.
+- Confirm all existing actions and dialog workflows are still wired to the same handlers.
+- Check the build log for a clean result before completion.
