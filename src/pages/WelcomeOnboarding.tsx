@@ -189,7 +189,7 @@ const WelcomeOnboarding: React.FC = () => {
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
             This is your home for lessons, homework, lesson plans, summaries and progress.
-            We'll grab a couple of details and then show you around — it takes about a minute.
+            We'll grab a couple of details and then show you around. It takes about a minute.
           </p>
         </div>
       );
@@ -214,7 +214,7 @@ const WelcomeOnboarding: React.FC = () => {
               </div>
             ) : children.length === 0 ? (
               <div className="rounded-[1.25rem] border-2 border-foreground/90 bg-pastel-butter p-5 text-sm text-pastel-butter-foreground">
-                We couldn't find a student record linked to your account yet. You can continue —
+                We couldn't find a student record linked to your account yet. You can continue and
                 your coordinator will add these details for you.
               </div>
             ) : (
@@ -277,7 +277,7 @@ const WelcomeOnboarding: React.FC = () => {
             You're all set
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-base text-muted-foreground">
-            That's the tour done. Your calendar is the best place to start — every lesson,
+            That's the tour done. Your calendar is the best place to start. Every lesson,
             homework task and summary lives alongside it.
           </p>
         </div>
@@ -300,6 +300,17 @@ const WelcomeOnboarding: React.FC = () => {
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">{slide.subtitle}</p>
           </div>
+        </div>
+
+        <div className="mt-6 overflow-hidden rounded-[1.25rem] border-2 border-foreground/90 bg-card shadow-[4px_4px_0_0_hsl(var(--foreground)/0.9)]">
+          <img
+            src={slide.image}
+            alt={`${slide.title} preview`}
+            loading="lazy"
+            width={1280}
+            height={800}
+            className="h-auto w-full object-cover"
+          />
         </div>
 
         <ul className="mt-6 space-y-3">
