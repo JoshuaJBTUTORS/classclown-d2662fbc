@@ -33,7 +33,7 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
 
   return (
     <Sidebar variant="sidebar" className={isCollapsed ? 'w-14' : 'w-60'}>
-      <SidebarContent>
+      <SidebarContent className="bg-background">
         <SidebarGroup>
           <SidebarGroupLabel>
             {!isCollapsed && 'Statistics'}
@@ -41,17 +41,17 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
           <SidebarGroupContent>
             <div className={isCollapsed ? 'px-2 py-3' : 'px-4 py-3 space-y-3'}>
               <div className="flex items-center gap-3">
-                <BarChart3 className="h-4 w-4 text-primary" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pastel-lilac text-foreground"><BarChart3 className="h-4 w-4" /></span>
                 {!isCollapsed && (
                   <div>
-                    <p className="text-2xl font-bold text-primary">{totalProposals}</p>
+                    <p className="font-heading text-2xl font-extrabold text-foreground">{totalProposals}</p>
                     <p className="text-xs text-muted-foreground">Total Proposals</p>
                   </div>
                 )}
               </div>
               {!isCollapsed && (
                 <div className="flex items-center gap-3">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pastel-mint text-foreground"><Filter className="h-4 w-4" /></span>
                   <div>
                     <p className="text-lg font-semibold">{filteredCount}</p>
                     <p className="text-xs text-muted-foreground">Filtered Results</p>
@@ -70,7 +70,7 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
             <SidebarMenu>
               {statusItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton className="hover:bg-muted/50">
+                  <SidebarMenuButton className="rounded-full font-medium hover:bg-pastel-sky/70">
                     <item.icon className="h-4 w-4" />
                     {!isCollapsed && <span>{item.title}</span>}
                   </SidebarMenuButton>
@@ -88,7 +88,7 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  className="hover:bg-muted/50"
+                  className="rounded-full font-medium hover:bg-pastel-sky/70"
                   onClick={() => navigate('/admin/proposals/signed')}
                 >
                   <FileCheck className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton className="hover:bg-muted/50">
+                <SidebarMenuButton className="rounded-full font-medium hover:bg-pastel-sky/70">
                   <Settings className="h-4 w-4" />
                   {!isCollapsed && <span>Settings</span>}
                 </SidebarMenuButton>

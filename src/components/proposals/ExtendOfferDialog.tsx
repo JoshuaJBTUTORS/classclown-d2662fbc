@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -78,9 +77,11 @@ export default function ExtendOfferDialog({ open, onOpenChange, proposal, onExte
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="rounded-[var(--radius-soft)] border-2 border-foreground sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Extend discounted rate</DialogTitle>
+          <DialogTitle className="font-heading text-2xl font-extrabold">
+            Extend discounted rate
+          </DialogTitle>
           <DialogDescription>
             {proposal ? `Give ${proposal.recipient_name} more time to claim the discounted rate.` : ''}
           </DialogDescription>
@@ -88,24 +89,26 @@ export default function ExtendOfferDialog({ open, onOpenChange, proposal, onExte
 
         {proposal && (
           <div className="space-y-4">
-            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+            <div className="rounded-[1.25rem] bg-pastel-sand/60 p-4 text-sm">
               <p className="text-muted-foreground">Current deadline</p>
-              <p className="font-medium">
+              <p className="font-semibold text-foreground">
                 {format(new Date(currentDeadline), 'd MMM yyyy, HH:mm')}
                 {expired && <span className="ml-2 text-destructive">(expired)</span>}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" disabled={saving} onClick={() => extendBy(12)}>
-                +12 hours
-              </Button>
-              <Button variant="outline" disabled={saving} onClick={() => extendBy(24)}>
-                +24 hours
-              </Button>
-              <Button variant="outline" disabled={saving} onClick={() => extendBy(48)}>
-                +48 hours
-              </Button>
+              {[12, 24, 48].map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  disabled={saving}
+                  onClick={() => extendBy(h)}
+                  className="h-11 rounded-full border-2 border-foreground bg-transparent text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-50"
+                >
+                  +{h} hours
+                </button>
+              ))}
             </div>
 
             <div className="space-y-2">
@@ -115,19 +118,30 @@ export default function ExtendOfferDialog({ open, onOpenChange, proposal, onExte
                 type="datetime-local"
                 value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
+                className="h-12 rounded-full border-2 border-foreground bg-transparent px-5"
               />
             </div>
           </div>
         )}
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
+        <DialogFooter className="gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+            className="h-11 rounded-full border-2 border-foreground bg-transparent px-5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-50"
+          >
             Cancel
-          </Button>
-          <Button onClick={() => save(new Date(customValue).getTime())} disabled={saving || !customValue}>
+          </button>
+          <button
+            type="button"
+            onClick={() => save(new Date(customValue).getTime())}
+            disabled={saving || !customValue}
+            className="inline-flex h-11 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+          >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save deadline
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
