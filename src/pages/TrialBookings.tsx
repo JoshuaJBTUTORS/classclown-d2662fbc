@@ -426,11 +426,6 @@ const TrialBookings = () => {
             </div>
 
             <section className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
-              <div className="mb-5 flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/70 bg-pastel-butter text-foreground">
-                  <DoodleSparkle className="h-5 w-5" />
-                </span>
-              </div>
 
               <Tabs value={sourceTab} onValueChange={(v) => setSourceTab(v as typeof sourceTab)} className="mb-4">
                 <TabsList className="h-auto rounded-full border-2 border-foreground/10 bg-pastel-sand/50 p-1">
