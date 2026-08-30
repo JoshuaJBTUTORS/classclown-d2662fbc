@@ -122,7 +122,7 @@ export const ShareLinkCard: React.FC<ShareLinkCardProps> = ({ shareUrl, isLoadin
             </span>
             <span className="font-medium">You get</span>
           </div>
-          <span className="whitespace-nowrap rounded-full border border-foreground/15 bg-background px-3 py-1.5 text-sm font-extrabold text-foreground">
+          <span className="inline-flex w-[88px] items-center justify-center whitespace-nowrap rounded-full border border-foreground/15 bg-background px-3 py-1.5 text-sm font-extrabold text-foreground">
             £50
           </span>
         </div>
