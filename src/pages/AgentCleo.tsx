@@ -916,7 +916,7 @@ const AgentCleo: React.FC = () => {
 
         <div className="p-3 border-t border-black/5 dark:border-white/5">
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center text-xs font-semibold text-white">C</div>
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center text-xs font-semibold text-white">C</div>
             <div className="text-sm font-medium">Agent Cleo</div>
           </div>
         </div>
@@ -950,7 +950,7 @@ const AgentCleo: React.FC = () => {
               <UserAvatar
                 avatarUrl={profile?.avatar_url}
                 name={firstName}
-                className="w-14 h-14 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white"
+                className="w-14 h-14 rounded-full object-cover bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-blue-900/15 dark:shadow-blue-900/40 text-2xl font-semibold text-white"
               />
               <h1 className="text-3xl font-semibold mb-2 min-h-[2.5rem]">
                 <Typewriter text={`Hey${firstName ? ` ${firstName}` : ''}`} />
@@ -979,12 +979,12 @@ const AgentCleo: React.FC = () => {
                     <UserAvatar
                       avatarUrl={profile?.avatar_url}
                       name={firstName}
-                      className="w-7 h-7 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-xs font-semibold text-white"
+                      className="w-7 h-7 rounded-full object-cover bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center shrink-0 text-xs font-semibold text-white"
                     />
                   </div>
                 ) : (
                   <div key={m.id} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center shrink-0 text-sm font-semibold">C</div>
                     <div className="flex-1 pt-1 leading-relaxed">
                       {m.content && <MarkdownMessage>{m.content}</MarkdownMessage>}
                       {(m.proposals?.length ?? 0) > 0 && (
