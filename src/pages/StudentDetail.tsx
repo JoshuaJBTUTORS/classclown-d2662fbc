@@ -9,6 +9,7 @@ import { useStudentWeeklyTopics } from '@/hooks/useStudentWeeklyTopics';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import LoadingHand from '@/components/ui/loading-hand';
 
 const stroke = {
   fill: 'none' as const,
@@ -235,7 +236,7 @@ const StudentDetail: React.FC = () => {
             <div className="mt-6 space-y-4">
               {isLoading ? (
                 <div className="flex items-center justify-center rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-16">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <LoadingHand />
                 </div>
               ) : groups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">

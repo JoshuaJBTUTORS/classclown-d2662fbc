@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { getSubjectCategoryTone as tone, sortSubjectNames } from '@/utils/subjectLevelOrder';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 
+import LoadingHand from '@/components/ui/loading-hand';
 import {
   Pagination,
   PaginationContent,
@@ -365,7 +366,7 @@ const Tutors = () => {
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <LoadingHand />
             </div>
           ) : tutors.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">

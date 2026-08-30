@@ -13,6 +13,7 @@ import LearningPathContainer from '@/components/learningHub/LearningPath/Learnin
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import LoadingHand from '@/components/ui/loading-hand';
 import { 
   Play, 
   Clock, 
@@ -124,7 +125,7 @@ const CourseDetail = () => {
   if (isLoading || !course) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoadingHand fullScreen />
       </div>
     );
   }

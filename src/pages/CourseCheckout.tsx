@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, Lock, CheckCircle, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import EmbeddedPaymentForm from '@/components/learningHub/EmbeddedPaymentForm';
+import LoadingHand from '@/components/ui/loading-hand';
 
 const CourseCheckout = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -147,7 +148,7 @@ const CourseCheckout = () => {
   if (isLoading || !course) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoadingHand fullScreen />
       </div>
     );
   }
@@ -156,7 +157,7 @@ const CourseCheckout = () => {
   if (isOwner) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoadingHand fullScreen />
       </div>
     );
   }
@@ -263,8 +264,7 @@ const CourseCheckout = () => {
 
           {isLoadingPayment ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-3 text-gray-600">Loading payment form...</span>
+              <LoadingHand text="Loading payment form..." />
             </div>
           ) : paymentError ? (
             <div className="border border-red-200 bg-red-50 rounded-lg p-6">

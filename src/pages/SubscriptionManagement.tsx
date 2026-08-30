@@ -9,6 +9,7 @@ import { Loader2, Zap, CreditCard, Calendar, ArrowRight, CheckCircle, RefreshCw 
 import { useToast } from '@/hooks/use-toast';
 import { paymentService } from '@/services/paymentService';
 import { PlanComparisonDialog } from '@/components/subscription/PlanComparisonDialog';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface Subscription {
   plan_name: string;
@@ -184,7 +185,7 @@ export default function SubscriptionManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-mint-600" />
+        <LoadingHand fullScreen />
       </div>
     );
   }

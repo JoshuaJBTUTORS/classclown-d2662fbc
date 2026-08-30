@@ -22,6 +22,7 @@ import { Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import AddReferralDialog from '@/components/referrals/AddReferralDialog';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface ReferralRow {
   id: string;
@@ -187,7 +188,7 @@ const Referrals: React.FC = () => {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <LoadingHand />
             </div>
           ) : filtered.length === 0 ? (
             <p className="py-10 text-center text-muted-foreground">No referrals yet.</p>

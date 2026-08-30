@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import LoadingHand from '@/components/ui/loading-hand';
 import {
   TOUR_SLIDES,
   YEAR_GROUP_OPTIONS,
@@ -230,7 +231,7 @@ const WelcomeOnboarding: React.FC = () => {
           <div className="mt-8 space-y-4">
             {loadingChildren ? (
               <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <LoadingHand />
               </div>
             ) : children.length === 0 ? (
               <div className="rounded-[1.25rem] border-2 border-foreground/90 bg-pastel-butter p-5 text-sm text-pastel-butter-foreground">

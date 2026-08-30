@@ -2704,3 +2704,25 @@
   border: none;
   box-shadow: var(--shadow-soft);
 }
+
+/* Waving hand loading indicator */
+@keyframes loading-hand-wave {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(14deg); }
+}
+
+@keyframes loading-hand-rise {
+  0% { transform: translateY(100%); }
+  55% { transform: translateY(0%); }
+  75% { transform: translateY(0%); }
+  100% { transform: translateY(-100%); }
+}
+
+.loading-hand-wave {
+  animation: loading-hand-wave 1.2s ease-in-out infinite;
+  transform-origin: 50% 85%;
+}
+
+.loading-hand-fill {
+  animation: loading-hand-rise 1.8s ease-in-out infinite;
+}

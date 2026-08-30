@@ -16,6 +16,7 @@ import { SchoolProgressViewer } from "@/components/schoolProgress/SchoolProgress
 import { SchoolProgressFilters } from "@/components/schoolProgress/SchoolProgressFilters";
 import { SchoolProgress, schoolProgressService } from "@/services/schoolProgressService";
 import { Student } from "@/types/student";
+import LoadingHand from '@/components/ui/loading-hand';
 
 export default function SchoolProgressPage() {
   const [showUpload, setShowUpload] = useState(false);
@@ -179,7 +180,7 @@ export default function SchoolProgressPage() {
           <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <LoadingHand />
               <p className="text-muted-foreground">Loading school progress...</p>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Loader2, ExternalLink, Calendar, Clock, Mail, User, FileText, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface Proposal {
   id: string;
@@ -127,7 +128,7 @@ export default function ViewSignedProposal() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <LoadingHand fullScreen />
       </div>
     );
   }

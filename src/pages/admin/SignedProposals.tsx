@@ -8,6 +8,7 @@ import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import LoadingHand from '@/components/ui/loading-hand';
 
 interface Proposal {
   id: string;
@@ -186,7 +187,7 @@ export default function SignedProposals() {
 
             <div className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
               {loading ? (
-                statePanel(<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />)
+                statePanel(<LoadingHand />)
               ) : proposals.length === 0 ? (
                 statePanel(
                   <>

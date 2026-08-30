@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, FileText, Download } from 'lucide-react';
 import SignaturePad, { type SignaturePadHandle } from '@/components/tutors/SignaturePad';
+import LoadingHand from '@/components/ui/loading-hand';
 
 const CONTRACT_URL = 'https://sjxbxkpegcnnfjbsxazo.supabase.co/storage/v1/object/sign/tutor-documents/self-employed-tutor-agreement.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZGQ4ZGI0Yi03OTZiLTQ1NTYtODU4Mi1jNjliMjg0OTMwNjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ0dXRvci1kb2N1bWVudHMvc2VsZi1lbXBsb3llZC10dXRvci1hZ3JlZW1lbnQucGRmIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NDk3MTM5MywiZXhwIjoxODE2NTA3MzkzfQ.RQ6rUCFz-sdusqu86yo0dkjLhiqersV0nstesX6ROmA';
 
@@ -114,7 +115,7 @@ export default function OfferView() {
     } finally { setSubmitting(false); }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  if (loading) return <LoadingHand fullScreen />;
   if (error || !offer) return <div className="container max-w-2xl py-16 text-center"><p className="text-destructive">{error || 'Offer not found.'}</p></div>;
 
   const signed = offer.status === 'signed';
