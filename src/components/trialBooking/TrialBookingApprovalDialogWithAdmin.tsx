@@ -3,12 +3,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { createTrialLesson } from '@/services/trialLessonService';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useSmartAvailableTutors } from '@/hooks/useSmartAvailableTutors';
-import { Loader2, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import {
+  DoodleAlert,
+  DoodleCalendar,
+  DoodleCheck,
+  DoodleClock,
+} from '@/components/calendar/LessonDoodles';
+import { cn } from '@/lib/utils';
+
+const stroke = {
+  fill: 'none' as const,
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const DoodleX: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+    <path d="M6.2 6.4c3.8 3.8 7.7 7.5 11.6 11.2M17.8 6.2c-3.8 3.9-7.6 7.7-11.4 11.5" />
+  </svg>
+);
 
 interface TrialBookingApprovalDialogWithAdminProps {
   isOpen: boolean;
