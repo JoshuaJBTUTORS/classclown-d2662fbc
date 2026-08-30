@@ -159,33 +159,34 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
 
   if (isLoading || studentsLoading) {
     return (
-      <div className="flex items-center gap-4 rounded-[var(--radius-soft)] bg-muted/30 p-5">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          <span className="text-sm text-muted-foreground">Loading filters...</span>
+      <div className="flex items-center gap-3 rounded-[var(--radius-soft)] border-2 border-dashed border-border/60 bg-muted/20 p-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pastel-lilac">
+          <Filter className="h-4 w-4 text-pastel-lilac-foreground" />
         </div>
+        <span className="text-sm text-muted-foreground">Loading filters...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 rounded-[var(--radius-soft)] bg-muted/30 p-5">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pastel-lilac">
+            <Filter className="h-4 w-4 text-pastel-lilac-foreground" />
+          </div>
           <span className="font-heading text-sm font-semibold">Filter calendar</span>
           {totalFiltersActive > 0 && (
-            <Badge variant="secondary" className="ml-2">
+            <span className="ml-1 rounded-full bg-pastel-butter px-2.5 py-0.5 text-xs font-semibold text-pastel-butter-foreground">
               {totalFiltersActive} active
-            </Badge>
+            </span>
           )}
         </div>
         {totalFiltersActive > 0 && (
           <Button
-            variant="outline"
             size="sm"
             onClick={onClearFilters}
-            className="rounded-full text-xs"
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90 text-xs px-4"
           >
             Clear All
           </Button>
