@@ -947,8 +947,14 @@ const AgentCleo: React.FC = () => {
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {!hasMessages ? (
             <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white">C</div>
-              <h1 className="text-3xl font-semibold mb-2">Hey{firstName ? ` ${firstName}` : ''}</h1>
+              <UserAvatar
+                avatarUrl={profile?.avatar_url}
+                name={firstName}
+                className="w-14 h-14 rounded-full object-cover bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/40 text-2xl font-semibold text-white"
+              />
+              <h1 className="text-3xl font-semibold mb-2 min-h-[2.5rem]">
+                <Typewriter text={`Hey${firstName ? ` ${firstName}` : ''}`} />
+              </h1>
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] italic mb-1 max-w-md text-center">“{quote}”</p>
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
 
