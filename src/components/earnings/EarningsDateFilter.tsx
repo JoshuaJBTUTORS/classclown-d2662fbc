@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { CalendarIcon, X } from 'lucide-react';
 import { DoodleCalendar } from '@/components/calendar/LessonDoodles';
+import { getMonthlyEarningsPeriod, formatPeriodDisplay } from '@/utils/earningsPeriodUtils';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
