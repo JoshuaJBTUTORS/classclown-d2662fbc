@@ -121,16 +121,45 @@ const AdminList: React.FC = () => {
 
   const roleLabel = (role: string) => role.charAt(0).toUpperCase() + role.slice(1);
 
+  const activeAdmins = admins.filter((a) => a.is_active);
+  const inactiveAdmins = admins.filter((a) => !a.is_active);
+  const visibleAdmins = tab === 'active' ? activeAdmins : inactiveAdmins;
+
   return (
     <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-foreground text-foreground">
-          <DoodlePeople className="h-5 w-5" />
-        </span>
-        <h2 className="font-heading text-xl font-extrabold text-foreground">
-          Current Administrative Staff
-        </h2>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-foreground text-foreground">
+            <DoodlePeople className="h-5 w-5" />
+          </span>
+          <h2 className="font-heading text-xl font-extrabold text-foreground">
+            Current Administrative Staff
+          </h2>
+        </div>
+
+        <div className="flex gap-2">
+          {([
+            { key: 'active' as const, label: 'Active', count: activeAdmins.length, tone: 'bg-pastel-mint' },
+            { key: 'inactive' as const, label: 'Inactive', count: inactiveAdmins.length, tone: 'bg-pastel-blush' },
+          ]).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full border-2 border-foreground px-4 py-1.5 text-xs font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5',
+                tab === t.key ? t.tone : 'bg-background'
+              )}
+            >
+              {t.label}
+              <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
+
 
       {loading ? (
         <div className="space-y-2">
