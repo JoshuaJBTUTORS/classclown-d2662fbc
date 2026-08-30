@@ -102,15 +102,16 @@ const DailySnapshot: React.FC = () => {
   return (
     <div className="w-full max-w-2xl mb-8">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0]">Today · {today}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b76] dark:text-[#8e8ea0]">Today · {today}</span>
         <button
           onClick={refresh}
-          className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-[#6b6b76] dark:text-[#8e8ea0] transition-colors"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/60 text-black hover:-translate-y-0.5 hover:bg-black/5 dark:border-white/50 dark:text-white dark:hover:bg-white/5 transition-all duration-200"
           aria-label="Refresh snapshot"
         >
           <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
         </button>
       </div>
+
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Tile
