@@ -85,8 +85,12 @@ const statusTones: Record<string, string> = {
   declined: 'bg-pastel-blush',
 };
 
+const gridCols =
+  'xl:grid xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1.2fr)_minmax(0,1fr)_92px_120px_120px_268px] xl:items-center xl:gap-4';
+
 const iconButton =
   'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-foreground bg-background text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-50';
+
 
 export default function ProposalDashboard() {
   const navigate = useNavigate();
