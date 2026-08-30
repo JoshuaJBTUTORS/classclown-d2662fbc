@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { resolveAvatarSrc } from '@/lib/cleoAvatars';
+import EditAdminDialog, { EditAdminTarget } from '@/components/staff/EditAdminDialog';
 
 interface AdminUser {
   id: string;
@@ -10,6 +11,7 @@ interface AdminUser {
   last_name: string;
   avatar_url: string | null;
   job_title: string | null;
+  is_active: boolean;
   role: string;
 }
 
@@ -56,6 +58,8 @@ const initials = (first?: string | null, last?: string | null) =>
 const AdminList: React.FC = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'active' | 'inactive'>('active');
+  const [editing, setEditing] = useState<EditAdminTarget | null>(null);
 
   useEffect(() => {
     fetchAdmins();
@@ -78,7 +82,7 @@ const AdminList: React.FC = () => {
       const userIds = userRolesData.map((item) => item.user_id);
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar_url, job_title')
+        .select('id, first_name, last_name, avatar_url, job_title, is_active')
         .in('id', userIds);
 
       const adminList = userRolesData.map((roleItem) => {
@@ -90,6 +94,7 @@ const AdminList: React.FC = () => {
           last_name: profile?.last_name || '',
           avatar_url: profile?.avatar_url ?? null,
           job_title: profile?.job_title ?? null,
+          is_active: profile?.is_active ?? true,
           role: roleItem.role,
         };
       });
@@ -116,16 +121,45 @@ const AdminList: React.FC = () => {
 
   const roleLabel = (role: string) => role.charAt(0).toUpperCase() + role.slice(1);
 
+  const activeAdmins = admins.filter((a) => a.is_active);
+  const inactiveAdmins = admins.filter((a) => !a.is_active);
+  const visibleAdmins = tab === 'active' ? activeAdmins : inactiveAdmins;
+
   return (
     <div className="rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-foreground text-foreground">
-          <DoodlePeople className="h-5 w-5" />
-        </span>
-        <h2 className="font-heading text-xl font-extrabold text-foreground">
-          Current Administrative Staff
-        </h2>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-foreground text-foreground">
+            <DoodlePeople className="h-5 w-5" />
+          </span>
+          <h2 className="font-heading text-xl font-extrabold text-foreground">
+            Current Administrative Staff
+          </h2>
+        </div>
+
+        <div className="flex gap-2">
+          {([
+            { key: 'active' as const, label: 'Active', count: activeAdmins.length, tone: 'bg-pastel-mint' },
+            { key: 'inactive' as const, label: 'Inactive', count: inactiveAdmins.length, tone: 'bg-pastel-blush' },
+          ]).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full border-2 border-foreground px-4 py-1.5 text-xs font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5',
+                tab === t.key ? t.tone : 'bg-background'
+              )}
+            >
+              {t.label}
+              <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
+
 
       {loading ? (
         <div className="space-y-2">
@@ -142,14 +176,16 @@ const AdminList: React.FC = () => {
             </div>
           ))}
         </div>
-      ) : admins.length === 0 ? (
+      ) : visibleAdmins.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-soft)] bg-pastel-sand/60 px-6 py-14 text-center">
           <DoodlePeople className="h-10 w-10 text-foreground/70" />
-          <p className="text-sm text-muted-foreground">No administrative staff found</p>
+          <p className="text-sm text-muted-foreground">
+            No {tab} administrative staff found
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
-          {admins.map((admin, i) => {
+          {visibleAdmins.map((admin, i) => {
             const avatarSrc = resolveAvatarSrc(admin.avatar_url);
             const isOwner = admin.role === 'owner';
             const name =
@@ -188,26 +224,51 @@ const AdminList: React.FC = () => {
                   </div>
                 </div>
 
-                <span
-                  className={cn(
-                    'inline-flex w-fit items-center gap-1.5 self-start rounded-full border-2 border-foreground px-3 py-1 text-xs font-semibold text-foreground sm:self-auto',
-                    isOwner ? 'bg-pastel-butter' : 'bg-background'
-                  )}
-                >
-                  {isOwner ? (
-                    <DoodleCrown className="h-3.5 w-3.5" />
-                  ) : (
-                    <DoodleShield className="h-3.5 w-3.5" />
-                  )}
-                  {roleLabel(admin.role)}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      'inline-flex w-fit items-center gap-1.5 rounded-full border-2 border-foreground px-3 py-1 text-xs font-semibold text-foreground',
+                      isOwner ? 'bg-pastel-butter' : 'bg-background'
+                    )}
+                  >
+                    {isOwner ? (
+                      <DoodleCrown className="h-3.5 w-3.5" />
+                    ) : (
+                      <DoodleShield className="h-3.5 w-3.5" />
+                    )}
+                    {roleLabel(admin.role)}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditing({
+                        id: admin.id,
+                        first_name: admin.first_name,
+                        last_name: admin.last_name,
+                        job_title: admin.job_title,
+                        is_active: admin.is_active,
+                      })
+                    }
+                    className="inline-flex items-center rounded-full border-2 border-foreground bg-background px-3.5 py-1 text-xs font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-pastel-mint"
+                  >
+                    Edit
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <EditAdminDialog
+        admin={editing}
+        onClose={() => setEditing(null)}
+        onSaved={fetchAdmins}
+      />
     </div>
   );
 };
+
 
 export default AdminList;
