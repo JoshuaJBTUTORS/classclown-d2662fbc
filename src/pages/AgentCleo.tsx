@@ -1014,7 +1014,7 @@ const AgentCleo: React.FC = () => {
 
         <div className="px-4 pb-4">
           <div className="max-w-3xl mx-auto">
-            <div className="relative flex items-end bg-[#2f2f2f] rounded-3xl border border-white/5 shadow-lg">
+            <div className="relative flex items-end bg-white dark:bg-[#2f2f2f] rounded-3xl border border-black/10 dark:border-white/5 shadow-lg shadow-black/5 dark:shadow-black/30">
               <textarea
                 ref={textareaRef}
                 value={recordingState === 'recording' ? `Recording… ${formatDuration(recordingDuration)}` : input}
@@ -1023,13 +1023,13 @@ const AgentCleo: React.FC = () => {
                 rows={1}
                 readOnly={recordingState !== 'idle'}
                 placeholder={recordingState === 'processing' ? 'Transcribing…' : 'Message Agent Cleo'}
-                className="flex-1 bg-transparent resize-none px-5 py-4 pr-32 outline-none placeholder:text-[#8e8ea0] max-h-[220px]"
+                className="flex-1 bg-transparent resize-none px-5 py-4 pr-32 outline-none placeholder:text-[#6b6b76] dark:placeholder:text-[#8e8ea0] max-h-[220px]"
               />
               <div className="absolute right-2.5 bottom-2.5 flex items-center gap-2">
                 {recordingState === 'recording' && (
                   <button
                     onClick={cancelRecording}
-                    className="w-9 h-9 rounded-full border border-white/15 text-white/70 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    className="w-9 h-9 rounded-full border border-black/15 text-black/60 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10 flex items-center justify-center transition-colors"
                     aria-label="Cancel recording"
                     title="Cancel recording"
                   >
@@ -1042,7 +1042,7 @@ const AgentCleo: React.FC = () => {
                   className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-40 ${
                     recordingState === 'recording'
                       ? 'bg-red-500 text-white animate-pulse'
-                      : 'border border-white/15 text-white/70 hover:bg-white/10'
+                      : 'border border-black/15 text-black/60 hover:bg-black/5 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
                   }`}
                   aria-label={recordingState === 'recording' ? 'Stop recording' : 'Record voice message'}
                   title={recordingState === 'recording' ? 'Stop and transcribe' : 'Record voice message'}
@@ -1056,17 +1056,18 @@ const AgentCleo: React.FC = () => {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || loading || recordingState !== 'idle'}
-                  className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center disabled:bg-white/20 disabled:text-white/40 transition-colors"
+                  className="w-9 h-9 rounded-full bg-[#1a1a1a] text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition-colors"
                   aria-label="Send"
                 >
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
                 </button>
               </div>
             </div>
-            <p className="text-center text-xs text-[#8e8ea0] mt-2">Agent Cleo has read-only access to the CRM database.</p>
+            <p className="text-center text-xs text-[#6b6b76] dark:text-[#8e8ea0] mt-2">Agent Cleo has read-only access to the CRM database.</p>
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
