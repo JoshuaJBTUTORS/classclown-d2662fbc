@@ -227,7 +227,7 @@ const TimeOff = () => {
                   <div className="flex items-start gap-3 rounded-[1.25rem] bg-card/80 p-4">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70" />
                     <p className="text-sm text-muted-foreground">
-                      <strong className="text-foreground">Please note:</strong> A minimum of 1 week notice is required. If lessons are affected, please give a team member a call.
+                      <strong className="text-foreground">Please note:</strong> A minimum of 1 week notice is required. If lessons are affected, please give a team member a call - 01438582848.
                     </p>
                   </div>
 
