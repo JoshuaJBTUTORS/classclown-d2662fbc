@@ -475,11 +475,36 @@ export default function ProposalDashboard() {
                 </div>
               )}
 
-              {!loading && proposals.length > 0 && (
-                <p className="mt-4 px-1 text-sm text-muted-foreground">
-                  Showing {filteredProposals.length} of {proposals.length} proposals
-                </p>
+              {!loading && filteredProposals.length > 0 && (
+                <div className="mt-5 flex flex-col items-center justify-between gap-3 px-1 sm:flex-row">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filteredProposals.length)} of{' '}
+                    {filteredProposals.length} proposals
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage <= 1}
+                      className="inline-flex h-10 items-center rounded-full border-2 border-foreground px-4 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-foreground"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-sm font-semibold text-foreground">
+                      Page {safePage} of {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage >= totalPages}
+                      className="inline-flex h-10 items-center rounded-full border-2 border-foreground px-4 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-foreground"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               )}
+
             </div>
           </div>
         </div>
