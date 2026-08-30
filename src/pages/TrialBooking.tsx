@@ -3,7 +3,7 @@ import { useReferrerName, getRefCodeFromUrl } from '@/hooks/useReferrerName';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { createTrialBooking } from '@/services/trialBookingService';
 import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
