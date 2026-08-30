@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, Plus, MessageSquare, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -253,7 +252,7 @@ const LessonProposalCard: React.FC<{
 
       {message && (
         <div
-          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-400' : state === 'error' ? 'text-red-400' : 'text-[#8e8ea0]'}`}
+          className={`px-4 pb-3 text-sm ${state === 'created' ? 'text-emerald-600 dark:text-emerald-400' : state === 'error' ? 'text-red-600 dark:text-red-400' : 'text-[#6b6b76] dark:text-[#8e8ea0]'}`}
         >
           {message}
         </div>
@@ -269,7 +268,7 @@ const LessonProposalCard: React.FC<{
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5 text-sm transition-colors"
+            className="px-4 py-2 rounded-xl border border-black/15 hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5 text-sm transition-colors"
           >
             Cancel
           </button>
@@ -277,7 +276,7 @@ const LessonProposalCard: React.FC<{
       )}
 
       {state === 'confirming' && (
-        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#8e8ea0]">
+        <div className="px-4 pb-4 inline-flex items-center gap-2 text-xs text-[#6b6b76] dark:text-[#8e8ea0]">
           <Loader2 className="w-3 h-3 animate-spin" />
           Creating…
         </div>
