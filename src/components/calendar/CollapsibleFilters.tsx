@@ -53,18 +53,18 @@ const CollapsibleFilters: React.FC<CollapsibleFiltersProps> = ({
         {isOpen && (
           <div 
             className={cn(
-              "fixed top-16 h-[calc(100vh-4rem)] bg-card border-r border-border/60 shadow-[var(--shadow-soft)] z-40 transition-all duration-300 ease-in-out w-80",
+              "fixed top-16 h-[calc(100vh-4rem)] bg-card border-r border-foreground/5 shadow-[var(--shadow-soft)] z-40 transition-all duration-300 ease-in-out w-80",
               leftPosition
             )}
           >
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
-                <span className="font-heading text-base font-semibold text-foreground">Filters</span>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/5">
+                <span className="font-heading text-base font-semibold text-foreground">Calendar filters</span>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={onToggle}
-                  className="h-9 w-9 rounded-full"
+                  className="h-9 w-9 rounded-full bg-pastel-blush text-pastel-blush-foreground hover:bg-pastel-blush/70"
                 >
                   <X className="h-4 w-4" />
                 </Button>
