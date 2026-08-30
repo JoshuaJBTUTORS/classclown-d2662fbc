@@ -91,7 +91,7 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
     <Sidebar
       variant="sidebar"
       className={cn(
-        'border-r-2 border-foreground/10 [&>div]:bg-card',
+        'border-r border-foreground/5 shadow-[1px_0_0_0_hsl(var(--foreground)/0.03)] [&>div]:bg-card',
         isCollapsed ? 'w-14' : 'w-64'
       )}
     >
