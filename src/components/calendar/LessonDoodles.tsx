@@ -105,28 +105,3 @@ export const DoodleSparkle: React.FC<DoodleProps> = ({ className }) => (
   </svg>
 );
 
-/**
- * Hand-drawn waving hand. The hand group rotates from the wrist via the
- * `.animate-wave` utility (transform-origin set at 12px 21px). Apply the
- * class on the element wrapping this SVG (or pass it through className).
- */
-export const DoodleWave: React.FC<DoodleProps> = ({ className }) => (
-  <svg {...base} className={className}>
-    <g className="animate-wave">
-      {/* wrist / forearm */}
-      <path d="M9.2 20.4c-.6-1.8-.7-3.4-.4-4.6.4-1.3 1.2-2 2.4-2.3" />
-      {/* palm */}
-      <path d="M10.8 13.6c.2-1.3.1-2.6-.1-3.9-.1-.6.3-1 .9-1 .5 0 .8.3.9.9.2 1.2.3 2.4.2 3.6" />
-      {/* fingers */}
-      <path d="M13.4 12.8c.1-1.6.1-3.2-.1-4.8-.1-.6.2-1 .8-1 .5 0 .8.3.9.9.2 1.6.2 3.2.1 4.8" />
-      <path d="M15.6 12.6c.1-1.5.1-3-.1-4.5-.1-.6.2-1 .8-1 .5 0 .8.3.9.9.2 1.5.2 3 .1 4.5" />
-      <path d="M17.6 13.2c.1-1.2.1-2.4-.1-3.6-.1-.5.2-.9.7-.9.5 0 .8.3.9.8.2 1.2.2 2.4.1 3.6" />
-      {/* thumb */}
-      <path d="M10.6 12.4c-.5-.2-1-.1-1.4.3-.5.5-.5 1.2-.1 1.7l2.6 2.6c1 .9 2.4 1 3.4.1 1.2-1 1.2-2.6.1-3.6" />
-    </g>
-    {/* motion lines */}
-    <path d="M2.8 9.4c-1-.3-1.6-.2-2 .2" />
-    <path d="M3.8 6.6c-.8-.5-1.4-.6-1.9-.4" />
-    <path d="M5.6 4.4c-.5-.6-1-.9-1.5-.9" />
-  </svg>
-);

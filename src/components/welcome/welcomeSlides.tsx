@@ -2,7 +2,6 @@ import React from 'react';
 import {
   DoodleCalendar,
   DoodleClipboard,
-  DoodleWave,
   DoodleCheck,
   DoodlePeople,
 } from '@/components/calendar/LessonDoodles';
@@ -56,8 +55,11 @@ export const TOUR_SLIDES: TourSlide[] = [
   },
 ];
 
+/** Waving hand matching the login page emoji, with the cc-wave animation. */
 export const WelcomeIntroIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <DoodleWave className={className} />
+  <span aria-hidden="true" className={cn('inline-block animate-wave leading-none', className)}>
+    👋
+  </span>
 );
 export const AllSetIcon = DoodleCheck;
 
