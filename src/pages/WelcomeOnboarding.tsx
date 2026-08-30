@@ -192,8 +192,8 @@ const WelcomeOnboarding: React.FC = () => {
     if (step === 0) {
       return (
         <div className="text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border-2 border-foreground/90 bg-pastel-mint">
-            <WelcomeIntroIcon className="h-8 w-8 text-pastel-mint-foreground" />
+          <div className="mx-auto mb-6 flex justify-center">
+            <WelcomeIntroIcon className="text-6xl" />
           </div>
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Welcome{firstName ? `, ${firstName}` : ''} to Class Beyond
@@ -339,7 +339,7 @@ const WelcomeOnboarding: React.FC = () => {
         <div className="absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-pastel-blush opacity-50 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-3xl">
+      <div className="relative mx-auto w-full max-w-6xl">
         <div className="mb-6 flex items-center justify-between">
           <span className="rounded-full border-2 border-foreground/90 bg-card px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground">
             Getting started
