@@ -4,8 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Mail } from 'lucide-react';
-import ProposalForm, {
 import LoadingHand from '@/components/ui/loading-hand';
+import ProposalForm, {
   DEFAULT_LESSON_PRICE,
   LessonTimeRow,
   ProposalFormData,
