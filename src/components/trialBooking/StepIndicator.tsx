@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StepIndicatorProps {
   currentStep: number;
@@ -10,39 +10,50 @@ interface StepIndicatorProps {
 
 const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, totalSteps, stepLabels }) => {
   return (
-    <div className="w-full py-6">
+    <div className="w-full py-4">
       <div className="flex items-center justify-between">
         {stepLabels.map((label, index) => {
           const stepNumber = index + 1;
           const isCompleted = stepNumber < currentStep;
           const isCurrent = stepNumber === currentStep;
-          
+
           return (
-            <div key={stepNumber} className="flex items-center">
-              <div className="flex flex-col items-center">
+            <React.Fragment key={stepNumber}>
+              <div className="flex flex-col items-center shrink-0">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
+                  className={cn(
+                    'w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all',
                     isCompleted
-                      ? 'bg-[#e94b7f] border-[#e94b7f] text-white'
+                      ? 'bg-foreground border-foreground text-background shadow-[0_2px_0_0_hsl(var(--foreground)/0.25)]'
                       : isCurrent
-                      ? 'border-[#e94b7f] text-[#e94b7f] bg-white'
-                      : 'border-gray-300 text-gray-400 bg-white'
-                  }`}
+                      ? 'bg-pastel-sky border-foreground text-foreground shadow-[0_2px_0_0_hsl(var(--foreground)/0.25)]'
+                      : 'bg-background border-border text-muted-foreground'
+                  )}
                 >
                   {isCompleted ? (
-                    <Check className="w-5 h-5" />
+                    <Check className="w-5 h-5" strokeWidth={2.5} />
                   ) : (
-                    <span className="text-sm font-medium">{stepNumber}</span>
+                    <span className="text-sm font-semibold">{stepNumber}</span>
                   )}
                 </div>
-                <span className={`mt-2 text-sm ${isCurrent ? 'text-[#e94b7f] font-medium' : 'text-gray-500'}`}>
+                <span
+                  className={cn(
+                    'mt-2 text-[11px] uppercase tracking-[0.14em] font-semibold',
+                    isCurrent || isCompleted ? 'text-foreground' : 'text-muted-foreground'
+                  )}
+                >
                   {label}
                 </span>
               </div>
               {index < stepLabels.length - 1 && (
-                <div className={`flex-1 h-0.5 mx-4 ${isCompleted ? 'bg-[#e94b7f]' : 'bg-gray-300'}`} />
+                <div
+                  className={cn(
+                    'flex-1 h-[2px] mx-3 sm:mx-5 rounded-full -mt-6',
+                    isCompleted ? 'bg-foreground/70' : 'bg-border'
+                  )}
+                />
               )}
-            </div>
+            </React.Fragment>
           );
         })}
       </div>

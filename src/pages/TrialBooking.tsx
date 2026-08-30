@@ -3,7 +3,7 @@ import { useReferrerName, getRefCodeFromUrl } from '@/hooks/useReferrerName';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { createTrialBooking } from '@/services/trialBookingService';
 import { useAggregatedAvailability } from '@/hooks/useAggregatedAvailability';
@@ -170,36 +170,53 @@ const TrialBookingPage: React.FC = () => {
         return null;
     }
   };
-  return <div className="container mx-auto py-10 px-4">
+  return <div className="min-h-screen bg-background relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-pastel-sky/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-pastel-blush/40 blur-3xl" />
+
+      <div className="relative container mx-auto py-10 sm:py-14 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-2">
-          {referrerName ? `${referrerName} has invited you to book a trial with Class Beyond Academy` : 'Book a Trial Lesson'}
-        </h1>
-        <p className="text-gray-600 text-center mb-8">
-          Submit a request for a free 45-minute trial lesson with one of our qualified tutors
-          {referrerName ? ' - and you both get £50 when the trial goes ahead' : ''}
-        </p>
-
-        <StepIndicator currentStep={currentStep} totalSteps={totalSteps} stepLabels={stepLabels} />
-
-        <div className="mt-8">
-          {renderStep()}
+        <div className="text-center mb-8">
+          {referrerName && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-foreground/80 bg-pastel-mint px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-foreground mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              Invited by {referrerName}
+            </span>
+          )}
+          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+            {referrerName ? `${referrerName} has invited you to book a trial with Class Beyond Academy` : 'Book a Trial Lesson'}
+          </h1>
+          <svg viewBox="0 0 220 12" className="mx-auto mt-2 h-3 w-44 text-foreground/70" fill="none" aria-hidden="true">
+            <path d="M3 8c30-7 60 4 90-1s60-6 124 2" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+          <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
+            Submit a request for a free 45-minute trial lesson with one of our qualified tutors
+            {referrerName ? ' - and you both get £50 when the trial goes ahead' : ''}
+          </p>
         </div>
 
-        <div className="flex justify-between items-center mt-8 max-w-2xl mx-auto">
-          <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 1} className="flex items-center gap-2">
+        <div className="rounded-3xl border-2 border-foreground/90 bg-card p-4 sm:p-7 shadow-[0_6px_0_0_hsl(var(--foreground)/0.12)]">
+          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} stepLabels={stepLabels} />
+
+          <div className="mt-6">
+            {renderStep()}
+          </div>
+        </div>
+
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-8 max-w-2xl mx-auto">
+          <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 1} className="rounded-full border-2 border-foreground/80 bg-transparent hover:bg-muted flex items-center justify-center gap-2 w-full sm:w-auto">
             <ArrowLeft className="h-4 w-4" />
             Previous
           </Button>
 
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Step {currentStep} of {totalSteps}
           </div>
 
-          {currentStep < totalSteps ? <Button type="button" onClick={handleNext} className="flex items-center gap-2 bg-[#e94b7f] hover:bg-[#d63d6f]">
+          {currentStep < totalSteps ? <Button type="button" onClick={handleNext} className="rounded-full bg-foreground text-background hover:bg-foreground/90 flex items-center justify-center gap-2 w-full sm:w-auto">
               Next
               <ArrowRight className="h-4 w-4" />
-            </Button> : <Button type="button" onClick={() => setShowConfirmDialog(true)} disabled={isSubmitting} className="flex items-center gap-2 bg-[#e94b7f] hover:bg-[#d63d6f]">
+            </Button> : <Button type="button" onClick={() => setShowConfirmDialog(true)} disabled={isSubmitting} className="rounded-full bg-foreground text-background hover:bg-foreground/90 flex items-center justify-center gap-2 w-full sm:w-auto">
               {isSubmitting ? <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Submitting...
@@ -209,11 +226,14 @@ const TrialBookingPage: React.FC = () => {
       </div>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="cc-dialog rounded-3xl border-2 border-foreground/90 max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Thank you for considering Class Beyond Academy</AlertDialogTitle>
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-foreground/80 bg-pastel-butter">
+              <Sparkles className="h-5 w-5 text-foreground" />
+            </span>
+            <AlertDialogTitle className="font-heading text-xl text-left">Thank you for considering Class Beyond Academy</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3 text-left">
-              <span className="block">
+              <span className="block rounded-2xl border border-border bg-muted/40 p-4">
                 We're pleased to offer you a free trial lesson. Although there is no cost to you, your tutor sets aside this time especially for your child. We kindly ask that you only book a time that you are confident you can attend, so that no tutor time goes to waste and we can continue offering free trial lessons to other families.
               </span>
               <span className="block">
@@ -222,20 +242,22 @@ const TrialBookingPage: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting} className="rounded-full border-2 border-foreground/80">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 setShowConfirmDialog(false);
                 handleSubmit();
               }}
-              className="bg-[#e94b7f] hover:bg-[#d63d6f]"
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               Confirm Booking
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>;
+
 };
 export default TrialBookingPage;
