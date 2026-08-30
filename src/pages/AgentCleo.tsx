@@ -952,9 +952,11 @@ const AgentCleo: React.FC = () => {
                 name={firstName}
                 className="w-14 h-14 rounded-full object-cover bg-gradient-to-br from-sky-300 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-blue-900/15 dark:shadow-blue-900/40 text-2xl font-semibold text-white"
               />
-              <h1 className="text-3xl font-semibold mb-2 min-h-[2.5rem]">
+              <h1 className="text-3xl font-semibold mb-2 min-h-[2.5rem] flex items-center gap-2">
                 <Typewriter text={`Hey${firstName ? ` ${firstName}` : ''}`} />
+                <span className="animate-wave inline-block origin-[70%_80%]" aria-hidden="true">👋</span>
               </h1>
+
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] italic mb-1 max-w-md text-center">“{quote}”</p>
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
 
