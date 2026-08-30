@@ -55,7 +55,7 @@ export const EarningsDateFilter = ({
     isSameDay(dateRange.from, period.start) && isSameDay(dateRange.to, period.end);
 
   return (
-    <section className="animate-fade-in rounded-[var(--radius-soft)] bg-pastel-sky/40 p-4 shadow-[var(--shadow-soft)] sm:p-6">
+    <section className="animate-fade-in rounded-[var(--radius-soft)] border border-foreground/10 bg-card p-4 shadow-[var(--shadow-soft)] sm:p-6">
       <div className="mb-4 flex items-center gap-3 px-1">
         <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 bg-card text-foreground">
           <DoodleCalendar className="h-4 w-4" />
@@ -74,11 +74,16 @@ export const EarningsDateFilter = ({
             type="button"
             onClick={() => onDateRangeChange({ from: suggestedPeriod.start, to: suggestedPeriod.end })}
             className={cn(
-              'inline-flex items-center gap-2.5 rounded-full h-11 pl-2 pr-5 text-sm font-medium transition-all duration-200 border border-foreground bg-transparent text-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
-              isSuggestionActive(suggestedPeriod) && 'bg-foreground/5 border-foreground'
+              'inline-flex items-center gap-2.5 rounded-full h-11 pl-2 pr-4 text-sm font-medium transition-all duration-200 border border-foreground bg-transparent text-foreground hover:-translate-y-0.5 hover:bg-foreground/5',
+              isSuggestionActive(suggestedPeriod) && 'border-foreground bg-pastel-sky/15'
             )}
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+            <span
+              className={cn(
+                'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground transition-colors',
+                isSuggestionActive(suggestedPeriod) && 'border-foreground bg-pastel-sky/30'
+              )}
+            >
               <DoodleCalendar className="h-4 w-4" />
             </span>
             <span className="flex items-baseline gap-2">
