@@ -14,8 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
 import LoadingHand from '@/components/ui/loading-hand';
+import {
   TOUR_SLIDES,
   YEAR_GROUP_OPTIONS,
   WelcomeIntroIcon,

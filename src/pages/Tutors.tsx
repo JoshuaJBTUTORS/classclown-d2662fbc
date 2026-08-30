@@ -15,8 +15,8 @@ import { cn } from '@/lib/utils';
 import { getSubjectCategoryTone as tone, sortSubjectNames } from '@/utils/subjectLevelOrder';
 import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 
-import {
 import LoadingHand from '@/components/ui/loading-hand';
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
