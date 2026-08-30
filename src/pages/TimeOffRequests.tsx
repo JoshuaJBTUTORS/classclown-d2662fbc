@@ -309,7 +309,7 @@ const TimeOffRequests = () => {
                   Time Off Requests
                 </h1>
                 <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                  <DoodleClock className="h-4.5 w-4.5 h-5 w-5" />
+                  <DoodleClock className="h-5 w-5" />
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">Review and manage tutor time off requests</p>
