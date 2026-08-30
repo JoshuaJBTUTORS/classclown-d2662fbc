@@ -175,6 +175,17 @@ const WelcomeOnboarding: React.FC = () => {
 
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
+  // Jump directly to a step via the progress dots. Forward jumps past the
+  // details step require the details to be complete so onboarding stays valid.
+  const goToStep = (target: number) => {
+    if (target === step) return;
+    if (target > detailsStepIndex && !detailsComplete) {
+      toast.error('Please add a school and year group first.');
+      return;
+    }
+    setStep(target);
+  };
+
   const firstName = profile?.first_name || '';
 
   const renderBody = () => {
@@ -302,28 +313,19 @@ const WelcomeOnboarding: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[1.25rem] border-2 border-foreground/90 bg-card shadow-[4px_4px_0_0_hsl(var(--foreground)/0.9)]">
-          <img
-            src={slide.image}
-            alt={`${slide.title} preview`}
-            loading="lazy"
-            width={1280}
-            height={800}
-            className="h-auto w-full object-cover"
-          />
+        <div className="mt-6 rounded-[1.25rem] border-2 border-foreground/90 bg-card shadow-[4px_4px_0_0_hsl(var(--foreground)/0.9)] p-5">
+          <ul className="space-y-3">
+            {slide.points.map((point) => (
+              <li
+                key={point}
+                className="flex items-start gap-3 rounded-[1.25rem] border-2 border-foreground/90 bg-background/70 p-4 text-sm text-foreground"
+              >
+                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-foreground" />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-
-        <ul className="mt-6 space-y-3">
-          {slide.points.map((point) => (
-            <li
-              key={point}
-              className="flex items-start gap-3 rounded-[1.25rem] border-2 border-foreground/90 bg-background/70 p-4 text-sm text-foreground"
-            >
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-foreground" />
-              <span>{point}</span>
-            </li>
-          ))}
-        </ul>
       </div>
     );
   };
@@ -355,13 +357,16 @@ const WelcomeOnboarding: React.FC = () => {
         <div className={`${cardTone} p-6 shadow-[6px_6px_0_0_hsl(var(--foreground)/0.9)] sm:p-10`}>
           {renderBody()}
 
-          {/* Progress dots */}
+          {/* Progress dots (clickable to jump between steps) */}
           <div className="mt-10 flex items-center justify-center gap-2">
             {Array.from({ length: totalSteps }).map((_, i) => (
-              <span
+              <button
                 key={i}
+                type="button"
+                onClick={() => goToStep(i)}
+                aria-label={`Go to step ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === step ? 'w-8 bg-foreground' : 'w-4 bg-foreground/20'
+                  i === step ? 'w-8 bg-foreground' : 'w-4 bg-foreground/20 hover:bg-foreground/40'
                 }`}
               />
             ))}
