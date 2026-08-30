@@ -274,13 +274,9 @@ const TimeOffRequests = () => {
     setEndDate(undefined);
   };
 
-  const pendingCount = filteredRequests.filter(r => r.status === 'pending').length;
-  const approvedCount = filteredRequests.filter(r => r.status === 'approved').length;
-  const deniedCount = filteredRequests.filter(r => r.status === 'denied').length;
-
   if (userRole !== 'admin' && userRole !== 'owner') {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
         <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <div className="flex">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
