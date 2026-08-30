@@ -966,7 +966,7 @@ const AgentCleo: React.FC = () => {
                           {m.proposals!.map((entry, i) => (
                             <div key={entry.id}>
                               {m.proposals!.length > 1 && (
-                                <div className="mt-3 text-xs uppercase tracking-wide text-[#8e8ea0]">
+                                <div className="mt-3 text-xs uppercase tracking-wide text-[#6b6b76] dark:text-[#8e8ea0]">
                                   Proposal {i + 1} of {m.proposals!.length}
                                 </div>
                               )}
