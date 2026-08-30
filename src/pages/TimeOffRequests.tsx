@@ -301,7 +301,7 @@ const TimeOffRequests = () => {
                   <DoodleClock className="h-5 w-5" />
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">Review and manage tutor time off requests</p>
+              
             </div>
 
             {/* Filters */}
