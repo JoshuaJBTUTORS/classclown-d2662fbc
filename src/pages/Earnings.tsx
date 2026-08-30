@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getTutorEarningsData, setTutorEarningGoal, type EarningsData } from '@/services/earningsService';
-import { calculatePaymentDateFromRange, formatPeriodDisplay } from '@/utils/earningsPeriodUtils';
+import { calculatePaymentDateFromRange, formatPeriodDisplay, getMonthlyEarningsPeriod } from '@/utils/earningsPeriodUtils';
 import { supabase } from '@/integrations/supabase/client';
 import Sidebar from '@/components/navigation/Sidebar';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
 import { DoodleCalendar, DoodleCircle, DoodleSparkle, DoodleTag } from '@/components/calendar/LessonDoodles';
-import { subDays } from 'date-fns';
+
 
 const SkeletonCard = ({ className = '' }: { className?: string }) => (
   <div className={`animate-pulse rounded-[var(--radius-soft)] border border-foreground/10 bg-pastel-sand/40 ${className}`} />
@@ -34,9 +34,9 @@ export default function Earnings() {
   const [earningsData, setEarningsData] = useState<EarningsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({
-    from: subDays(new Date(), 30),
-    to: new Date()
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>(() => {
+    const period = getMonthlyEarningsPeriod(new Date());
+    return { from: period.start, to: period.end };
   });
   const [tutorId, setTutorId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);

@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { CalendarIcon, X } from 'lucide-react';
 import { DoodleCalendar } from '@/components/calendar/LessonDoodles';
-import { getMonthlyEarningsPeriod, formatPeriodDisplay } from '@/utils/earningsPeriodUtils';
+import { getMonthlyEarningsPeriod } from '@/utils/earningsPeriodUtils';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -46,14 +46,7 @@ export const EarningsDateFilter = ({
   const triggerClass =
     'h-11 w-full justify-start rounded-full border-2 border-foreground/10 bg-card px-4 text-left font-normal hover:bg-card hover:text-foreground';
 
-  const currentPeriod = getMonthlyEarningsPeriod(new Date());
-  const previousMonthAnchor = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 15);
-  const previousPeriod = getMonthlyEarningsPeriod(previousMonthAnchor);
-
-  const suggestions = [
-    { label: 'Current Pay Period', period: currentPeriod },
-    { label: 'Previous Pay Period', period: previousPeriod }
-  ];
+  const suggestedPeriod = getMonthlyEarningsPeriod(new Date());
 
   const isSameDay = (a: Date | null, b: Date) =>
     !!a && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -77,32 +70,23 @@ export const EarningsDateFilter = ({
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Suggested pay period
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map(({ label, period }) => {
-              const active = isSuggestionActive(period);
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => onDateRangeChange({ from: period.start, to: period.end })}
-                  className={cn(
-                    'flex flex-col items-start rounded-full border-2 px-4 py-2 text-left transition-all duration-200 hover:-translate-y-0.5',
-                    active
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'border-foreground/15 bg-card text-foreground hover:border-foreground/40'
-                  )}
-                >
-                  <span className="text-xs font-bold">{label}</span>
-                  <span className={cn('text-[11px]', active ? 'text-background/80' : 'text-muted-foreground')}>
-                    {formatPeriodDisplay(period.start, period.end)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            onClick={() => onDateRangeChange({ from: suggestedPeriod.start, to: suggestedPeriod.end })}
+            className={cn(
+              'flex w-full flex-col items-start rounded-full border-2 px-4 py-2 text-left transition-all duration-200 hover:-translate-y-0.5',
+              isSuggestionActive(suggestedPeriod)
+                ? 'border-foreground bg-foreground text-background'
+                : 'border-foreground/15 bg-card text-foreground hover:border-foreground/40'
+            )}
+          >
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Suggested Pay Period
+            </span>
+            <span className={cn('text-sm font-bold', isSuggestionActive(suggestedPeriod) ? 'text-background' : 'text-foreground')}>
+              {format(suggestedPeriod.start, 'd MMM')} – {format(suggestedPeriod.end, 'd MMM')}
+            </span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
