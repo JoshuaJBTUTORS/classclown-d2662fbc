@@ -1,7 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, Clock, Target } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
-import { getNextPaymentDate } from '@/utils/earningsPeriodUtils';
 
 interface EarningsSummaryCardsProps {
   currentEarnings: number;
@@ -29,14 +27,14 @@ export const EarningsSummaryCards = ({
       description: `${format(periodStart, 'MMM d')} - ${format(periodEnd, 'MMM d, yyyy')}`,
       value: `£${currentEarnings.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: CalendarDays,
-      color: 'text-primary'
+      surface: 'bg-pastel-mint/60'
     },
     {
       title: 'Lessons Completed',
       description: 'In selected period',
       value: completedLessons.toString(),
       icon: Target,
-      color: 'text-success'
+      surface: 'bg-pastel-butter/60'
     },
     {
       title: 'Days Remaining',
@@ -45,25 +43,33 @@ export const EarningsSummaryCards = ({
         : 'Goal achieved!',
       value: daysRemaining.toString(),
       icon: Clock,
-      color: daysRemaining <= 7 ? 'text-destructive' : 'text-muted-foreground'
+      surface: daysRemaining <= 7 ? 'bg-pastel-blush/60' : 'bg-pastel-lilac/50'
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {cards.map((card, index) => (
-        <Card key={card.title} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-            <card.icon className={`h-4 w-4 ${card.color}`} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
-            <CardDescription className="text-xs">
-              {card.description}
-            </CardDescription>
-          </CardContent>
-        </Card>
+        <section
+          key={card.title}
+          className={`animate-fade-in rounded-[var(--radius-soft)] border border-foreground/15 p-4 shadow-[var(--shadow-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft-lg)] sm:p-5 ${card.surface}`}
+          style={{ animationDelay: `${index * 100}ms` }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {card.title}
+            </span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-foreground/70 bg-card text-foreground">
+              <card.icon className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="mt-3 font-heading text-3xl font-extrabold tracking-tight text-foreground">
+            {card.value}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {card.description}
+          </p>
+        </section>
       ))}
     </div>
   );

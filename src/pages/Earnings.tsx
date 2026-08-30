@@ -1,19 +1,34 @@
 import { useState, useEffect } from 'react';
-import PageTitle from '@/components/ui/PageTitle';
 import { EarningGoalSetter } from '@/components/earnings/EarningGoalSetter';
 import { EarningsProgressWheel } from '@/components/earnings/EarningsProgressWheel';
 import { EarningsSummaryCards } from '@/components/earnings/EarningsSummaryCards';
 import { EarningsDateFilter } from '@/components/earnings/EarningsDateFilter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getTutorEarningsData, setTutorEarningGoal, type EarningsData } from '@/services/earningsService';
 import { calculatePaymentDateFromRange, formatPeriodDisplay } from '@/utils/earningsPeriodUtils';
 import { supabase } from '@/integrations/supabase/client';
 import Sidebar from '@/components/navigation/Sidebar';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
+import { DoodleCalendar, DoodleCircle, DoodleSparkle, DoodleTag } from '@/components/calendar/LessonDoodles';
 import { subDays } from 'date-fns';
+
+const SkeletonCard = ({ className = '' }: { className?: string }) => (
+  <div className={`animate-pulse rounded-[var(--radius-soft)] border border-foreground/10 bg-pastel-sand/40 ${className}`} />
+);
+
+const EmptyState = ({ title, description }: { title: string; description: string }) => (
+  <section className="rounded-[var(--radius-soft)] border-2 border-dashed border-foreground/20 bg-pastel-butter/40 p-8 text-center">
+    <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-foreground/70 bg-card text-foreground">
+      <DoodleTag className="h-6 w-6" />
+    </span>
+    <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+      {title}
+    </h2>
+    <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+  </section>
+);
 
 export default function Earnings() {
   const [earningsData, setEarningsData] = useState<EarningsData | null>(null);
@@ -113,42 +128,66 @@ export default function Earnings() {
 
   if (isLoading) {
     return (
-      <>
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className="flex flex-col flex-1 w-full">
-          <MobileMenuButton toggleSidebar={toggleSidebar} />
-          <main className="flex-1 p-4 md:p-6">
-            <div className="container mx-auto">
-              <PageTitle title="Earnings" />
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="h-48 bg-muted animate-pulse rounded-lg" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
+        <div className="flex">
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <div className="min-w-0 w-full flex-1">
+            <div className="px-4 py-8 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-3">
+                <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+                  Earnings
+                </h1>
+                <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleSparkle className="h-5 w-5" />
+                </span>
+              </div>
+              <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <div className="space-y-6 lg:col-span-2">
+                  <SkeletonCard className="h-48" />
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+                      <SkeletonCard key={i} className="h-28" />
                     ))}
                   </div>
                 </div>
-                <div className="h-96 bg-muted animate-pulse rounded-lg" />
+                <SkeletonCard className="h-96" />
               </div>
             </div>
-          </main>
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex flex-col flex-1 w-full">
-        <MobileMenuButton toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <PageTitle title="Earnings" subtitle="Track your progress towards your earning goals" />
-              <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" size="sm">
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+    <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
+      <MobileMenuButton toggleSidebar={toggleSidebar} />
+      <div className="flex">
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className="min-w-0 w-full flex-1">
+          <div className="space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+                    Earnings
+                  </h1>
+                  <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                    <DoodleSparkle className="h-5 w-5" />
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Track your progress towards your earning goals
+                </p>
+              </div>
+              <Button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="w-full rounded-full bg-foreground px-6 text-background hover:bg-foreground/90 sm:w-auto"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
@@ -161,35 +200,21 @@ export default function Earnings() {
             />
 
             {!dateRange.from || !dateRange.to ? (
-              <Card className="border-dashed">
-                <CardHeader className="text-center">
-                  <CardTitle className="flex items-center justify-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Select a Date Range
-                  </CardTitle>
-                  <CardDescription>
-                    Choose your start and end dates to view earnings data
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+              <EmptyState
+                title="Select a Date Range"
+                description="Choose your start and end dates to view earnings data"
+              />
             ) : !earningsData?.goalAmount ? (
-              <Card className="border-dashed">
-                <CardHeader className="text-center">
-                  <CardTitle className="flex items-center justify-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Get Started with Your Earnings Goals
-                  </CardTitle>
-                  <CardDescription>
-                    Set your earning goal to start tracking your progress
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+              <EmptyState
+                title="Get Started with Your Earnings Goals"
+                description="Set your earning goal to start tracking your progress"
+              />
             ) : null}
 
             {dateRange.from && dateRange.to && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {/* Main content area */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="space-y-6 lg:col-span-2">
                   {/* Goal setter */}
                   <EarningGoalSetter
                     currentGoal={earningsData?.goalAmount ? {
@@ -223,21 +248,21 @@ export default function Earnings() {
                       className="sticky top-6"
                     />
                   ) : (
-                    <Card className="sticky top-6">
-                      <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                        <div className="text-6xl mb-4">🎯</div>
-                        <div className="text-lg font-medium text-muted-foreground">
-                          Set a goal to see your progress wheel
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <section className="sticky top-6 rounded-[var(--radius-soft)] border border-foreground/10 bg-pastel-mint/40 p-8 text-center shadow-[var(--shadow-soft)]">
+                      <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-foreground/70 bg-card text-foreground">
+                        <DoodleCircle className="h-6 w-6" />
+                      </span>
+                      <p className="font-heading text-lg font-bold text-foreground">
+                        Set a goal to see your progress wheel
+                      </p>
+                    </section>
                   )}
                 </div>
               </div>
             )}
           </div>
-        </main>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
