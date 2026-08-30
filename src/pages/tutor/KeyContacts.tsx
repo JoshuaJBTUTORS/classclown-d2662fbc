@@ -101,9 +101,6 @@ const KeyContacts = () => {
                       </span>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-foreground/70 bg-card px-2.5 py-0.5 text-xs font-bold text-foreground">
-                            Contact {index + 1}
-                          </span>
                           <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
                             {contact.name}
                           </h2>
