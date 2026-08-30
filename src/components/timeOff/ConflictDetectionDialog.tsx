@@ -1,12 +1,11 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertTriangle, Calendar, Users, Clock, CheckCircle } from 'lucide-react';
+
+import { Loader2 } from 'lucide-react';
 import { formatInUKTime } from '@/utils/timezone';
 import { TimeOffConflict } from '@/services/timeOffConflictService';
+import { DoodleCalendar, DoodleClock, DoodlePeople, DoodleAlert, DoodleCheck, DoodleTag } from '@/components/calendar/LessonDoodles';
 
 interface ConflictDetectionDialogProps {
   isOpen: boolean;
@@ -35,13 +34,13 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
   if (isLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="cc-dialog max-w-2xl rounded-[var(--radius-soft)]">
           <DialogHeader>
-            <DialogTitle>Checking for Conflicts</DialogTitle>
+            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">Checking for Conflicts</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin mr-3" />
-            <span>Checking for scheduling conflicts...</span>
+            <Loader2 className="mr-3 h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground">Checking for scheduling conflicts...</span>
           </div>
         </DialogContent>
       </Dialog>
@@ -52,16 +51,18 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
   if (hasNoConflicts && conflicts.length === 0) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)]">
           <DialogHeader>
-            <DialogTitle>No Conflicts Found</DialogTitle>
+            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">No Conflicts Found</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="flex items-center justify-center py-6">
-              <CheckCircle className="h-16 w-16 text-green-600" />
+            <div className="flex items-center justify-center py-4">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-pastel-mint text-pastel-mint-foreground">
+                <DoodleCheck className="h-10 w-10" />
+              </span>
             </div>
-            <div className="text-center space-y-2">
-              <p className="text-lg font-medium">No scheduling conflicts detected</p>
+            <div className="space-y-2 text-center">
+              <p className="text-lg font-semibold text-foreground">No scheduling conflicts detected</p>
               <p className="text-sm text-muted-foreground">
                 The time off request for <strong>{tutorName}</strong> during{' '}
                 <strong>{timeOffPeriod}</strong> does not conflict with any existing lessons.
@@ -70,13 +71,17 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
                 The request can be approved safely.
               </p>
             </div>
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button variant="outline" onClick={onClose}>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="rounded-full border-2 border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
+              >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={onNoConflictsContinue}
-                className="bg-green-600 hover:bg-green-700"
+                className="rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
               >
                 Continue with Approval
               </Button>
@@ -90,74 +95,83 @@ export const ConflictDetectionDialog: React.FC<ConflictDetectionDialogProps> = (
   // Show conflicts that need resolution in calendar
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
+      <DialogContent className="cc-dialog max-h-[80vh] max-w-3xl rounded-[var(--radius-soft)]">
         <DialogHeader>
-          <DialogTitle>Scheduling Conflicts Detected</DialogTitle>
+          <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">Scheduling Conflicts Detected</DialogTitle>
         </DialogHeader>
-        
-        <Alert variant="destructive" className="mt-2">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
+
+        <div className="mt-2 flex items-start gap-3 rounded-[1.25rem] bg-pastel-blush/60 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pastel-blush text-pastel-blush-foreground">
+            <DoodleAlert className="h-5 w-5" />
+          </span>
+          <p className="text-sm text-foreground">
             Found <strong>{conflicts.length}</strong> lesson{conflicts.length !== 1 ? 's' : ''} that conflict with the time off request for <strong>{tutorName}</strong> during {timeOffPeriod}.
-          </AlertDescription>
-        </Alert>
+          </p>
+        </div>
 
         <div className="my-4">
           <p className="text-sm text-muted-foreground">
-            Please resolve these conflicts in the calendar before approving this time off request. 
+            Please resolve these conflicts in the calendar before approving this time off request.
             You can reassign tutors or reschedule lessons as needed.
           </p>
         </div>
 
-        <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2">
+        <div className="max-h-[400px] space-y-3 overflow-y-auto pr-2">
           {conflicts.map((conflict) => (
-            <Card key={conflict.id} className="border-l-4 border-l-destructive">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{conflict.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="grid grid-cols-2 gap-3 text-sm">
+            <div key={conflict.id} className="rounded-[1.25rem] bg-pastel-sand/40 p-4">
+              <p className="font-semibold text-foreground">{conflict.title}</p>
+              <div className="mt-3 space-y-2">
+                <div className="grid grid-cols-1 gap-2 text-sm text-foreground sm:grid-cols-2">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <DoodleCalendar className="h-4 w-4 shrink-0 text-foreground/70" />
                     <span>{formatInUKTime(conflict.start_time, 'PPP')}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <DoodleClock className="h-4 w-4 shrink-0 text-foreground/70" />
                     <span>
                       {formatInUKTime(conflict.start_time, 'p')} - {formatInUKTime(conflict.end_time, 'p')}
                     </span>
                   </div>
                 </div>
-                
+
                 {conflict.students && conflict.students.length > 0 && (
                   <div className="flex items-start gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <DoodlePeople className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70" />
                     <div className="flex flex-wrap gap-1">
                       {conflict.students.map((student, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
+                        <span key={idx} className="inline-flex items-center rounded-full bg-pastel-sky px-2.5 py-0.5 text-xs font-semibold text-pastel-sky-foreground">
                           {student.first_name} {student.last_name}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
-                
+
                 {conflict.subject && (
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Subject: </span>
-                    <Badge variant="secondary" className="text-xs">{conflict.subject}</Badge>
+                  <div className="flex items-center gap-2 text-sm">
+                    <DoodleTag className="h-4 w-4 shrink-0 text-foreground/70" />
+                    <span className="inline-flex items-center rounded-full bg-pastel-lilac px-2.5 py-0.5 text-xs font-semibold text-pastel-lilac-foreground">
+                      {conflict.subject}
+                    </span>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
 
-        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+        <div className="mt-6 flex justify-end gap-2 pt-2">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="rounded-full border-2 border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
+          >
             Close
           </Button>
-          <Button onClick={onGoToCalendar}>
+          <Button
+            onClick={onGoToCalendar}
+            className="rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
+          >
             Go to Calendar
           </Button>
         </div>
