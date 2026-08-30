@@ -904,7 +904,7 @@ const TrialBookings = () => {
           }}
         />
       )}
-    </>
+    </div>
   );
 };
 
