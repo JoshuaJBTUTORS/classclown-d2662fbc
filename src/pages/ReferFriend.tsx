@@ -137,11 +137,11 @@ const ReferFriend: React.FC = () => {
                 {STEPS.map(({ icon: Icon, title, copy, disc, badge }, i) => (
                   <div
                     key={title}
-                    className="relative flex items-center gap-3 rounded-2xl border border-foreground bg-background p-4 shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5"
+                    className="relative flex items-center gap-3 rounded-2xl border border-foreground bg-background p-4 pl-7 shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5"
                   >
                     <span
                       className={cn(
-                        'absolute -top-2.5 -left-2.5 grid h-6 w-6 place-items-center rounded-full border border-foreground font-heading text-xs font-bold text-foreground',
+                        'absolute -top-3 -left-3 grid h-7 w-7 place-items-center rounded-full border border-foreground font-heading text-xs font-bold text-foreground',
                         badge,
                       )}
                       aria-hidden="true"
