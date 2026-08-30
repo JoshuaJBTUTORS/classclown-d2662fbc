@@ -15,6 +15,47 @@ import { useAgentCleoThreads } from '@/hooks/useAgentCleoThreads';
 import { AgentCleoThreadList } from '@/components/agentCleo/AgentCleoThreadList';
 import DailySnapshot from '@/components/agentCleo/DailySnapshot';
 
+const Typewriter: React.FC<{ text: string; speed?: number; className?: string }> = ({ text, speed = 90, className }) => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    setCount(0);
+    if (!text) return;
+    const id = setInterval(() => {
+      setCount((c) => {
+        if (c >= text.length) {
+          clearInterval(id);
+          return c;
+        }
+        return c + 1;
+      });
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  return (
+    <span className={className}>
+      {text.slice(0, count)}
+      {count < text.length && <span className="animate-pulse">|</span>}
+    </span>
+  );
+};
+
+const UserAvatar: React.FC<{ avatarUrl?: string | null; name?: string | null; className?: string }> = ({ avatarUrl, name, className }) => {
+  const [errored, setErrored] = useState(false);
+  const initial = (name?.trim()?.[0] || 'Y').toUpperCase();
+  if (avatarUrl && !errored) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name ? `${name}'s profile picture` : 'Your profile picture'}
+        onError={() => setErrored(true)}
+        className={className}
+      />
+    );
+  }
+  return <div className={className}>{initial}</div>;
+};
+
+
 
 
 const MarkdownMessage: React.FC<{ children: string }> = ({ children }) => (
