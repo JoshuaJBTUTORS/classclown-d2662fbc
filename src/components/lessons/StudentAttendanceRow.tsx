@@ -135,7 +135,7 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
 
   return (
     <>
-    <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
+    <div className="flex flex-col gap-3 p-3 border rounded-md bg-gray-50 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <div>
           <p className="font-medium">{studentName}</p>
@@ -154,7 +154,7 @@ const StudentAttendanceRow: React.FC<StudentAttendanceRowProps> = ({
 
       {/* Only show attendance controls for non-students */}
       {!isStudent && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"

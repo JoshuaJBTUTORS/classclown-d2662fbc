@@ -219,12 +219,12 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
               </p>
             )}
             {isTeacherRole && lessonSpaceRoomId && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 break-all">
                 Room ID: {lessonSpaceRoomId}
               </p>
             )}
             {lessonSpaceSpaceId && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 break-all">
                 Space ID: {lessonSpaceSpaceId}
               </p>
             )}
