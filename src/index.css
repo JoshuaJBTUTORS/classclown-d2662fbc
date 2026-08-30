@@ -1647,7 +1647,7 @@
 
 .animate-wave {
   animation: cc-wave 1.4s ease-in-out infinite;
-  transform-origin: 12px 21px;
+  transform-origin: 70% 80%;
 }
 
 .pastel-glow-animation {
