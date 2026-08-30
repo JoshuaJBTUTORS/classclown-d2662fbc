@@ -1,4 +1,4 @@
-import { FileText, BarChart3, Filter, Settings, FileCheck } from 'lucide-react';
+import { BarChart3, Filter, FileCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -17,14 +17,6 @@ interface AdminProposalSidebarProps {
   filteredCount: number;
   onFilterChange?: (filter: string) => void;
 }
-
-const statusItems = [
-  { id: 'all', title: 'All Proposals', icon: FileText },
-  { id: 'sent', title: 'Sent', icon: FileText },
-  { id: 'viewed', title: 'Viewed', icon: FileText },
-  { id: 'agreed', title: 'Agreed', icon: FileText },
-  { id: 'completed', title: 'Completed', icon: FileText },
-];
 
 export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminProposalSidebarProps) {
   const navigate = useNavigate();
@@ -64,41 +56,17 @@ export function AdminProposalSidebar({ totalProposals, filteredCount }: AdminPro
 
         <SidebarGroup>
           <SidebarGroupLabel>
-            {!isCollapsed && 'Quick Filters'}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {statusItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton className="rounded-full font-medium hover:bg-pastel-sky/70">
-                    <item.icon className="h-4 w-4" />
-                    {!isCollapsed && <span>{item.title}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>
             {!isCollapsed && 'Quick Links'}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   className="rounded-full font-medium hover:bg-pastel-sky/70"
                   onClick={() => navigate('/admin/proposals/signed')}
                 >
                   <FileCheck className="h-4 w-4" />
                   {!isCollapsed && <span>Signed Proposals</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton className="rounded-full font-medium hover:bg-pastel-sky/70">
-                  <Settings className="h-4 w-4" />
-                  {!isCollapsed && <span>Settings</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

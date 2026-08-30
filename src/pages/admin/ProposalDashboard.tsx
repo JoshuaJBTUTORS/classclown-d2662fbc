@@ -249,11 +249,9 @@ export default function ProposalDashboard() {
         />
 
         <div className="min-w-0 w-full flex-1">
-          <header className="sticky top-0 z-10 flex h-12 items-center border-b border-foreground/10 bg-background">
-            <SidebarTrigger className="ml-2 rounded-full" />
-          </header>
-
           <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
+            <SidebarTrigger className="mb-4 h-10 w-10 rounded-full border-2 border-foreground text-foreground hover:bg-foreground hover:text-background" />
+
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-center gap-3">
