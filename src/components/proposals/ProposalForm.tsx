@@ -343,11 +343,41 @@ export default function ProposalForm({
             <div className="mt-4 space-y-3">
               {lessonTimes.map((lessonTime, index) => (
                 <div
-                  key={index}
-                  className="rounded-[1.25rem] bg-background/70 p-4"
+                  key={rowIds[index] ?? index}
+                  draggable
+                  onDragStart={(e) => {
+                    setDragIndex(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setDragOverIndex(index);
+                  }}
+                  onDragLeave={() => setDragOverIndex((i) => (i === index ? null : i))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragIndex !== null) reorderRows(dragIndex, index);
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  className={`rounded-[1.25rem] bg-background/70 p-4 transition-all ${
+                    dragIndex === index ? 'opacity-50' : ''
+                  } ${dragOverIndex === index && dragIndex !== index ? 'ring-2 ring-foreground' : ''}`}
                 >
                   <div className="flex items-start gap-3">
+                    <div
+                      className="mt-7 flex h-11 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-muted-foreground active:cursor-grabbing"
+                      title="Drag to reorder"
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </div>
                     <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+
                       <div>
                         <FormLabel className={labelClass}>Day</FormLabel>
                         <Select value={lessonTime.day} onValueChange={(value) => updateLessonTime(index, 'day', value)}>
