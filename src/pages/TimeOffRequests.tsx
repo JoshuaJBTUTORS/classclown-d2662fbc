@@ -34,13 +34,6 @@ const DoodleCheckCircle: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const DoodleCross: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
-    <path d="M7 7.2c3.2 3 6.4 6.1 9.7 9.3" />
-    <path d="M16.8 7.4c-3.3 2.9-6.5 5.9-9.7 8.9" />
-  </svg>
-);
-
 const initials = (first?: string | null, last?: string | null) =>
   `${(first ?? '').charAt(0)}${(last ?? '').charAt(0)}`.toUpperCase() || '?';
 
