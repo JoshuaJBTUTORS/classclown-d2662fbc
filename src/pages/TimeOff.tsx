@@ -3,19 +3,32 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, Plus, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { convertUKToUTC, formatInUKTime, createUKDateTime } from '@/utils/timezone';
+import { Plus, AlertCircle, Loader2 } from 'lucide-react';
+import { formatInUKTime, createUKDateTime } from '@/utils/timezone';
 import Sidebar from '@/components/navigation/Sidebar';
 import MobileMenuButton from '@/components/navigation/MobileMenuButton';
+import { DoodleClock, DoodleCalendar } from '@/components/calendar/LessonDoodles';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
+import { cn } from '@/lib/utils';
+
+const statusChip = (status: string) => {
+  switch (status) {
+    case 'approved':
+      return 'bg-pastel-mint text-pastel-mint-foreground';
+    case 'denied':
+      return 'bg-pastel-blush text-pastel-blush-foreground';
+    default:
+      return 'bg-pastel-butter text-pastel-butter-foreground';
+  }
+};
+
+const statusLabel = (status: string) =>
+  status === 'approved' ? 'Approved' : status === 'denied' ? 'Denied' : 'Pending';
 
 const TimeOff = () => {
   const { userRole, user } = useAuth();
@@ -41,16 +54,16 @@ const TimeOff = () => {
     const now = new Date();
     const [datePart, timePart] = startDateStr.split('T');
     const startDateObj = new Date(datePart);
-    
+
     // Create UK time for fair comparison
     const ukStartDate = createUKDateTime(startDateObj, timePart);
-    
+
     // Calculate difference in milliseconds
     const diffMs = ukStartDate.getTime() - now.getTime();
-    
+
     // Convert to days (round down)
     const daysNotice = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     // Minimum 6 days notice required
     return {
       isValid: daysNotice >= 6,
@@ -63,7 +76,7 @@ const TimeOff = () => {
     queryKey: ['timeOffRequests', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      
+
       const { data, error } = await supabase
         .from('time_off_requests')
         .select(`
@@ -96,13 +109,13 @@ const TimeOff = () => {
       // datetime-local format: "2025-09-05T18:00" - interpret as UK local time
       const [startDatePart, startTimePart] = startDate.split('T');
       const [endDatePart, endTimePart] = endDate.split('T');
-      
+
       // Create Date objects as UK time using createUKDateTime
       const startDateObj = new Date(startDatePart);
       const endDateObj = new Date(endDatePart);
       const ukStartDate = createUKDateTime(startDateObj, startTimePart);
       const ukEndDate = createUKDateTime(endDateObj, endTimePart);
-      
+
        const { data, error } = await supabase
          .from('time_off_requests')
          .insert({
@@ -133,7 +146,7 @@ const TimeOff = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!startDate || !endDate || !reason.trim()) {
       toast.error('Please fill in all fields');
       return;
@@ -155,175 +168,226 @@ const TimeOff = () => {
     createTimeOffMutation.mutate({ startDate, endDate, reason });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'denied':
-        return <Badge className="bg-red-100 text-red-800">Denied</Badge>;
-      default:
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-    }
-  };
-
   if (userRole !== 'tutor') {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className="flex flex-col flex-1 lg:pl-64">
-          <MobileMenuButton toggleSidebar={toggleSidebar} />
-          <main className="flex-1 p-4 md:p-6">
-            <div className="text-center py-8">
-              <h1 className="text-2xl font-bold text-gray-900">Access Denied</h1>
-              <p className="text-gray-600 mt-2">This page is only accessible to tutors.</p>
+      <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
+        <MobileMenuButton toggleSidebar={toggleSidebar} />
+        <div className="flex">
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <div className="min-w-0 w-full flex-1">
+            <div className="px-4 py-16 text-center sm:px-6">
+              <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">Access Denied</h1>
+              <p className="mt-2 text-muted-foreground">This page is only accessible to tutors.</p>
             </div>
-          </main>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex-1">
-        <MobileMenuButton toggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Time Off Requests</h1>
-                <p className="text-gray-600 mt-1">Manage your time off requests</p>
+    <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
+      <MobileMenuButton toggleSidebar={toggleSidebar} />
+      <div className="flex">
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className="min-w-0 w-full flex-1">
+          <div className="px-4 py-8 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+                  Time Off Requests
+                </h1>
+                <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleClock className="h-5 w-5" />
+                </span>
               </div>
-              <Button onClick={() => setShowForm(!showForm)} className="bg-[#e94b7f] hover:bg-[#d63c6f]">
-                <Plus className="h-4 w-4 mr-2" />
+              <Button
+                onClick={() => setShowForm(!showForm)}
+                className="w-full rounded-full bg-foreground px-6 text-background hover:bg-foreground/90 sm:w-auto"
+              >
+                <Plus className="mr-2 h-4 w-4" />
                 New Request
               </Button>
             </div>
 
+            {/* Request form */}
             {showForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Submit Time Off Request</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <Alert className="border-amber-200 bg-amber-50">
-                      <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <AlertDescription className="text-amber-800">
-                        <strong>Please note:</strong> A minimum of 1 week notice is required. If lessons are affected, please give a team member a call.
-                      </AlertDescription>
-                    </Alert>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="startDate">Start Date</Label>
-                        <Input
-                          id="startDate"
-                          type="datetime-local"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="endDate">End Date</Label>
-                        <Input
-                          id="endDate"
-                          type="datetime-local"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="reason">Reason</Label>
-                      <Textarea
-                        id="reason"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="Please provide a reason for your time off request..."
+              <section className="mt-8 rounded-[var(--radius-soft)] bg-pastel-butter/50 p-4 shadow-[var(--shadow-soft)] sm:p-6">
+                <div className="mb-4 flex items-center gap-3 px-1">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                    <DoodleCalendar className="h-4 w-4" />
+                  </span>
+                  <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                    Submit Time Off Request
+                  </h2>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="flex items-start gap-3 rounded-[1.25rem] bg-card/80 p-4">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70" />
+                    <p className="text-sm text-muted-foreground">
+                      <strong className="text-foreground">Please note:</strong> A minimum of 1 week notice is required. If lessons are affected, please give a team member a call.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="startDate" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Start Date
+                      </Label>
+                      <Input
+                        id="startDate"
+                        type="datetime-local"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
                         required
+                        className="h-11 rounded-full border-2 border-foreground/10 bg-card px-4"
                       />
                     </div>
-                    <div className="flex justify-end space-x-3">
-                      <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={createTimeOffMutation.isPending}
-                        className="bg-[#e94b7f] hover:bg-[#d63c6f]"
-                      >
-                        {createTimeOffMutation.isPending ? 'Submitting...' : 'Submit Request'}
-                      </Button>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="endDate" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        End Date
+                      </Label>
+                      <Input
+                        id="endDate"
+                        type="datetime-local"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        required
+                        className="h-11 rounded-full border-2 border-foreground/10 bg-card px-4"
+                      />
                     </div>
-                  </form>
-                </CardContent>
-              </Card>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="reason" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Reason
+                    </Label>
+                    <Textarea
+                      id="reason"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Please provide a reason for your time off request..."
+                      required
+                      className="min-h-[96px] rounded-2xl border-2 border-foreground/10 bg-card"
+                    />
+                  </div>
+
+                  <div className="flex flex-col justify-end gap-2 pt-1 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                      className="rounded-full border-2 border-foreground bg-transparent px-5 text-foreground hover:bg-foreground/5"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createTimeOffMutation.isPending}
+                      className="rounded-full bg-foreground px-6 text-background hover:bg-foreground/90"
+                    >
+                      {createTimeOffMutation.isPending ? 'Submitting...' : 'Submit Request'}
+                    </Button>
+                  </div>
+                </form>
+              </section>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Time Off Requests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="text-center py-4">Loading...</div>
-                ) : timeOffRequests?.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No time off requests yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {timeOffRequests?.map((request) => (
-                      <div key={request.id} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">
-                              {formatInUKTime(request.start_date, 'PPP p')} - {formatInUKTime(request.end_date, 'PPP p')}
-                            </p>
-                            <p className="text-gray-600 text-sm mt-1">{request.reason}</p>
-                          </div>
-                          {getStatusBadge(request.status)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Requested on {formatInUKTime(request.created_at, 'PPP')}
-                          {request.reviewed_at && (
-                            <span> • Reviewed on {formatInUKTime(request.reviewed_at, 'PPP')}</span>
-                          )}
-                        </div>
-                        {request.admin_notes && (
-                          <div className="bg-gray-50 p-2 rounded text-sm">
-                            <strong>Admin Notes:</strong> {request.admin_notes}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+            {/* Requests list */}
+            <section className="mt-6 rounded-[var(--radius-soft)] bg-card p-4 shadow-[var(--shadow-soft-lg)] sm:p-6">
+              <div className="mb-4 flex items-center gap-3 px-1">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70 text-foreground">
+                  <DoodleClock className="h-4 w-4" />
+                </span>
+                <h2 className="font-heading text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                  Your Time Off Requests
+                </h2>
+                {!isLoading && (
+                  <span className="inline-flex items-center rounded-full bg-pastel-butter px-3 py-1 text-xs font-semibold text-pastel-butter-foreground">
+                    {timeOffRequests?.length ?? 0}
+                  </span>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : timeOffRequests?.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[1.25rem] bg-muted/40 px-6 py-12 text-center">
+                  <DoodleEmpty className="h-10 w-10 text-foreground/70" />
+                  <p className="text-sm text-muted-foreground">No time off requests yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {timeOffRequests?.map((request) => (
+                    <div
+                      key={request.id}
+                      className="rounded-[1.25rem] border-2 border-foreground/10 bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)] sm:p-5"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="flex items-start gap-2 font-semibold text-foreground">
+                            <DoodleCalendar className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70" />
+                            <span>
+                              {formatInUKTime(request.start_date, 'PPP p')} - {formatInUKTime(request.end_date, 'PPP p')}
+                            </span>
+                          </p>
+                          {request.reason && (
+                            <p className="mt-1 text-sm text-muted-foreground">{request.reason}</p>
+                          )}
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Requested on {formatInUKTime(request.created_at, 'PPP')}
+                            {request.reviewed_at && (
+                              <span> • Reviewed on {formatInUKTime(request.reviewed_at, 'PPP')}</span>
+                            )}
+                          </p>
+                        </div>
+                        <span className={cn('inline-flex w-fit shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold', statusChip(request.status))}>
+                          {statusLabel(request.status)}
+                        </span>
+                      </div>
+                      {request.admin_notes && (
+                        <div className="mt-3 rounded-xl bg-muted px-3 py-2 text-sm text-foreground">
+                          <strong>Admin Notes:</strong> {request.admin_notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
-        </main>
+        </div>
       </div>
 
       <AlertDialog open={showNoticeErrorDialog} onOpenChange={setShowNoticeErrorDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Insufficient Notice Period</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                Your time off request is less than 1 week away (currently <strong>{daysNotice} day{daysNotice !== 1 ? 's' : ''}</strong> notice).
-              </p>
-              <p className="font-semibold">
-                Please contact a team member directly to discuss urgent time off needs.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowNoticeErrorDialog(false)}>
+        <AlertDialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)] border-2 border-foreground/10 p-6">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-blush text-pastel-blush-foreground">
+              <AlertCircle className="h-8 w-8" strokeWidth={2.5} />
+            </span>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-heading text-2xl font-extrabold tracking-tight">
+                Insufficient Notice Period
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2 text-muted-foreground">
+                <span className="block">
+                  Your time off request is less than 1 week away (currently <strong className="text-foreground">{daysNotice} day{daysNotice !== 1 ? 's' : ''}</strong> notice).
+                </span>
+                <span className="block font-semibold text-foreground">
+                  Please contact a team member directly to discuss urgent time off needs.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </div>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogAction
+              onClick={() => setShowNoticeErrorDialog(false)}
+              className="rounded-full bg-foreground px-6 text-background hover:bg-foreground/90"
+            >
               I Understand
             </AlertDialogAction>
           </AlertDialogFooter>
