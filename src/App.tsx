@@ -38,6 +38,7 @@ import TrialBookingConfirmation from './pages/TrialBookingConfirmation';
 import VideoRoom from './pages/VideoRoom';
 import ReferFriend from './pages/ReferFriend';
 import Blog from './pages/Blog';
+import LoadingPreview from './pages/LoadingPreview';
 import BlogPost from './pages/BlogPost';
 import MainLayout from './components/layout/MainLayout';
 import WelcomeOnboarding from './pages/WelcomeOnboarding';
@@ -130,6 +131,7 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
                 
+                <Route path="/loading-preview" element={<LoadingPreview />} />
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/book-trial-musa" element={<TrialBookingMusa />} />
                 <Route path="/review-room" element={<ReviewRoom />} />
