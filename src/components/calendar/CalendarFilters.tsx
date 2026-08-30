@@ -197,12 +197,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         {/* Student Filter */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4" />
-            <label className="text-sm font-medium">Students</label>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pastel-sky">
+              <GraduationCap className="h-3.5 w-3.5 text-pastel-sky-foreground" />
+            </div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Students</label>
           </div>
           <Popover open={studentSearchOpen} onOpenChange={setStudentSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full border-border/60 bg-background shadow-sm hover:border-pastel-sky-foreground/40 hover:bg-pastel-sky/40">
                 <span className="text-sm">
                   {selectedStudents.length > 0 
                     ? `${selectedStudents.length} selected` 
@@ -211,7 +213,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
+            <PopoverContent className="w-full p-0 rounded-[1rem] border-border/60 shadow-[var(--shadow-soft)] overflow-hidden" align="start">
               <Command shouldFilter={false}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -263,15 +265,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </Popover>
           
           {selectedStudents.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {selectedStudents.map((studentId) => {
                 const student = students.find(s => s.id.toString() === studentId);
                 if (!student) return null;
                 return (
                   <Badge
                     key={studentId}
-                    variant="secondary"
-                    className="rounded-full text-xs flex items-center gap-1"
+                    className="rounded-full text-xs flex items-center gap-1 bg-pastel-sky text-pastel-sky-foreground hover:bg-pastel-sky border-0 px-3 py-1"
                   >
                     {student.first_name} {student.last_name}
                     <X
@@ -288,12 +289,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         {/* Tutor Filter */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <label className="text-sm font-medium">Tutors</label>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pastel-mint">
+              <Users className="h-3.5 w-3.5 text-pastel-mint-foreground" />
+            </div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tutors</label>
           </div>
           <Popover open={tutorSearchOpen} onOpenChange={setTutorSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full border-border/60 bg-background shadow-sm hover:border-pastel-mint-foreground/40 hover:bg-pastel-mint/40">
                 <span className="text-sm">
                   {selectedTutors.length > 0 
                     ? `${selectedTutors.length} selected` 
@@ -302,7 +305,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
+            <PopoverContent className="w-full p-0 rounded-[1rem] border-border/60 shadow-[var(--shadow-soft)] overflow-hidden" align="start">
               <Command shouldFilter={false}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -354,15 +357,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </Popover>
           
           {selectedTutors.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {selectedTutors.map((tutorId) => {
                 const tutor = tutors.find(t => t.id === tutorId);
                 if (!tutor) return null;
                 return (
                   <Badge
                     key={tutorId}
-                    variant="secondary"
-                    className="rounded-full text-xs flex items-center gap-1"
+                    className="rounded-full text-xs flex items-center gap-1 bg-pastel-mint text-pastel-mint-foreground hover:bg-pastel-mint border-0 px-3 py-1"
                   >
                     {tutor.first_name} {tutor.last_name}
                     <X
@@ -379,12 +381,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         {/* Parent Filter */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <UserCircle className="h-4 w-4" />
-            <label className="text-sm font-medium">Parents</label>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pastel-butter">
+              <UserCircle className="h-3.5 w-3.5 text-pastel-butter-foreground" />
+            </div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parents</label>
           </div>
           <Popover open={parentSearchOpen} onOpenChange={setParentSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full border-border/60 bg-background shadow-sm hover:border-pastel-butter-foreground/40 hover:bg-pastel-butter/40">
                 <span className="text-sm">
                   {selectedParents.length > 0 
                     ? `${selectedParents.length} selected` 
@@ -393,7 +397,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
+            <PopoverContent className="w-full p-0 rounded-[1rem] border-border/60 shadow-[var(--shadow-soft)] overflow-hidden" align="start">
               <Command shouldFilter={false}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -445,15 +449,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </Popover>
           
           {selectedParents.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {selectedParents.map((parentId) => {
                 const parent = parents.find(p => p.id === parentId);
                 if (!parent) return null;
                 return (
                   <Badge
                     key={parentId}
-                    variant="secondary"
-                    className="rounded-full text-xs flex items-center gap-1"
+                    className="rounded-full text-xs flex items-center gap-1 bg-pastel-butter text-pastel-butter-foreground hover:bg-pastel-butter border-0 px-3 py-1"
                   >
                     {parent.first_name} {parent.last_name}
                     <X
@@ -470,12 +473,14 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         {/* Subject Filter */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            <label className="text-sm font-medium">Subjects</label>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pastel-lilac">
+              <BookOpen className="h-3.5 w-3.5 text-pastel-lilac-foreground" />
+            </div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subjects</label>
           </div>
           <Popover open={subjectSearchOpen} onOpenChange={setSubjectSearchOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between h-11 rounded-full bg-card">
+              <Button variant="outline" className="w-full justify-between h-11 rounded-full border-border/60 bg-background shadow-sm hover:border-pastel-lilac-foreground/40 hover:bg-pastel-lilac/40">
                 <span className="text-sm">
                   {selectedSubjects.length > 0 
                     ? `${selectedSubjects.length} selected` 
@@ -484,7 +489,7 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
+            <PopoverContent className="w-full p-0 rounded-[1rem] border-border/60 shadow-[var(--shadow-soft)] overflow-hidden" align="start">
               <Command shouldFilter={false}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -531,12 +536,11 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </Popover>
           
           {selectedSubjects.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {selectedSubjects.map((subject) => (
                 <Badge
                   key={subject}
-                  variant="secondary"
-                  className="rounded-full text-xs flex items-center gap-1"
+                  className="rounded-full text-xs flex items-center gap-1 bg-pastel-lilac text-pastel-lilac-foreground hover:bg-pastel-lilac border-0 px-3 py-1"
                 >
                   {subject}
                   <X
@@ -552,14 +556,16 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
         {/* Lesson Type Filter */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4" />
-            <label className="text-sm font-medium">Lesson Type</label>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pastel-blush">
+              <GraduationCap className="h-3.5 w-3.5 text-pastel-blush-foreground" />
+            </div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lesson Type</label>
           </div>
           <Select value={selectedLessonType} onValueChange={onLessonTypeFilterChange}>
-            <SelectTrigger className="h-9">
+            <SelectTrigger className="h-11 rounded-full border-border/60 bg-background shadow-sm hover:border-pastel-blush-foreground/40">
               <SelectValue placeholder="Select lesson type..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-[1rem] border-border/60 shadow-[var(--shadow-soft)]">
               <SelectItem value="All Lessons">All Lessons</SelectItem>
               <SelectItem value="Full Lessons">Full Lessons</SelectItem>
               <SelectItem value="Trial Lessons">Trial Lessons</SelectItem>
