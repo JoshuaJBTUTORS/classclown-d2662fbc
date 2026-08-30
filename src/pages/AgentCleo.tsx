@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, Plus, MessageSquare, Menu, Trash2, Loader2, CalendarPlus, CalendarCog, Mic, Square, X, LayoutGrid, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
