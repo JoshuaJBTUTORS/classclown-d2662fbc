@@ -189,42 +189,42 @@ const LessonProposalCard: React.FC<{
   );
 
   return (
-    <div className="mt-3 rounded-2xl border border-white/10 bg-[#2a2a2a] overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
-        <CalendarPlus className="w-4 h-4 text-teal-400" />
+    <div className="mt-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#2a2a2a] overflow-hidden">
+      <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center gap-2">
+        <CalendarPlus className="w-4 h-4 text-teal-600 dark:text-teal-400" />
         <span className="font-medium text-sm">Create lesson — needs your approval</span>
       </div>
 
       <dl className="px-4 py-3 text-sm space-y-2">
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Title</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Title</dt>
           <dd className="font-medium">{proposal.title}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Subject</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Subject</dt>
           <dd>{proposal.subject}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Tutor</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Tutor</dt>
           <dd>{proposal.tutor_name}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Student{proposal.student_names.length > 1 ? 's' : ''}</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Student{proposal.student_names.length > 1 ? 's' : ''}</dt>
           <dd>{proposal.student_names.join(', ')}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">When</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">When</dt>
           <dd>
             {fmtLondon(proposal.start_time)} – {fmtTime(proposal.end_time)}{' '}
-            <span className="text-[#8e8ea0]">({mins} min, UK time)</span>
+            <span className="text-[#6b6b76] dark:text-[#8e8ea0]">({mins} min, UK time)</span>
           </dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Type</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Type</dt>
           <dd>{proposal.is_group ? 'Group lesson' : '1-1 lesson'}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-[#8e8ea0]">Repeats</dt>
+          <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Repeats</dt>
           <dd>
             {proposal.recurring
               ? `${proposal.recurring.interval} × ${proposal.recurring.occurrences} occurrences`
@@ -233,16 +233,16 @@ const LessonProposalCard: React.FC<{
         </div>
         {proposal.description && (
           <div className="flex gap-3">
-            <dt className="w-28 shrink-0 text-[#8e8ea0]">Notes</dt>
-            <dd className="text-[#c5c5d2]">{proposal.description}</dd>
+            <dt className="w-28 shrink-0 text-[#6b6b76] dark:text-[#8e8ea0]">Notes</dt>
+            <dd className="text-[#55555e] dark:text-[#c5c5d2]">{proposal.description}</dd>
           </div>
         )}
       </dl>
 
       {proposal.warnings && proposal.warnings.length > 0 && (
         <div className="mx-4 mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-          <div className="text-xs font-medium text-amber-300 mb-1">Tutor availability check</div>
-          <ul className="list-disc pl-4 text-xs text-amber-200/90 space-y-1">
+          <div className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-1">Tutor availability check</div>
+          <ul className="list-disc pl-4 text-xs text-amber-800/90 dark:text-amber-200/90 space-y-1">
             {proposal.warnings.map((w) => (
               <li key={w}>{w}</li>
             ))}
