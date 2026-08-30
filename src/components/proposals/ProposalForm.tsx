@@ -432,12 +432,11 @@ export default function ProposalForm({
                           className={`${controlClass} text-right tabular-nums`}
                           type="number"
                           step="0.01"
-                          value={lessonTime.price}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            updateLessonTime(index, 'price', value === '' ? 0 : parseFloat(value) || 0);
-                          }}
+                          inputMode="decimal"
+                          value={numericValue(index, 'price')}
+                          onChange={(e) => setNumericField(index, 'price', e.target.value, 0)}
                         />
+
                       </div>
                     </div>
 
