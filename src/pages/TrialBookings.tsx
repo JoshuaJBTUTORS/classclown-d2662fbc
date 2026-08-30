@@ -32,7 +32,7 @@ import {
   DoodlePerson,
   DoodleSparkle,
 } from '@/components/calendar/LessonDoodles';
-import { DoodleEmpty, DoodleSend } from '@/components/progress/ProgressDoodles';
+import { DoodleEmpty } from '@/components/progress/ProgressDoodles';
 import { cn } from '@/lib/utils';
 
 const stroke = {
