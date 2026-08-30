@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Trash2, BookOpen } from 'lucide-react';
+import { Loader2, Plus, Trash2, BookOpen, GripVertical } from 'lucide-react';
 import OptimiseProposalPanel from '@/components/proposals/OptimiseProposalPanel';
 
 export const lessonTimeSchema = z.object({
@@ -105,6 +105,7 @@ export default function ProposalForm({
   const [numDrafts, setNumDrafts] = useState<Record<string, string>>({});
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [draggableIndex, setDraggableIndex] = useState<number | null>(null);
 
   const newId = () => Math.random().toString(36).slice(2);
 
@@ -344,7 +345,7 @@ export default function ProposalForm({
               {lessonTimes.map((lessonTime, index) => (
                 <div
                   key={rowIds[index] ?? index}
-                  draggable
+                  draggable={draggableIndex === index}
                   onDragStart={(e) => {
                     setDragIndex(index);
                     e.dataTransfer.effectAllowed = 'move';
@@ -364,6 +365,7 @@ export default function ProposalForm({
                   onDragEnd={() => {
                     setDragIndex(null);
                     setDragOverIndex(null);
+                    setDraggableIndex(null);
                   }}
                   className={`rounded-[1.25rem] bg-background/70 p-4 transition-all ${
                     dragIndex === index ? 'opacity-50' : ''
@@ -373,6 +375,9 @@ export default function ProposalForm({
                     <div
                       className="mt-7 flex h-11 w-8 shrink-0 cursor-grab items-center justify-center rounded-full text-muted-foreground active:cursor-grabbing"
                       title="Drag to reorder"
+                      onMouseDown={() => setDraggableIndex(index)}
+                      onMouseUp={() => setDraggableIndex(null)}
+                      onTouchStart={() => setDraggableIndex(index)}
                     >
                       <GripVertical className="h-4 w-4" />
                     </div>
