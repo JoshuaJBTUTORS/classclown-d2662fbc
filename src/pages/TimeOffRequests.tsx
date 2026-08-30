@@ -34,13 +34,6 @@ const DoodleCheckCircle: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const DoodleCross: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
-    <path d="M7 7.2c3.2 3 6.4 6.1 9.7 9.3" />
-    <path d="M16.8 7.4c-3.3 2.9-6.5 5.9-9.7 8.9" />
-  </svg>
-);
-
 const initials = (first?: string | null, last?: string | null) =>
   `${(first ?? '').charAt(0)}${(last ?? '').charAt(0)}`.toUpperCase() || '?';
 
@@ -274,13 +267,9 @@ const TimeOffRequests = () => {
     setEndDate(undefined);
   };
 
-  const pendingCount = filteredRequests.filter(r => r.status === 'pending').length;
-  const approvedCount = filteredRequests.filter(r => r.status === 'approved').length;
-  const deniedCount = filteredRequests.filter(r => r.status === 'denied').length;
-
   if (userRole !== 'admin' && userRole !== 'owner') {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
         <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <div className="flex">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -296,7 +285,7 @@ const TimeOffRequests = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen w-full min-w-0 flex-1 bg-background">
       <MobileMenuButton toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -313,22 +302,6 @@ const TimeOffRequests = () => {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">Review and manage tutor time off requests</p>
-            </div>
-
-            {/* Summary chips */}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-butter px-4 py-2 text-sm font-semibold text-pastel-butter-foreground">
-                <DoodleClock className="h-4 w-4" />
-                {pendingCount} Pending
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-mint px-4 py-2 text-sm font-semibold text-pastel-mint-foreground">
-                <DoodleCheckCircle className="h-4 w-4" />
-                {approvedCount} Approved
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-pastel-blush px-4 py-2 text-sm font-semibold text-pastel-blush-foreground">
-                <DoodleCross className="h-4 w-4" />
-                {deniedCount} Denied
-              </span>
             </div>
 
             {/* Filters */}
@@ -506,15 +479,20 @@ const TimeOffRequests = () => {
 
       {/* Action Dialog - Only shown for denial or when no conflicts */}
       <Dialog open={!!selectedRequest && actionType === 'deny'} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent className="cc-dialog rounded-[var(--radius-soft)]">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-xl font-extrabold tracking-tight">
-              Deny Time Off Request
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="cc-dialog max-w-md rounded-[var(--radius-soft)] border-2 border-foreground/10 p-6">
           {selectedRequest && (
             <div className="space-y-4">
-              <div className="rounded-[1.25rem] bg-pastel-blush/50 p-4">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-foreground/10 bg-pastel-blush text-pastel-blush-foreground">
+                  <X className="h-8 w-8" strokeWidth={2.5} />
+                </span>
+                <DialogHeader>
+                  <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight">
+                    Deny Time Off Request
+                  </DialogTitle>
+                </DialogHeader>
+              </div>
+              <div className="rounded-[1.25rem] border-2 border-foreground/10 bg-pastel-blush/40 p-4">
                 <p className="font-semibold text-foreground">
                   {selectedRequest.tutor.first_name} {selectedRequest.tutor.last_name}
                 </p>
@@ -524,16 +502,17 @@ const TimeOffRequests = () => {
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">{selectedRequest.reason}</p>
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="adminNotes">Admin Notes (Optional)</Label>
                 <Textarea
                   id="adminNotes"
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder="Add any notes or comments..."
+                  className="min-h-[96px] rounded-2xl"
                 />
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
                   onClick={() => setSelectedRequest(null)}
