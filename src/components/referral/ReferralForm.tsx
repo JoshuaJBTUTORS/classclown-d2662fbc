@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { COUNTRY_DIAL_CODES, DEFAULT_DIAL_CODE, normalisePhone, validatePhone } from '@/utils/phone';
+import { DoodleSend } from '@/components/progress/ProgressDoodles';
 import type { NewReferralInput } from '@/hooks/useReferral';
 
 interface ReferralFormProps {
@@ -14,6 +13,9 @@ interface ReferralFormProps {
   mode?: 'authenticated' | 'public';
   initialReferrer?: { name: string; email: string };
 }
+
+const inputCls = 'h-12 rounded-full border-foreground/20 bg-background px-5 focus-visible:ring-foreground/30';
+const selectCls = 'h-12 w-[130px] shrink-0 rounded-full border-foreground/20 bg-background focus:ring-foreground/30';
 
 export const ReferralForm: React.FC<ReferralFormProps> = ({ onSubmit, mode = 'authenticated', initialReferrer }) => {
   const isPublic = mode === 'public';
@@ -101,168 +103,187 @@ export const ReferralForm: React.FC<ReferralFormProps> = ({ onSubmit, mode = 'au
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{isPublic ? 'Refer a friend' : 'Or send us their details'}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-4 text-sm text-muted-foreground">
-          Give us their details and our team will reach out to arrange a free trial lesson.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isPublic && (
-            <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
-              <p className="text-sm font-semibold">Your details</p>
+    <section className="rounded-3xl border border-foreground/10 bg-card p-6 shadow-[var(--shadow-soft)] sm:p-8">
+      <h2 className="font-heading text-xl font-bold tracking-tight">
+        {isPublic ? 'Refer a friend' : 'Or send us their details'}
+      </h2>
+      <p className="mb-5 mt-2 text-sm text-muted-foreground">
+        Give us their details and our team will reach out to arrange a free trial lesson.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {isPublic && (
+          <div className="space-y-4 rounded-2xl border border-foreground/10 bg-pastel-sky/40 p-4">
+            <p className="font-heading text-sm font-semibold">Your details</p>
 
-              <div className="space-y-2">
-                <Label htmlFor="me-name">Your name</Label>
-                <Input
-                  id="me-name"
-                  value={me.name}
-                  onChange={(e) => {
-                    setMe((prev) => ({ ...prev, name: e.target.value }));
-                    setErrors((prev) => ({ ...prev, myName: '' }));
-                  }}
-                  placeholder="Your full name"
-                />
-                {errors.myName && <p className="text-sm text-destructive">{errors.myName}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="me-email">Your email</Label>
-                <Input
-                  id="me-email"
-                  type="email"
-                  value={me.email}
-                  onChange={(e) => {
-                    setMe((prev) => ({ ...prev, email: e.target.value }));
-                    setErrors((prev) => ({ ...prev, myEmail: '' }));
-                  }}
-                  placeholder="you@email.com"
-                />
-                {errors.myEmail && <p className="text-sm text-destructive">{errors.myEmail}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="me-phone">Your phone number</Label>
-                <div className="flex gap-2">
-                  <Select value={myDial} onValueChange={setMyDial}>
-                    <SelectTrigger className="w-[130px] shrink-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {COUNTRY_DIAL_CODES.map((c) => (
-                        <SelectItem key={c.code} value={c.dial}>
-                          {c.dial} {c.code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    id="me-phone"
-                    type="tel"
-                    value={myPhone}
-                    onChange={(e) => {
-                      setMyPhone(e.target.value);
-                      setErrors((prev) => ({ ...prev, myPhone: '' }));
-                    }}
-                    placeholder="7700 900123"
-                  />
-                </div>
-                {errors.myPhone && <p className="text-sm text-destructive">{errors.myPhone}</p>}
-              </div>
-            </div>
-          )}
-
-          {isPublic && <p className="text-sm font-semibold">Your friend's details</p>}
-
-          <div className="space-y-2">
-            <Label htmlFor="ref-name">Parent's name</Label>
-            <Input id="ref-name" value={values.name} onChange={(e) => set('name', e.target.value)} placeholder="Their full name" />
-            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="ref-email">Email</Label>
-            <Input
-              id="ref-email"
-              type="email"
-              value={values.email}
-              onChange={(e) => set('email', e.target.value)}
-              placeholder="their@email.com"
-            />
-            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="ref-phone">Phone number</Label>
-            <div className="flex gap-2">
-              <Select value={dial} onValueChange={setDial}>
-                <SelectTrigger className="w-[130px] shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {COUNTRY_DIAL_CODES.map((c) => (
-                    <SelectItem key={c.code} value={c.dial}>
-                      {c.dial} {c.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <Label htmlFor="me-name">Your name</Label>
               <Input
-                id="ref-phone"
-                type="tel"
-                value={phone}
+                id="me-name"
+                value={me.name}
                 onChange={(e) => {
-                  setPhone(e.target.value);
-                  setErrors((prev) => ({ ...prev, phone: '' }));
+                  setMe((prev) => ({ ...prev, name: e.target.value }));
+                  setErrors((prev) => ({ ...prev, myName: '' }));
                 }}
-                placeholder="7700 900123"
+                placeholder="Your full name"
+                className={inputCls}
               />
+              {errors.myName && <p className="text-sm text-destructive">{errors.myName}</p>}
             </div>
-            {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ref-child">Child's name and year group (optional)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="me-email">Your email</Label>
+              <Input
+                id="me-email"
+                type="email"
+                value={me.email}
+                onChange={(e) => {
+                  setMe((prev) => ({ ...prev, email: e.target.value }));
+                  setErrors((prev) => ({ ...prev, myEmail: '' }));
+                }}
+                placeholder="you@email.com"
+                className={inputCls}
+              />
+              {errors.myEmail && <p className="text-sm text-destructive">{errors.myEmail}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="me-phone">Your phone number</Label>
+              <div className="flex gap-2">
+                <Select value={myDial} onValueChange={setMyDial}>
+                  <SelectTrigger className={selectCls}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {COUNTRY_DIAL_CODES.map((c) => (
+                      <SelectItem key={c.code} value={c.dial}>
+                        {c.dial} {c.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  id="me-phone"
+                  type="tel"
+                  value={myPhone}
+                  onChange={(e) => {
+                    setMyPhone(e.target.value);
+                    setErrors((prev) => ({ ...prev, myPhone: '' }));
+                  }}
+                  placeholder="7700 900123"
+                  className={inputCls}
+                />
+              </div>
+              {errors.myPhone && <p className="text-sm text-destructive">{errors.myPhone}</p>}
+            </div>
+          </div>
+        )}
+
+        {isPublic && <p className="font-heading text-sm font-semibold">Your friend's details</p>}
+
+        <div className="space-y-2">
+          <Label htmlFor="ref-name">Parent's name</Label>
+          <Input
+            id="ref-name"
+            value={values.name}
+            onChange={(e) => set('name', e.target.value)}
+            placeholder="Their full name"
+            className={inputCls}
+          />
+          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="ref-email">Email</Label>
+          <Input
+            id="ref-email"
+            type="email"
+            value={values.email}
+            onChange={(e) => set('email', e.target.value)}
+            placeholder="their@email.com"
+            className={inputCls}
+          />
+          {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="ref-phone">Phone number</Label>
+          <div className="flex gap-2">
+            <Select value={dial} onValueChange={setDial}>
+              <SelectTrigger className={selectCls}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                {COUNTRY_DIAL_CODES.map((c) => (
+                  <SelectItem key={c.code} value={c.dial}>
+                    {c.dial} {c.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
-              id="ref-child"
-              value={values.childName}
-              onChange={(e) => set('childName', e.target.value)}
-              placeholder="e.g. Sara, Year 10"
+              id="ref-phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setErrors((prev) => ({ ...prev, phone: '' }));
+              }}
+              placeholder="7700 900123"
+              className={inputCls}
             />
           </div>
+          {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ref-notes">Anything we should know? (optional)</Label>
-            <Textarea
-              id="ref-notes"
-              value={values.notes}
-              onChange={(e) => set('notes', e.target.value)}
-              placeholder="Subjects they need help with, best time to call…"
-              rows={3}
-            />
+        <div className="space-y-2">
+          <Label htmlFor="ref-child">Child's name and year group (optional)</Label>
+          <Input
+            id="ref-child"
+            value={values.childName}
+            onChange={(e) => set('childName', e.target.value)}
+            placeholder="e.g. Sara, Year 10"
+            className={inputCls}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="ref-notes">Anything we should know? (optional)</Label>
+          <Textarea
+            id="ref-notes"
+            value={values.notes}
+            onChange={(e) => set('notes', e.target.value)}
+            placeholder="Subjects they need help with, best time to call…"
+            rows={3}
+            className="rounded-2xl border-foreground/20 bg-background px-5 py-3 focus-visible:ring-foreground/30"
+          />
+        </div>
+
+        {errors.form && <p className="text-sm text-destructive">{errors.form}</p>}
+        {sent && (
+          <div className="space-y-1">
+            <p className="text-sm text-primary">Thank you. We will be in touch with them shortly.</p>
+            {isPublic && (
+              <p className="text-sm text-muted-foreground">
+                <a href="/auth" className="underline">Log in</a> to get your own share link and track your referrals.
+              </p>
+            )}
           </div>
+        )}
 
-          {errors.form && <p className="text-sm text-destructive">{errors.form}</p>}
-          {sent && (
-            <div className="space-y-1">
-              <p className="text-sm text-primary">Thank you. We will be in touch with them shortly.</p>
-              {isPublic && (
-                <p className="text-sm text-muted-foreground">
-                  <a href="/auth" className="underline">Log in</a> to get your own share link and track your referrals.
-                </p>
-              )}
-            </div>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <DoodleSend className="h-4 w-4" aria-hidden="true" />
           )}
-
-          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="mr-2" aria-hidden="true">📨</span>}
-            Send referral
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          Send referral
+        </button>
+      </form>
+    </section>
   );
 };
 

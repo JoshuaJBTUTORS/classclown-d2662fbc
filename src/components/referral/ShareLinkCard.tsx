@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Check, Copy, Link2, Mail } from 'lucide-react';
-import { DoodleChat, DoodleCoin, DoodlePerson } from '@/components/settings/DoodleIcons';
+import { DoodleChat, DoodleCoin } from '@/components/progress/ProgressDoodles';
+import { DoodlePerson } from '@/components/settings/DoodleIcons';
 
 interface ShareLinkCardProps {
   shareUrl: string;
