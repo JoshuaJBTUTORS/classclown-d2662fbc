@@ -1,7 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, Sparkles, CalendarOff, FileSignature, RefreshCw, ArrowRight } from 'lucide-react';
+import { CalendarDays, Sparkles, CalendarOff, FileSignature, RefreshCw, ArrowRight, UserX, BookOpen, Hourglass } from 'lucide-react';
 import { useDailySnapshot } from '@/hooks/useDailySnapshot';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSnapshotConfig, type SnapshotTileKey, type SnapshotGoalKey } from '@/lib/agentCleoRoleConfig';
 import {
   CUSTOMERS_GOAL,
   LESSONS_GOAL,
