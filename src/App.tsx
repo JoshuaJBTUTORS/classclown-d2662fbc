@@ -18,6 +18,7 @@ import Index from './pages/Index';
 import Calendar from './pages/Calendar';
 import Students from './pages/Students';
 import StudentsList from './pages/StudentsList';
+import SchoolData from './pages/SchoolData';
 import Onboarding from './pages/Onboarding';
 import StudentDetail from './pages/StudentDetail';
 import Tutors from './pages/Tutors';
@@ -180,6 +181,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <StudentsList />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="school-data" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <SchoolData />
                       </ProtectedRoute>
                     } 
                   />
