@@ -78,6 +78,8 @@ STUDENTS (progress, lesson summaries, assessment results, homework):
 - \`assessment_improvements\`: stored \`weak_topics\` and \`improvement_summary\` for a session — prefer it over re-deriving weaknesses.
 - Supporting tables: \`lesson_attendance\`, \`homework\` + \`homework_completion_status\`, \`lesson_revision_notes\` (flashcards), \`school_progress\` (uploaded reports and mock results), \`topic_requests\`.
 - Results are sensitive: report them when asked, and never mix in or volunteer another family's data.
+- \`student_impact_moments\`: high-impact moments the daily transcript scan pulled out of lessons — \`category\` (upcoming_assessment, past_assessment, assessment_result, other_academic_result, support_needed, positive_progress, goal_or_circumstance_change), \`subject\`, \`event_type\`, \`timeframe\` (as the student said it), \`event_date\`, \`grade_or_target\`, \`student_reaction\`, \`urgency\`, \`recommended_action\`, \`evidence\` (verbatim transcript quotes), \`status\` ('new' / 'actioned' / 'dismissed'), \`student_id\`, \`lesson_date\`. Use it for "who has mocks coming up", "who needs a call", "who just got results". ALWAYS quote the evidence when you report a moment — never assert one without it. \`student_snapshot\` returns these as \`impact_moments\`.
+- \`tutor_breaches\`: potential tutor policy breaches from the same daily scan — \`category\`, \`severity\`, \`summary\`, \`evidence\`, \`status\` ('open' / 'resolved'), \`tutor_name\`, \`lesson_date\`. AI-flagged, so always present them as needing verification.
 
 NAVIGATING THE CRM (opening pages):
 - Agent Cleo is the landing page for admins and owners, so users will ask you to "open", "go to" or "take me to" a page. Use the \`open_page\` tool — it navigates the user's browser straight there.
@@ -1609,6 +1611,32 @@ async function studentSnapshot(input: string) {
   const hwStatuses = hwStatusRes.data ?? [];
   const hwCompleted = hwStatuses.filter((h: any) => /complete|done|yes/i.test(String(h.status))).length;
 
+  // ---- high-impact moments from lesson transcripts -----------------
+  const { data: momentsData } = await supabase
+    .from("student_impact_moments")
+    .select(
+      "category, subject, event_type, timeframe, event_date, grade_or_target, student_reaction, urgency, recommended_action, evidence, status, lesson_date, tutor_name",
+    )
+    .eq("student_id", student.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const impact_moments = (momentsData ?? []).map((m: any) => ({
+    category: m.category,
+    subject: m.subject,
+    event_type: m.event_type,
+    when_mentioned: m.timeframe,
+    event_date: m.event_date,
+    grade_or_target: m.grade_or_target,
+    student_reaction: m.student_reaction,
+    urgency: m.urgency,
+    recommended_action: m.recommended_action,
+    evidence_quotes: Array.isArray(m.evidence) ? m.evidence : [],
+    status: m.status,
+    lesson_date: m.lesson_date,
+    tutor: m.tutor_name,
+  }));
+
   return {
     ok: true,
     student: {
@@ -1641,6 +1669,7 @@ async function studentSnapshot(input: string) {
     recurring_weakness_themes,
     assessments,
     outstanding_assessments: outstanding,
+    impact_moments,
     homework_last_8_weeks: {
       assigned: hwAssigned,
       marked_complete: hwCompleted,
@@ -1658,6 +1687,7 @@ async function studentSnapshot(input: string) {
     notes: [
       "Assessment percentages count ATTEMPTED questions only — blank answers are reported as skipped.",
       "Lessons the student missed have engagement/confidence suppressed; report them as missed.",
+      "impact_moments come from the daily transcript scan; every one carries verbatim quotes — cite them.",
     ],
   };
 }
