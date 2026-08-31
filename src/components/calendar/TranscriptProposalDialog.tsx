@@ -48,7 +48,7 @@ export interface ProposalPrefill {
   subject: string;
   pricePerLesson: number;
   paymentCycle: string;
-  contractTerm: 'month_to_month' | '3_months' | '12_months';
+  contractTerm: 'month_to_month' | '3_months' | '12_months' | '24_months';
   lessonTimes: Array<{ day: string; time: string; duration: number; subject: string }>;
 }
 
@@ -83,8 +83,9 @@ function confidenceBadge(confidence: string) {
   return <Badge variant="outline" className="text-muted-foreground">Not mentioned</Badge>;
 }
 
-function normaliseTerm(value: string | null): 'month_to_month' | '3_months' | '12_months' {
+function normaliseTerm(value: string | null): 'month_to_month' | '3_months' | '12_months' | '24_months' {
   const v = (value || '').toLowerCase();
+  if (v.includes('24')) return '24_months';
   if (v.includes('12')) return '12_months';
   if (v.includes('3')) return '3_months';
   return 'month_to_month';

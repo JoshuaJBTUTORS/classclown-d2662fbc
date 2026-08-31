@@ -71,7 +71,7 @@ export default function EditProposal() {
         pricePerLesson: fallbackPrice,
         paymentCycle: proposal.payment_cycle || '',
         contractTerm:
-          ((proposal as any).contract_term as 'month_to_month' | '3_months' | '12_months') || 'month_to_month',
+          ((proposal as any).contract_term as 'month_to_month' | '3_months' | '12_months' | '24_months') || 'month_to_month',
         dailyHomeworkOptIn: Boolean((proposal as any).daily_homework_opt_in),
         internalNotes: (proposal as any).internal_notes || '',
         lessonTimes: parsedLessonTimes,

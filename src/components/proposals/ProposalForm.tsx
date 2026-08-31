@@ -32,7 +32,7 @@ export const proposalSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   pricePerLesson: z.number().min(0).optional(),
   paymentCycle: z.string().min(1, 'Payment cycle is required'),
-  contractTerm: z.enum(['month_to_month', '3_months', '12_months'], {
+  contractTerm: z.enum(['month_to_month', '3_months', '12_months', '24_months'], {
     required_error: 'Contract term is required',
   }),
   dailyHomeworkOptIn: z.boolean().default(false),
@@ -318,6 +318,7 @@ export default function ProposalForm({
                         <SelectItem value="month_to_month">Month to Month</SelectItem>
                         <SelectItem value="3_months">3 Months</SelectItem>
                         <SelectItem value="12_months">12 Months</SelectItem>
+                        <SelectItem value="24_months">24 Months</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

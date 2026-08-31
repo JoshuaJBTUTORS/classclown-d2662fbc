@@ -117,7 +117,7 @@ CRITICAL RULES:
 - Email addresses, phone numbers and names spelled out aloud are frequently garbled by the transcription. Always give these confidence "low".
 - For each field you fill, include the verbatim quote from the transcript it came from and its [MM:SS] timestamp.
 - Days must be full English weekday names ("Monday"). Times must be 24-hour "HH:MM" strings. Duration is in minutes (default 60 when a one hour session is described).
-- price_per_lesson is the per-lesson price in GBP for the term recommended. contract_term must be one of month_to_month, 3_months, 12_months.
+- price_per_lesson is the per-lesson price in GBP for the term recommended. contract_term must be one of month_to_month, 3_months, 12_months, 24_months.
 
 PRICE RESOLUTION (mandatory when more than one number is heard):
 - The settled price is the LAST price the account manager states that the parent acknowledges or does not push back on. Later statements override earlier ones.
