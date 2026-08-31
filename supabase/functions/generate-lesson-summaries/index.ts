@@ -619,7 +619,9 @@ function deriveYearGroup(subject: string | null | undefined): string {
 }
 
 // Generate a structured homework brief for a single student from their aggregated summary.
-// Returns { subject, year_group, topics, difficulty_tag } or null on failure.
+// Returns { subject, year_group, topics, difficulty_tag } for single-subject lessons,
+// or { subjects: [{ subject, year_group, topics, difficulty_tag }, ...] } for combined
+// lessons (e.g. "KS2 English/ Maths") so mixed topics are never lumped under one subject.
 async function generateHomeworkBrief(
   lessonId: string,
   studentName: string,
@@ -643,9 +645,14 @@ async function generateHomeworkBrief(
     const subject = lesson?.subject || lesson?.title || 'Unknown';
     const yearGroup = deriveYearGroup(subject);
 
-    const prompt = `You are preparing an INTERNAL homework brief that will be fed to another AI to generate practice questions. This brief is NEVER shown to the student or parent.
+    // Detect combined lessons like "KS2 English/ Maths" or "English & Maths".
+    const subjectParts = subject
+      .split(/[\/&+,]|(?:\band\b)/i)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 2);
+    const isMultiSubject = subjectParts.length > 1;
 
-Lesson subject: ${subject}
+    const sharedContext = `Lesson subject: ${subject}
 Year group bucket: ${yearGroup}
 
 Topics covered this lesson: ${JSON.stringify(aggregated.topics_covered || [])}
@@ -659,7 +666,61 @@ Evidence the student STRUGGLED (areas for improvement, hesitations):
 ${aggregated.areas_for_improvement || '(none)'}
 Hesitation signals: ${JSON.stringify(aggregated.confidence_indicators?.hesitation_patterns || [])}
 
-Numeric hints: confidence_score=${aggregated.confidence_score ?? 'n/a'} (0-10), engagement_level=${aggregated.engagement_level ?? 'n/a'}.
+Numeric hints: confidence_score=${aggregated.confidence_score ?? 'n/a'} (0-10), engagement_level=${aggregated.engagement_level ?? 'n/a'}.`;
+
+    const difficultyRules = `Rules for difficulty_tag — this is critical:
+- "1" = student REALLY did not understand the topic. Use when struggle signals clearly dominate, confidence_score <= 4, or the student produced little/no correct reasoning.
+- "2" = student PARTIALLY understands the topic. Use when there is a mix of understanding and gaps, or when signals are unclear.
+- NEVER output any value other than "1" or "2". Do NOT invent tags like "3", "mastered", or "challenge". If in doubt, output "2".`;
+
+    if (isMultiSubject) {
+      const prompt = `You are preparing an INTERNAL homework brief that will be fed to another AI to generate practice questions. This brief is NEVER shown to the student or parent.
+
+${sharedContext}
+
+This lesson covered MULTIPLE subjects (${subjectParts.join(' + ')}). You MUST split the topics by subject — never mix topics from different subjects under one subject.
+
+Return STRICT JSON with this exact shape and nothing else:
+{
+  "subjects": [
+    {
+      "subject": "full subject name including level, e.g. \\"KS2 Maths\\"",
+      "topics": ["topic 1", "topic 2"],
+      "difficulty_tag": "1" | "2"
+    }
+  ]
+}
+
+Rules:
+- One entry per subject actually taught in this lesson. Prefix each subject with the level (${yearGroup}) unless it already includes one.
+- Each topic must appear under the subject it belongs to (e.g. "Inference" under English, "Area and Perimeter" under Maths).
+- "topics" per subject: concrete topics covered (max 6 each). Keep them short.
+${difficultyRules}`;
+
+      const brief = await callOpenAI(prompt, `${studentName} (homework brief, multi-subject)`, 0);
+      if (!brief || !Array.isArray(brief.subjects) || brief.subjects.length === 0) return null;
+
+      const subjects = brief.subjects
+        .map((entry: any) => {
+          const entrySubject = String(entry?.subject || '').trim();
+          if (!entrySubject) return null;
+          return {
+            subject: entrySubject,
+            year_group: deriveYearGroup(entrySubject),
+            topics: Array.isArray(entry.topics) ? entry.topics.slice(0, 6) : [],
+            difficulty_tag: entry.difficulty_tag === '1' || entry.difficulty_tag === 1 ? '1' : '2',
+          };
+        })
+        .filter(Boolean);
+      if (subjects.length === 0) return null;
+      // If the model collapsed everything back to one subject, keep the flat shape.
+      if (subjects.length === 1) return subjects[0];
+      return { subjects };
+    }
+
+    const prompt = `You are preparing an INTERNAL homework brief that will be fed to another AI to generate practice questions. This brief is NEVER shown to the student or parent.
+
+${sharedContext}
 
 Return STRICT JSON with this exact shape and nothing else:
 {
@@ -669,10 +730,7 @@ Return STRICT JSON with this exact shape and nothing else:
   "difficulty_tag": "1" | "2"
 }
 
-Rules for difficulty_tag — this is critical:
-- "1" = student REALLY did not understand the topic. Use when struggle signals clearly dominate, confidence_score <= 4, or the student produced little/no correct reasoning.
-- "2" = student PARTIALLY understands the topic. Use when there is a mix of understanding and gaps, or when signals are unclear.
-- NEVER output any value other than "1" or "2". Do NOT invent tags like "3", "mastered", or "challenge". If in doubt, output "2".
+${difficultyRules}
 
 "topics" must be the concrete topics covered in this lesson (max 6). Keep them short (e.g. "Photosynthesis", "Quadratic equations").`;
 
