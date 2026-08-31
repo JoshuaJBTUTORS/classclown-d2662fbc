@@ -465,6 +465,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   // Resources submitted for this lesson
   const { resources: lessonResources, refetch: refetchResources } = useLessonResources(lessonId);
   const hasResources = lessonResources.length > 0;
+  // A lesson counts as "resourced" if files were submitted OR homework was assigned (legacy flow)
+  const resourcesStepDone = hasResources || homeworkStatus.exists;
+
 
 
 
