@@ -239,3 +239,6 @@ verify_jwt = false
 
 [functions.send-login-link]
 verify_jwt = false
+
+[functions.daily-breach-scan]
+verify_jwt = false
