@@ -205,38 +205,7 @@ const DailySnapshot: React.FC = () => {
 
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Tile
-          icon={<CalendarDays className="w-3.5 h-3.5" />}
-          label="Sessions today"
-          value={data.sessionsToday}
-          sub={`${fmt(data.sessionsDone)} done · ${fmt(data.sessionsUpcoming)} to come`}
-          loading={loading}
-          onClick={() => navigate('/calendar')}
-        />
-        <Tile
-          icon={<Sparkles className="w-3.5 h-3.5" />}
-          label="Trials today"
-          value={data.trialsToday}
-          sub="Trial lessons booked for today"
-          loading={loading}
-          onClick={() => navigate('/trial-bookings')}
-        />
-        <Tile
-          icon={<CalendarOff className="w-3.5 h-3.5" />}
-          label="Time off"
-          value={data.pendingTimeOff}
-          sub="Requests awaiting approval"
-          loading={loading}
-          onClick={() => navigate('/time-off-requests')}
-        />
-        <Tile
-          icon={<FileSignature className="w-3.5 h-3.5" />}
-          label="Proposals signed"
-          value={data.proposalsThisWeek}
-          sub={`This week · ${fmt(data.proposalsToday)} today`}
-          loading={loading}
-          onClick={() => navigate('/admin/proposals/signed')}
-        />
+        {config.tiles.map((key) => tiles[key])}
       </div>
 
       <div className="mt-3 p-4 rounded-3xl border border-black/70 bg-transparent dark:border-white/50">
