@@ -465,6 +465,9 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   // Resources submitted for this lesson
   const { resources: lessonResources, refetch: refetchResources } = useLessonResources(lessonId);
   const hasResources = lessonResources.length > 0;
+  // A lesson counts as "resourced" if files were submitted OR homework was assigned (legacy flow)
+  const resourcesStepDone = hasResources || homeworkStatus.exists;
+
 
 
 
@@ -548,20 +551,23 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
                       <div className="flex items-center justify-between p-4 bg-card rounded-2xl shadow-[var(--shadow-soft)]">
                         <div className="flex items-center gap-3">
-                          {hasResources ? <DoodleCheck className="h-5 w-5 text-primary" /> : <DoodleCircle className="h-5 w-5 text-muted-foreground" />}
+                          {resourcesStepDone ? <DoodleCheck className="h-5 w-5 text-primary" /> : <DoodleCircle className="h-5 w-5 text-muted-foreground" />}
                           <div>
                             <p className="font-medium text-sm">Submit Resources</p>
                             <p className="text-xs text-muted-foreground">
                               {hasResources
                                 ? `${lessonResources.length} resource${lessonResources.length === 1 ? '' : 's'} submitted`
-                                : 'No resources submitted yet'}
+                                : homeworkStatus.exists
+                                  ? 'Homework assigned'
+                                  : 'Not submitted yet'}
                             </p>
                           </div>
                         </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${hasResources ? 'bg-pastel-mint text-pastel-mint-foreground' : 'bg-muted text-muted-foreground'}`}>
-                          {hasResources ? "Complete" : "Pending"}
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${resourcesStepDone ? 'bg-pastel-mint text-pastel-mint-foreground' : 'bg-muted text-muted-foreground'}`}>
+                          {resourcesStepDone ? "Complete" : "Pending"}
                         </span>
                       </div>
+
 
                     </div>
                 </div>}
