@@ -820,6 +820,7 @@ export type Database = {
           breaches_found: number
           id: string
           lesson_id: string | null
+          moments_found: number
           scan_error: string | null
           scanned_at: string
           transcription_id: string
@@ -828,6 +829,7 @@ export type Database = {
           breaches_found?: number
           id?: string
           lesson_id?: string | null
+          moments_found?: number
           scan_error?: string | null
           scanned_at?: string
           transcription_id: string
@@ -836,6 +838,7 @@ export type Database = {
           breaches_found?: number
           id?: string
           lesson_id?: string | null
+          moments_found?: number
           scan_error?: string | null
           scanned_at?: string
           transcription_id?: string
@@ -4619,6 +4622,89 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      student_impact_moments: {
+        Row: {
+          category: string
+          created_at: string
+          event_date: string | null
+          event_type: string | null
+          evidence: Json
+          grade_or_target: string | null
+          id: string
+          lesson_date: string | null
+          lesson_id: string | null
+          lesson_title: string | null
+          recommended_action: string | null
+          status: string
+          student_id: number | null
+          student_name: string | null
+          student_reaction: string | null
+          subject: string | null
+          timeframe: string | null
+          transcription_id: string | null
+          tutor_id: string | null
+          tutor_name: string | null
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          event_date?: string | null
+          event_type?: string | null
+          evidence?: Json
+          grade_or_target?: string | null
+          id?: string
+          lesson_date?: string | null
+          lesson_id?: string | null
+          lesson_title?: string | null
+          recommended_action?: string | null
+          status?: string
+          student_id?: number | null
+          student_name?: string | null
+          student_reaction?: string | null
+          subject?: string | null
+          timeframe?: string | null
+          transcription_id?: string | null
+          tutor_id?: string | null
+          tutor_name?: string | null
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          event_date?: string | null
+          event_type?: string | null
+          evidence?: Json
+          grade_or_target?: string | null
+          id?: string
+          lesson_date?: string | null
+          lesson_id?: string | null
+          lesson_title?: string | null
+          recommended_action?: string | null
+          status?: string
+          student_id?: number | null
+          student_name?: string | null
+          student_reaction?: string | null
+          subject?: string | null
+          timeframe?: string | null
+          transcription_id?: string | null
+          tutor_id?: string | null
+          tutor_name?: string | null
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_impact_moments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_lesson_insights: {
         Row: {
