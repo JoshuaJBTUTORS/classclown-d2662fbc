@@ -43,7 +43,7 @@ const MOMENT_LABELS: Record<string, string> = {
 };
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -111,14 +111,14 @@ async function analyseTranscript(
     ? transcript.slice(0, MAX_TRANSCRIPT_CHARS) + "\n…[truncated]"
     : transcript;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-3.7-flash",
+      model: "gpt-5-mini",
       messages: [
         {
           role: "system",
@@ -160,12 +160,12 @@ ${clipped}`,
 
   if (res.status === 402 || res.status === 403) {
     const body = await res.text();
-    console.error(`[breach-scan] AI gateway blocked (${res.status}): ${body}`);
-    return { findings: [], moments: [], blocked: true, error: `AI gateway ${res.status}` };
+    console.error(`[breach-scan] OpenAI blocked (${res.status}): ${body}`);
+    return { findings: [], moments: [], blocked: true, error: `OpenAI ${res.status}` };
   }
   if (!res.ok) {
     const body = await res.text();
-    return { findings: [], moments: [], error: `AI gateway ${res.status}: ${body.slice(0, 300)}` };
+    return { findings: [], moments: [], error: `OpenAI ${res.status}: ${body.slice(0, 300)}` };
   }
 
   const data = await res.json();
@@ -225,7 +225,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
     let lookbackHours = 24;
     try {
