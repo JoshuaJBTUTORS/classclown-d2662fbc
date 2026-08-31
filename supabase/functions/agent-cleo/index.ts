@@ -1609,6 +1609,32 @@ async function studentSnapshot(input: string) {
   const hwStatuses = hwStatusRes.data ?? [];
   const hwCompleted = hwStatuses.filter((h: any) => /complete|done|yes/i.test(String(h.status))).length;
 
+  // ---- high-impact moments from lesson transcripts -----------------
+  const { data: momentsData } = await supabase
+    .from("student_impact_moments")
+    .select(
+      "category, subject, event_type, timeframe, event_date, grade_or_target, student_reaction, urgency, recommended_action, evidence, status, lesson_date, tutor_name",
+    )
+    .eq("student_id", student.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const impact_moments = (momentsData ?? []).map((m: any) => ({
+    category: m.category,
+    subject: m.subject,
+    event_type: m.event_type,
+    when_mentioned: m.timeframe,
+    event_date: m.event_date,
+    grade_or_target: m.grade_or_target,
+    student_reaction: m.student_reaction,
+    urgency: m.urgency,
+    recommended_action: m.recommended_action,
+    evidence_quotes: Array.isArray(m.evidence) ? m.evidence : [],
+    status: m.status,
+    lesson_date: m.lesson_date,
+    tutor: m.tutor_name,
+  }));
+
   return {
     ok: true,
     student: {
