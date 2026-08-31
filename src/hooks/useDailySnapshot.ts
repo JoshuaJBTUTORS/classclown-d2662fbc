@@ -14,6 +14,10 @@ export interface DailySnapshotData {
   pendingTimeOff: number | null;
   proposalsThisWeek: number | null;
   proposalsToday: number | null;
+  proposalsAwaiting: number | null;
+  missedThisWeek: number | null;
+  homeworkSetThisWeek: number | null;
+  homeworkSubmittedThisWeek: number | null;
   // Goals
   goalTrials: number | null;
   goalLessons: number | null;
@@ -29,6 +33,10 @@ const EMPTY: DailySnapshotData = {
   pendingTimeOff: null,
   proposalsThisWeek: null,
   proposalsToday: null,
+  proposalsAwaiting: null,
+  missedThisWeek: null,
+  homeworkSetThisWeek: null,
+  homeworkSubmittedThisWeek: null,
   goalTrials: null,
   goalLessons: null,
   goalProposals: null,
@@ -110,6 +118,27 @@ export function useDailySnapshot() {
         .select('value')
         .eq('key', CUSTOMERS_SETTING_KEY)
         .maybeSingle(),
+      // Proposals sent but not yet completed (awaiting signature)
+      supabase
+        .from('lesson_proposals')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['sent', 'viewed']),
+      // Missed lessons this week (absences marked in attendance)
+      supabase
+        .from('lesson_attendance')
+        .select('id', { count: 'exact', head: true })
+        .eq('attendance_status', 'absent')
+        .gte('marked_at', weekStart.toISOString()),
+      // Homework set this week
+      supabase
+        .from('homework')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', weekStart.toISOString()),
+      // Homework submitted this week
+      supabase
+        .from('homework_submissions')
+        .select('id', { count: 'exact', head: true })
+        .gte('submitted_at', weekStart.toISOString()),
     ]);
 
     const val = <T,>(i: number): T | null => {
@@ -148,6 +177,10 @@ export function useDailySnapshot() {
       pendingTimeOff: (val(2) as any)?.count ?? null,
       proposalsThisWeek,
       proposalsToday,
+      proposalsAwaiting: (val(8) as any)?.count ?? null,
+      missedThisWeek: (val(9) as any)?.count ?? null,
+      homeworkSetThisWeek: (val(10) as any)?.count ?? null,
+      homeworkSubmittedThisWeek: (val(11) as any)?.count ?? null,
       goalTrials: (val(4) as any)?.count ?? null,
       goalLessons: (val(5) as any)?.count ?? null,
       goalProposals: (val(6) as any)?.count ?? null,
