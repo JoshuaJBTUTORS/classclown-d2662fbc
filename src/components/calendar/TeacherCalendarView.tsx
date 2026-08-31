@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { format, addHours, startOfWeek, addDays, isSameDay, endOfWeek, startOfDay, endOfDay } from 'date-fns';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import TutorRow from './TutorRow';
 import LessonDetailsDialog from './LessonDetailsDialog';
 import TeacherViewNavigation from './TeacherViewNavigation';
@@ -151,7 +151,7 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
 
           {/* Single scroll container (horizontal + vertical) */}
           <div className="flex-1 min-w-0 overflow-auto">
-            <div className="min-w-max">
+            <div style={{ minWidth: 180 + timeSlots.length * (viewType === 'teacherDay' ? 96 : 120) }}>
               {/* Header with time slots */}
               <div
                 className="grid border-b bg-muted/50 sticky top-0 z-20"
