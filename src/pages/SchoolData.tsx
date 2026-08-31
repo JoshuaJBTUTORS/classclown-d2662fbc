@@ -47,7 +47,7 @@ interface Row {
   last_name: string | null;
   school: string | null;
   year_group: string | null;
-  school_urn: number | null;
+  school_urn: string | number | null;
   town?: string | null;
   local_authority?: string | null;
 }
@@ -72,17 +72,17 @@ const SchoolData: React.FC = () => {
 
         const students = (data || []) as Row[];
         const urns = Array.from(
-          new Set(students.map((s) => s.school_urn).filter((u): u is number => !!u))
-        );
+          new Set(students.map((s) => s.school_urn).filter(Boolean))
+        ) as (string | number)[];
 
-        let schoolMap = new Map<number, { town: string | null; local_authority: string | null }>();
+        let schoolMap = new Map<string, { town: string | null; local_authority: string | null }>();
         if (urns.length > 0) {
           const { data: schools } = await supabase
             .from('uk_schools')
             .select('urn, town, local_authority')
             .in('urn', urns);
           schoolMap = new Map(
-            (schools || []).map((s: any) => [s.urn, { town: s.town, local_authority: s.local_authority }])
+            (schools || []).map((s: any) => [String(s.urn), { town: s.town, local_authority: s.local_authority }])
           );
         }
 
@@ -90,9 +90,9 @@ const SchoolData: React.FC = () => {
           students
             .map((s) => ({
               ...s,
-              town: s.school_urn ? schoolMap.get(s.school_urn)?.town ?? null : null,
+              town: s.school_urn ? schoolMap.get(String(s.school_urn))?.town ?? null : null,
               local_authority: s.school_urn
-                ? schoolMap.get(s.school_urn)?.local_authority ?? null
+                ? schoolMap.get(String(s.school_urn))?.local_authority ?? null
                 : null,
             }))
             .sort(
