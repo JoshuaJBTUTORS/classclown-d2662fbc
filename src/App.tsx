@@ -185,6 +185,14 @@ function App() {
                     } 
                   />
                   <Route 
+                    path="school-data" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                        <SchoolData />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
                     path="onboarding" 
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'owner']}>
