@@ -165,6 +165,17 @@ export const SchoolCombobox: React.FC<SchoolComboboxProps> = ({ value, urn, onCh
           <button
             type="button"
             onClick={() => {
+              setOpen(false);
+              setQuery('');
+              onChange({ school: 'Homeschooled', school_urn: null });
+            }}
+            className="w-full rounded-full px-3 py-2 text-left text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+          >
+            We are homeschooled
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               setManual(true);
               setOpen(false);
               onChange({ school: '', school_urn: null });
