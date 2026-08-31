@@ -230,7 +230,7 @@ const WelcomeOnboarding: React.FC = () => {
               {isStudent ? 'Tell us about your school' : 'Tell us about your children'}
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              This helps us match lesson plans and progress tracking to the right curriculum
+              This helps us tailor their learning experience to what they're covering in class.
             </p>
           </div>
 
