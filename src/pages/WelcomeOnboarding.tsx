@@ -70,7 +70,7 @@ const WelcomeOnboarding: React.FC = () => {
       try {
         let query = supabase
           .from('students')
-          .select('id, first_name, last_name, school, year_group');
+          .select('id, first_name, last_name, school, school_urn, year_group');
 
         if (isStudent) {
           query = query.eq('user_id', user.id);
