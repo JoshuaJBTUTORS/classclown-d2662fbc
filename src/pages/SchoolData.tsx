@@ -80,7 +80,7 @@ const SchoolData: React.FC = () => {
           const { data: schools } = await supabase
             .from('uk_schools')
             .select('urn, town, local_authority')
-            .in('urn', urns);
+            .in("urn", urns as any);
           schoolMap = new Map(
             (schools || []).map((s: any) => [String(s.urn), { town: s.town, local_authority: s.local_authority }])
           );
