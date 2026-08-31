@@ -1667,6 +1667,7 @@ async function studentSnapshot(input: string) {
     recurring_weakness_themes,
     assessments,
     outstanding_assessments: outstanding,
+    impact_moments,
     homework_last_8_weeks: {
       assigned: hwAssigned,
       marked_complete: hwCompleted,
@@ -1684,6 +1685,7 @@ async function studentSnapshot(input: string) {
     notes: [
       "Assessment percentages count ATTEMPTED questions only — blank answers are reported as skipped.",
       "Lessons the student missed have engagement/confidence suppressed; report them as missed.",
+      "impact_moments come from the daily transcript scan; every one carries verbatim quotes — cite them.",
     ],
   };
 }
