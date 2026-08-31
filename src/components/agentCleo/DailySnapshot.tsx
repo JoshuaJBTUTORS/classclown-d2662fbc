@@ -220,10 +220,7 @@ const DailySnapshot: React.FC = () => {
         </button>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <GoalRow label="Trials booked" current={data.goalTrials} target={TRIAL_GOAL} loading={loading} />
-          <GoalRow label="Lessons this month" current={data.goalLessons} target={LESSONS_GOAL} loading={loading} />
-          <GoalRow label="Proposals completed" current={data.goalProposals} target={PROPOSALS_GOAL} loading={loading} />
-          <GoalRow label="Customers" current={data.goalCustomers} target={CUSTOMERS_GOAL} loading={loading} />
+          {config.goals.map((key) => goals[key])}
         </div>
       </div>
     </div>
