@@ -92,10 +92,15 @@ const TutorRow: React.FC<TutorRowProps> = ({
   };
 
   return (
-    <div className="flex border-b border-border/50 hover:bg-muted/30 transition-colors">
+    <div
+      className="grid border-b border-border/50 hover:bg-muted/30 transition-colors"
+      style={{
+        gridTemplateColumns: `minmax(140px, 180px) repeat(${timeSlots.length}, minmax(${viewType === 'teacherDay' ? '96px' : '120px'}, 1fr))`
+      }}
+    >
       {/* Tutor info column */}
-      <div className="w-48 flex-shrink-0 p-3 border-r bg-background">
-        <div className="flex flex-col">
+      <div className="sticky left-0 z-10 p-3 border-r bg-background">
+        <div className="flex flex-col min-w-0">
           <h4 className="font-heading font-semibold text-sm truncate">
             {tutor.first_name} {tutor.last_name}
           </h4>
@@ -106,45 +111,44 @@ const TutorRow: React.FC<TutorRowProps> = ({
       </div>
 
       {/* Time slots */}
-      <div className="flex">
-        {timeSlots.map(slot => {
-          const slotEvents = getEventsForSlot(slot);
-          
-          // Determine availability key based on view type
-          const availabilityKey = viewType === 'teacherDay' 
-            ? `${format(slot.date, 'yyyy-MM-dd')}-${parseInt(slot.time.split(':')[0])}`
-            : format(slot.date, 'yyyy-MM-dd');
-          
-          const slotStatus = availabilityData?.[availabilityKey] || 'unavailable';
-          
-          return (
-            <div
-              key={slot.key}
-              className={`${viewType === 'teacherDay' ? 'w-24' : 'w-32'} p-2 border-r last:border-r-0 min-h-20 flex-shrink-0`}
-            >
-              {slotEvents.length === 0 ? (
-                <div className={`h-full flex items-center justify-center rounded-2xl transition-colors ${
-                  slotStatus === 'time_off'
-                    ? 'bg-pastel-blush text-pastel-blush-foreground'
-                    : slotStatus === 'available'
-                      ? 'bg-pastel-mint text-pastel-mint-foreground'
-                      : 'bg-muted/40 text-muted-foreground'
-                }`}>
-                  <span className="text-xs font-medium">
-                    {slotStatus === 'time_off' ? 'Time off' : slotStatus === 'available' ? 'Available' : 'Unavailable'}
-                  </span>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {slotEvents.map(renderEventBlock)}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {timeSlots.map(slot => {
+        const slotEvents = getEventsForSlot(slot);
+
+        // Determine availability key based on view type
+        const availabilityKey = viewType === 'teacherDay'
+          ? `${format(slot.date, 'yyyy-MM-dd')}-${parseInt(slot.time.split(':')[0])}`
+          : format(slot.date, 'yyyy-MM-dd');
+
+        const slotStatus = availabilityData?.[availabilityKey] || 'unavailable';
+
+        return (
+          <div
+            key={slot.key}
+            className="p-2 border-r last:border-r-0 min-h-20 min-w-0"
+          >
+            {slotEvents.length === 0 ? (
+              <div className={`h-full flex items-center justify-center rounded-2xl transition-colors ${
+                slotStatus === 'time_off'
+                  ? 'bg-pastel-blush text-pastel-blush-foreground'
+                  : slotStatus === 'available'
+                    ? 'bg-pastel-mint text-pastel-mint-foreground'
+                    : 'bg-muted/40 text-muted-foreground'
+              }`}>
+                <span className="text-xs font-medium">
+                  {slotStatus === 'time_off' ? 'Time off' : slotStatus === 'available' ? 'Available' : 'Unavailable'}
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {slotEvents.map(renderEventBlock)}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
+
 };
 
 export default TutorRow;
