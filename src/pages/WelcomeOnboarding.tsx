@@ -27,8 +27,10 @@ interface ChildRow {
   first_name: string | null;
   last_name: string | null;
   school: string | null;
+  school_urn: string | null;
   year_group: string | null;
 }
+
 
 const cardTone = 'rounded-[1.5rem] border-2 border-foreground/90 bg-card';
 
