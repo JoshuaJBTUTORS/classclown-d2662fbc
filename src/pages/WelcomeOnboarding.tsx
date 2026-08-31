@@ -21,6 +21,9 @@ import {
   WelcomeIntroIcon,
   AllSetIcon,
 } from '@/components/welcome/welcomeSlides';
+import SchoolCombobox from '@/components/welcome/SchoolCombobox';
+
+
 
 interface ChildRow {
   id: number;
