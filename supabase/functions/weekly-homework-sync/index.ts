@@ -394,37 +394,45 @@ serve(async (req) => {
       if (att && !["attended", "late"].includes(att)) return;
 
       const brief = row.homework_brief || {};
-      const subject: string = (brief.subject || row.lessons?.subject || "").trim();
-      if (!subject) return;
 
-      // Hard filter: exclude NVR entirely.
-      if (isNvrSubject(subject, brief.subject, row.lessons?.subject)) {
-        console.log("[weekly-homework-sync] Skipping NVR row", { studentId: row.student_id, subject });
-        return;
+      // New multi-subject shape: brief.subjects = [{ subject, topics, difficulty_tag }, ...]
+      // Legacy flat shape: { subject, topics, difficulty_tag } — treat as one entry.
+      const entries: any[] = Array.isArray(brief.subjects) && brief.subjects.length > 0
+        ? brief.subjects
+        : [brief];
+
+      for (const entry of entries) {
+        const subject: string = (entry?.subject || row.lessons?.subject || "").trim();
+        if (!subject) continue;
+
+        // Hard filter: exclude NVR entirely.
+        if (isNvrSubject(subject, entry?.subject, row.lessons?.subject)) {
+          console.log("[weekly-homework-sync] Skipping NVR row", { studentId: row.student_id, subject });
+          continue;
+        }
+
+        const topics: string[] = Array.isArray(entry?.topics) ? entry.topics.filter(Boolean) : [];
+        const year: string | null = entry?.year_group || brief.year_group || null;
+        const difficultyRaw = Number(entry?.difficulty_tag ?? brief.difficulty_tag);
+        const difficulty = difficultyRaw === 2 ? 2 : 1;
+
+        if (!byStudent.has(row.student_id)) byStudent.set(row.student_id, new Map());
+        const subjMap = byStudent.get(row.student_id)!;
+        if (!subjMap.has(subject)) {
+          subjMap.set(subject, {
+            subject,
+            year_groups: [],
+            topicsSet: new Set(),
+            difficulty: 1,
+            lesson_count: 0,
+          });
+        }
+        const agg = subjMap.get(subject)!;
+        agg.year_groups.push(year);
+        topics.forEach((t) => agg.topicsSet.add(String(t).trim()));
+        agg.difficulty = Math.max(agg.difficulty, difficulty);
+        agg.lesson_count += 1;
       }
-
-
-      const topics: string[] = Array.isArray(brief.topics) ? brief.topics.filter(Boolean) : [];
-      const year: string | null = brief.year_group || null;
-      const difficultyRaw = Number(brief.difficulty_tag);
-      const difficulty = difficultyRaw === 2 ? 2 : 1;
-
-      if (!byStudent.has(row.student_id)) byStudent.set(row.student_id, new Map());
-      const subjMap = byStudent.get(row.student_id)!;
-      if (!subjMap.has(subject)) {
-        subjMap.set(subject, {
-          subject,
-          year_groups: [],
-          topicsSet: new Set(),
-          difficulty: 1,
-          lesson_count: 0,
-        });
-      }
-      const agg = subjMap.get(subject)!;
-      agg.year_groups.push(year);
-      topics.forEach((t) => agg.topicsSet.add(String(t).trim()));
-      agg.difficulty = Math.max(agg.difficulty, difficulty);
-      agg.lesson_count += 1;
     });
 
     if (byStudent.size === 0) {
