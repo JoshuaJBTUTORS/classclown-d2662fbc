@@ -123,9 +123,11 @@ const WelcomeOnboarding: React.FC = () => {
           .from('students')
           .update({
             school: (child.school || '').trim(),
+            school_urn: child.school_urn || null,
             year_group: (child.year_group || '').trim(),
             grade: (child.year_group || '').trim(),
           })
+
           .eq('id', child.id);
         if (error) throw error;
       }
