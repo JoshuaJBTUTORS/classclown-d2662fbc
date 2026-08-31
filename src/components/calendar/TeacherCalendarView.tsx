@@ -137,9 +137,9 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 relative calendar-container">
-        <div className="teacher-calendar-view h-full w-full flex flex-col bg-background border rounded-lg overflow-hidden">
+    <div className="h-full w-full min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 relative calendar-container">
+        <div className="teacher-calendar-view h-full w-full min-w-0 flex flex-col bg-background border rounded-lg overflow-hidden">
           {/* Navigation Header */}
           {onDateChange && (
             <TeacherViewNavigation
@@ -148,53 +148,52 @@ const TeacherCalendarView: React.FC<TeacherCalendarViewProps> = ({
               onDateChange={onDateChange}
             />
           )}
-          
-          {/* Single horizontal scroll container */}
-          <div className="flex-1 overflow-x-auto max-w-full">
-            <div className="flex flex-col">
+
+          {/* Single scroll container (horizontal + vertical) */}
+          <div className="flex-1 min-w-0 overflow-auto">
+            <div className="min-w-max">
               {/* Header with time slots */}
-              <div className="flex border-b bg-muted/50">
-                <div className="w-48 flex-shrink-0 p-3 border-r bg-background">
+              <div
+                className="grid border-b bg-muted/50 sticky top-0 z-20"
+                style={{
+                  gridTemplateColumns: `minmax(140px, 180px) repeat(${timeSlots.length}, minmax(${viewType === 'teacherDay' ? '96px' : '120px'}, 1fr))`
+                }}
+              >
+                <div className="sticky left-0 z-10 p-3 border-r bg-background">
                   <h3 className="font-medium text-sm text-muted-foreground">Tutors</h3>
                 </div>
-                <div className="flex">
-                  {timeSlots.map(slot => (
-                    <div
-                      key={slot.key}
-                      className={`${viewType === 'teacherDay' ? 'w-24' : 'w-32'} p-3 border-r last:border-r-0 text-center flex-shrink-0`}
-                    >
-                      <span className="text-sm font-medium">{slot.time}</span>
-                    </div>
-                  ))}
-                </div>
+                {timeSlots.map(slot => (
+                  <div
+                    key={slot.key}
+                    className="p-3 border-r last:border-r-0 text-center min-w-0"
+                  >
+                    <span className="text-sm font-medium">{slot.time}</span>
+                  </div>
+                ))}
               </div>
 
-              {/* Scrollable content area */}
-              <ScrollArea className="flex-1">
-                <div className="min-h-full">
-                  {tutorGroups.length === 0 ? (
-                    <div className="flex items-center justify-center py-16 text-muted-foreground">
-                      <p>No tutors found for the selected period</p>
-                    </div>
-                  ) : (
-                    tutorGroups.map(group => (
-                      <TutorRow
-                        key={group.tutor.id}
-                        tutor={group.tutor}
-                        events={group.events}
-                        timeSlots={timeSlots}
-                        viewType={viewType}
-                        onEventClick={handleEventClick}
-                        availabilityData={availabilityData[group.tutor.id]}
-                      />
-                    ))
-                  )}
+              {tutorGroups.length === 0 ? (
+                <div className="flex items-center justify-center py-16 text-muted-foreground">
+                  <p>No tutors found for the selected period</p>
                 </div>
-              </ScrollArea>
+              ) : (
+                tutorGroups.map(group => (
+                  <TutorRow
+                    key={group.tutor.id}
+                    tutor={group.tutor}
+                    events={group.events}
+                    timeSlots={timeSlots}
+                    viewType={viewType}
+                    onEventClick={handleEventClick}
+                    availabilityData={availabilityData[group.tutor.id]}
+                  />
+                ))
+              )}
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Lesson Details Dialog */}
       {selectedLessonId && (
