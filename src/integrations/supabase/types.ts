@@ -4866,6 +4866,7 @@ export type Database = {
           parent_id: string | null
           phone: string | null
           school: string | null
+          school_urn: string | null
           status: string | null
           student_id: string | null
           subjects: string | null
@@ -4886,6 +4887,7 @@ export type Database = {
           parent_id?: string | null
           phone?: string | null
           school?: string | null
+          school_urn?: string | null
           status?: string | null
           student_id?: string | null
           subjects?: string | null
@@ -4906,6 +4908,7 @@ export type Database = {
           parent_id?: string | null
           phone?: string | null
           school?: string | null
+          school_urn?: string | null
           status?: string | null
           student_id?: string | null
           subjects?: string | null
@@ -5666,6 +5669,39 @@ export type Database = {
           specialities?: string[] | null
           status?: string
           title?: string | null
+        }
+        Relationships: []
+      }
+      uk_schools: {
+        Row: {
+          created_at: string
+          establishment_type: string | null
+          local_authority: string | null
+          name: string
+          phase: string | null
+          postcode: string | null
+          town: string | null
+          urn: number
+        }
+        Insert: {
+          created_at?: string
+          establishment_type?: string | null
+          local_authority?: string | null
+          name: string
+          phase?: string | null
+          postcode?: string | null
+          town?: string | null
+          urn: number
+        }
+        Update: {
+          created_at?: string
+          establishment_type?: string | null
+          local_authority?: string | null
+          name?: string
+          phase?: string | null
+          postcode?: string | null
+          town?: string | null
+          urn?: number
         }
         Relationships: []
       }
@@ -6438,6 +6474,8 @@ export type Database = {
         Args: { p_tutor_id: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       toggle_cleo_hub_access: {
         Args: { enable_access: boolean; target_user_id: string }
         Returns: undefined

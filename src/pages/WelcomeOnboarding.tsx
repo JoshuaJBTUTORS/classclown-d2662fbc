@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -21,14 +20,19 @@ import {
   WelcomeIntroIcon,
   AllSetIcon,
 } from '@/components/welcome/welcomeSlides';
+import SchoolCombobox from '@/components/welcome/SchoolCombobox';
+
+
 
 interface ChildRow {
   id: number;
   first_name: string | null;
   last_name: string | null;
   school: string | null;
+  school_urn: string | null;
   year_group: string | null;
 }
+
 
 const cardTone = 'rounded-[1.5rem] border-2 border-foreground/90 bg-card';
 
@@ -65,7 +69,7 @@ const WelcomeOnboarding: React.FC = () => {
       try {
         let query = supabase
           .from('students')
-          .select('id, first_name, last_name, school, year_group');
+          .select('id, first_name, last_name, school, school_urn, year_group');
 
         if (isStudent) {
           query = query.eq('user_id', user.id);
@@ -118,9 +122,11 @@ const WelcomeOnboarding: React.FC = () => {
           .from('students')
           .update({
             school: (child.school || '').trim(),
+            school_urn: child.school_urn || null,
             year_group: (child.year_group || '').trim(),
             grade: (child.year_group || '').trim(),
           })
+
           .eq('id', child.id);
         if (error) throw error;
       }
@@ -252,13 +258,15 @@ const WelcomeOnboarding: React.FC = () => {
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         School
                       </Label>
-                      <Input
+                      <SchoolCombobox
                         value={child.school || ''}
-                        onChange={(e) => updateChild(child.id, { school: e.target.value })}
-                        placeholder="e.g. Hitchin Girls' School"
-                        className="h-11 rounded-full border-2 border-foreground/80 bg-card px-4"
+                        urn={child.school_urn || null}
+                        onChange={({ school, school_urn }) =>
+                          updateChild(child.id, { school, school_urn })
+                        }
                       />
                     </div>
+
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Year group
