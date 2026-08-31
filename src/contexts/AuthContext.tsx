@@ -22,6 +22,7 @@ interface UserProfile {
   has_cleo_hub_access?: boolean;
   education_level?: string | null;
   exam_boards?: any;
+  job_title?: string | null;
 }
 
 interface ParentProfile {
