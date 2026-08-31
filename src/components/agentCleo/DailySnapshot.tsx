@@ -96,10 +96,99 @@ const GoalRow: React.FC<GoalRowProps> = ({ label, current, target, loading }) =>
 const DailySnapshot: React.FC = () => {
   const navigate = useNavigate();
   const { data, loading, refresh } = useDailySnapshot();
+  const { profile } = useAuth();
+  const config = getSnapshotConfig(profile?.job_title);
 
   const today = new Date().toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
+
+  const tiles: Record<SnapshotTileKey, React.ReactNode> = {
+    sessions: (
+      <Tile
+        key="sessions"
+        icon={<CalendarDays className="w-3.5 h-3.5" />}
+        label="Sessions today"
+        value={data.sessionsToday}
+        sub={`${fmt(data.sessionsDone)} done · ${fmt(data.sessionsUpcoming)} to come`}
+        loading={loading}
+        onClick={() => navigate('/calendar')}
+      />
+    ),
+    trials: (
+      <Tile
+        key="trials"
+        icon={<Sparkles className="w-3.5 h-3.5" />}
+        label="Trials today"
+        value={data.trialsToday}
+        sub="Trial lessons booked for today"
+        loading={loading}
+        onClick={() => navigate('/trial-bookings')}
+      />
+    ),
+    timeOff: (
+      <Tile
+        key="timeOff"
+        icon={<CalendarOff className="w-3.5 h-3.5" />}
+        label="Time off"
+        value={data.pendingTimeOff}
+        sub="Requests awaiting approval"
+        loading={loading}
+        onClick={() => navigate('/time-off-requests')}
+      />
+    ),
+    proposalsSigned: (
+      <Tile
+        key="proposalsSigned"
+        icon={<FileSignature className="w-3.5 h-3.5" />}
+        label="Proposals signed"
+        value={data.proposalsThisWeek}
+        sub={`This week · ${fmt(data.proposalsToday)} today`}
+        loading={loading}
+        onClick={() => navigate('/admin/proposals/signed')}
+      />
+    ),
+    proposalsAwaiting: (
+      <Tile
+        key="proposalsAwaiting"
+        icon={<Hourglass className="w-3.5 h-3.5" />}
+        label="Awaiting signature"
+        value={data.proposalsAwaiting}
+        sub="Proposals sent, not yet signed"
+        loading={loading}
+        onClick={() => navigate('/admin/proposals')}
+      />
+    ),
+    missed: (
+      <Tile
+        key="missed"
+        icon={<UserX className="w-3.5 h-3.5" />}
+        label="Missed lessons"
+        value={data.missedThisWeek}
+        sub="Student absences this week"
+        loading={loading}
+        onClick={() => navigate('/lessonsummaries')}
+      />
+    ),
+    homework: (
+      <Tile
+        key="homework"
+        icon={<BookOpen className="w-3.5 h-3.5" />}
+        label="Homework"
+        value={data.homeworkSubmittedThisWeek}
+        sub={`Submitted this week · ${fmt(data.homeworkSetThisWeek)} set`}
+        loading={loading}
+        onClick={() => navigate('/homework')}
+      />
+    ),
+  };
+
+  const goals: Record<SnapshotGoalKey, React.ReactNode> = {
+    trials: <GoalRow key="trials" label="Trials booked" current={data.goalTrials} target={TRIAL_GOAL} loading={loading} />,
+    lessons: <GoalRow key="lessons" label="Lessons this month" current={data.goalLessons} target={LESSONS_GOAL} loading={loading} />,
+    proposals: <GoalRow key="proposals" label="Proposals completed" current={data.goalProposals} target={PROPOSALS_GOAL} loading={loading} />,
+    customers: <GoalRow key="customers" label="Customers" current={data.goalCustomers} target={CUSTOMERS_GOAL} loading={loading} />,
+  };
 
   return (
     <div className="w-full max-w-2xl mb-8">
