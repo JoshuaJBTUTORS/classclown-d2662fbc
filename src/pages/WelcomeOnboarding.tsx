@@ -252,13 +252,15 @@ const WelcomeOnboarding: React.FC = () => {
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         School
                       </Label>
-                      <Input
+                      <SchoolCombobox
                         value={child.school || ''}
-                        onChange={(e) => updateChild(child.id, { school: e.target.value })}
-                        placeholder="e.g. Hitchin Girls' School"
-                        className="h-11 rounded-full border-2 border-foreground/80 bg-card px-4"
+                        urn={child.school_urn || null}
+                        onChange={({ school, school_urn }) =>
+                          updateChild(child.id, { school, school_urn })
+                        }
                       />
                     </div>
+
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Year group
