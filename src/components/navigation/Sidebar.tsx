@@ -117,6 +117,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           roles: ['admin', 'owner'],
         },
         {
+          icon: DoodleMortarboard,
+          label: 'School Data',
+          href: '/school-data',
+          roles: ['admin', 'owner'],
+        },
+        {
           icon: DoodlePersonCheck,
           label: 'Tutors',
           href: '/tutors',
