@@ -815,6 +815,33 @@ export type Database = {
         }
         Relationships: []
       }
+      breach_scan_log: {
+        Row: {
+          breaches_found: number
+          id: string
+          lesson_id: string | null
+          scan_error: string | null
+          scanned_at: string
+          transcription_id: string
+        }
+        Insert: {
+          breaches_found?: number
+          id?: string
+          lesson_id?: string | null
+          scan_error?: string | null
+          scanned_at?: string
+          transcription_id: string
+        }
+        Update: {
+          breaches_found?: number
+          id?: string
+          lesson_id?: string | null
+          scan_error?: string | null
+          scanned_at?: string
+          transcription_id?: string
+        }
+        Relationships: []
+      }
       card_update_links: {
         Row: {
           created_at: string
@@ -5344,6 +5371,103 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_breach_dismissals: {
+        Row: {
+          breach_id: string
+          dismissed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          breach_id: string
+          dismissed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          breach_id?: string
+          dismissed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_breach_dismissals_breach_id_fkey"
+            columns: ["breach_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_breaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_breaches: {
+        Row: {
+          category: string
+          created_at: string
+          evidence: Json
+          id: string
+          lesson_date: string | null
+          lesson_id: string | null
+          lesson_title: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          students: string | null
+          summary: string
+          transcription_id: string | null
+          tutor_id: string | null
+          tutor_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          lesson_date?: string | null
+          lesson_id?: string | null
+          lesson_title?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          students?: string | null
+          summary: string
+          transcription_id?: string | null
+          tutor_id?: string | null
+          tutor_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          lesson_date?: string | null
+          lesson_id?: string | null
+          lesson_title?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          students?: string | null
+          summary?: string
+          transcription_id?: string | null
+          tutor_id?: string | null
+          tutor_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_breaches_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]
