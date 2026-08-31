@@ -239,6 +239,3 @@ verify_jwt = false
 
 [functions.send-login-link]
 verify_jwt = false
-
-[functions.import-uk-schools]
-verify_jwt = false
