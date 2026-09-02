@@ -165,9 +165,9 @@ RULES FOR BOTH JOBS:
 Return JSON only, in this exact shape:
 {
   "findings": [{"category": "personal_information|inappropriate_communication|professional_misconduct|safeguarding|discrimination_harassment", "severity": "low|medium|high", "summary": "one or two sentences", "evidence": ["exact quote"]}],
-  "moments": [{"category": "${MOMENT_CATEGORIES.join("|")}", "student_name": string|null, "subject": string|null, "event_type": "e.g. mock exam, end-of-topic test, report card", "timeframe": "as said, e.g. 'next Tuesday', 'after half term'", "event_date": "YYYY-MM-DD or null — only if an unambiguous date is stated", "grade_or_target": string|null, "student_reaction": "short description of how the student feels about it", "urgency": "low|medium|high", "recommended_action": "one short sentence on the outreach to make", "evidence": ["exact quote"]}]
+  "moments": [{"category": "${MOMENT_CATEGORIES.join("|")}", "student_name": string|null, "subject": string|null, "event_type": "e.g. mock exam, end-of-topic test, report card", "timeframe": "as said, e.g. 'next Tuesday', 'after half term'", "event_date": "YYYY-MM-DD or null — only if an unambiguous date is stated", "grade_or_target": string|null, "student_reaction": "short description of how the student feels about it", "urgency": "low|medium|high", "recommended_action": "one short sentence on the outreach to make", "impact_score": 0-100, "score_reason": "one short line justifying the score", "evidence": ["exact quote — the student's own words, a full sentence, no filler"]}]
 }
-If there is nothing to report, return {"findings": [], "moments": []}.`,
+If there is nothing to report, return {"findings": [], "moments": []}. An empty "moments" array is a normal, expected result.`,
         },
         {
           role: "user",
