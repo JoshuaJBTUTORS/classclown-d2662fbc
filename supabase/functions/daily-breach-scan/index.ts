@@ -61,17 +61,39 @@ const BREACH_POLICY = `A tutor breach is any action or behaviour that violates p
 4. safeguarding — Failing to maintain appropriate professional boundaries, unauthorised contact with a student, or failing to report a safeguarding concern through the correct process.
 5. discrimination_harassment — Treating anyone unfairly or harassing them because of a protected characteristic, background, identity, ability or personal circumstances.`;
 
-const MOMENT_POLICY = `A HIGH-IMPACT MOMENT is a point in the lesson where a STUDENT mentions an important academic event, result, concern, or change in circumstances — something that gives the team a reason to contact the student or parent at a relevant time. Categories:
+const MOMENT_POLICY = `A HIGH-IMPACT MOMENT is something a STUDENT (or parent) says that gives the team a concrete, time-relevant reason to contact the family. The bar is HIGH. Most lessons contain ZERO high-impact moments. Reporting nothing is the correct and expected outcome for a normal lesson.
 
-1. upcoming_assessment — Any future test, exam, mock, assessment, coursework deadline or important school event.
-2. past_assessment — A recently completed or earlier test, exam, mock, assessment or coursework, especially where the student reflects on how it went.
-3. assessment_result — Marks, scores, grades, rankings, predicted grades, teacher feedback, pass/fail outcomes.
-4. other_academic_result — Report cards, progress reports, coursework grades, school feedback, admissions decisions, changes in academic performance.
-5. support_needed — The student is struggling, falling behind, losing confidence, feeling anxious, or having difficulty with a subject or topic.
-6. positive_progress — Improved grades, increased confidence, a successful assessment, an award, positive teacher feedback, an academic goal achieved.
-7. goal_or_circumstance_change — New target grades, subject choices, applications, school changes, upcoming interviews, decisions about future education.
+QUALIFICATION TEST — a moment must pass ALL FOUR. If any one fails, do not report it:
+1. SPOKEN BY THE STUDENT OR PARENT. Not the tutor. Not inferred, implied or summarised by you.
+2. ABOUT SOMETHING OUTSIDE THIS LESSON — a school event, a result, a deadline, a decision, a change at school or home affecting their education. Anything happening inside this lesson is the tutor's job, not a moment.
+3. HAS A CONCRETE ANCHOR — a named assessment or school event, a stated date or timeframe, a grade/score/target, or a clearly stated school-level problem. No anchor means no moment.
+4. PASSES THE "WOULD WE PHONE HOME ABOUT THIS?" TEST — the recommended action must be something a human at a tutoring company would genuinely do this week.
 
-Routine lesson chatter, the tutor's own comments, and generic encouragement are NOT high-impact moments. Only report something worth a timely phone call or email.`;
+NEVER REPORT (hard exclusions, no exceptions):
+- Technical problems: connection, audio, video, screen-share, "I can't see it", "I can't write on it", logging in.
+- Not remembering, not understanding, or finding hard the topic being taught right now.
+- Running late, needing to leave early, rescheduling a single lesson, being tired.
+- Small talk: weather, holidays, food, pets, hobbies, games, TV, siblings.
+- Non-academic activities (sports clubs, cadets, scouts, part-time jobs, work promotions) UNLESS the student says it directly affects their schooling or wellbeing.
+- The student simply going to / starting / returning to school.
+- Generic encouragement, praise or motivation from anyone.
+- Anything the tutor said. Anything you had to guess at.
+
+CATEGORIES (use the tightened definitions):
+1. upcoming_assessment — A named future SCHOOL or EXAM-BOARD assessment: test, exam, mock, GCSE/A-Level/SATs/11+ paper, coursework deadline. Must be identifiable, not "we have tests sometimes".
+2. past_assessment — A specific completed school assessment the student reflects on, with enough detail to follow up.
+3. assessment_result — An actual stated mark, score, grade, ranking, predicted grade or explicit teacher verdict.
+4. other_academic_result — Report card, progress report, admissions/school-place decision, formal school feedback.
+5. support_needed — A PATTERN or SCHOOL-LEVEL problem: falling behind at school, repeated poor results, stated anxiety or loss of confidence about their education, or a wellbeing concern. NOT a single wobble on one topic in this lesson.
+6. positive_progress — A concrete, stated achievement: improved grade, award, moved up a set, met a target, explicit teacher praise.
+7. goal_or_circumstance_change — An ACTUAL decision or change: new target grade, subject options chosen, exam entry, school move, application submitted, tutoring needs changing. NOT routine life updates.
+
+SCORING — give every moment an impact_score 0-100 using this rubric, and a one-line score_reason:
+- Concreteness of the anchor (0-30): named event / real date / actual grade scores high; vague "soon", "some tests" scores near zero.
+- Time-sensitivity (0-25): acting this week clearly matters.
+- Value to the family (0-25): would the parent be glad we called about this?
+- Evidence strength (0-20): an unambiguous full sentence from the student scores high; fragments and filler score near zero.
+Be harsh. A score of 60+ means "we would genuinely contact this family about it". Score below 60 if in any doubt.`;
 
 interface Finding {
   category: string;
@@ -91,6 +113,8 @@ interface Moment {
   student_reaction: string | null;
   urgency: "low" | "medium" | "high";
   recommended_action: string | null;
+  impact_score: number;
+  score_reason: string | null;
   evidence: string[];
 }
 
