@@ -153,6 +153,17 @@ const isSubstantialQuote = (q: string) => {
   return meaningful.length >= 5 && meaningful.length / words.length >= 0.45;
 };
 
+/** Two event descriptions are "the same event" if they share meaningful words. */
+const similarEvent = (a: string | null, b: string | null): boolean => {
+  if (!a || !b) return !a && !b;
+  const ta = new Set(normalise(a).split(" ").filter((w) => w.length > 3));
+  const tb = new Set(normalise(b).split(" ").filter((w) => w.length > 3));
+  if (ta.size === 0 || tb.size === 0) return normalise(a) === normalise(b);
+  let overlap = 0;
+  for (const w of ta) if (tb.has(w)) overlap++;
+  return overlap / Math.min(ta.size, tb.size) >= 0.5;
+};
+
 
 async function analyseTranscript(
   transcript: string,
