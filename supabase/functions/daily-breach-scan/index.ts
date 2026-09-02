@@ -445,11 +445,13 @@ serve(async (req: Request) => {
           ? formatInUKTime(lesson.start_time, "EEE d MMM yyyy, HH:mm")
           : "Unknown date";
 
-        const { findings, moments, blocked: isBlocked, error } = await analyseTranscript(
+        const { findings, moments: candidates, blocked: isBlocked, error } = await analyseTranscript(
           t.transcription_text ?? "",
           tutorName,
           studentList.map((s: any) => s.name),
         );
+        // Second, cheap pass over the surviving candidates only.
+        const moments = isBlocked || error ? [] : await verifyMoments(candidates);
 
         if (isBlocked) {
           blocked = true;
