@@ -4632,10 +4632,12 @@ export type Database = {
           evidence: Json
           grade_or_target: string | null
           id: string
+          impact_score: number | null
           lesson_date: string | null
           lesson_id: string | null
           lesson_title: string | null
           recommended_action: string | null
+          score_reason: string | null
           status: string
           student_id: number | null
           student_name: string | null
@@ -4656,10 +4658,12 @@ export type Database = {
           evidence?: Json
           grade_or_target?: string | null
           id?: string
+          impact_score?: number | null
           lesson_date?: string | null
           lesson_id?: string | null
           lesson_title?: string | null
           recommended_action?: string | null
+          score_reason?: string | null
           status?: string
           student_id?: number | null
           student_name?: string | null
@@ -4680,10 +4684,12 @@ export type Database = {
           evidence?: Json
           grade_or_target?: string | null
           id?: string
+          impact_score?: number | null
           lesson_date?: string | null
           lesson_id?: string | null
           lesson_title?: string | null
           recommended_action?: string | null
+          score_reason?: string | null
           status?: string
           student_id?: number | null
           student_name?: string | null

@@ -21,6 +21,12 @@ const RECIPIENTS = [
 
 const MAX_TRANSCRIPTS_PER_RUN = 50;
 const MAX_TRANSCRIPT_CHARS = 60_000;
+/** Moments scoring below this are discarded before insert. */
+const MIN_IMPACT_SCORE = 60;
+/** Only the strongest few moments per lesson are kept. */
+const MAX_MOMENTS_PER_LESSON = 2;
+/** A moment for the same student + category is not re-reported within this window. */
+const DEDUPE_WINDOW_DAYS = 21;
 
 const MOMENT_CATEGORIES = [
   "upcoming_assessment",
@@ -61,17 +67,39 @@ const BREACH_POLICY = `A tutor breach is any action or behaviour that violates p
 4. safeguarding — Failing to maintain appropriate professional boundaries, unauthorised contact with a student, or failing to report a safeguarding concern through the correct process.
 5. discrimination_harassment — Treating anyone unfairly or harassing them because of a protected characteristic, background, identity, ability or personal circumstances.`;
 
-const MOMENT_POLICY = `A HIGH-IMPACT MOMENT is a point in the lesson where a STUDENT mentions an important academic event, result, concern, or change in circumstances — something that gives the team a reason to contact the student or parent at a relevant time. Categories:
+const MOMENT_POLICY = `A HIGH-IMPACT MOMENT is something a STUDENT (or parent) says that gives the team a concrete, time-relevant reason to contact the family. The bar is HIGH. Most lessons contain ZERO high-impact moments. Reporting nothing is the correct and expected outcome for a normal lesson.
 
-1. upcoming_assessment — Any future test, exam, mock, assessment, coursework deadline or important school event.
-2. past_assessment — A recently completed or earlier test, exam, mock, assessment or coursework, especially where the student reflects on how it went.
-3. assessment_result — Marks, scores, grades, rankings, predicted grades, teacher feedback, pass/fail outcomes.
-4. other_academic_result — Report cards, progress reports, coursework grades, school feedback, admissions decisions, changes in academic performance.
-5. support_needed — The student is struggling, falling behind, losing confidence, feeling anxious, or having difficulty with a subject or topic.
-6. positive_progress — Improved grades, increased confidence, a successful assessment, an award, positive teacher feedback, an academic goal achieved.
-7. goal_or_circumstance_change — New target grades, subject choices, applications, school changes, upcoming interviews, decisions about future education.
+QUALIFICATION TEST — a moment must pass ALL FOUR. If any one fails, do not report it:
+1. SPOKEN BY THE STUDENT OR PARENT. Not the tutor. Not inferred, implied or summarised by you.
+2. ABOUT SOMETHING OUTSIDE THIS LESSON — a school event, a result, a deadline, a decision, a change at school or home affecting their education. Anything happening inside this lesson is the tutor's job, not a moment.
+3. HAS A CONCRETE ANCHOR — a named assessment or school event, a stated date or timeframe, a grade/score/target, or a clearly stated school-level problem. No anchor means no moment.
+4. PASSES THE "WOULD WE PHONE HOME ABOUT THIS?" TEST — the recommended action must be something a human at a tutoring company would genuinely do this week.
 
-Routine lesson chatter, the tutor's own comments, and generic encouragement are NOT high-impact moments. Only report something worth a timely phone call or email.`;
+NEVER REPORT (hard exclusions, no exceptions):
+- Technical problems: connection, audio, video, screen-share, "I can't see it", "I can't write on it", logging in.
+- Not remembering, not understanding, or finding hard the topic being taught right now.
+- Running late, needing to leave early, rescheduling a single lesson, being tired.
+- Small talk: weather, holidays, food, pets, hobbies, games, TV, siblings.
+- Non-academic activities (sports clubs, cadets, scouts, part-time jobs, work promotions) UNLESS the student says it directly affects their schooling or wellbeing.
+- The student simply going to / starting / returning to school.
+- Generic encouragement, praise or motivation from anyone.
+- Anything the tutor said. Anything you had to guess at.
+
+CATEGORIES (use the tightened definitions):
+1. upcoming_assessment — A named future SCHOOL or EXAM-BOARD assessment: test, exam, mock, GCSE/A-Level/SATs/11+ paper, coursework deadline. Must be identifiable, not "we have tests sometimes".
+2. past_assessment — A specific completed school assessment the student reflects on, with enough detail to follow up.
+3. assessment_result — An actual stated mark, score, grade, ranking, predicted grade or explicit teacher verdict.
+4. other_academic_result — Report card, progress report, admissions/school-place decision, formal school feedback.
+5. support_needed — A PATTERN or SCHOOL-LEVEL problem: falling behind at school, repeated poor results, stated anxiety or loss of confidence about their education, or a wellbeing concern. NOT a single wobble on one topic in this lesson.
+6. positive_progress — A concrete, stated achievement: improved grade, award, moved up a set, met a target, explicit teacher praise.
+7. goal_or_circumstance_change — An ACTUAL decision or change: new target grade, subject options chosen, exam entry, school move, application submitted, tutoring needs changing. NOT routine life updates.
+
+SCORING — give every moment an impact_score 0-100 using this rubric, and a one-line score_reason:
+- Concreteness of the anchor (0-30): named event / real date / actual grade scores high; vague "soon", "some tests" scores near zero.
+- Time-sensitivity (0-25): acting this week clearly matters.
+- Value to the family (0-25): would the parent be glad we called about this?
+- Evidence strength (0-20): an unambiguous full sentence from the student scores high; fragments and filler score near zero.
+Be harsh. A score of 60+ means "we would genuinely contact this family about it". Score below 60 if in any doubt.`;
 
 interface Finding {
   category: string;
@@ -91,6 +119,8 @@ interface Moment {
   student_reaction: string | null;
   urgency: "low" | "medium" | "high";
   recommended_action: string | null;
+  impact_score: number;
+  score_reason: string | null;
   evidence: string[];
 }
 
@@ -101,6 +131,39 @@ const str = (v: unknown): string | null => {
 
 /** Loose containment check so evidence must actually come from the transcript. */
 const normalise = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+
+const FILLER_WORDS = new Set([
+  "yeah", "yes", "no", "ok", "okay", "um", "uh", "erm", "mm", "mmm", "hmm", "right",
+  "so", "like", "just", "well", "oh", "ah", "sorry", "thank", "thanks", "you", "i",
+  "the", "a", "and", "it", "is", "to", "of", "that", "this", "what", "yep", "nope",
+]);
+
+/** Strip transcript speaker labels so quotes read as the student's own words. */
+const tidyQuote = (q: string) =>
+  q.replace(/^[A-Z][\w'’.\- ]{0,40}:\s*/, "").replace(/\s+/g, " ").trim();
+
+/**
+ * Reject quotes that are mostly transcript filler ("Yeah. Yeah. Okay. No.")
+ * — they never constitute real evidence of a moment.
+ */
+const isSubstantialQuote = (q: string) => {
+  const words = normalise(q).split(" ").filter(Boolean);
+  if (words.length < 6) return false;
+  const meaningful = words.filter((w) => !FILLER_WORDS.has(w));
+  return meaningful.length >= 5 && meaningful.length / words.length >= 0.45;
+};
+
+/** Two event descriptions are "the same event" if they share meaningful words. */
+const similarEvent = (a: string | null, b: string | null): boolean => {
+  if (!a || !b) return !a && !b;
+  const ta = new Set(normalise(a).split(" ").filter((w) => w.length > 3));
+  const tb = new Set(normalise(b).split(" ").filter((w) => w.length > 3));
+  if (ta.size === 0 || tb.size === 0) return normalise(a) === normalise(b);
+  let overlap = 0;
+  for (const w of ta) if (tb.has(w)) overlap++;
+  return overlap / Math.min(ta.size, tb.size) >= 0.5;
+};
+
 
 async function analyseTranscript(
   transcript: string,
@@ -141,9 +204,9 @@ RULES FOR BOTH JOBS:
 Return JSON only, in this exact shape:
 {
   "findings": [{"category": "personal_information|inappropriate_communication|professional_misconduct|safeguarding|discrimination_harassment", "severity": "low|medium|high", "summary": "one or two sentences", "evidence": ["exact quote"]}],
-  "moments": [{"category": "${MOMENT_CATEGORIES.join("|")}", "student_name": string|null, "subject": string|null, "event_type": "e.g. mock exam, end-of-topic test, report card", "timeframe": "as said, e.g. 'next Tuesday', 'after half term'", "event_date": "YYYY-MM-DD or null — only if an unambiguous date is stated", "grade_or_target": string|null, "student_reaction": "short description of how the student feels about it", "urgency": "low|medium|high", "recommended_action": "one short sentence on the outreach to make", "evidence": ["exact quote"]}]
+  "moments": [{"category": "${MOMENT_CATEGORIES.join("|")}", "student_name": string|null, "subject": string|null, "event_type": "e.g. mock exam, end-of-topic test, report card", "timeframe": "as said, e.g. 'next Tuesday', 'after half term'", "event_date": "YYYY-MM-DD or null — only if an unambiguous date is stated", "grade_or_target": string|null, "student_reaction": "short description of how the student feels about it", "urgency": "low|medium|high", "recommended_action": "one short sentence on the outreach to make", "impact_score": 0-100, "score_reason": "one short line justifying the score", "evidence": ["exact quote — the student's own words, a full sentence, no filler"]}]
 }
-If there is nothing to report, return {"findings": [], "moments": []}.`,
+If there is nothing to report, return {"findings": [], "moments": []}. An empty "moments" array is a normal, expected result.`,
         },
         {
           role: "user",
@@ -210,11 +273,88 @@ ${clipped}`,
       student_reaction: str(m.student_reaction),
       urgency: ["low", "medium", "high"].includes(m.urgency) ? m.urgency : "medium",
       recommended_action: str(m.recommended_action),
-      evidence: cleanEvidence(m.evidence),
+      impact_score: Number.isFinite(Number(m.impact_score))
+        ? Math.max(0, Math.min(100, Math.round(Number(m.impact_score))))
+        : 0,
+      score_reason: str(m.score_reason),
+      evidence: cleanEvidence(m.evidence).map(tidyQuote).filter(isSubstantialQuote),
     }))
-    .filter((m: Moment) => m.evidence.length > 0);
+    // Evidence must survive the filler strip, and the score must clear the bar.
+    .filter((m: Moment) => m.evidence.length > 0 && m.impact_score >= MIN_IMPACT_SCORE)
+    // Keep only the strongest few per lesson.
+    .sort((a: Moment, b: Moment) => b.impact_score - a.impact_score)
+    .slice(0, MAX_MOMENTS_PER_LESSON);
 
   return { findings, moments };
+}
+
+/**
+ * Cheap second pass: re-check each surviving candidate against the four
+ * qualification rules. Runs on the short candidate list only, never the
+ * transcript, so the added cost is negligible.
+ */
+async function verifyMoments(moments: Moment[]): Promise<Moment[]> {
+  if (moments.length === 0) return moments;
+
+  const listed = moments
+    .map((m, i) =>
+      `${i}. category=${m.category} | event=${m.event_type ?? "?"} | when=${m.timeframe ?? "?"} | grade=${
+        m.grade_or_target ?? "?"
+      } | action=${m.recommended_action ?? "?"} | quote="${m.evidence.join(" / ")}"`
+    )
+    .join("\n");
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-5-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              `You are a strict reviewer for a UK tutoring company. For each candidate below, answer whether it passes ALL FOUR rules:
+1. Said by the student or parent, not the tutor, not inferred.
+2. About something OUTSIDE the lesson (school event, result, deadline, decision) — not about the topic being taught right now.
+3. Has a concrete anchor: a named assessment/school event, a stated date or timeframe, a grade/target, or a clearly stated school-level problem.
+4. Would a human at the company genuinely contact the family about it this week?
+
+Automatic FAIL: tech/connection issues, not understanding today's topic, small talk, hobbies or non-academic clubs/jobs, running late, simply going to school, vague quotes or quotes that are mostly filler ("yeah", "okay", "no").
+
+Return JSON only: {"keep": [indexes that pass all four]}. When in doubt, leave it out.`,
+          },
+          { role: "user", content: listed },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`[breach-scan] verify pass failed (${res.status}) — keeping candidates`);
+      return moments;
+    }
+
+    const data = await res.json();
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}");
+    } catch { /* ignore */ }
+
+    if (!Array.isArray(parsed?.keep)) return moments;
+    const keep = new Set(parsed.keep.map((n: any) => Number(n)));
+    const kept = moments.filter((_, i) => keep.has(i));
+    if (kept.length !== moments.length) {
+      console.log(`[breach-scan] verify pass dropped ${moments.length - kept.length} moment(s)`);
+    }
+    return kept;
+  } catch (err: any) {
+    console.error(`[breach-scan] verify pass error: ${err?.message ?? err} — keeping candidates`);
+    return moments;
+  }
 }
 
 const URGENCY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -316,11 +456,13 @@ serve(async (req: Request) => {
           ? formatInUKTime(lesson.start_time, "EEE d MMM yyyy, HH:mm")
           : "Unknown date";
 
-        const { findings, moments, blocked: isBlocked, error } = await analyseTranscript(
+        const { findings, moments: candidates, blocked: isBlocked, error } = await analyseTranscript(
           t.transcription_text ?? "",
           tutorName,
           studentList.map((s: any) => s.name),
         );
+        // Second, cheap pass over the surviving candidates only.
+        const moments = isBlocked || error ? [] : await verifyMoments(candidates);
 
         if (isBlocked) {
           blocked = true;
@@ -357,7 +499,7 @@ serve(async (req: Request) => {
         }
 
         if (moments.length > 0) {
-          const rows = moments.map((m) => {
+          const paired = moments.map((m) => {
             const matched = m.student_name
               ? studentList.find((s: any) =>
                 s.name.toLowerCase() === m.student_name!.toLowerCase() ||
@@ -368,40 +510,76 @@ serve(async (req: Request) => {
             const resolved = matched ?? fallback;
 
             return {
-              lesson_id: t.lesson_id,
-              transcription_id: t.id,
-              student_id: resolved?.id ?? null,
-              student_name: resolved?.name ?? m.student_name,
-              tutor_id: lesson?.tutor_id ?? null,
-              tutor_name: tutorName,
-              lesson_title: lessonTitle,
-              lesson_date: lesson?.start_time ?? null,
-              category: m.category,
-              subject: m.subject ?? lesson?.subject ?? null,
-              event_type: m.event_type,
-              timeframe: m.timeframe,
-              event_date: m.event_date,
-              grade_or_target: m.grade_or_target,
-              student_reaction: m.student_reaction,
-              urgency: m.urgency,
-              recommended_action: m.recommended_action,
-              evidence: m.evidence,
-              status: "new",
+              moment: m,
+              row: {
+                lesson_id: t.lesson_id,
+                transcription_id: t.id,
+                student_id: resolved?.id ?? null,
+                student_name: resolved?.name ?? m.student_name,
+                tutor_id: lesson?.tutor_id ?? null,
+                tutor_name: tutorName,
+                lesson_title: lessonTitle,
+                lesson_date: lesson?.start_time ?? null,
+                category: m.category,
+                subject: m.subject ?? lesson?.subject ?? null,
+                event_type: m.event_type,
+                timeframe: m.timeframe,
+                event_date: m.event_date,
+                grade_or_target: m.grade_or_target,
+                student_reaction: m.student_reaction,
+                urgency: m.urgency,
+                recommended_action: m.recommended_action,
+                impact_score: m.impact_score,
+                score_reason: m.score_reason,
+                evidence: m.evidence,
+                status: "new",
+              },
             };
           });
 
-          const { error: mErr } = await supabase.from("student_impact_moments").insert(rows);
-          if (mErr) throw mErr;
+          // Drop anything we already reported for this student recently.
+          const dedupeSince = new Date(
+            Date.now() - DEDUPE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+          ).toISOString();
+          const studentIds = [...new Set(paired.map((p) => p.row.student_id).filter(Boolean))];
+          let recent: any[] = [];
+          if (studentIds.length > 0) {
+            const { data } = await supabase
+              .from("student_impact_moments")
+              .select("student_id, category, event_type")
+              .in("student_id", studentIds as number[])
+              .gte("created_at", dedupeSince);
+            recent = data ?? [];
+          }
 
-          for (let i = 0; i < moments.length; i++) {
-            momentRows.push({
-              ...moments[i],
-              student_name: rows[i].student_name,
-              subject: rows[i].subject,
-              tutorName,
-              lessonTitle,
-              lessonDate,
-            });
+          const fresh = paired.filter((p) =>
+            !recent.some((r: any) =>
+              r.student_id === p.row.student_id &&
+              r.category === p.row.category &&
+              similarEvent(r.event_type, p.row.event_type)
+            )
+          );
+
+          if (fresh.length < paired.length) {
+            console.log(`[breach-scan] deduped ${paired.length - fresh.length} moment(s)`);
+          }
+
+          if (fresh.length > 0) {
+            const { error: mErr } = await supabase
+              .from("student_impact_moments")
+              .insert(fresh.map((p) => p.row));
+            if (mErr) throw mErr;
+
+            for (const p of fresh) {
+              momentRows.push({
+                ...p.moment,
+                student_name: p.row.student_name,
+                subject: p.row.subject,
+                tutorName,
+                lessonTitle,
+                lessonDate,
+              });
+            }
           }
         }
 
