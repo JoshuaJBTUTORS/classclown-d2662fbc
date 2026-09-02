@@ -21,6 +21,12 @@ const RECIPIENTS = [
 
 const MAX_TRANSCRIPTS_PER_RUN = 50;
 const MAX_TRANSCRIPT_CHARS = 60_000;
+/** Moments scoring below this are discarded before insert. */
+const MIN_IMPACT_SCORE = 60;
+/** Only the strongest few moments per lesson are kept. */
+const MAX_MOMENTS_PER_LESSON = 2;
+/** A moment for the same student + category is not re-reported within this window. */
+const DEDUPE_WINDOW_DAYS = 21;
 
 const MOMENT_CATEGORIES = [
   "upcoming_assessment",
