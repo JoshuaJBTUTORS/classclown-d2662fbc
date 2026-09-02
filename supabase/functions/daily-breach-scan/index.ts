@@ -234,11 +234,88 @@ ${clipped}`,
       student_reaction: str(m.student_reaction),
       urgency: ["low", "medium", "high"].includes(m.urgency) ? m.urgency : "medium",
       recommended_action: str(m.recommended_action),
-      evidence: cleanEvidence(m.evidence),
+      impact_score: Number.isFinite(Number(m.impact_score))
+        ? Math.max(0, Math.min(100, Math.round(Number(m.impact_score))))
+        : 0,
+      score_reason: str(m.score_reason),
+      evidence: cleanEvidence(m.evidence).map(tidyQuote).filter(isSubstantialQuote),
     }))
-    .filter((m: Moment) => m.evidence.length > 0);
+    // Evidence must survive the filler strip, and the score must clear the bar.
+    .filter((m: Moment) => m.evidence.length > 0 && m.impact_score >= MIN_IMPACT_SCORE)
+    // Keep only the strongest few per lesson.
+    .sort((a: Moment, b: Moment) => b.impact_score - a.impact_score)
+    .slice(0, MAX_MOMENTS_PER_LESSON);
 
   return { findings, moments };
+}
+
+/**
+ * Cheap second pass: re-check each surviving candidate against the four
+ * qualification rules. Runs on the short candidate list only, never the
+ * transcript, so the added cost is negligible.
+ */
+async function verifyMoments(moments: Moment[]): Promise<Moment[]> {
+  if (moments.length === 0) return moments;
+
+  const listed = moments
+    .map((m, i) =>
+      `${i}. category=${m.category} | event=${m.event_type ?? "?"} | when=${m.timeframe ?? "?"} | grade=${
+        m.grade_or_target ?? "?"
+      } | action=${m.recommended_action ?? "?"} | quote="${m.evidence.join(" / ")}"`
+    )
+    .join("\n");
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-5-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              `You are a strict reviewer for a UK tutoring company. For each candidate below, answer whether it passes ALL FOUR rules:
+1. Said by the student or parent, not the tutor, not inferred.
+2. About something OUTSIDE the lesson (school event, result, deadline, decision) — not about the topic being taught right now.
+3. Has a concrete anchor: a named assessment/school event, a stated date or timeframe, a grade/target, or a clearly stated school-level problem.
+4. Would a human at the company genuinely contact the family about it this week?
+
+Automatic FAIL: tech/connection issues, not understanding today's topic, small talk, hobbies or non-academic clubs/jobs, running late, simply going to school, vague quotes or quotes that are mostly filler ("yeah", "okay", "no").
+
+Return JSON only: {"keep": [indexes that pass all four]}. When in doubt, leave it out.`,
+          },
+          { role: "user", content: listed },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`[breach-scan] verify pass failed (${res.status}) — keeping candidates`);
+      return moments;
+    }
+
+    const data = await res.json();
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(data?.choices?.[0]?.message?.content ?? "{}");
+    } catch { /* ignore */ }
+
+    if (!Array.isArray(parsed?.keep)) return moments;
+    const keep = new Set(parsed.keep.map((n: any) => Number(n)));
+    const kept = moments.filter((_, i) => keep.has(i));
+    if (kept.length !== moments.length) {
+      console.log(`[breach-scan] verify pass dropped ${moments.length - kept.length} moment(s)`);
+    }
+    return kept;
+  } catch (err: any) {
+    console.error(`[breach-scan] verify pass error: ${err?.message ?? err} — keeping candidates`);
+    return moments;
+  }
 }
 
 const URGENCY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
