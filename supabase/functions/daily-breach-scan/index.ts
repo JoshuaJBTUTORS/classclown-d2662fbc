@@ -126,6 +126,28 @@ const str = (v: unknown): string | null => {
 /** Loose containment check so evidence must actually come from the transcript. */
 const normalise = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
 
+const FILLER_WORDS = new Set([
+  "yeah", "yes", "no", "ok", "okay", "um", "uh", "erm", "mm", "mmm", "hmm", "right",
+  "so", "like", "just", "well", "oh", "ah", "sorry", "thank", "thanks", "you", "i",
+  "the", "a", "and", "it", "is", "to", "of", "that", "this", "what", "yep", "nope",
+]);
+
+/** Strip transcript speaker labels so quotes read as the student's own words. */
+const tidyQuote = (q: string) =>
+  q.replace(/^[A-Z][\w'’.\- ]{0,40}:\s*/, "").replace(/\s+/g, " ").trim();
+
+/**
+ * Reject quotes that are mostly transcript filler ("Yeah. Yeah. Okay. No.")
+ * — they never constitute real evidence of a moment.
+ */
+const isSubstantialQuote = (q: string) => {
+  const words = normalise(q).split(" ").filter(Boolean);
+  if (words.length < 6) return false;
+  const meaningful = words.filter((w) => !FILLER_WORDS.has(w));
+  return meaningful.length >= 5 && meaningful.length / words.length >= 0.45;
+};
+
+
 async function analyseTranscript(
   transcript: string,
   tutorName: string,
