@@ -488,7 +488,7 @@ serve(async (req: Request) => {
         }
 
         if (moments.length > 0) {
-          const rows = moments.map((m) => {
+          const paired = moments.map((m) => {
             const matched = m.student_name
               ? studentList.find((s: any) =>
                 s.name.toLowerCase() === m.student_name!.toLowerCase() ||
@@ -499,40 +499,76 @@ serve(async (req: Request) => {
             const resolved = matched ?? fallback;
 
             return {
-              lesson_id: t.lesson_id,
-              transcription_id: t.id,
-              student_id: resolved?.id ?? null,
-              student_name: resolved?.name ?? m.student_name,
-              tutor_id: lesson?.tutor_id ?? null,
-              tutor_name: tutorName,
-              lesson_title: lessonTitle,
-              lesson_date: lesson?.start_time ?? null,
-              category: m.category,
-              subject: m.subject ?? lesson?.subject ?? null,
-              event_type: m.event_type,
-              timeframe: m.timeframe,
-              event_date: m.event_date,
-              grade_or_target: m.grade_or_target,
-              student_reaction: m.student_reaction,
-              urgency: m.urgency,
-              recommended_action: m.recommended_action,
-              evidence: m.evidence,
-              status: "new",
+              moment: m,
+              row: {
+                lesson_id: t.lesson_id,
+                transcription_id: t.id,
+                student_id: resolved?.id ?? null,
+                student_name: resolved?.name ?? m.student_name,
+                tutor_id: lesson?.tutor_id ?? null,
+                tutor_name: tutorName,
+                lesson_title: lessonTitle,
+                lesson_date: lesson?.start_time ?? null,
+                category: m.category,
+                subject: m.subject ?? lesson?.subject ?? null,
+                event_type: m.event_type,
+                timeframe: m.timeframe,
+                event_date: m.event_date,
+                grade_or_target: m.grade_or_target,
+                student_reaction: m.student_reaction,
+                urgency: m.urgency,
+                recommended_action: m.recommended_action,
+                impact_score: m.impact_score,
+                score_reason: m.score_reason,
+                evidence: m.evidence,
+                status: "new",
+              },
             };
           });
 
-          const { error: mErr } = await supabase.from("student_impact_moments").insert(rows);
-          if (mErr) throw mErr;
+          // Drop anything we already reported for this student recently.
+          const dedupeSince = new Date(
+            Date.now() - DEDUPE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+          ).toISOString();
+          const studentIds = [...new Set(paired.map((p) => p.row.student_id).filter(Boolean))];
+          let recent: any[] = [];
+          if (studentIds.length > 0) {
+            const { data } = await supabase
+              .from("student_impact_moments")
+              .select("student_id, category, event_type")
+              .in("student_id", studentIds as number[])
+              .gte("created_at", dedupeSince);
+            recent = data ?? [];
+          }
 
-          for (let i = 0; i < moments.length; i++) {
-            momentRows.push({
-              ...moments[i],
-              student_name: rows[i].student_name,
-              subject: rows[i].subject,
-              tutorName,
-              lessonTitle,
-              lessonDate,
-            });
+          const fresh = paired.filter((p) =>
+            !recent.some((r: any) =>
+              r.student_id === p.row.student_id &&
+              r.category === p.row.category &&
+              similarEvent(r.event_type, p.row.event_type)
+            )
+          );
+
+          if (fresh.length < paired.length) {
+            console.log(`[breach-scan] deduped ${paired.length - fresh.length} moment(s)`);
+          }
+
+          if (fresh.length > 0) {
+            const { error: mErr } = await supabase
+              .from("student_impact_moments")
+              .insert(fresh.map((p) => p.row));
+            if (mErr) throw mErr;
+
+            for (const p of fresh) {
+              momentRows.push({
+                ...p.moment,
+                student_name: p.row.student_name,
+                subject: p.row.subject,
+                tutorName,
+                lessonTitle,
+                lessonDate,
+              });
+            }
           }
         }
 
