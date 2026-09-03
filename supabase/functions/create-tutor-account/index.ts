@@ -10,11 +10,7 @@ const corsHeaders = {
 
 const APP_URL = "https://classclowncrm.com";
 
-function generatePassword() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  const bytes = crypto.getRandomValues(new Uint8Array(12));
-  return `Cb${Array.from(bytes).map((b) => chars[b % chars.length]).join("")}!`;
-}
+const DEFAULT_PASSWORD = "classbeyond123!";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
