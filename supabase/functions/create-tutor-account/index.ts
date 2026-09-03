@@ -107,7 +107,7 @@ serve(async (req) => {
     let created = false;
 
     if (!authUser) {
-      tempPassword = generatePassword();
+      tempPassword = DEFAULT_PASSWORD;
       const { data: newUser, error: createError } = await admin.auth.admin.createUser({
         email,
         password: tempPassword,
