@@ -6,9 +6,9 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Trash2, BookOpen, GripVertical } from 'lucide-react';
+import { Loader2, Plus, Trash2, GripVertical } from 'lucide-react';
 import OptimiseProposalPanel from '@/components/proposals/OptimiseProposalPanel';
 
 export const lessonTimeSchema = z.object({
@@ -36,7 +36,6 @@ export const proposalSchema = z.object({
   contractTerm: z.enum(['month_to_month', '3_months', '12_months', '24_months'], {
     required_error: 'Programme term is required',
   }),
-  dailyHomeworkOptIn: z.boolean().default(false),
   internalNotes: z.string().max(5000).optional().or(z.literal('')),
   lessonTimes: z.array(lessonTimeSchema).min(1, 'At least one lesson time is required'),
 });
@@ -490,41 +489,6 @@ export default function ProposalForm({
 
           <section className={sectionClass}>
             <h2 className={sectionTitle}>Options &amp; notes</h2>
-
-            {/* Daily Homework Practice Option */}
-            <div className="rounded-[1.25rem] bg-background/70 p-4">
-              <FormField
-                control={form.control}
-                name="dailyHomeworkOptIn"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        className="mt-1 h-5 w-5 rounded-md border-2 border-foreground"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <FormLabel className="flex cursor-pointer items-center gap-2 text-base font-semibold">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pastel-butter">
-                            <BookOpen className="h-4 w-4 text-foreground" />
-                          </span>
-                          Include Daily Homework Practice
-                        </FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Daily homework assignments across all subjects
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-pastel-mint px-3 py-1 text-sm font-semibold tabular-nums text-foreground">
-                        £12.99/mo
-                      </span>
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </div>
 
             {/* Internal notes */}
             <FormField

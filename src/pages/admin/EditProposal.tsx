@@ -73,7 +73,6 @@ export default function EditProposal() {
         contractTerm:
           ((proposal as any).contract_term as 'month_to_month' | '3_months' | '12_months' | '24_months') || 'month_to_month',
         programmeStartDate: ((proposal as any).programme_start_date as string) || '',
-        dailyHomeworkOptIn: Boolean((proposal as any).daily_homework_opt_in),
         internalNotes: (proposal as any).internal_notes || '',
         lessonTimes: parsedLessonTimes,
       });
@@ -94,7 +93,6 @@ export default function EditProposal() {
     proposalId,
     ...data,
     recipientPhone: data.recipientPhone || null,
-    dailyHomeworkOptIn: data.dailyHomeworkOptIn,
     programmeStartDate: data.programmeStartDate || null,
     internalNotes: data.internalNotes?.trim() || null,
     pricePerLesson: headlinePriceOf(validTimes),

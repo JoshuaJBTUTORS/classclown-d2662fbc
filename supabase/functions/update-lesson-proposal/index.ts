@@ -6,7 +6,6 @@ interface UpdateProposalRequest {
   recipientName: string;
   recipientEmail: string;
   recipientPhone?: string;
-  dailyHomeworkOptIn?: boolean;
   internalNotes?: string | null;
   lessonType: string;
   subject: string;
@@ -96,7 +95,6 @@ const handler = async (req: Request): Promise<Response> => {
       pricePerLesson,
       paymentCycle,
       lessonTimes,
-      dailyHomeworkOptIn,
       internalNotes,
       contractTerm,
       programmeStartDate,
@@ -145,7 +143,6 @@ const handler = async (req: Request): Promise<Response> => {
         ...(contractTerm ? { contract_term: contractTerm } : {}),
         ...(programmeStartDate !== undefined ? { programme_start_date: programmeStartDate || null } : {}),
         lesson_times: lessonTimes,
-        daily_homework_opt_in: dailyHomeworkOptIn ?? false,
         ...(internalNotes !== undefined ? { internal_notes: internalNotes || null } : {}),
         updated_at: new Date().toISOString(),
       })

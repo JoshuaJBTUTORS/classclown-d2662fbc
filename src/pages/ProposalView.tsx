@@ -18,7 +18,6 @@ interface Proposal {
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
   created_at: string;
-  daily_homework_opt_in: boolean;
   agreed_at?: string | null;
 }
 
@@ -28,7 +27,6 @@ export default function ProposalView() {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<'view' | 'agreement' | 'payment'>('view');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [homeworkDismissed, setHomeworkDismissed] = useState(false);
 
   useEffect(() => {
     loadProposal();
