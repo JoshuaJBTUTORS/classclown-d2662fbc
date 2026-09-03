@@ -3115,6 +3115,7 @@ export type Database = {
           parent_id: string | null
           payment_cycle: string
           price_per_lesson: number
+          programme_start_date: string | null
           recipient_email: string
           recipient_name: string
           recipient_phone: string | null
@@ -3144,6 +3145,7 @@ export type Database = {
           parent_id?: string | null
           payment_cycle: string
           price_per_lesson: number
+          programme_start_date?: string | null
           recipient_email: string
           recipient_name: string
           recipient_phone?: string | null
@@ -3173,6 +3175,7 @@ export type Database = {
           parent_id?: string | null
           payment_cycle?: string
           price_per_lesson?: number
+          programme_start_date?: string | null
           recipient_email?: string
           recipient_name?: string
           recipient_phone?: string | null
