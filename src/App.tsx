@@ -73,6 +73,7 @@ import ReviewRoom from './pages/ReviewRoom';
 import TutorContentPage from './pages/tutor/TutorContentPage';
 import KeyContacts from './pages/tutor/KeyContacts';
 import ProposalView from './pages/ProposalView';
+import ProposalLinkExpired from './pages/ProposalLinkExpired';
 import UpdateCardDetails from './pages/UpdateCardDetails';
 import ProposalBuilder from './pages/ProposalBuilder';
 import ProposalDashboard from './pages/admin/ProposalDashboard';
@@ -143,6 +144,9 @@ function App() {
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 <Route path="/p/:proposalId/:token" element={<ProposalView />} />
+                {/* Legacy/incorrect proposal links sent in older reminder emails */}
+                <Route path="/proposals/:proposalId" element={<ProposalLinkExpired />} />
+                <Route path="/proposals/:proposalId/*" element={<ProposalLinkExpired />} />
                 <Route path="/offer/:offerId/:token" element={<OfferView />} />
                 <Route path="/o/:offerId/:token" element={<OfferView />} />
                 <Route path="/update-card" element={<UpdateCardDetails />} />

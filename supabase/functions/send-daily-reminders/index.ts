@@ -47,7 +47,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const proposal of proposals || []) {
       try {
-        const proposalUrl = `https://classclowncrm.com/proposals/${proposal.id}`;
+        if (!proposal.access_token) {
+          console.warn(`Skipping proposal ${proposal.id}: no access token, cannot build a public link`);
+          results.errors.push(`Skipped ${proposal.id}: missing access token`);
+          continue;
+        }
+        const proposalUrl = `https://classclowncrm.com/proposal/${proposal.id}/${proposal.access_token}`;
         const isAgreedStatus = proposal.status === 'agreed';
 
         // Send Email Reminder
