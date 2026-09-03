@@ -488,7 +488,7 @@ export default function ProposalForm({
           </section>
 
           <section className={sectionClass}>
-            <h2 className={sectionTitle}>Options &amp; notes</h2>
+            
 
             {/* Internal notes */}
             <FormField
