@@ -6,9 +6,9 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Trash2, BookOpen, GripVertical } from 'lucide-react';
+import { Loader2, Plus, Trash2, GripVertical } from 'lucide-react';
 import OptimiseProposalPanel from '@/components/proposals/OptimiseProposalPanel';
 
 export const lessonTimeSchema = z.object({
