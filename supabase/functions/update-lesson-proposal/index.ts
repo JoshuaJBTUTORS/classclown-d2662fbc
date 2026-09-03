@@ -145,7 +145,6 @@ const handler = async (req: Request): Promise<Response> => {
         ...(contractTerm ? { contract_term: contractTerm } : {}),
         ...(programmeStartDate !== undefined ? { programme_start_date: programmeStartDate || null } : {}),
         lesson_times: lessonTimes,
-        daily_homework_opt_in: dailyHomeworkOptIn ?? false,
         ...(internalNotes !== undefined ? { internal_notes: internalNotes || null } : {}),
         updated_at: new Date().toISOString(),
       })
