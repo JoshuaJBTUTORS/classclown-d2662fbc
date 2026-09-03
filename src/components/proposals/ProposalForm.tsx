@@ -305,14 +305,29 @@ export default function ProposalForm({
 
               <FormField
                 control={form.control}
+                name="programmeStartDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Programme Start Date</FormLabel>
+                    <FormControl>
+                      <Input className={controlClass} type="date" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="contractTerm"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className={labelClass}>Contract Term</FormLabel>
+                    <FormLabel className={labelClass}>Programme Term</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className={controlClass}>
-                          <SelectValue placeholder="Select contract term" />
+                          <SelectValue placeholder="Select programme term" />
+
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className={menuClass}>
