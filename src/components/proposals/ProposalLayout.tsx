@@ -651,10 +651,6 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 and auto-renews at the end. During the term you cannot reduce the number of sessions or downgrade — upgrades are always welcome. To cancel or downgrade at renewal, give us at least 30 days' written notice before the term end date.
               </p>
               <p>
-                <strong className="text-foreground">Payment.</strong> Lessons are billed every 4 weeks in advance
-                via secure card payment. You'll receive a receipt for every charge.
-              </p>
-              <p>
                 <strong className="text-foreground">Teacher allocation.</strong> Class Beyond Academy assigns teachers based on
                 subject expertise, availability and student needs. We aim to provide consistency of teaching wherever
                 possible; however, the programme is provided by Class Beyond Academy and does not guarantee lessons with
