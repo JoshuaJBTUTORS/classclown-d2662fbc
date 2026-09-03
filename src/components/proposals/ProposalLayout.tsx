@@ -38,6 +38,7 @@ interface Proposal {
   price_per_lesson: number;
   payment_cycle: string;
   contract_term?: 'month_to_month' | '3_months' | '12_months' | '24_months' | null;
+  programme_start_date?: string | null;
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
   created_at: string;
@@ -108,6 +109,22 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const shortRef = `CB-${proposal.id.slice(0, 8).toUpperCase()}`;
+  const programmeStartStr = proposal.programme_start_date
+    ? new Date(`${proposal.programme_start_date}T00:00:00`).toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
+  const termLabel =
+    proposal.contract_term === '24_months'
+      ? '24 months'
+      : proposal.contract_term === '12_months'
+      ? '12 months'
+      : proposal.contract_term === 'month_to_month'
+      ? '1 month'
+      : '3 months';
   const signedDateStr = signedAt
     ? new Date(signedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
@@ -349,6 +366,31 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             </div>
 
 
+            {/* Programme start date & term */}
+            <div className="grid gap-6 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6 md:grid-cols-2 md:p-8">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Programme start date</p>
+                <p className="mt-2 font-heading text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+                  {programmeStartStr ?? 'To be confirmed'}
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  Your programme will begin on this date, and lessons scheduled from this date will form part of your
+                  programme unless an alternative start date has been agreed by Class Beyond Academy in writing
+                  beforehand.
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Programme term</p>
+                <p className="mt-2 font-heading text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+                  {termLabel}
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  This agreement is for a minimum term of {termLabel}, beginning on the programme start date stated
+                  above.
+                </p>
+              </div>
+            </div>
+
             {/* Video */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-primary">
@@ -421,6 +463,9 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               Lesson type: <span className="font-medium text-foreground">{proposal.lesson_type}</span>
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Lesson times may occasionally be adjusted by mutual agreement or where operationally necessary.
             </p>
           </Section>
 
@@ -606,8 +651,42 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 and auto-renews at the end. During the term you cannot reduce the number of sessions or downgrade — upgrades are always welcome. To cancel or downgrade at renewal, give us at least 30 days' written notice before the term end date.
               </p>
               <p>
-                <strong className="text-foreground">Payment.</strong> Lessons are billed every 4 weeks in advance
-                via secure card payment. You'll receive a receipt for every charge.
+                <strong className="text-foreground">Teacher allocation.</strong> Class Beyond Academy assigns teachers based on
+                subject expertise, availability and student needs. We aim to provide consistency of teaching wherever
+                possible; however, the programme is provided by Class Beyond Academy and does not guarantee lessons with
+                any particular individual teacher. Where a teacher is unavailable due to illness, absence or other
+                circumstances, Class Beyond Academy may provide another suitable teacher or reschedule the lesson.
+              </p>
+              <p>
+                <strong className="text-foreground">Payment.</strong> No payment is required before the programme begins. Your
+                first payment will be collected following your child's first scheduled lesson. The programme itself
+                nevertheless begins on the programme start date shown above.
+              </p>
+              <p>
+                <strong className="text-foreground">Missed lessons / no-shows.</strong> A scheduled lesson that the student does
+                not attend will still count as a delivered programme session unless it has been cancelled or rearranged
+                in accordance with our cancellation policy. We require at least 24 hours' notice to cancel or rearrange a
+                lesson. Lessons missed with less than 24 hours' notice may be charged and may not be rescheduled.
+              </p>
+              <p>
+                <strong className="text-foreground">Class Beyond Academy cancellations.</strong> If Class Beyond Academy is
+                unable to provide a scheduled lesson and cannot provide a suitable alternative teacher, the lesson will be
+                rearranged and will not be treated as a student absence.
+              </p>
+              <p>
+                <strong className="text-foreground">Substitute teachers.</strong> On occasion, another member of our teaching
+                team may deliver a lesson due to teacher illness, annual leave, scheduling requirements or other
+                unforeseen circumstances. The use of a substitute teacher does not constitute cancellation of the
+                programme.
+              </p>
+              <p>
+                <strong className="text-foreground">Changing your start date.</strong> Requests to delay or change the programme
+                start date must be agreed with Class Beyond Academy in writing before the scheduled start date. A
+                requested change is not confirmed until acknowledged by us in writing.
+              </p>
+              <p>
+                <strong className="text-foreground">Parent / guardian responsibility.</strong> Parents/guardians are responsible
+                for ensuring that the student is available and able to access lessons at the scheduled time.
               </p>
               <p>
                 <strong className="text-foreground">Data.</strong> We hold pupil and parent data in line with UK GDPR and only

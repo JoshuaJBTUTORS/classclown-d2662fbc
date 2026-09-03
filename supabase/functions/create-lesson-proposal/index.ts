@@ -19,6 +19,7 @@ interface ProposalRequest {
   pricePerLesson: number;
   paymentCycle: string;
   contractTerm?: 'month_to_month' | '3_months' | '12_months' | '24_months';
+  programmeStartDate?: string | null;
   lessonTimes: Array<{
     day: string;
     time: string;
@@ -110,6 +111,7 @@ const handler = async (req: Request): Promise<Response> => {
         price_per_lesson: proposalData.pricePerLesson,
         payment_cycle: proposalData.paymentCycle,
         contract_term: proposalData.contractTerm || 'month_to_month',
+        programme_start_date: proposalData.programmeStartDate || null,
         lesson_times: proposalData.lessonTimes,
         daily_homework_opt_in: proposalData.dailyHomeworkOptIn || false,
         internal_notes: proposalData.internalNotes || null,

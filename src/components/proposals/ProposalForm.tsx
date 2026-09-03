@@ -32,8 +32,9 @@ export const proposalSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   pricePerLesson: z.number().min(0).optional(),
   paymentCycle: z.string().min(1, 'Payment cycle is required'),
+  programmeStartDate: z.string().min(1, 'Programme start date is required'),
   contractTerm: z.enum(['month_to_month', '3_months', '12_months', '24_months'], {
-    required_error: 'Contract term is required',
+    required_error: 'Programme term is required',
   }),
   dailyHomeworkOptIn: z.boolean().default(false),
   internalNotes: z.string().max(5000).optional().or(z.literal('')),
@@ -304,14 +305,29 @@ export default function ProposalForm({
 
               <FormField
                 control={form.control}
+                name="programmeStartDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={labelClass}>Programme Start Date</FormLabel>
+                    <FormControl>
+                      <Input className={controlClass} type="date" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="contractTerm"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className={labelClass}>Contract Term</FormLabel>
+                    <FormLabel className={labelClass}>Programme Term</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className={controlClass}>
-                          <SelectValue placeholder="Select contract term" />
+                          <SelectValue placeholder="Select programme term" />
+
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className={menuClass}>
