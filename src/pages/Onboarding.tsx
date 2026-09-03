@@ -169,7 +169,7 @@ const Onboarding: React.FC = () => {
     setLoadingProposals(true);
     const { data, error } = await supabase
       .from('lesson_proposals')
-      .select('id, recipient_name, recipient_email, recipient_phone, completed_at, subject, lesson_type, lesson_times, price_per_lesson, payment_cycle, contract_term')
+      .select('id, recipient_name, recipient_email, recipient_phone, completed_at, subject, lesson_type, lesson_times, price_per_lesson, payment_cycle, contract_term, internal_notes')
       .eq('status', 'completed')
       .order('completed_at', { ascending: false })
       .limit(200);
