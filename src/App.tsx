@@ -143,6 +143,9 @@ function App() {
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/proposal/:proposalId/:token" element={<ProposalView />} />
                 <Route path="/p/:proposalId/:token" element={<ProposalView />} />
+                {/* Legacy/incorrect proposal links sent in older reminder emails */}
+                <Route path="/proposals/:proposalId" element={<ProposalLinkExpired />} />
+                <Route path="/proposals/:proposalId/*" element={<ProposalLinkExpired />} />
                 <Route path="/offer/:offerId/:token" element={<OfferView />} />
                 <Route path="/o/:offerId/:token" element={<OfferView />} />
                 <Route path="/update-card" element={<UpdateCardDetails />} />
