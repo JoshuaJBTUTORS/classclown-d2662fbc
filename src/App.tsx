@@ -73,6 +73,7 @@ import ReviewRoom from './pages/ReviewRoom';
 import TutorContentPage from './pages/tutor/TutorContentPage';
 import KeyContacts from './pages/tutor/KeyContacts';
 import ProposalView from './pages/ProposalView';
+import ProposalLinkExpired from './pages/ProposalLinkExpired';
 import UpdateCardDetails from './pages/UpdateCardDetails';
 import ProposalBuilder from './pages/ProposalBuilder';
 import ProposalDashboard from './pages/admin/ProposalDashboard';
