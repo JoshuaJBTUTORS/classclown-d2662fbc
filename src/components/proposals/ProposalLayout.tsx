@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Check, Mail, Phone, Printer, PlayCircle, BookOpen, Clock, Menu, ChevronDown } from 'lucide-react';
+import { Check, Mail, Phone, Printer, PlayCircle, Clock, Menu, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import jbLogo from '@/assets/jb-tutors-logo.png';
@@ -43,7 +43,7 @@ interface Proposal {
   status: string;
   created_at: string;
   discount_deadline?: string | null;
-  daily_homework_opt_in: boolean;
+  
   agreed_at?: string | null;
 }
 
@@ -60,7 +60,7 @@ interface Props {
 export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, signed = false, signedAt = null, onContinuePayment, showPaymentBanner = false }: Props) {
 
   const [active, setActive] = useState('overview');
-  const [homeworkDismissed, setHomeworkDismissed] = useState(false);
+  
 
   // Discount countdown: explicit deadline if set, otherwise 24h from creation
   const deadline = useMemo(() => resolveDiscountDeadline(proposal), [proposal.created_at, proposal.discount_deadline]);
@@ -568,59 +568,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 );
               })()}
 
-
-
-
-              {proposal.daily_homework_opt_in && (
-                <div className="mt-6 flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
-                  <Check className="h-4 w-4 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Daily Homework Practice included</p>
-                    <p className="text-xs text-muted-foreground">£12.99 / month add-on</p>
-                  </div>
-                </div>
-              )}
             </div>
-
-            {!proposal.daily_homework_opt_in && !homeworkDismissed && !signed && (
-              <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-full bg-primary/10 p-3">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-heading font-semibold">Add Daily Homework Practice</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Daily assignments across all subjects to lock in progress between lessons.
-                    </p>
-                  </div>
-                  <span className="whitespace-nowrap font-heading text-lg font-bold text-primary">£12.99/mo</span>
-                </div>
-                <div className="mt-4 flex justify-end gap-3">
-                  <Button variant="ghost" size="sm" onClick={() => setHomeworkDismissed(true)}>
-                    No thanks
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      const { error } = await supabase
-                        .from('lesson_proposals')
-                        .update({ daily_homework_opt_in: true } as any)
-                        .eq('id', proposal.id);
-                      if (!error) {
-                        onProposalUpdate({ ...proposal, daily_homework_opt_in: true });
-                        toast({ title: 'Added', description: 'Daily homework practice added to your proposal.' });
-                      }
-                    }}
-                  >
-                    Yes, add it
-                  </Button>
-                </div>
-              </div>
-            )}
-            {signed && !proposal.daily_homework_opt_in && (
-              <p className="mt-4 text-sm text-muted-foreground">Daily Homework Practice: not included.</p>
-            )}
 
           </Section>
 
