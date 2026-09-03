@@ -12,7 +12,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, Mail, Plus, RefreshCw, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SendOfferDialog from '@/components/tutors/SendOfferDialog';
 import LoadingHand from '@/components/ui/loading-hand';
@@ -51,6 +51,7 @@ export default function SentOffers() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [creatingId, setCreatingId] = useState<string | null>(null);
   const [sendOpen, setSendOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -120,6 +121,29 @@ export default function SentOffers() {
       toast({ title: 'Failed to resend', description: e.message, variant: 'destructive' });
     } finally {
       setResendingId(null);
+    }
+  };
+
+  const createAccount = async (o: OfferRow) => {
+    if (!window.confirm(`Create a tutor account for ${o.recipient_name} (${o.recipient_email})?`)) return;
+    setCreatingId(o.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-tutor-account', {
+        body: { offerId: o.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: data?.created ? 'Tutor account created' : 'Tutor linked',
+        description: data?.created
+          ? `Login details ${data?.emailed ? 'emailed to' : 'created for'} ${o.recipient_email}${data?.tempPassword && !data?.emailed ? ` — temp password: ${data.tempPassword}` : ''}`
+          : data?.message,
+      });
+      load();
+    } catch (e: any) {
+      toast({ title: 'Failed to create account', description: e.message, variant: 'destructive' });
+    } finally {
+      setCreatingId(null);
     }
   };
 
@@ -225,6 +249,18 @@ export default function SentOffers() {
                         <a href={offerUrl(o)} target="_blank" rel="noreferrer">
                           <ExternalLink className="h-4 w-4" />
                         </a>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => createAccount(o)}
+                        disabled={creatingId === o.id}
+                        title={o.tutor_id ? 'Tutor account linked — click to re-sync' : 'Create tutor account'}
+                        className={o.tutor_id ? 'text-green-600' : ''}
+                      >
+                        {creatingId === o.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <UserPlus className="h-4 w-4" />}
                       </Button>
                       {o.status !== 'signed' && (
                         <Button
