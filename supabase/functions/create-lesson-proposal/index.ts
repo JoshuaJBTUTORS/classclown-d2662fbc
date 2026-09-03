@@ -12,7 +12,6 @@ interface ProposalRequest {
   recipientPhone?: string;
   studentId?: number;
   parentId?: string;
-  dailyHomeworkOptIn?: boolean;
   internalNotes?: string | null;
   lessonType: string;
   subject: string;
