@@ -27,6 +27,7 @@ export default function ProposalBuilder() {
         pricePerLesson?: number;
         paymentCycle?: string;
         contractTerm?: 'month_to_month' | '3_months' | '12_months' | '24_months';
+        programmeStartDate?: string;
         lessonTimes?: Array<{ day: string; time: string; duration: number; subject: string; price?: number }>;
       }
     | undefined;
@@ -46,6 +47,7 @@ export default function ProposalBuilder() {
     pricePerLesson: defaultPrice,
     paymentCycle: prefill?.paymentCycle || '',
     contractTerm: prefill?.contractTerm || 'month_to_month',
+    programmeStartDate: prefill?.programmeStartDate || '',
     dailyHomeworkOptIn: false,
     internalNotes: '',
     lessonTimes: prefilledTimes,
@@ -59,6 +61,7 @@ export default function ProposalBuilder() {
           ...data,
           recipientPhone: data.recipientPhone || null,
           dailyHomeworkOptIn: data.dailyHomeworkOptIn,
+          programmeStartDate: data.programmeStartDate || null,
           internalNotes: data.internalNotes?.trim() || null,
           pricePerLesson: headlinePriceOf(validTimes),
           lessonTimes: validTimes,
