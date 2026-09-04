@@ -117,40 +117,55 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto pr-1">
-          {/* Lesson Details */}
+          {/* Topic request */}
           <div className="space-y-3 rounded-[1.25rem] border border-foreground/15 bg-card p-4">
-            <div>
-              <h3 className="font-heading text-lg font-semibold">{lesson.title}</h3>
-              {lesson.description && (
-                <p className="text-sm text-muted-foreground">{lesson.description}</p>
-              )}
+            <h3 className="font-heading text-base font-semibold">
+              Is there anything specific you'd like covered in this session?
+            </h3>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={() => setHasRequest(true)}
+                disabled={hasAccepted}
+                className={`rounded-full px-6 ${
+                  hasRequest === true
+                    ? 'bg-foreground text-background hover:bg-foreground/90'
+                    : 'border border-foreground bg-transparent text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                Yes
+              </Button>
+              <Button
+                type="button"
+                onClick={() => { setHasRequest(false); setTopicRequest(''); }}
+                disabled={hasAccepted}
+                className={`rounded-full px-6 ${
+                  hasRequest === false
+                    ? 'bg-foreground text-background hover:bg-foreground/90'
+                    : 'border border-foreground bg-transparent text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                No
+              </Button>
             </div>
 
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                <DoodleClock className="h-4 w-4" />
-              </span>
-              <span>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}</span>
-            </div>
+            {hasRequest === true && (
+              <Textarea
+                value={topicRequest}
+                onChange={(e) => setTopicRequest(e.target.value.slice(0, 500))}
+                disabled={hasAccepted}
+                placeholder="Tell your teacher what you'd like to focus on..."
+                className="min-h-[90px] rounded-[1rem] border-foreground/20"
+              />
+            )}
 
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                <DoodlePerson className="h-4 w-4" />
-              </span>
-              <span>
-                Teacher: {lesson.tutor?.first_name} {lesson.tutor?.last_name}
-              </span>
-            </div>
-
-            {lesson.is_group && (
-              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                  <DoodlePeople className="h-4 w-4" />
-                </span>
-                <span>Group lesson • {lesson.lesson_students?.length || 0} students</span>
-              </div>
+            {hasRequest === null && (
+              <p className="text-xs text-muted-foreground">
+                Please choose Yes or No before joining.
+              </p>
             )}
           </div>
+
 
           {/* Camera Rules */}
           <div className="rounded-[1.25rem] border border-foreground/15 bg-pastel-blush/30 p-4">
