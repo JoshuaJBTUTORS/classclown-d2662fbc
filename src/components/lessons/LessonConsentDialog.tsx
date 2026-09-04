@@ -2,14 +2,16 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Camera, Mic } from 'lucide-react';
-import { DoodleVideo, DoodleClock, DoodlePerson, DoodlePeople, DoodleAlert, DoodleSparkle } from '@/components/calendar/LessonDoodles';
-import { format, parseISO } from 'date-fns';
+import { DoodleVideo, DoodleAlert, DoodleSparkle } from '@/components/calendar/LessonDoodles';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LessonConsentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onAccept: () => void;
+  lessonId?: string;
   lesson: {
     title: string;
     description?: string;
@@ -29,16 +31,74 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   onClose,
   onAccept,
   lesson,
+  lessonId,
   studentName
 }) => {
   const [hasAccepted, setHasAccepted] = useState(false);
+  const [hasRequest, setHasRequest] = useState<boolean | null>(null);
+  const [topicRequest, setTopicRequest] = useState('');
 
-  const handleAcceptClick = () => {
+  const canContinue =
+    hasRequest === false || (hasRequest === true && topicRequest.trim().length > 0);
+
+  const saveTopicRequest = async () => {
+    const text = topicRequest.trim().slice(0, 500);
+    if (!lessonId || !text) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) return;
+
+      const { data: student } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (student) {
+        await supabase.from('topic_requests').insert({
+          lesson_id: lessonId,
+          student_id: student.id,
+          requested_topic: text,
+        });
+        return;
+      }
+
+      const { data: parent } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (parent) {
+        const { data: rows } = await supabase
+          .from('lesson_students')
+          .select('student:students(id, parent_id)')
+          .eq('lesson_id', lessonId);
+        const child = (rows ?? []).find((r: any) => r.student?.parent_id === parent.id);
+        await supabase.from('topic_requests').insert({
+          lesson_id: lessonId,
+          parent_id: parent.id,
+          student_id: child?.student?.id ?? null,
+          requested_topic: text,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to save topic request:', e);
+    }
+  };
+
+  const handleAcceptClick = async () => {
+    if (!canContinue) return;
     setHasAccepted(true);
+    if (hasRequest) {
+      await saveTopicRequest();
+    }
     setTimeout(() => {
       onAccept();
-    }, 500);
+    }, 300);
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
