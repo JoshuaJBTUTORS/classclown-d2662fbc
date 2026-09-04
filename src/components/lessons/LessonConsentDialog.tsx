@@ -220,8 +220,8 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
           </Button>
           <Button
             onClick={handleAcceptClick}
-            disabled={hasAccepted}
-            className="min-w-[180px] rounded-full bg-foreground text-background hover:bg-foreground/90"
+            disabled={hasAccepted || !canContinue}
+            className="min-w-[180px] rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
           >
             {hasAccepted ? (
               <span className="flex items-center gap-2">
