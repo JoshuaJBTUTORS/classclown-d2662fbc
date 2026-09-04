@@ -297,6 +297,7 @@ const VideoConferenceLink: React.FC<VideoConferenceLinkProps> = ({
           onClose={handleConsentClose}
           onAccept={handleConsentAccept}
           lesson={lessonData}
+          lessonId={lessonId}
           studentName={studentName}
         />
       )}
