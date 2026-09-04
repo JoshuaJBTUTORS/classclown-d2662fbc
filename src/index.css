@@ -1658,6 +1658,19 @@
   animation: textarea-glow 2.5s ease-in-out infinite;
 }
 
+@keyframes pulse-soft {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.03);
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.8s ease-in-out infinite;
+}
+
 /* Pastel Multiple Choice Option Classes */
 .option-a {
   padding: 16px !important;
