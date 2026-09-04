@@ -118,10 +118,26 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
 
         <div className="flex-1 space-y-4 overflow-y-auto pr-1">
           {/* Topic request */}
-          <div className="space-y-3 rounded-[1.25rem] border border-foreground/15 bg-card p-4">
-            <h3 className="font-heading text-base font-semibold">
-              Is there anything specific you'd like covered in this session?
-            </h3>
+          <div
+            className={`relative space-y-3 rounded-[1.25rem] border-2 bg-card p-4 transition-all ${
+              hasRequest === null
+                ? 'border-foreground/60 animate-pulse-soft'
+                : 'border-foreground/15'
+            }`}
+          >
+            {hasRequest === null && (
+              <span className="absolute -top-3 left-4 rounded-full bg-foreground px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-background">
+                Required to join
+              </span>
+            )}
+            <div className="space-y-1.5">
+              <h3 className="font-heading text-base font-semibold">
+                Is there anything specific you'd like covered in this session?
+              </h3>
+              <p className="text-sm text-foreground/70">
+                Your tutor has a lesson plan ready, but would love to prioritise anything you're struggling with.
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button
                 type="button"
