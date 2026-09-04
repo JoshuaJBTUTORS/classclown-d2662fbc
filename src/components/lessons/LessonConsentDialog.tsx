@@ -2,14 +2,16 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Camera, Mic } from 'lucide-react';
-import { DoodleVideo, DoodleClock, DoodlePerson, DoodlePeople, DoodleAlert, DoodleSparkle } from '@/components/calendar/LessonDoodles';
-import { format, parseISO } from 'date-fns';
+import { DoodleVideo, DoodleAlert, DoodleSparkle } from '@/components/calendar/LessonDoodles';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LessonConsentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onAccept: () => void;
+  lessonId?: string;
   lesson: {
     title: string;
     description?: string;
@@ -29,16 +31,74 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   onClose,
   onAccept,
   lesson,
+  lessonId,
   studentName
 }) => {
   const [hasAccepted, setHasAccepted] = useState(false);
+  const [hasRequest, setHasRequest] = useState<boolean | null>(null);
+  const [topicRequest, setTopicRequest] = useState('');
 
-  const handleAcceptClick = () => {
+  const canContinue =
+    hasRequest === false || (hasRequest === true && topicRequest.trim().length > 0);
+
+  const saveTopicRequest = async () => {
+    const text = topicRequest.trim().slice(0, 500);
+    if (!lessonId || !text) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) return;
+
+      const { data: student } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (student) {
+        await supabase.from('topic_requests').insert({
+          lesson_id: lessonId,
+          student_id: student.id,
+          requested_topic: text,
+        });
+        return;
+      }
+
+      const { data: parent } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (parent) {
+        const { data: rows } = await supabase
+          .from('lesson_students')
+          .select('student:students(id, parent_id)')
+          .eq('lesson_id', lessonId);
+        const child = (rows ?? []).find((r: any) => r.student?.parent_id === parent.id);
+        await supabase.from('topic_requests').insert({
+          lesson_id: lessonId,
+          parent_id: parent.id,
+          student_id: child?.student?.id ?? null,
+          requested_topic: text,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to save topic request:', e);
+    }
+  };
+
+  const handleAcceptClick = async () => {
+    if (!canContinue) return;
     setHasAccepted(true);
+    if (hasRequest) {
+      await saveTopicRequest();
+    }
     setTimeout(() => {
       onAccept();
-    }, 500);
+    }, 300);
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -57,40 +117,55 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto pr-1">
-          {/* Lesson Details */}
+          {/* Topic request */}
           <div className="space-y-3 rounded-[1.25rem] border border-foreground/15 bg-card p-4">
-            <div>
-              <h3 className="font-heading text-lg font-semibold">{lesson.title}</h3>
-              {lesson.description && (
-                <p className="text-sm text-muted-foreground">{lesson.description}</p>
-              )}
+            <h3 className="font-heading text-base font-semibold">
+              Is there anything specific you'd like covered in this session?
+            </h3>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={() => setHasRequest(true)}
+                disabled={hasAccepted}
+                className={`rounded-full px-6 ${
+                  hasRequest === true
+                    ? 'bg-foreground text-background hover:bg-foreground/90'
+                    : 'border border-foreground bg-transparent text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                Yes
+              </Button>
+              <Button
+                type="button"
+                onClick={() => { setHasRequest(false); setTopicRequest(''); }}
+                disabled={hasAccepted}
+                className={`rounded-full px-6 ${
+                  hasRequest === false
+                    ? 'bg-foreground text-background hover:bg-foreground/90'
+                    : 'border border-foreground bg-transparent text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                No
+              </Button>
             </div>
 
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                <DoodleClock className="h-4 w-4" />
-              </span>
-              <span>{format(parseISO(lesson.start_time), 'MMM d, yyyy h:mm a')}</span>
-            </div>
+            {hasRequest === true && (
+              <Textarea
+                value={topicRequest}
+                onChange={(e) => setTopicRequest(e.target.value.slice(0, 500))}
+                disabled={hasAccepted}
+                placeholder="Tell your teacher what you'd like to focus on..."
+                className="min-h-[90px] rounded-[1rem] border-foreground/20"
+              />
+            )}
 
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                <DoodlePerson className="h-4 w-4" />
-              </span>
-              <span>
-                Teacher: {lesson.tutor?.first_name} {lesson.tutor?.last_name}
-              </span>
-            </div>
-
-            {lesson.is_group && (
-              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-foreground/70 text-foreground">
-                  <DoodlePeople className="h-4 w-4" />
-                </span>
-                <span>Group lesson • {lesson.lesson_students?.length || 0} students</span>
-              </div>
+            {hasRequest === null && (
+              <p className="text-xs text-muted-foreground">
+                Please choose Yes or No before joining.
+              </p>
             )}
           </div>
+
 
           {/* Camera Rules */}
           <div className="rounded-[1.25rem] border border-foreground/15 bg-pastel-blush/30 p-4">
@@ -145,8 +220,8 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
           </Button>
           <Button
             onClick={handleAcceptClick}
-            disabled={hasAccepted}
-            className="min-w-[180px] rounded-full bg-foreground text-background hover:bg-foreground/90"
+            disabled={hasAccepted || !canContinue}
+            className="min-w-[180px] rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
           >
             {hasAccepted ? (
               <span className="flex items-center gap-2">

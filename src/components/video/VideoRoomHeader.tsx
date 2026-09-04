@@ -6,6 +6,7 @@ import { DoodleClock, DoodlePerson } from '@/components/calendar/LessonDoodles';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { format, parseISO } from 'date-fns';
 import QuickHomeworkSubmissionsModal from './QuickHomeworkSubmissionsModal';
+import TopicRequestsChip from './TopicRequestsChip';
 import { cn } from '@/lib/utils';
 
 interface VideoRoomHeaderProps {
@@ -91,6 +92,14 @@ const VideoRoomHeader: React.FC<VideoRoomHeaderProps> = ({
             </span>
             {participantText} • <span className="capitalize">{userRole}</span>
           </span>
+          {userRole === 'tutor' && lessonId && (
+            <TopicRequestsChip
+              lessonId={lessonId}
+              className={cn(chipOutlined, 'h-7 px-2.5 text-xs')}
+              iconClassName={chipIcon}
+              compact={isMobile}
+            />
+          )}
           {isRecording && (
             <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-2.5 text-xs font-medium text-red-600">
               <Circle className="h-2 w-2 fill-current" />
