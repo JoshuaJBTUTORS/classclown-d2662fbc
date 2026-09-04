@@ -126,8 +126,13 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   const handleAcceptClick = async () => {
     if (!canContinue) return;
     setHasAccepted(true);
-    if (hasRequest) {
-      await saveTopicRequest();
+    if (lessonId && !alreadyAnswered) {
+      if (hasRequest) {
+        await saveTopicRequest();
+        localStorage.setItem(storageKey(lessonId), topicRequest.trim().slice(0, 500));
+      } else {
+        localStorage.setItem(storageKey(lessonId), 'no');
+      }
     }
     setTimeout(() => {
       onAccept();
