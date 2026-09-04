@@ -116,7 +116,7 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+        <div className="flex-1 space-y-4 overflow-y-auto pr-1 pt-3">
           {/* Topic request */}
           <div
             className={`relative space-y-3 rounded-[1.25rem] border-2 p-4 transition-all ${
