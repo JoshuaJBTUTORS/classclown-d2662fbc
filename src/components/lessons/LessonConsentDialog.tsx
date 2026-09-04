@@ -40,7 +40,6 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   const [hasRequest, setHasRequest] = useState<boolean | null>(null);
   const [topicRequest, setTopicRequest] = useState('');
   const [previousAnswer, setPreviousAnswer] = useState<string | null>(null);
-  const [checkingPrevious, setCheckingPrevious] = useState(false);
 
   // A student can only answer once per lesson. Check local storage first,
   // then the database (covers switching devices).
@@ -48,12 +47,10 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
     if (!isOpen || !lessonId) return;
     const local = localStorage.getItem(storageKey(lessonId));
     if (local) {
-      setPreviousAnswer(local === 'no' ? null : local);
-      if (local === 'no') setPreviousAnswer('__no__');
+      setPreviousAnswer(local === 'no' ? '__no__' : local);
       return;
     }
     let cancelled = false;
-    setCheckingPrevious(true);
     supabase
       .from('topic_requests')
       .select('requested_topic')
@@ -64,7 +61,6 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         if (data && data.length > 0) {
           setPreviousAnswer(data[0].requested_topic || 'sent');
         }
-        setCheckingPrevious(false);
       });
     return () => { cancelled = true; };
   }, [isOpen, lessonId]);
