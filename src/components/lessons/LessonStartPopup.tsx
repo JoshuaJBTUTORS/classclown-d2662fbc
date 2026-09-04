@@ -86,6 +86,7 @@ export const LessonStartPopup: React.FC = () => {
         isOpen={true}
         onClose={() => setShowConsent(false)}
         onAccept={goToRoom}
+        lessonId={activeLesson.id}
         lesson={{
           title: activeLesson.title,
           start_time: activeLesson.start_time,
