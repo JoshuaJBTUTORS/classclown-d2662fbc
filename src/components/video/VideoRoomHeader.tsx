@@ -6,6 +6,7 @@ import { DoodleClock, DoodlePerson } from '@/components/calendar/LessonDoodles';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { format, parseISO } from 'date-fns';
 import QuickHomeworkSubmissionsModal from './QuickHomeworkSubmissionsModal';
+import TopicRequestsChip from './TopicRequestsChip';
 import { cn } from '@/lib/utils';
 
 interface VideoRoomHeaderProps {
