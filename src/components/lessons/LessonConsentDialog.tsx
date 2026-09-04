@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Mic } from 'lucide-react';
+import { Camera, Mic, CheckCircle2 } from 'lucide-react';
 import { DoodleVideo, DoodleAlert, DoodleSparkle } from '@/components/calendar/LessonDoodles';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,6 +26,8 @@ interface LessonConsentDialogProps {
   studentName: string;
 }
 
+const storageKey = (lessonId?: string) => `lesson-topic-choice-${lessonId}`;
+
 const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   isOpen,
   onClose,
@@ -37,9 +39,42 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   const [hasAccepted, setHasAccepted] = useState(false);
   const [hasRequest, setHasRequest] = useState<boolean | null>(null);
   const [topicRequest, setTopicRequest] = useState('');
+  const [previousAnswer, setPreviousAnswer] = useState<string | null>(null);
+  const [checkingPrevious, setCheckingPrevious] = useState(false);
+
+  // A student can only answer once per lesson. Check local storage first,
+  // then the database (covers switching devices).
+  useEffect(() => {
+    if (!isOpen || !lessonId) return;
+    const local = localStorage.getItem(storageKey(lessonId));
+    if (local) {
+      setPreviousAnswer(local === 'no' ? null : local);
+      if (local === 'no') setPreviousAnswer('__no__');
+      return;
+    }
+    let cancelled = false;
+    setCheckingPrevious(true);
+    supabase
+      .from('topic_requests')
+      .select('requested_topic')
+      .eq('lesson_id', lessonId)
+      .limit(1)
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (data && data.length > 0) {
+          setPreviousAnswer(data[0].requested_topic || 'sent');
+        }
+        setCheckingPrevious(false);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, lessonId]);
+
+  const alreadyAnswered = previousAnswer !== null;
 
   const canContinue =
-    hasRequest === false || (hasRequest === true && topicRequest.trim().length > 0);
+    alreadyAnswered ||
+    hasRequest === false ||
+    (hasRequest === true && topicRequest.trim().length > 0);
 
   const saveTopicRequest = async () => {
     const text = topicRequest.trim().slice(0, 500);
