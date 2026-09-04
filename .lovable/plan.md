@@ -1,30 +1,31 @@
-# Clear impact moments and add an Agent Cleo alert banner for them
+# Ask students what they want covered, and show it to the teacher
 
-Two parts: wipe the current weak backlog of high-impact moments, then surface new ones on the Agent Cleo home screen exactly like the tutor breach alerts.
+Two related changes to the lesson join flow, plus the earlier impact-moments work (kept at the bottom).
 
-## 1. Delete the existing moments
+## 1. Student join screen
 
-All 37 rows in `student_impact_moments` are from the old, loose detection rules. They get deleted outright so only moments found under the tightened criteria appear from now on.
+When a student or parent clicks "Join Lesson", the camera and microphone agreement appears as it does today. The lesson details box at the top (title, time, teacher, group lesson) is replaced with a short request question:
 
-## 2. New "high-impact moments" banner on /agent-cleo
+- "Is there anything specific you'd like covered in this session?" with Yes / No buttons.
+- Choosing Yes reveals a text box for them to type what they want covered.
+- Answering is mandatory — the "I Accept & Join Lesson" button stays disabled until Yes or No is picked, and if Yes is picked the box must not be empty.
+- On accept, a Yes answer is saved as a topic request against that lesson before the room opens. A No answer saves nothing and joins straight away. If saving fails, they still join — it never blocks the lesson.
 
-Sits directly under the existing breach banner, same visual language (thick black border, hard shadow, rounded card) but a warmer non-alarming colour so it reads as an opportunity, not a problem.
+Everything else in the agreement (camera rules, warning panel, welcome line, buttons, spinner) stays exactly as it is.
 
-Each moment card shows:
-- Urgency pill (high / medium / low)
-- Student name and subject
-- What happened: event type, timeframe or date, grade/target if stated
-- Recommended action
-- Expandable transcript quotes, same as the breach cards
-- Impact score shown small alongside the header
+## 2. Teacher view in the lesson room
 
-Header line: "N high-impact moment(s) from yesterday's lessons", with a "Dismiss all" link. Individual X buttons dismiss single moments. Dismissals are per-user, so one person clearing their view doesn't hide it from Britney or Hannah. Nothing shows when there's nothing to report.
+In the top bar of the lesson room, next to the lesson title and time, teachers get a "Topic requests" chip showing the number of requests for that lesson. Clicking it opens a small panel listing each request: student name, what they asked for, and when it was submitted. The chip is hidden when there are no requests and is never shown to students.
 
 ## Technical details
 
-- Migration: `DELETE FROM public.student_impact_moments;` plus a new `student_impact_moment_dismissals` table (`moment_id`, `user_id`, unique pair, GRANTs for `authenticated`/`service_role`, RLS so a user only sees and writes their own rows).
-- `student_impact_moments` currently has no read policy path used by the app — confirm/add an admin+owner `SELECT` policy via `has_role` and the matching `GRANT SELECT ... TO authenticated` so the banner can read it.
-- New hook `src/hooks/useStudentImpactMoments.ts`, mirroring `useTutorBreaches.ts`: loads `status = 'new'` rows ordered by `impact_score` desc, filters out this user's dismissals, exposes `dismiss` / `dismissAll` / `reload`.
-- New component `src/components/agentCleo/ImpactMomentBanner.tsx`, structured like `BreachAlertBanner.tsx`.
-- Rendered in `src/pages/AgentCleo.tsx` immediately after `<BreachAlertBanner />`.
-- No changes to `daily-breach-scan` — detection logic stays as tightened.
+- `src/components/lessons/LessonConsentDialog.tsx`: replace the lesson-details card with the Yes/No question plus conditional textarea; add `topicRequest` state and gating on the accept button. Callers pass the resolved student id so the request can be saved. Text limited to 500 characters and trimmed.
+- Both call sites (`VideoConferenceLink.tsx`, `LessonStartPopup.tsx`) already resolve the student for the session; they pass `studentId` (and `parentId` for parents) alongside `studentName`.
+- Saving writes to the existing `topic_requests` table (`lesson_id`, `student_id`/`parent_id`, `requested_topic`, default `pending`). Existing insert policies already allow students and parents.
+- Database migration: tutors currently have no read access to `topic_requests`. Add a select policy letting a tutor see requests for lessons they teach (match `lessons.tutor_id` to the current tutor), plus the matching grant.
+- New component `src/components/video/TopicRequestsChip.tsx` used by `VideoRoomHeader.tsx`, rendered only when `userRole === 'tutor'`; loads requests for `lessonId` and shows them in a popover using the existing chip styling.
+
+## Still outstanding from the previous plan
+
+- Delete the 37 stored high-impact moments.
+- Add a high-impact moments alert banner on `/agent-cleo`, styled like the tutor breach banner, with per-user dismissals.
