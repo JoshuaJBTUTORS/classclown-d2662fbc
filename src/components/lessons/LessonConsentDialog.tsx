@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Mic } from 'lucide-react';
+import { Camera, Mic, CheckCircle2 } from 'lucide-react';
 import { DoodleVideo, DoodleAlert, DoodleSparkle } from '@/components/calendar/LessonDoodles';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,6 +26,8 @@ interface LessonConsentDialogProps {
   studentName: string;
 }
 
+const storageKey = (lessonId?: string) => `lesson-topic-choice-${lessonId}`;
+
 const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   isOpen,
   onClose,
@@ -37,9 +39,38 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   const [hasAccepted, setHasAccepted] = useState(false);
   const [hasRequest, setHasRequest] = useState<boolean | null>(null);
   const [topicRequest, setTopicRequest] = useState('');
+  const [previousAnswer, setPreviousAnswer] = useState<string | null>(null);
+
+  // A student can only answer once per lesson. Check local storage first,
+  // then the database (covers switching devices).
+  useEffect(() => {
+    if (!isOpen || !lessonId) return;
+    const local = localStorage.getItem(storageKey(lessonId));
+    if (local) {
+      setPreviousAnswer(local === 'no' ? '__no__' : local);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from('topic_requests')
+      .select('requested_topic')
+      .eq('lesson_id', lessonId)
+      .limit(1)
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (data && data.length > 0) {
+          setPreviousAnswer(data[0].requested_topic || 'sent');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, lessonId]);
+
+  const alreadyAnswered = previousAnswer !== null;
 
   const canContinue =
-    hasRequest === false || (hasRequest === true && topicRequest.trim().length > 0);
+    alreadyAnswered ||
+    hasRequest === false ||
+    (hasRequest === true && topicRequest.trim().length > 0);
 
   const saveTopicRequest = async () => {
     const text = topicRequest.trim().slice(0, 500);
@@ -91,8 +122,13 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
   const handleAcceptClick = async () => {
     if (!canContinue) return;
     setHasAccepted(true);
-    if (hasRequest) {
-      await saveTopicRequest();
+    if (lessonId && !alreadyAnswered) {
+      if (hasRequest) {
+        await saveTopicRequest();
+        localStorage.setItem(storageKey(lessonId), topicRequest.trim().slice(0, 500));
+      } else {
+        localStorage.setItem(storageKey(lessonId), 'no');
+      }
     }
     setTimeout(() => {
       onAccept();
@@ -117,7 +153,22 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto pr-1 pt-3">
-          {/* Topic request */}
+          {/* Topic request — answerable once per lesson */}
+          {alreadyAnswered ? (
+            <div className="flex items-start gap-3 rounded-[1.25rem] border border-foreground/15 bg-pastel-mint/40 p-4">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-foreground" />
+              <div className="space-y-1">
+                <h3 className="font-heading text-base font-semibold">
+                  {previousAnswer === '__no__' ? "You're all set" : 'Your topic request was sent'}
+                </h3>
+                <p className="text-sm text-foreground/70">
+                  {previousAnswer === '__no__'
+                    ? 'You already answered for this lesson — you can join straight away.'
+                    : `Your tutor can see what you'd like covered${previousAnswer !== 'sent' ? `: "${previousAnswer}"` : ''}.`}
+                </p>
+              </div>
+            </div>
+          ) : (
           <div
             className={`relative space-y-3 rounded-[1.25rem] border-2 p-4 transition-all ${
               hasRequest === null
@@ -181,6 +232,7 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
               </p>
             )}
           </div>
+          )}
 
 
           {/* Camera Rules */}
