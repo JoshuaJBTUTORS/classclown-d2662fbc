@@ -119,14 +119,14 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         <div className="flex-1 space-y-4 overflow-y-auto pr-1">
           {/* Topic request */}
           <div
-            className={`relative space-y-3 rounded-[1.25rem] border-2 bg-card p-4 transition-all ${
+            className={`relative space-y-3 rounded-[1.25rem] border-2 p-4 transition-all ${
               hasRequest === null
-                ? 'border-foreground/60 animate-pulse-soft'
-                : 'border-foreground/15'
+                ? 'border-primary animate-pulse-soft bg-primary/5'
+                : 'border-foreground/15 bg-card'
             }`}
           >
             {hasRequest === null && (
-              <span className="absolute -top-3 left-4 rounded-full bg-foreground px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-background">
+              <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary-foreground shadow-sm">
                 Required to join
               </span>
             )}
