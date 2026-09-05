@@ -44,7 +44,20 @@ const TopicRequestsChip: React.FC<TopicRequestsChipProps> = ({
       if (!cancelled) setRequests((data ?? []) as unknown as TopicRequestRow[]);
     };
     load();
-    return () => { cancelled = true; };
+
+    const channel = supabase
+      .channel(`topic-requests-${lessonId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'topic_requests', filter: `lesson_id=eq.${lessonId}` },
+        () => { load(); }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, [lessonId]);
 
   if (requests.length === 0) return null;
