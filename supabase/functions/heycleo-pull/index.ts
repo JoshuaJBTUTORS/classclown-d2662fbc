@@ -56,6 +56,27 @@ const HOMEWORK_KEYS = [
   "percentage", "source_updated_at",
 ];
 
+// HeyCleo sometimes sends numeric fields as decimal strings (e.g. "1.33") or
+// empty strings. Coerce them before upsert so one value can't fail the batch.
+function toInt(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+function toNum(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function sanitizeHomeworkRow(row: Row): Row {
+  row.marks_awarded = toInt(row.marks_awarded);
+  row.marks_available = toInt(row.marks_available);
+  row.percentage = toNum(row.percentage);
+  return row;
+}
+
 async function syncResource(
   supabase: ReturnType<typeof createClient>,
   resource: "students" | "homework-completion",
