@@ -56,6 +56,27 @@ const HOMEWORK_KEYS = [
   "percentage", "source_updated_at",
 ];
 
+// HeyCleo sometimes sends numeric fields as decimal strings (e.g. "1.33") or
+// empty strings. Coerce them before upsert so one value can't fail the batch.
+function toInt(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+function toNum(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function sanitizeHomeworkRow(row: Row): Row {
+  row.marks_awarded = toInt(row.marks_awarded);
+  row.marks_available = toInt(row.marks_available);
+  row.percentage = toNum(row.percentage);
+  return row;
+}
+
 async function syncResource(
   supabase: ReturnType<typeof createClient>,
   resource: "students" | "homework-completion",
@@ -106,10 +127,24 @@ async function syncResource(
       const chunk = rows.slice(i, i + 500)
         .map((r) => ({ ...pick(r, keys), synced_at: runStamp }))
         .filter((r) => r[pk]);
+      if (resource === "homework-completion") chunk.forEach(sanitizeHomeworkRow);
       if (!chunk.length) continue;
       const { error } = await supabase.from(table).upsert(chunk, { onConflict: pk });
-      if (error) throw new Error(`upsert failed: ${error.message}`);
-      upserted += chunk.length;
+      if (error) {
+        // One bad row shouldn't sink the whole chunk: retry row-by-row and
+        // skip (with a log) only the rows that genuinely fail.
+        console.warn(`[heycleo-pull] ${resource}: chunk upsert failed (${error.message}), retrying row-by-row`);
+        for (const row of chunk) {
+          const { error: rowError } = await supabase.from(table).upsert(row, { onConflict: pk });
+          if (rowError) {
+            console.warn(`[heycleo-pull] ${resource}: skipping row ${String(row[pk])}: ${rowError.message}`);
+          } else {
+            upserted++;
+          }
+        }
+      } else {
+        upserted += chunk.length;
+      }
     }
 
     // On a full pull, anything HeyCleo no longer returns has been deleted upstream.
