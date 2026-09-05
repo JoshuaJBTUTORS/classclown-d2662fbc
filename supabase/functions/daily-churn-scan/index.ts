@@ -422,31 +422,32 @@ serve(async (req) => {
       );
 
       const items = sorted
-        .map((r) => {
+        .map((r, i) => {
           const colour = r.risk_level === "high" ? "#dc2626" : "#d97706";
+          const lead = `${i + 1}.`;
           return `
-          <li style="margin-bottom:14px;padding-left:10px;border-left:3px solid ${colour};">
-            <div style="font-size:14px;"><strong>${esc(r.student_name)}</strong> · ${esc(r.risk_level.toUpperCase())} risk · score ${r.score}</div>
-            ${r.parent_name || r.parent_email ? `<div style="font-size:12px;color:#555;">Parent: ${esc(r.parent_name ?? "")} ${esc(r.parent_email ?? "")}</div>` : ""}
-            <ul style="margin:6px 0 0 0;padding-left:16px;font-size:13px;color:#333;">
-              ${(r.reasons as Reason[]).map((x) => `<li><strong>${esc(x.label)}</strong> — ${esc(x.detail)}</li>`).join("")}
-            </ul>
+          <li style="margin-bottom:14px;padding-left:8px;border-left:3px solid ${colour};">
+            <div style="font-size:14px;">${lead} <strong>${esc(r.student_name)}</strong> — ${r.risk_level === "high" ? "high risk" : "worth keeping an eye on"} (score ${r.score})</div>
+            ${r.parent_name || r.parent_email ? `<div style="font-size:12px;color:#555;">Parent: ${esc((r.parent_name ?? "").trim())}${r.parent_email ? ` · ${esc(r.parent_email)}` : ""}</div>` : ""}
+            <div style="margin:6px 0 0 0;font-size:13px;color:#333;">
+              ${(r.reasons as Reason[]).map((x) => `• ${esc(x.label)} — ${esc(x.detail)}`).join("<br>")}
+            </div>
           </li>`;
         })
         .join("");
 
       const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:760px;margin:0 auto;">
-        <h2 style="margin-bottom:2px;">⚠️ Churn risk — ${esc(prettyDate)}</h2>
-        <p style="color:#555;margin-top:0;font-size:14px;">${sorted.length} student${sorted.length === 1 ? "" : "s"} showing warning signs (${newlyFlagged.length} new).</p>
-        <ul style="list-style:none;padding:0;margin:16px 0 0 0;">${items}</ul>
-        <p style="color:#777;font-size:12px;margin-top:24px;">Automated daily check based on attendance, confidence, talk time and engagement — Class Beyond Academy CRM.</p>
+        <p style="font-size:15px;margin:0 0 10px 0;">Hey! 🙂 I found ${sorted.length === 1 ? "a student" : `${sorted.length} students`} worth looking at today — could you check in on them?</p>
+        <p style="font-size:14px;color:#555;margin:0 0 16px 0;">Here's who I flagged on ${esc(prettyDate)}${newlyFlagged.length ? ` (${newlyFlagged.length} new)` : ""}:</p>
+        <ul style="list-style:none;padding:0;margin:0 0 24px 0;">${items}</ul>
+        <p style="font-size:14px;color:#1f2937;margin:0 0 6px 0;">Catch you later — Cleo 🐾</p>
       </div>`;
 
       const { error: emailError } = await resend.emails.send({
-        from: "Class Beyond <enquiries@classbeyondacademy.io>",
+        from: "Cleo <enquiries@classbeyondacademy.io>",
         to: RECIPIENTS,
-        subject: `⚠️ ${sorted.length} student${sorted.length === 1 ? "" : "s"} at risk of churning (${prettyDate})`,
+        subject: `Hey — ${sorted.length === 1 ? "1 student" : `${sorted.length} students`} worth a look today 🙂`,
         html,
       });
       if (emailError) console.error("[churn-scan] Email failed:", emailError);
