@@ -4626,6 +4626,107 @@ export type Database = {
         }
         Relationships: []
       }
+      student_churn_dismissals: {
+        Row: {
+          dismissed_at: string
+          id: string
+          risk_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          id?: string
+          risk_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          id?: string
+          risk_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_churn_dismissals_risk_id_fkey"
+            columns: ["risk_id"]
+            isOneToOne: false
+            referencedRelation: "student_churn_risks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_churn_risks: {
+        Row: {
+          avg_confidence: number | null
+          avg_engagement: number | null
+          avg_speaking_pct: number | null
+          created_at: string
+          id: string
+          last_lesson_date: string | null
+          lessons_considered: Json
+          missed_count: number
+          missed_streak: number
+          parent_email: string | null
+          parent_name: string | null
+          peer_confidence_delta: number | null
+          peer_engagement_delta: number | null
+          peer_speaking_delta: number | null
+          reasons: Json
+          risk_level: string
+          score: number
+          status: string
+          student_id: number
+          student_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          avg_confidence?: number | null
+          avg_engagement?: number | null
+          avg_speaking_pct?: number | null
+          created_at?: string
+          id?: string
+          last_lesson_date?: string | null
+          lessons_considered?: Json
+          missed_count?: number
+          missed_streak?: number
+          parent_email?: string | null
+          parent_name?: string | null
+          peer_confidence_delta?: number | null
+          peer_engagement_delta?: number | null
+          peer_speaking_delta?: number | null
+          reasons?: Json
+          risk_level?: string
+          score?: number
+          status?: string
+          student_id: number
+          student_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avg_confidence?: number | null
+          avg_engagement?: number | null
+          avg_speaking_pct?: number | null
+          created_at?: string
+          id?: string
+          last_lesson_date?: string | null
+          lessons_considered?: Json
+          missed_count?: number
+          missed_streak?: number
+          parent_email?: string | null
+          parent_name?: string | null
+          peer_confidence_delta?: number | null
+          peer_engagement_delta?: number | null
+          peer_speaking_delta?: number | null
+          reasons?: Json
+          risk_level?: string
+          score?: number
+          status?: string
+          student_id?: number
+          student_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_impact_moments: {
         Row: {
           category: string

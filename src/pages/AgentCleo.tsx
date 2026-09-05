@@ -15,6 +15,7 @@ import { useAgentCleoThreads } from '@/hooks/useAgentCleoThreads';
 import { AgentCleoThreadList } from '@/components/agentCleo/AgentCleoThreadList';
 import DailySnapshot from '@/components/agentCleo/DailySnapshot';
 import BreachAlertBanner from '@/components/agentCleo/BreachAlertBanner';
+import ChurnRiskBanner from '@/components/agentCleo/ChurnRiskBanner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -988,6 +989,7 @@ const AgentCleo: React.FC = () => {
               <p className="text-[#6b6b76] dark:text-[#8e8ea0] mb-8">Ask me anything about the CRM.</p>
 
               <BreachAlertBanner />
+              <ChurnRiskBanner />
 
               <DailySnapshot />
 
