@@ -127,10 +127,24 @@ async function syncResource(
       const chunk = rows.slice(i, i + 500)
         .map((r) => ({ ...pick(r, keys), synced_at: runStamp }))
         .filter((r) => r[pk]);
+      if (resource === "homework-completion") chunk.forEach(sanitizeHomeworkRow);
       if (!chunk.length) continue;
       const { error } = await supabase.from(table).upsert(chunk, { onConflict: pk });
-      if (error) throw new Error(`upsert failed: ${error.message}`);
-      upserted += chunk.length;
+      if (error) {
+        // One bad row shouldn't sink the whole chunk: retry row-by-row and
+        // skip (with a log) only the rows that genuinely fail.
+        console.warn(`[heycleo-pull] ${resource}: chunk upsert failed (${error.message}), retrying row-by-row`);
+        for (const row of chunk) {
+          const { error: rowError } = await supabase.from(table).upsert(row, { onConflict: pk });
+          if (rowError) {
+            console.warn(`[heycleo-pull] ${resource}: skipping row ${String(row[pk])}: ${rowError.message}`);
+          } else {
+            upserted++;
+          }
+        }
+      } else {
+        upserted += chunk.length;
+      }
     }
 
     // On a full pull, anything HeyCleo no longer returns has been deleted upstream.
