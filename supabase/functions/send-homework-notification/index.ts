@@ -154,6 +154,8 @@ serve(async (req) => {
                 first_name,
                 last_name,
                 email,
+                secondary_email,
+                secondary_phone,
                 user_id
               )
             )
@@ -255,7 +257,7 @@ serve(async (req) => {
 
         const parentEmailPromise = resend.emails.send({
           from: 'Class Beyond <enquiries@classbeyondacademy.io>',
-          to: [student.parent.email],
+          to: buildEmailRecipients(student.parent.email, student.parent.secondary_email),
           subject: `Homework Set for ${student.first_name} - ${homeworkData.title}`,
           html: parentHtml,
         });
