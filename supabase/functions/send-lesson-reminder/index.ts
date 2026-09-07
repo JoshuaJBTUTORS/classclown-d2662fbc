@@ -7,6 +7,7 @@ import { RegularLessonReminderEmail } from './_templates/regular-lesson-reminder
 import { whatsappService } from '../_shared/whatsapp-service.ts';
 import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 import { convertUTCToUK, formatInUKTime } from '../_shared/timezone-utils.ts';
+import { buildEmailRecipients, buildPhoneRecipients } from '../_shared/secondary-contacts.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -79,7 +80,9 @@ const handler = async (req: Request): Promise<Response> => {
               last_name,
               email,
               phone,
-              whatsapp_number
+              whatsapp_number,
+              secondary_phone,
+              secondary_email
             )
           )
         )
@@ -202,7 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
           // Send email with retry logic
           const emailResult = await sendEmailWithRetry({
             from: 'Class Beyond <lessons@classbeyondacademy.io>',
-            to: [parent.email],
+            to: buildEmailRecipients(parent.email, parent.secondary_email),
             subject: `Lesson Reminder - ${lesson.subject || 'Tutoring'} ${isToday ? 'Today' : 'Tomorrow'}`,
             html: emailHtml,
           });
@@ -220,7 +223,11 @@ const handler = async (req: Request): Promise<Response> => {
             emailsSent++;
 
             // Send WhatsApp message if phone number is available
-            if (parent.phone || parent.whatsapp_number) {
+            const phoneTargets = buildPhoneRecipients(
+              parent.whatsapp_number || parent.phone,
+              parent.secondary_phone
+            );
+            if (phoneTargets.length > 0) {
               const whatsappText = WhatsAppTemplates.regularLessonReminder(
                 `${parent.first_name} ${parent.last_name}`,
                 `${student.first_name} ${student.last_name}`,
@@ -230,14 +237,18 @@ const handler = async (req: Request): Promise<Response> => {
                 isToday
               );
 
-              const phoneNumber = parent.whatsapp_number || parent.phone;
-              const whatsappNumber = whatsappService.formatPhoneNumber(phoneNumber);
-              const whatsappResponse = await whatsappService.sendMessage({
-                phoneNumber: whatsappNumber,
-                text: whatsappText
-              });
-
-              console.log(`WhatsApp lesson reminder to ${whatsappNumber}:`, whatsappResponse);
+              for (const target of phoneTargets) {
+                try {
+                  const whatsappNumber = whatsappService.formatPhoneNumber(target);
+                  const whatsappResponse = await whatsappService.sendMessage({
+                    phoneNumber: whatsappNumber,
+                    text: whatsappText
+                  });
+                  console.log(`WhatsApp lesson reminder to ${whatsappNumber}:`, whatsappResponse);
+                } catch (waErr: any) {
+                  console.warn(`WhatsApp send failed for ${target}:`, waErr?.message || waErr);
+                }
+              }
             }
           }
         }
