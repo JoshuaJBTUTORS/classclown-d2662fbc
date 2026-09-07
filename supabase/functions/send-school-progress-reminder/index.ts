@@ -174,9 +174,11 @@ Submit here: ${submissionUrl}
 
 Thanks! - JB Tutors Team`;
 
-              await whatsappService.sendMessage(parent.whatsapp_number, whatsappMessage);
-              whatsappSent++;
-              console.log('WhatsApp sent to:', parent.whatsapp_number);
+              for (const target of progressPhones) {
+                await whatsappService.sendMessage(target, whatsappMessage);
+                whatsappSent++;
+                console.log('WhatsApp sent to:', target);
+              }
             } catch (whatsappError) {
               console.error('WhatsApp error for parent:', parent.email, whatsappError);
               errors.push(`WhatsApp failed for ${parent.email}: ${whatsappError.message}`);
