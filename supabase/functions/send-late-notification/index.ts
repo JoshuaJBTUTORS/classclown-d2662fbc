@@ -7,6 +7,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22';
 import { LateNotificationEmail } from './_templates/late-notification-email.tsx';
 import { whatsappService } from '../_shared/whatsapp-service.ts';
 import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
+import { buildEmailRecipients, buildPhoneRecipients } from '../_shared/secondary-contacts.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
