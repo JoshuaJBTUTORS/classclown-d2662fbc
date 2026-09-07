@@ -29,13 +29,6 @@ const CONTACTS: KeyContact[] = [
     availability: 'Monday to Sunday',
     tone: 'bg-pastel-lilac',
   },
-  {
-    name: 'Joshua Ekundayo',
-    role: 'CEO',
-    email: 'joshua@classbeyondacademy.io',
-    availability: 'Monday to Sunday',
-    tone: 'bg-pastel-sky',
-  },
 ];
 
 const initials = (name: string) =>
