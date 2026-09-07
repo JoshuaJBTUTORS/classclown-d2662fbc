@@ -62,6 +62,8 @@ serve(async (req) => {
 
         let parentEmail: string | null = null;
         let parentPhone: string | null = null;
+        let parentSecondaryEmail: string | null = null;
+        let parentSecondaryPhone: string | null = null;
         let parentName = 'Parent';
         const childName = `${student.first_name} ${student.last_name}`;
 
@@ -69,13 +71,15 @@ serve(async (req) => {
         if (student.parent_id) {
           const { data: parent } = await supabase
             .from('parents')
-            .select('first_name, last_name, email, phone, whatsapp_number')
+            .select('first_name, last_name, email, phone, whatsapp_number, secondary_email, secondary_phone')
             .eq('id', student.parent_id)
             .single();
 
           if (parent) {
             parentEmail = parent.email;
             parentPhone = parent.whatsapp_number || parent.phone;
+            parentSecondaryEmail = (parent as any).secondary_email ?? null;
+            parentSecondaryPhone = (parent as any).secondary_phone ?? null;
             parentName = `${parent.first_name} ${parent.last_name}`;
           }
         }
@@ -84,6 +88,8 @@ serve(async (req) => {
         const recipientEmail = parentEmail || student.email;
         const recipientPhone = parentPhone || student.whatsapp_number || student.phone;
         const recipientName = student.parent_id ? parentName : `${student.first_name}`;
+        const emailTargets = buildEmailRecipients(recipientEmail, parentEmail ? parentSecondaryEmail : null);
+        const phoneTargets = buildPhoneRecipients(recipientPhone, parentPhone ? parentSecondaryPhone : null);
 
         // Send email
         if (recipientEmail) {
