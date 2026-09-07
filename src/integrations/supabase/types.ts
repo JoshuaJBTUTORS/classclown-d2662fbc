@@ -3772,6 +3772,8 @@ export type Database = {
           id: string
           last_name: string
           phone: string | null
+          secondary_email: string | null
+          secondary_phone: string | null
           updated_at: string
           user_id: string
           whatsapp_enabled: boolean | null
@@ -3789,6 +3791,8 @@ export type Database = {
           id?: string
           last_name: string
           phone?: string | null
+          secondary_email?: string | null
+          secondary_phone?: string | null
           updated_at?: string
           user_id: string
           whatsapp_enabled?: boolean | null
@@ -3806,6 +3810,8 @@ export type Database = {
           id?: string
           last_name?: string
           phone?: string | null
+          secondary_email?: string | null
+          secondary_phone?: string | null
           updated_at?: string
           user_id?: string
           whatsapp_enabled?: boolean | null

@@ -6,6 +6,8 @@ export interface Parent {
   last_name: string;
   email: string;
   phone?: string;
+  secondary_phone?: string;
+  secondary_email?: string;
   billing_address?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;

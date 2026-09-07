@@ -7,6 +7,7 @@ import { ReviewRoomReminderEmail } from './_templates/review-room-reminder-email
 import { whatsappService } from '../_shared/whatsapp-service.ts';
 import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
 import { formatInUKTime } from '../_shared/timezone-utils.ts';
+import { buildEmailRecipients, buildPhoneRecipients } from '../_shared/secondary-contacts.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -64,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
           student:students (
             id, first_name, last_name, email,
             parent:parents (
-              id, first_name, last_name, email, phone, whatsapp_number
+              id, first_name, last_name, email, phone, whatsapp_number, secondary_phone, secondary_email
             )
           )
         )
@@ -145,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         const emailResult: any = await sendEmailWithRetry({
           from: 'Class Beyond <lessons@classbeyondacademy.io>',
-          to: [parent.email],
+          to: buildEmailRecipients(parent.email, parent.secondary_email),
           subject: `Review Room ${isToday ? 'Today' : 'Tomorrow'} - ${childName}`,
           html: emailHtml,
         });
@@ -160,8 +161,11 @@ const handler = async (req: Request): Promise<Response> => {
           emailsSent++;
 
           // WhatsApp
-          const phone = parent.whatsapp_number || parent.phone;
-          if (phone) {
+          const phoneTargets = buildPhoneRecipients(
+            parent.whatsapp_number || parent.phone,
+            parent.secondary_phone
+          );
+          for (const phone of phoneTargets) {
             try {
               const whatsappText = WhatsAppTemplates.reviewRoomReminder({
                 parentName,

@@ -1,0 +1,1 @@
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS secondary_phone text, ADD COLUMN IF NOT EXISTS secondary_email text;

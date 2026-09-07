@@ -6,6 +6,7 @@ import React from "npm:react@18.3.1";
 import { EnrollmentUpdateEmail } from "./_templates/enrollment-update-email.tsx";
 import { whatsappService } from '../_shared/whatsapp-service.ts';
 import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
+import { buildEmailRecipients, buildPhoneRecipients } from '../_shared/secondary-contacts.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +62,8 @@ serve(async (req) => {
 
         let parentEmail: string | null = null;
         let parentPhone: string | null = null;
+        let parentSecondaryEmail: string | null = null;
+        let parentSecondaryPhone: string | null = null;
         let parentName = 'Parent';
         const childName = `${student.first_name} ${student.last_name}`;
 
@@ -68,13 +71,15 @@ serve(async (req) => {
         if (student.parent_id) {
           const { data: parent } = await supabase
             .from('parents')
-            .select('first_name, last_name, email, phone, whatsapp_number')
+            .select('first_name, last_name, email, phone, whatsapp_number, secondary_email, secondary_phone')
             .eq('id', student.parent_id)
             .single();
 
           if (parent) {
             parentEmail = parent.email;
             parentPhone = parent.whatsapp_number || parent.phone;
+            parentSecondaryEmail = (parent as any).secondary_email ?? null;
+            parentSecondaryPhone = (parent as any).secondary_phone ?? null;
             parentName = `${parent.first_name} ${parent.last_name}`;
           }
         }
@@ -83,6 +88,8 @@ serve(async (req) => {
         const recipientEmail = parentEmail || student.email;
         const recipientPhone = parentPhone || student.whatsapp_number || student.phone;
         const recipientName = student.parent_id ? parentName : `${student.first_name}`;
+        const emailTargets = buildEmailRecipients(recipientEmail, parentEmail ? parentSecondaryEmail : null);
+        const phoneTargets = buildPhoneRecipients(recipientPhone, parentPhone ? parentSecondaryPhone : null);
 
         // Send email
         if (recipientEmail) {
@@ -97,7 +104,7 @@ serve(async (req) => {
 
             await resend.emails.send({
               from: 'Class Beyond <enquiries@classbeyondacademy.io>',
-              to: [recipientEmail],
+              to: emailTargets,
               subject: 'Lesson Schedule Update - Class Beyond',
               html,
             });
@@ -109,10 +116,10 @@ serve(async (req) => {
         }
 
         // Send WhatsApp
-        if (recipientPhone) {
+        for (const target of phoneTargets) {
           try {
             const whatsappText = WhatsAppTemplates.enrollmentUpdate(recipientName, childName);
-            const formattedPhone = whatsappService.formatPhoneNumber(recipientPhone);
+            const formattedPhone = whatsappService.formatPhoneNumber(target);
 
             const whatsappResult = await whatsappService.sendMessage({
               phoneNumber: formattedPhone,
@@ -121,7 +128,7 @@ serve(async (req) => {
 
             console.log(`WhatsApp sent to ${formattedPhone}:`, whatsappResult);
           } catch (waErr) {
-            console.error(`Failed to send WhatsApp to ${recipientPhone}:`, waErr);
+            console.error(`Failed to send WhatsApp to ${target}:`, waErr);
           }
         }
 

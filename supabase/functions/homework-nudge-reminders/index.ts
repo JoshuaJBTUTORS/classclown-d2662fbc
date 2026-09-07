@@ -195,7 +195,7 @@ serve(async (req) => {
     const siblingCount = new Map<string, number>();
     if (parentIds.length) {
       const [{ data: parentRows }, { data: siblings }] = await Promise.all([
-        service.from("parents").select("id, email, phone, whatsapp_number").in("id", parentIds),
+        service.from("parents").select("id, email, phone, whatsapp_number, secondary_email, secondary_phone").in("id", parentIds),
         service.from("students").select("id, parent_id").in("parent_id", parentIds),
       ]);
       (parentRows ?? []).forEach((p: any) => parents.set(p.id, p));
@@ -311,8 +311,13 @@ serve(async (req) => {
       const parent = student.parent_id ? parents.get(student.parent_id) : null;
       const email = parent?.email || student.email || null;
       const phone = normalisePhone(parent?.whatsapp_number || parent?.phone || student.whatsapp_number || student.phone);
+      const secondaryEmail = parent?.secondary_email && parent.secondary_email.trim().toLowerCase() !== (email || '').trim().toLowerCase()
+        ? parent.secondary_email.trim()
+        : null;
+      const secondaryPhoneRaw = parent?.secondary_phone ? normalisePhone(parent.secondary_phone) : null;
+      const secondaryPhone = secondaryPhoneRaw && secondaryPhoneRaw !== phone ? secondaryPhoneRaw : null;
 
-      const outcome: any = { student_id: student.id, variant, email, phone, sent: [] as string[] };
+      const outcome: any = { student_id: student.id, variant, email, phone, secondaryEmail, secondaryPhone, sent: [] as string[] };
 
       if (body.dry_run) {
         outcome.dry_run = true;
@@ -337,7 +342,7 @@ serve(async (req) => {
           try {
             const { error } = await resend.emails.send({
               from: "Class Beyond Academy <enquiries@classbeyondacademy.io>",
-              to: [email],
+              to: secondaryEmail ? [email, secondaryEmail] : [email],
               subject: SUBJECT,
               html: emailHtml(text),
               text,
