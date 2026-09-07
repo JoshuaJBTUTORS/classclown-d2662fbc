@@ -133,7 +133,10 @@ const handler = async (req: Request): Promise<Response> => {
     // Send the late notification email
     const emailResponse = await resend.emails.send({
       from: "Class Beyond <enquiries@classbeyondacademy.io>",
-      to: [recipientEmail],
+      to: buildEmailRecipients(
+        recipientEmail,
+        isParentNotification ? (studentData.parents as any)?.secondary_email : null
+      ),
       subject: emailSubject,
       html,
     });
@@ -152,20 +155,30 @@ const handler = async (req: Request): Promise<Response> => {
                        (isParentNotification && studentData.parentData ? 
                         studentData.parentData.whatsapp_number || studentData.parentData.phone : null);
 
-    if (phoneNumber) {
+    const latePhones = buildPhoneRecipients(
+      phoneNumber,
+      isParentNotification ? (studentData.parents as any)?.secondary_phone : null
+    );
+
+    if (latePhones.length > 0) {
       const whatsappText = WhatsAppTemplates.lateNotification(
         recipientName,
         studentName,
         lessonTitle
       );
 
-      const whatsappNumber = whatsappService.formatPhoneNumber(phoneNumber);
-      const whatsappResponse = await whatsappService.sendMessage({
-        phoneNumber: whatsappNumber,
-        text: whatsappText
-      });
-
-      console.log(`WhatsApp late notification to ${whatsappNumber}:`, whatsappResponse);
+      for (const target of latePhones) {
+        try {
+          const whatsappNumber = whatsappService.formatPhoneNumber(target);
+          const whatsappResponse = await whatsappService.sendMessage({
+            phoneNumber: whatsappNumber,
+            text: whatsappText
+          });
+          console.log(`WhatsApp late notification to ${whatsappNumber}:`, whatsappResponse);
+        } catch (waErr: any) {
+          console.warn(`WhatsApp send failed for ${target}:`, waErr?.message || waErr);
+        }
+      }
     }
 
     // Log the notification in the database with recipient type
