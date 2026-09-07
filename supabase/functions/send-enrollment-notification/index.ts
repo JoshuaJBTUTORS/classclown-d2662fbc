@@ -104,7 +104,7 @@ serve(async (req) => {
 
             await resend.emails.send({
               from: 'Class Beyond <enquiries@classbeyondacademy.io>',
-              to: [recipientEmail],
+              to: emailTargets,
               subject: 'Lesson Schedule Update - Class Beyond',
               html,
             });
@@ -116,10 +116,10 @@ serve(async (req) => {
         }
 
         // Send WhatsApp
-        if (recipientPhone) {
+        for (const target of phoneTargets) {
           try {
             const whatsappText = WhatsAppTemplates.enrollmentUpdate(recipientName, childName);
-            const formattedPhone = whatsappService.formatPhoneNumber(recipientPhone);
+            const formattedPhone = whatsappService.formatPhoneNumber(target);
 
             const whatsappResult = await whatsappService.sendMessage({
               phoneNumber: formattedPhone,
@@ -128,7 +128,7 @@ serve(async (req) => {
 
             console.log(`WhatsApp sent to ${formattedPhone}:`, whatsappResult);
           } catch (waErr) {
-            console.error(`Failed to send WhatsApp to ${recipientPhone}:`, waErr);
+            console.error(`Failed to send WhatsApp to ${target}:`, waErr);
           }
         }
 
