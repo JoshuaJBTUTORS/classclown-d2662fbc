@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.5";
+import { buildEmailRecipients, buildPhoneRecipients } from '../_shared/secondary-contacts.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,7 +89,7 @@ serve(async (req) => {
         id, title, subject, start_time,
         students!inner (
           id, first_name, email, phone, year_group,
-          parents!inner (first_name, email, whatsapp_number)
+          parents!inner (first_name, email, whatsapp_number, secondary_email, secondary_phone)
         )
       `)
       .gte('start_time', tomorrow.toISOString())
@@ -113,18 +114,27 @@ serve(async (req) => {
       const recipientName = parent?.first_name || student.first_name;
       const recipientPhone = parent?.whatsapp_number || student.phone;
 
-      if (recipientEmail) {
+      const emailTargets = buildEmailRecipients(
+        recipientEmail,
+        parent?.email ? parent?.secondary_email : null
+      );
+      const phoneTargets = buildPhoneRecipients(
+        recipientPhone,
+        parent?.whatsapp_number ? parent?.secondary_phone : null
+      );
+
+      for (const target of emailTargets) {
         try {
-          await sendEmail(recipientEmail, recipientName, student.first_name, lesson.subject, lesson.start_time, topicName);
+          await sendEmail(target, recipientName, student.first_name, lesson.subject, lesson.start_time, topicName);
           sent++;
         } catch (e) {
           console.error('Email failed:', e);
         }
       }
 
-      if (recipientPhone) {
+      for (const target of phoneTargets) {
         try {
-          await sendWhatsApp(recipientPhone, recipientName, student.first_name, lesson.subject, lesson.start_time, topicName);
+          await sendWhatsApp(target, recipientName, student.first_name, lesson.subject, lesson.start_time, topicName);
           sent++;
         } catch (e) {
           console.error('WhatsApp failed:', e);
