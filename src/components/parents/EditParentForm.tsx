@@ -39,6 +39,8 @@ const formSchema = z.object({
   last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email format." }),
   phone: z.string().optional(),
+  secondary_phone: z.string().optional(),
+  secondary_email: z.string().email({ message: "Invalid email format." }).optional().or(z.literal("")),
   billing_address: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
@@ -57,6 +59,8 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
       last_name: parent?.last_name || "",
       email: parent?.email || "",
       phone: parent?.phone || "",
+      secondary_phone: parent?.secondary_phone || "",
+      secondary_email: parent?.secondary_email || "",
       billing_address: parent?.billing_address || "",
       emergency_contact_name: parent?.emergency_contact_name || "",
       emergency_contact_phone: parent?.emergency_contact_phone || "",
@@ -72,6 +76,8 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
         last_name: parent.last_name || "",
         email: parent.email || "",
         phone: parent.phone || "",
+        secondary_phone: parent.secondary_phone || "",
+        secondary_email: parent.secondary_email || "",
         billing_address: parent.billing_address || "",
         emergency_contact_name: parent.emergency_contact_name || "",
         emergency_contact_phone: parent.emergency_contact_phone || "",
@@ -93,6 +99,8 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
           last_name: data.last_name,
           email: data.email,
           phone: data.phone || null,
+          secondary_phone: data.secondary_phone || null,
+          secondary_email: data.secondary_email || null,
           billing_address: data.billing_address || null,
           emergency_contact_name: data.emergency_contact_name || null,
           emergency_contact_phone: data.emergency_contact_phone || null,
@@ -214,6 +222,36 @@ const EditParentForm: React.FC<EditParentFormProps> = ({ parent, isOpen, onClose
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="secondary_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Second WhatsApp Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Optional second number" type="tel" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="secondary_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Second Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Optional second email" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
