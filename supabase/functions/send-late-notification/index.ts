@@ -150,11 +150,10 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Late notification email sent successfully:", emailResponse);
 
     // Send WhatsApp message if phone number is available
-    const phoneField = isParentNotification ? 'phone' : 'phone';
-    const whatsappField = isParentNotification ? 'whatsapp_number' : 'whatsapp_number';
-    const phoneNumber = studentData[whatsappField] || studentData[phoneField] || 
-                       (isParentNotification && studentData.parentData ? 
-                        studentData.parentData.whatsapp_number || studentData.parentData.phone : null);
+    const parentRecord = studentData.parents as any;
+    const phoneNumber = isParentNotification
+      ? (parentRecord?.whatsapp_number || parentRecord?.phone || (studentData as any).whatsapp_number || (studentData as any).phone || null)
+      : ((studentData as any).whatsapp_number || (studentData as any).phone || null);
 
     const latePhones = buildPhoneRecipients(
       phoneNumber,
