@@ -7,6 +7,7 @@ import React from "npm:react@18.3.1";
 import { HomeworkNotificationEmail } from "./_templates/homework-notification-email.tsx";
 import { whatsappService } from '../_shared/whatsapp-service.ts';
 import { WhatsAppTemplates } from '../_shared/whatsapp-templates.ts';
+import { buildEmailRecipients } from '../_shared/secondary-contacts.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
