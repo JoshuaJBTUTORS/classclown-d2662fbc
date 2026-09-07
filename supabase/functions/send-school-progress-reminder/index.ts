@@ -5,6 +5,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22';
 import React from 'npm:react@18.3.1';
 import { SchoolProgressReminderEmail } from './_templates/school-progress-reminder-email.tsx';
 import { whatsappService } from '../_shared/whatsapp-service.ts';
+import { buildEmailRecipients, buildPhoneRecipients } from '../_shared/secondary-contacts.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabase = createClient(
@@ -73,6 +74,8 @@ const handler = async (req: Request): Promise<Response> => {
         email,
         whatsapp_number,
         whatsapp_enabled,
+        secondary_phone,
+        secondary_email,
         students!inner(
           id,
           first_name,
@@ -128,7 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
         // Send email
         const emailResponse = await resend.emails.send({
           from: 'Class Beyond <notifications@classbeyondacademy.io>',
-          to: [parent.email],
+          to: buildEmailRecipients(parent.email, (parent as any).secondary_email),
           subject: `School Progress Report Reminder - Due ${cycleEndDate}`,
           html: emailHtml,
         });
@@ -151,7 +154,10 @@ const handler = async (req: Request): Promise<Response> => {
           emailsSent++;
 
           // Send WhatsApp message if enabled and number available
-          if (parent.whatsapp_enabled && parent.whatsapp_number) {
+          const progressPhones = parent.whatsapp_enabled
+            ? buildPhoneRecipients(parent.whatsapp_number, (parent as any).secondary_phone)
+            : [];
+          if (progressPhones.length > 0) {
             try {
               const whatsappMessage = `Hi ${parentName}! 📚
 
