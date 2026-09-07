@@ -63,7 +63,11 @@ const handler = async (req: Request): Promise<Response> => {
           id,
           first_name,
           last_name,
-          email
+          email,
+          phone,
+          whatsapp_number,
+          secondary_email,
+          secondary_phone
         )
       `)
       .eq('id', studentId)
