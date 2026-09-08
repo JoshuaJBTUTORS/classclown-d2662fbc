@@ -1,25 +1,27 @@
-# Stop homework messages going to trial families
+# Stop trial and demo lessons from generating or sending homework
 
-## Why it is happening
-
-Neither homework job checks whether a family is an actual paying customer.
-
-- The weekly homework release picks up any lesson that produced a homework brief, including trial and demo lessons. In the last 60 days that covered 24 trial lessons and 24 demo lessons belonging to students still marked as trial.
-- The Wednesday and Friday nudges pick up any student who had a lesson that week, whatever the lesson type, and only skip students explicitly marked inactive. Trial students are not skipped.
-
-Right now the student list holds 189 active, 453 trial, 161 with no status set, and 7 inactive.
+Simple rule: if a lesson is a trial or demo, we never generate homework from its transcript, and we never send it anywhere.
 
 ## What changes
 
-Both jobs will only message families who are active customers:
+1. Stop it at the source
+   - When a lesson finishes and its transcript is processed, check the lesson type first.
+   - If the type is trial or demo, skip the whole summary/homework generation step and log it as skipped. No AI cost, no homework data created.
 
-1. Homework is only built from regular lessons. Trial and demo lessons are ignored entirely, even for an existing active customer.
-2. Only students marked active receive homework messages. Trial and inactive students are skipped.
-3. Students with no status set are treated as active, so long-standing families whose record was never tidied up keep getting their homework. These are flagged in the run log so the list can be cleaned up.
-4. Skipped students are counted and named in the run result, so a dry run shows exactly who was excluded and why.
+2. Stop it in the pipelines that trigger processing
+   - The daily catch-up run, the hourly run, and the live transcript webhook all filter out trial and demo lessons before asking for a summary.
+
+3. Safety net at sending time
+   - The weekly homework sync to HeyCleo ignores any homework tied to a trial or demo lesson, even if older data exists.
+   - The homework reminder nudges do the same.
+
+Regular and review-room lessons behave exactly as they do today.
 
 ## Technical notes
 
-- `supabase/functions/weekly-homework-sync/index.ts`: add `lessons.lesson_type` to the summaries query and skip rows where it is `trial` or `demo`; after loading `students`, drop any whose `status` is `trial` or `inactive` (null/empty treated as active). Add `skipped_trial_student` and `skipped_trial_lesson` counters to the response.
-- `supabase/functions/homework-nudge-reminders/index.ts`: restrict the eligibility lesson query to `lesson_type = 'regular'`, and replace the inactive-only filter with the same active-customer rule.
-- No schema changes, no cron changes, no wording changes.
+- Guard on `lessons.lesson_type in ('trial','demo')`.
+- Add early return in `supabase/functions/generate-lesson-summaries/index.ts` after the lesson fetch (include `lesson_type` in the select) returning `{ skipped: 'trial_or_demo' }`.
+- Add the same filter in `daily-lesson-processing`, `hourly-lesson-processing`, and `lessonspace-transcript-webhook` before invoking summary generation.
+- In `weekly-homework-sync/index.ts`, extend the existing `lessons!inner(...)` select with `lesson_type` and add `.not("lessons.lesson_type", "in", "(trial,demo)")`; count them in a `skipped_trial` stat.
+- Apply the equivalent filter in `homework-nudge-reminders`.
+- Deploy the affected edge functions; no schema change and no historical data cleanup.
