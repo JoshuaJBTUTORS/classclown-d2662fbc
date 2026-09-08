@@ -446,12 +446,24 @@ const Onboarding: React.FC = () => {
                 </div>
 
                 {selectedProposal && (
-                  <div className="rounded-2xl border-2 border-foreground/70 bg-background/70 p-4 text-sm space-y-1">
-                    <div><span className="text-muted-foreground">Name:</span> {selectedProposal.recipient_name}</div>
-                    <div><span className="text-muted-foreground">Email:</span> {selectedProposal.recipient_email}</div>
-                    <div><span className="text-muted-foreground">Phone:</span> {selectedProposal.recipient_phone || '—'}</div>
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border-2 border-foreground/70 bg-background/70 p-4 text-sm space-y-1">
+                      <div><span className="text-muted-foreground">Name:</span> {selectedProposal.recipient_name}</div>
+                      <div><span className="text-muted-foreground">Email:</span> {selectedProposal.recipient_email}</div>
+                      <div><span className="text-muted-foreground">Phone:</span> {selectedProposal.recipient_phone || '—'}</div>
+                    </div>
+
+                    <div className="rounded-2xl border-2 border-foreground/80 bg-pastel-sand p-4">
+                      <div className="text-sm font-semibold text-pastel-sand-foreground mb-1">Internal notes from the proposal</div>
+                      {selectedProposal.internal_notes ? (
+                        <p className="text-sm text-pastel-sand-foreground whitespace-pre-wrap">{selectedProposal.internal_notes}</p>
+                      ) : (
+                        <p className="text-sm text-pastel-sand-foreground/70">No internal notes on this proposal.</p>
+                      )}
+                    </div>
                   </div>
                 )}
+
 
                 <div className="flex flex-wrap gap-2">
                   <Button
