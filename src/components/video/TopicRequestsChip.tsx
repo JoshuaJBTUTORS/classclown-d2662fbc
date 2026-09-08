@@ -30,6 +30,7 @@ const TopicRequestsChip: React.FC<TopicRequestsChipProps> = ({
 
   useEffect(() => {
     let cancelled = false;
+
     const load = async () => {
       const { data, error } = await supabase
         .from('topic_requests')
@@ -43,19 +44,35 @@ const TopicRequestsChip: React.FC<TopicRequestsChipProps> = ({
       }
       if (!cancelled) setRequests((data ?? []) as unknown as TopicRequestRow[]);
     };
-    load();
+
+    void load();
 
     const channel = supabase
       .channel(`topic-requests-${lessonId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'topic_requests', filter: `lesson_id=eq.${lessonId}` },
-        () => { load(); }
+        () => { void load(); }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') void load();
+      });
+
+    // Realtime can briefly disconnect when a browser tab sleeps or the network
+    // changes. Polling keeps the in-lesson badge accurate if an event is missed.
+    const refreshInterval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, 15_000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelled = true;
+      window.clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       supabase.removeChannel(channel);
     };
   }, [lessonId]);
