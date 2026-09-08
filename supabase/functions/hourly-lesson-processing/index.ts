@@ -143,6 +143,7 @@ async function buildQueue(): Promise<string[]> {
     .lte("end_time", cutoff)
     .gte("end_time", windowStart)
     .neq("status", "cancelled")
+    .not("lesson_type", "in", "(trial,demo)")
     .order("end_time", { ascending: true })
     .limit(500);
 

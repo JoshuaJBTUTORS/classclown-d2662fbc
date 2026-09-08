@@ -813,6 +813,7 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
       id,
       title,
       subject,
+      lesson_type,
       lesson_students!inner(
         student:students(
           id,
@@ -834,6 +835,16 @@ async function generateStudentSummaries(lessonId: string, transcriptionId: strin
       }
     );
   }
+
+  // Trial and demo lessons never generate summaries or homework data.
+  if (['trial', 'demo'].includes((lesson as any).lesson_type)) {
+    console.log(`Skipping summaries for ${lessonId}: lesson_type=${(lesson as any).lesson_type}`);
+    return new Response(
+      JSON.stringify({ success: true, skipped: 'trial_or_demo', lessonId }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
 
   let transcriptionText = transcription.transcription_text;
 
