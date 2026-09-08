@@ -166,8 +166,10 @@ const TERMS_AND_CONDITIONS = `
 <h3 class="font-semibold text-base mb-2">15. Data Protection</h3>
 <p class="mb-4">We are committed to protecting your privacy. Personal information will be processed in accordance with GDPR and our Privacy Policy. We will never share your data with third parties without consent.</p>
 
-<h3 class="font-semibold text-base mb-2">16. Termination</h3>
-<p class="mb-4">Either party may terminate this agreement with 1 month (30 days) written notice. Prepaid fees for unused lessons will be refunded on a pro-rata basis, less any administrative fees.</p>
+<h3 class="font-semibold text-base mb-2">16. Contract Term & Renewal</h3>
+<p class="mb-4">During the agreed contract term, the number of sessions cannot be reduced and the plan cannot be downgraded. You may increase the number of sessions or upgrade your plan at any time.</p>
+<p class="mb-4">At the end of the contract term, the agreement will automatically renew. If you wish to cancel, reduce the number of sessions, or downgrade your plan, you must provide at least 30 days' written notice before the end of the current term.</p>
+<p class="mb-4">All prepaid lessons are non-refundable and must be used within the applicable contract period. No pro-rata refunds will be issued for unused lessons.</p>
 
 <h3 class="font-semibold text-base mb-2">17. Modifications</h3>
 <p class="mb-4">We reserve the right to modify these terms with reasonable notice. Continued use of our services after notification constitutes acceptance of revised terms.</p>
