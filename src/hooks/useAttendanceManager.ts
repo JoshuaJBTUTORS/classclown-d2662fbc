@@ -35,6 +35,18 @@ export const useAttendanceManager = () => {
       if (error) throw error;
 
       toast.success(`Attendance marked as ${status}`);
+
+      // Fire-and-forget: sync trial lesson outcomes to HubSpot lead status
+      if (status === 'attended' || status === 'absent') {
+        supabase.functions
+          .invoke('hubspot-trial-attendance', {
+            body: { lessonId, studentId, status }
+          })
+          .then(({ error: hsError }) => {
+            if (hsError) console.error('HubSpot trial attendance sync failed:', hsError);
+          });
+      }
+
       return true;
     } catch (error) {
       console.error('Error marking attendance:', error);

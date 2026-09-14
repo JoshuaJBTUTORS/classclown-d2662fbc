@@ -242,3 +242,6 @@ verify_jwt = false
 
 [functions.daily-breach-scan]
 verify_jwt = false
+
+[functions.hubspot-trial-attendance]
+verify_jwt = false
