@@ -249,32 +249,45 @@ export const useCalendarData = ({
               return;
             }
 
-            if (!parentData) {
+            let studentIds: number[] = [];
+
+            if (parentData) {
+              // Get all students linked to this parent
+              const { data: childrenData, error: childrenError } = await supabase
+                .from('students')
+                .select('id')
+                .eq('parent_id', parentData.id);
+
+              if (childrenError) {
+                console.error('❌ Error fetching parent\'s students:', childrenError);
+                toast.error('Failed to load student data');
+                setIsLoading(false);
+                return;
+              }
+
+              studentIds = (childrenData || []).map(s => s.id);
+            }
+
+            // Fallback: some accounts carry a stray "parent" role but are really
+            // the student. If there's no parent record (or no children linked),
+            // fall back to this person's own student lessons.
+            if (studentIds.length === 0) {
+              const { data: ownStudent } = await supabase
+                .from('students')
+                .select('id')
+                .ilike('email', userEmail)
+                .maybeSingle();
+
+              if (ownStudent) {
+                studentIds = [ownStudent.id];
+              }
+            }
+
+            if (studentIds.length === 0) {
               setRawLessons([]);
               setIsLoading(false);
               return;
             }
-
-            // Get all students linked to this parent
-            const { data: studentData, error: studentError } = await supabase
-              .from('students')
-              .select('id')
-              .eq('parent_id', parentData.id);
-
-            if (studentError) {
-              console.error('❌ Error fetching parent\'s students:', studentError);
-              toast.error('Failed to load student data');
-              setIsLoading(false);
-              return;
-            }
-
-            if (!studentData || studentData.length === 0) {
-              setRawLessons([]);
-              setIsLoading(false);
-              return;
-            }
-
-            const studentIds = studentData.map(s => s.id);
 
             // Fetch both original lessons and instances for this parent's students
             query = supabase
