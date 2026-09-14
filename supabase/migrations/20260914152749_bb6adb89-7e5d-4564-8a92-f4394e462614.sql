@@ -1,0 +1,1 @@
+DELETE FROM public.user_roles WHERE user_id = 'ebbefec5-f164-4bed-a413-29e9c4d693e8' AND role = 'parent';
