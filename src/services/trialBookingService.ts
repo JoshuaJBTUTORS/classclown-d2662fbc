@@ -87,8 +87,8 @@ export const createTrialBooking = async (data: CreateTrialBookingData): Promise<
     // Use preferred_time as the demo start time (time shown to clients)
     const formattedDemoTime = data.preferred_time;
 
-    // HubSpot integration for direct bookings (not Musa)
-    if (!data.booking_source || data.booking_source !== 'musa') {
+    // HubSpot integration for direct bookings (not Musa or Tayana)
+    if (!data.booking_source || (data.booking_source !== 'musa' && data.booking_source !== 'tayana')) {
       try {
         console.log('Calling HubSpot integration for trial booking...');
         const hubspotResult = await supabase.functions.invoke('hubspot-trial-integration', {
