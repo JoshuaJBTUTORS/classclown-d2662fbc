@@ -68,6 +68,7 @@ import Goals from './pages/Goals';
 import RevenueExpansion from './pages/RevenueExpansion';
 import LiveSessions from './pages/LiveSessions';
 import TrialBookingMusa from './pages/TrialBookingMusa';
+import TrialBookingTayana from './pages/TrialBookingTayana';
 import ReviewRoom from './pages/ReviewRoom';
 
 import TutorContentPage from './pages/tutor/TutorContentPage';
@@ -136,6 +137,7 @@ function App() {
                 <Route path="/loading-preview" element={<LoadingPreview />} />
                 <Route path="/book-trial" element={<TrialBooking />} />
                 <Route path="/book-trial-musa" element={<TrialBookingMusa />} />
+                <Route path="/book-trial-tayana" element={<TrialBookingTayana />} />
                 <Route path="/review-room" element={<ReviewRoom />} />
                 <Route path="/trial-booking-confirmation" element={<TrialBookingConfirmation />} />
                 <Route path="/jb-tutors-preview" element={<JBTutorsPreview />} />
