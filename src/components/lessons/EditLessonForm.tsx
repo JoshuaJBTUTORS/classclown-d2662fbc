@@ -170,16 +170,18 @@ const EditLessonForm: React.FC<EditLessonFormProps> = ({
       
       if (error) throw error;
       
-      // Check if this is a recurring lesson (parent or instance)
-      const isRecurring = data.is_recurring || data.is_recurring_instance;
+      // Check if this is a recurring lesson (parent, instance, or child of a series)
+      const belongsToSeries = Boolean(data.parent_lesson_id);
+      const isRecurring = data.is_recurring || data.is_recurring_instance || belongsToSeries;
       setIsRecurringLesson(isRecurring);
       
       // Set default edit scope based on lesson type
-      if (data.is_recurring_instance) {
+      if (data.is_recurring_instance || belongsToSeries) {
         setEditScope(EditScope.THIS_LESSON_ONLY);
       } else if (data.is_recurring) {
         setEditScope(EditScope.ALL_FUTURE_LESSONS);
       }
+
       
       // Process students data - ensure consistent ID handling
       const students = data.lesson_students.map((ls: any) => ls.student);
