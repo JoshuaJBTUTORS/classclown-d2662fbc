@@ -39,7 +39,9 @@ export const LESSON_SUBJECTS = [
   'A-level Computer Science',
   'A-level Geography',
   'A-level Business',
-  'A-level Economics'
+  'A-level Economics',
+  'A-level History',
+  'A-level Psychology'
 ] as const;
 
 export type LessonSubject = typeof LESSON_SUBJECTS[number];
@@ -67,7 +69,7 @@ export const EDUCATIONAL_STAGES = {
   'a_level': {
     label: 'A-Level',
     description: 'Ages 16-18 advanced level studies',
-    subjects: ['A-level Maths', 'A-level Biology', 'A-level Chemistry', 'A-level Physics', 'A-level Computer Science', 'A-level Geography', 'A-level Business', 'A-level Economics'],
+    subjects: ['A-level Maths', 'A-level Biology', 'A-level Chemistry', 'A-level Physics', 'A-level Computer Science', 'A-level Geography', 'A-level Business', 'A-level Economics', 'A-level History', 'A-level Psychology'],
     icon: 'GraduationCap'
   }
 } as const;
