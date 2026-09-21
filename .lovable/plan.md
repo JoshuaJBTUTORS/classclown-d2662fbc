@@ -8,6 +8,12 @@ Over time the individual weekly sessions were renamed to "GCSE Maths Group" and 
 
 So nothing broke on its own: the delete was applied to the master record that was still wearing the old KS3 name, which is why it looked like a different lesson.
 
+## Why a different group with other students is sitting in that slot
+
+There have always been two separate Monday 6pm maths groups. The second one is a GCSE Maths Foundation group taught by Fariha Muhith with Deborah Agbaje and Delaney Anderson. It has run every Monday for months and is untouched.
+
+Nothing swapped students in or out: with Lyba's group gone, only Fariha's group is left in that slot, so it looks like the lesson "changed" to older students. Once Lyba's sessions are restored, both groups will show side by side again as they did last week.
+
 ## What I'll do
 
 1. Recreate the 14 deleted Monday 6pm sessions, from today (21 Sep) through 21 Dec, copying the settings from the 14 September session: title "GCSE Maths Group", subject GCSE Maths Higher, teacher Lyba Samar, 6:00–7:00pm.
