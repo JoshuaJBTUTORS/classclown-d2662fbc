@@ -6,7 +6,7 @@ import { Check, Mail, Phone, Printer, PlayCircle, Clock, Menu, ChevronDown } fro
 import jbLogo from '@/assets/jb-tutors-logo.png';
 import { resolveDiscountDeadline } from './discountDeadline';
 
-const INTRO_VIDEO_URL = 'https://share.descript.com/embed/GAcvB7aW73w';
+const INTRO_VIDEO_URL = 'https://share.descript.com/embed/frwRgA0s1T9';
 const CONTACT_EMAIL = 'enquiries@classbeyondacademy.io';
 const CONTACT_PHONE = '01438 582848';
 
