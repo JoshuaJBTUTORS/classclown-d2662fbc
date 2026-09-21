@@ -4,7 +4,15 @@ Renaming was only the visible symptom. The real question is: for every repeating
 
 ## What the audit checks
 
-For each repeating series, it compares every upcoming session against that group's most recent real (past) session, and flags:
+For each repeating series the audit compares three things side by side, so you can tell a deliberate change from a mistake:
+
+- **A — the original series record** (how the group was first set up)
+- **B — the most recent real session that actually happened**
+- **C — the upcoming sessions**
+
+Reading those together tells you which kind of problem you have: C matches A but not B means old details were carried forward by the automatic repeat job (a fault). C matches B but not A means the group was legitimately changed over time and the original record is simply stale. C matching neither means someone edited a single session by hand. Every finding is labelled with which of these it is.
+
+Against that three-way comparison it flags:
 
 1. Name, subject or teacher different from the latest real session.
 2. Register different — students missing, or old students carried forward.
