@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       items: [
   {
     icon: () => <span className="text-xl">👋</span>,
-    label: 'HeyCleo',
+    label: 'HeyCleo (Homework)',
     href: '#',
     roles: ['admin', 'owner', 'tutor', 'parent', 'student'],
     onClick: () => heyCleoRedirectService.redirectToHeyCleo(),
