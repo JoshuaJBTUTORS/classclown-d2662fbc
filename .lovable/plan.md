@@ -4,7 +4,9 @@
 
 This group started life as "KS3 Maths Group" with Abdul as teacher and Ahmad Musa and Aiden Patel on the register. Over the summer it was changed week by week to "GCSE Maths Group" with Lyba Samar and the current four students (Amelia, Daniel Zack, Dylan, Daniel Nwaekpe) — up to and including 14 September.
 
-The problem is the automatic "keep the repeat going" job. Every few weeks it creates the next batch of sessions, and it copies the name, subject, teacher and register from the **original** master record of the series — not from how the lessons actually look now. That master record was never updated, so every newly created future session came back as "KS3 Maths Group", KS3 Maths, with Ahmad and Aiden on the register and the current four students missing.
+The problem is the automatic "keep the repeat going" job. Every few weeks it creates the next batch of sessions, and it copies the name, subject and register from the **original** master record of the series — not from how the lessons actually look now. (It does carry the current teacher across, which is why Lyba's name was still on them.) That master record was never updated, so every newly created future session came back as "KS3 Maths Group", KS3 Maths, with Ahmad and Aiden on the register and the current four students missing.
+
+Checked directly: the master record for this series still reads "KS3 Maths Group" / KS3 Maths with Ahmad Musa and Aiden Patel on its register, and every session deleted this morning (21 Sep onwards) was stored with exactly that name and subject, while the 7 and 14 September sessions kept the corrected GCSE details.
 
 That is what you saw today. Because it looked like an old KS3 lesson, it was deleted this morning using "this and all future lessons" — which removed today's session and every Monday after it through 21 December (14 sessions).
 
