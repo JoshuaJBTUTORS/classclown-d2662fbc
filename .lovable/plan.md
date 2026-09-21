@@ -1,33 +1,28 @@
-# Restore the Monday 6pm GCSE Maths Group
+# Fix the Monday 6pm GCSE Maths Group (Lyba's group)
 
-## What happened
+## What actually happened
 
-The Monday 6pm group in your screenshot (Lyba Samar, 4 students: Amelia Joe, Daniel Zack, Dylan Adofo, Daniel Nwaekpe) is part of a repeating series that was originally set up as "KS3 Maths Group" with a different teacher.
+This group started life as "KS3 Maths Group" with Abdul as teacher and Ahmad Musa and Aiden Patel on the register. Over the summer it was changed week by week to "GCSE Maths Group" with Lyba Samar and the current four students (Amelia, Daniel Zack, Dylan, Daniel Nwaekpe) — up to and including 14 September.
 
-Over time the individual weekly sessions were renamed to "GCSE Maths Group" and moved to Lyba, but the master record for the series still said "KS3 Maths Group". Today at 12:29 London, from your own account, that series was deleted using "this and all future lessons". That removed today's session and every Monday after it, through 21 December — 14 sessions in total. The 7 and 14 September sessions survive because they are in the past.
+The problem is the automatic "keep the repeat going" job. Every few weeks it creates the next batch of sessions, and it copies the name, subject, teacher and register from the **original** master record of the series — not from how the lessons actually look now. That master record was never updated, so every newly created future session came back as "KS3 Maths Group", KS3 Maths, with Ahmad and Aiden on the register and the current four students missing.
 
-So nothing broke on its own: the delete was applied to the master record that was still wearing the old KS3 name, which is why it looked like a different lesson.
+That is what you saw today. Because it looked like an old KS3 lesson, it was deleted this morning using "this and all future lessons" — which removed today's session and every Monday after it through 21 December (14 sessions).
 
-## Why a different group with other students is sitting in that slot
-
-There have always been two separate Monday 6pm maths groups. The second one is a GCSE Maths Foundation group taught by Fariha Muhith with Deborah Agbaje and Delaney Anderson. It has run every Monday for months and is untouched.
-
-Nothing swapped students in or out: with Lyba's group gone, only Fariha's group is left in that slot, so it looks like the lesson "changed" to older students. Once Lyba's sessions are restored, both groups will show side by side again as they did last week.
+Fariha's Monday 6pm GCSE Foundation group with Deborah and Delaney is a completely separate group and was never touched; it is the only thing left in that slot right now.
 
 ## What I'll do
 
-1. Recreate the 14 deleted Monday 6pm sessions, from today (21 Sep) through 21 Dec, copying the settings from the 14 September session: title "GCSE Maths Group", subject GCSE Maths Higher, teacher Lyba Samar, 6:00–7:00pm.
-2. Re-attach the same four students to every restored session.
-3. Clear the "stop this series from today" marker so the restored sessions don't get hidden again or wiped by the overnight repeat job.
-4. Correct the master record for the series so its name, subject and teacher match what the sessions actually are (GCSE Maths Group, GCSE Maths Higher, Lyba Samar). This stops the same confusion happening next time someone edits or deletes the series.
+1. Update the master record for the series so it matches reality: GCSE Maths Group, GCSE Maths Higher, Lyba Samar, with Amelia, Daniel Zack, Dylan and Daniel Nwaekpe on the register. This is what stops the KS3 version coming back.
+2. Clear the "stop this series from today" marker left by this morning's delete.
+3. Recreate the 14 Monday 6pm sessions from today through 21 December with the correct name, subject, teacher and those four students.
+4. Fix the auto-extend job so future sessions are copied from the most recent actual lesson in the series rather than the original master record. This prevents the same silent revert on every other group too.
 
-Past sessions, attendance, homework and lesson summaries are left untouched.
+Past lessons, attendance, homework and summaries are untouched.
 
 ## Technical notes
 
-- Series parent: `e210f52e-2d70-4254-8137-dc72de05a129`; reference child `45dcf55a-c7f3-4c7b-9860-b360a9ce7f06` (14 Sep).
-- Restore from `lesson_deletion_log` rows with `parent_lesson_id = e210f52e...` and `deleted_at = 2026-09-21 11:29:08`, reusing the original `lesson_id` values so any linked records still match; set `is_recurring_instance = true` and `instance_date`.
-- Students 360, 383, 526, 544 inserted into `lesson_students` per restored lesson.
-- Delete the `recurring_lesson_cancellations` row `ddea4bc5-7100-4b66-9354-9fc7a10038cf` (`cancelled_from = 2026-09-21`).
-- Update the parent row's `title`, `subject` and `tutor_id` to match the children.
-- All done with data statements; no schema change.
+- Series parent `e210f52e-2d70-4254-8137-dc72de05a129`; reference child `45dcf55a-c7f3-4c7b-9860-b360a9ce7f06` (14 Sep).
+- Update the parent's `title`, `subject`, `tutor_id` and its `lesson_students` rows; also refresh `recurring_lesson_groups.current_tutor_id` for the series.
+- Delete `recurring_lesson_cancellations` row `ddea4bc5-7100-4b66-9354-9fc7a10038cf` (`cancelled_from = 2026-09-21`).
+- Recreate instances for 21 Sep – 21 Dec with `is_recurring_instance = true`, `instance_date` set, and the four `lesson_students` rows each.
+- Migration to `public.extend_recurring_lessons()`: source `title`, `description`, `subject`, `lesson_type`, tutor and the student roster from the latest past instance of the series (fall back to the parent when none exists), keeping the existing cancellation, tutor-active and conflict handling unchanged.
