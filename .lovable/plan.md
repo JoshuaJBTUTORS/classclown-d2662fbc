@@ -14,8 +14,8 @@ Reading those together tells you which kind of problem you have: C matches A but
 
 Against that three-way comparison it flags:
 
-1. Name, subject or teacher different from the latest real session.
-2. Register different — students missing, or old students carried forward.
+1. Name, subject or teacher different across the three versions — labelled as carried-forward, stale original, or hand-edited.
+2. Register different — students missing, or old students from the original setup reappearing.
 3. Students on upcoming sessions who are no longer active, archived, or duplicated.
 4. Group/one-to-one setting or lesson type different (a group turned into a 1-1, or a real lesson marked as a trial).
 5. Time or length different — a session at the wrong hour, wrong weekday, or a different duration from the rest of the series.
@@ -28,15 +28,15 @@ Against that three-way comparison it flags:
 
 ## How it is delivered
 
-- A new admin page, **Repeat Health**, at `/admin/series-health`: a read-only list of every flagged series, showing what the group looks like now versus what the upcoming sessions say, grouped by issue type and severity.
-- Each row has a "Fix this series" action that aligns upcoming sessions to the latest real session (name, subject, teacher, register, group setting, duration) and repairs repeat markers. Nothing changes without a click; past sessions are never touched.
+- A new admin page, **Repeat Health**, at `/admin/series-health`: a read-only list of every flagged series, showing the original setup, the last real session and the upcoming sessions in three columns so the difference is obvious at a glance, grouped by issue type and severity.
+- Each row has a "Fix this series" action that aligns upcoming sessions and the series record to the latest real session (name, subject, teacher, register, group setting, duration) and repairs repeat markers. Nothing changes without a click; past sessions are never touched.
 - A "Fix all safe issues" button for the clear-cut categories (broken repeat markers, stale master record, carried-forward names), leaving judgement calls like time changes and missing dates to be reviewed one by one.
 - The same checks run daily and, when anything new is flagged, appear as an alert banner on Agent Cleo, in the same style as the tutor breach and churn alerts, so drift is caught within a day instead of being noticed on the calendar weeks later.
 
 ## Technical notes
 
 - Audit implemented as a Postgres function returning one row per finding (`series_id`, `lesson_id`, `issue_code`, `expected`, `actual`, `severity`), so the page and the daily scan share one source of truth.
-- Reference snapshot per series = most recent `start_time < now()` instance, plus its `lesson_students` roster; comparison fields: `title`, `subject`, `tutor_id`, `is_group`, `lesson_type`, duration (`end_time - start_time`), local time-of-day and weekday, roster set.
+- Three snapshots per series: original = the parent `lessons` row (plus `recurring_lesson_groups` config), current = most recent `start_time < now()` instance with a roster, future = each upcoming instance; each finding records `origin_match` (`original` | `current` | `neither`) to classify it. Comparison fields: `title`, `subject`, `tutor_id`, `is_group`, `lesson_type`, duration (`end_time - start_time`), local time-of-day and weekday, roster set.
 - Structural checks: `parent_lesson_id is not null and is_recurring_instance = false`, `instance_date is null`, duplicate `(parent_lesson_id, instance_date)`, missing parent row, rows matching `recurring_lesson_cancellations`, shared `lesson_space_room_id` / `google_event_id` across distinct future lessons.
 - Findings stored in a new `recurring_series_findings` table (with grants and admin-only RLS) so the daily scan can diff against yesterday and only alert on new items; dismissals recorded per finding.
 - Daily scan edge function `daily-series-health-scan` scheduled early morning; Agent Cleo banner reuses the existing breach/churn banner pattern and hook structure.
