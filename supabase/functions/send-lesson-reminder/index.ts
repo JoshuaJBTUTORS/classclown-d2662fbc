@@ -178,8 +178,14 @@ const handler = async (req: Request): Promise<Response> => {
           const student = lessonStudent.student;
           const parent = student.parent;
 
-          if (!parent || !parent.email) {
-            console.warn(`No parent email found for student ${student.first_name} ${student.last_name}`);
+          const studentEmail = (student.email || '').trim();
+          const parentEmail = (parent?.email || '').trim();
+          const hasParentEmail = !!parentEmail;
+          const hasStudentEmail = !!studentEmail &&
+            studentEmail.toLowerCase() !== parentEmail.toLowerCase();
+
+          if (!hasParentEmail && !hasStudentEmail) {
+            console.warn(`No parent or student email found for student ${student.first_name} ${student.last_name}`);
             continue;
           }
 
@@ -187,11 +193,15 @@ const handler = async (req: Request): Promise<Response> => {
           const lessonDate = formatInUKTime(lesson.start_time, 'EEEE, dd MMMM yyyy');
           const lessonTime = `${formatInUKTime(lesson.start_time, 'HH:mm')} - ${formatInUKTime(lesson.end_time, 'HH:mm')}`;
 
+          const parentName = parent
+            ? `${parent.first_name} ${parent.last_name}`
+            : student.first_name;
+
           // Generate email HTML
           const emailHtml = await renderAsync(
             React.createElement(RegularLessonReminderEmail, {
               studentName: `${student.first_name} ${student.last_name}`,
-              parentName: `${parent.first_name} ${parent.last_name}`,
+              parentName,
               lessonTitle: lesson.title,
               lessonSubject: lesson.subject || 'Tutoring Session',
               lessonDate,
@@ -202,55 +212,110 @@ const handler = async (req: Request): Promise<Response> => {
             })
           );
 
-          console.log(`Sending email ${emailIndex}/${totalEmails} to ${parent.email}...`);
+          const emailSubject = `Lesson Reminder - ${lesson.subject || 'Tutoring'} ${isToday ? 'Today' : 'Tomorrow'}`;
 
-          // Send email with retry logic
-          const emailResult = await sendEmailWithRetry({
-            from: 'Class Beyond <lessons@classbeyondacademy.io>',
-            to: buildEmailRecipients(parent.email, parent.secondary_email),
-            subject: `Lesson Reminder - ${lesson.subject || 'Tutoring'} ${isToday ? 'Today' : 'Tomorrow'}`,
-            html: emailHtml,
-          });
+          // Parent email (incl. secondary contacts)
+          if (hasParentEmail) {
+            console.log(`Sending email ${emailIndex}/${totalEmails} to ${parentEmail}...`);
+            const emailResult = await sendEmailWithRetry({
+              from: 'Class Beyond <lessons@classbeyondacademy.io>',
+              to: buildEmailRecipients(parentEmail, parent.secondary_email),
+              subject: emailSubject,
+              html: emailHtml,
+            });
 
-          // Rate limiting: wait 600ms between emails (allowing ~1.6 emails per second)
-          if (emailIndex < totalEmails) {
+            // Rate limiting: wait 600ms between emails (allowing ~1.6 emails per second)
+            if (emailIndex < totalEmails) {
+              await sleep(600);
+            }
+
+            if (emailResult.error) {
+              console.error(`Failed to send email to ${parentEmail}:`, emailResult.error);
+              errors.push(`Failed to send to ${parentEmail}: ${emailResult.error.error || emailResult.error.message || JSON.stringify(emailResult.error)}`);
+            } else {
+              console.log(`Email sent successfully to ${parentEmail} for lesson ${lesson.id}`);
+              emailsSent++;
+            }
+          }
+
+          // Student's own email, when different from the parent's
+          if (hasStudentEmail) {
+            try {
+              const studentEmailResult = await sendEmailWithRetry({
+                from: 'Class Beyond <lessons@classbeyondacademy.io>',
+                to: [studentEmail],
+                subject: emailSubject,
+                html: emailHtml,
+              });
+              if (studentEmailResult.error) {
+                console.error(`Failed to send email to student ${studentEmail}:`, studentEmailResult.error);
+                errors.push(`Failed to send to student ${studentEmail}: ${studentEmailResult.error.error || studentEmailResult.error.message || JSON.stringify(studentEmailResult.error)}`);
+              } else {
+                console.log(`Email sent successfully to student ${studentEmail} for lesson ${lesson.id}`);
+                emailsSent++;
+              }
+            } catch (seErr: any) {
+              console.warn(`Student email send failed for ${studentEmail}:`, seErr?.message || seErr);
+            }
             await sleep(600);
           }
 
-          if (emailResult.error) {
-            console.error(`Failed to send email to ${parent.email}:`, emailResult.error);
-            errors.push(`Failed to send to ${parent.email}: ${emailResult.error.error || emailResult.error.message || JSON.stringify(emailResult.error)}`);
-          } else {
-            console.log(`Email sent successfully to ${parent.email} for lesson ${lesson.id}`);
-            emailsSent++;
+          // WhatsApp: parent phones (incl. secondary) plus the student's own number
+          const parentPhoneTargets = parent
+            ? buildPhoneRecipients(parent.whatsapp_number || parent.phone, parent.secondary_phone)
+            : [];
+          const studentPhoneRaw = student.whatsapp_number || student.phone;
+          const studentPhone = studentPhoneRaw
+            ? whatsappService.formatPhoneNumber(studentPhoneRaw)
+            : null;
+          const parentPhonesNorm = new Set(
+            parentPhoneTargets.map((t: string) => {
+              try { return whatsappService.formatPhoneNumber(t); } catch { return t; }
+            })
+          );
+          const includeStudentPhone = !!studentPhone && !parentPhonesNorm.has(studentPhone);
 
-            // Send WhatsApp message if phone number is available
-            const phoneTargets = buildPhoneRecipients(
-              parent.whatsapp_number || parent.phone,
-              parent.secondary_phone
+          if (parentPhoneTargets.length > 0) {
+            const whatsappText = WhatsAppTemplates.regularLessonReminder(
+              parentName,
+              `${student.first_name} ${student.last_name}`,
+              lesson.title,
+              lessonDate,
+              lessonTime,
+              isToday
             );
-            if (phoneTargets.length > 0) {
-              const whatsappText = WhatsAppTemplates.regularLessonReminder(
-                `${parent.first_name} ${parent.last_name}`,
-                `${student.first_name} ${student.last_name}`,
-                lesson.title,
-                lessonDate,
-                lessonTime,
-                isToday
-              );
 
-              for (const target of phoneTargets) {
-                try {
-                  const whatsappNumber = whatsappService.formatPhoneNumber(target);
-                  const whatsappResponse = await whatsappService.sendMessage({
-                    phoneNumber: whatsappNumber,
-                    text: whatsappText
-                  });
-                  console.log(`WhatsApp lesson reminder to ${whatsappNumber}:`, whatsappResponse);
-                } catch (waErr: any) {
-                  console.warn(`WhatsApp send failed for ${target}:`, waErr?.message || waErr);
-                }
+            for (const target of parentPhoneTargets) {
+              try {
+                const whatsappNumber = whatsappService.formatPhoneNumber(target);
+                const whatsappResponse = await whatsappService.sendMessage({
+                  phoneNumber: whatsappNumber,
+                  text: whatsappText
+                });
+                console.log(`WhatsApp lesson reminder to ${whatsappNumber}:`, whatsappResponse);
+              } catch (waErr: any) {
+                console.warn(`WhatsApp send failed for ${target}:`, waErr?.message || waErr);
               }
+            }
+          }
+
+          if (includeStudentPhone && studentPhone) {
+            const studentWhatsappText = WhatsAppTemplates.regularLessonReminder(
+              student.first_name,
+              `${student.first_name} ${student.last_name}`,
+              lesson.title,
+              lessonDate,
+              lessonTime,
+              isToday
+            );
+            try {
+              const whatsappResponse = await whatsappService.sendMessage({
+                phoneNumber: studentPhone,
+                text: studentWhatsappText
+              });
+              console.log(`WhatsApp lesson reminder to student ${studentPhone}:`, whatsappResponse);
+            } catch (waErr: any) {
+              console.warn(`WhatsApp send failed for student ${studentPhone}:`, waErr?.message || waErr);
             }
           }
         }
