@@ -22,15 +22,21 @@ const corsHeaders = {
 
 const SUBJECT = "Homework reminder";
 
+const childNames = (first?: string | null) => {
+  const n = (first ?? "").trim().split(/\s+/)[0];
+  if (!n) return { name: "your child", poss: "your child's" };
+  return { name: n, poss: /s$/i.test(n) ? `${n}'` : `${n}'s` };
+};
+
 const MSG = {
-  wedCurrent: (days: number) =>
-    `Hello. This is a reminder that your child has ${days} ${days === 1 ? "day" : "days"} left to complete this week's homework. Please log on to classclowncrm.com and head to HeyCleo to complete the homework.`,
-  wedBoth:
-    "Hello. This is a reminder that your child's homework due from last week has not yet been completed. Please note that failure to complete can result in restricted access from future lessons as this is a requirement to ensure we can best support your child.",
-  friCurrent:
-    "Hello. This is just a reminder that your child's homework is due today. Please let us know if you are having difficulty completing this week's homework.",
-  friBoth:
-    "Hello. This is a reminder that your child has not yet completed this week and last week's homework. Please note that failure to complete homework can result in restricted access as this is a requirement to ensure we can best support your child.",
+  wedCurrent: (c: { name: string; poss: string }, days: number) =>
+    `Hello. This is a reminder that ${c.name} has ${days} ${days === 1 ? "day" : "days"} left to complete this week's homework. Please log on to classclowncrm.com and head to HeyCleo to complete the homework.`,
+  wedBoth: (c: { name: string; poss: string }) =>
+    `Hello. This is a reminder that ${c.poss} homework due from last week has not yet been completed. Please note that failure to complete can result in restricted access from future lessons as this is a requirement to ensure we can best support ${c.name}.`,
+  friCurrent: (c: { name: string; poss: string }) =>
+    `Hello. This is just a reminder that ${c.poss} homework is due today. Please let us know if you are having difficulty completing this week's homework.`,
+  friBoth: (c: { name: string; poss: string }) =>
+    `Hello. This is a reminder that ${c.name} has not yet completed this week and last week's homework. Please note that failure to complete homework can result in restricted access as this is a requirement to ensure we can best support ${c.name}.`,
 };
 
 function londonParts(d: Date) {
@@ -287,22 +293,23 @@ serve(async (req) => {
         continue;
       }
 
+      const child = childNames(student.first_name);
       let text: string;
       let variant: string;
       if (isFriday) {
         if (lastOutstanding) {
-          text = MSG.friBoth;
+          text = MSG.friBoth(child);
           variant = "friday_both";
         } else {
-          text = MSG.friCurrent;
+          text = MSG.friCurrent(child);
           variant = "friday_current";
         }
       } else {
         if (lastOutstanding) {
-          text = MSG.wedBoth;
+          text = MSG.wedBoth(child);
           variant = "wednesday_last_week";
         } else {
-          text = MSG.wedCurrent(daysLeft);
+          text = MSG.wedCurrent(child, daysLeft);
           variant = "wednesday_current";
         }
       }
@@ -317,7 +324,7 @@ serve(async (req) => {
       const secondaryPhoneRaw = parent?.secondary_phone ? normalisePhone(parent.secondary_phone) : null;
       const secondaryPhone = secondaryPhoneRaw && secondaryPhoneRaw !== phone ? secondaryPhoneRaw : null;
 
-      const outcome: any = { student_id: student.id, variant, email, phone, secondaryEmail, secondaryPhone, sent: [] as string[] };
+      const outcome: any = { student_id: student.id, child: child.name, text, variant, email, phone, secondaryEmail, secondaryPhone, sent: [] as string[] };
 
       if (body.dry_run) {
         outcome.dry_run = true;
@@ -327,7 +334,7 @@ serve(async (req) => {
 
       // Email
       if (email && resend) {
-        const logKey = `email:${email}`;
+        const logKey = `email:${email}:s${student.id}`;
         const { data: existing } = await service
           .from("notifications")
           .select("id")
@@ -376,7 +383,7 @@ serve(async (req) => {
 
       // WhatsApp
       if (phone) {
-        const logKey = `whatsapp:${phone}`;
+        const logKey = `whatsapp:${phone}:s${student.id}`;
         const { data: existing } = await service
           .from("notifications")
           .select("id")
