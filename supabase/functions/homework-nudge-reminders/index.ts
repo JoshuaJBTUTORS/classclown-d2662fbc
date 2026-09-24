@@ -367,6 +367,19 @@ serve(async (req) => {
       const secondaryPhoneRaw = parent?.secondary_phone ? normalisePhone(parent.secondary_phone) : null;
       const secondaryPhone = secondaryPhoneRaw && secondaryPhoneRaw !== phone ? secondaryPhoneRaw : null;
 
+      // Each child's own contact details, when different from the parent's.
+      const studentContacts = members.map((m) => {
+        const s = m.student;
+        const sEmail = (s.email || "").trim();
+        const sPhone = normalisePhone(s.whatsapp_number || s.phone);
+        return {
+          id: s.id,
+          name: m.firstName,
+          email: sEmail && sEmail.toLowerCase() !== (email || "").trim().toLowerCase() ? sEmail : null,
+          phone: sPhone && sPhone !== phone ? sPhone : null,
+        };
+      });
+
       const outcome: any = {
         group: groupKey,
         student_ids: members.map((m) => m.student.id),
@@ -377,6 +390,7 @@ serve(async (req) => {
         phone,
         secondaryEmail,
         secondaryPhone,
+        student_contacts: studentContacts,
         sent: [] as string[],
       };
 
