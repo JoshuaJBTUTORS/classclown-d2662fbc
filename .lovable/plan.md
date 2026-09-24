@@ -1,30 +1,36 @@
-# Rishab Krishnan — why his sessions stopped repeating
+# Add the child's name to every homework reminder
 
-## What I found
+## The reminders we send today
 
-Rishab currently has **no upcoming lessons at all**. His last three were 14 Sep (Economics), 17 Sep (Computer Science) and 19 Sep (Further Maths).
+Sent by WhatsApp and email on Wednesday 4pm and Friday 9am, only when homework is outstanding. None of them name the child right now.
 
-The cause is not a system fault. On **16 September at 11:48 and 11:49**, Hannah Murray used "delete this and all future" on both of Rishab's new repeating series:
+1. **Wednesday, this week not done**
+   "Hello. This is a reminder that your child has X days left to complete this week's homework. Please log on to classclowncrm.com and head to HeyCleo to complete the homework."
+2. **Wednesday, last week still not done**
+   "Hello. This is a reminder that your child's homework due from last week has not yet been completed. Please note that failure to complete can result in restricted access from future lessons as this is a requirement to ensure we can best support your child."
+3. **Friday, due today**
+   "Hello. This is just a reminder that your child's homework is due today. Please let us know if you are having difficulty completing this week's homework."
+4. **Friday, this week and last week not done**
+   "Hello. This is a reminder that your child has not yet completed this week and last week's homework. Please note that failure to complete homework can result in restricted access as this is a requirement to ensure we can best support your child."
 
-- 1-1 A level Computer Science (Thursdays 8pm, Olli Glover) — stopped from 17 Sep onward
-- 1-1 A level Economics (Mondays 8pm, Scott Renwick) — stopped from 21 Sep onward
+The Sunday "Your new homework is ready" message is an announcement, not a reminder, so it stays as it is.
 
-That action writes a permanent stop marker on each series and caps it so the repeat job never generates again. Both series are now marked as retired, which is why nothing appeared this week.
+## New wording (child's first name added, rest unchanged)
 
-Separately, his older series (Further Maths with Riddhi Dineshkumar, Economics and Computer Science with Iulian Dogarescu) were all stopped the same way back in late June / July, when he appears to have been moved onto new teachers. The 17 Sep Computer Science and 19 Sep Further Maths lessons were created as one-off sessions, not repeats.
+1. "Hello. This is a reminder that **Amara** has X days left to complete this week's homework. Please log on to classclowncrm.com and head to HeyCleo to complete the homework."
+2. "Hello. This is a reminder that **Amara's** homework due from last week has not yet been completed. Please note that failure to complete can result in restricted access from future lessons as this is a requirement to ensure we can best support **Amara**."
+3. "Hello. This is just a reminder that **Amara's** homework is due today. Please let us know if you are having difficulty completing this week's homework."
+4. "Hello. This is a reminder that **Amara** has not yet completed this week and last week's homework. Please note that failure to complete homework can result in restricted access as this is a requirement to ensure we can best support **Amara**."
 
-## Before I fix anything
+If a student has no first name on file, the message falls back to "your child" as today.
 
-I need to know what Rishab's schedule should actually be now, because two of his recent lessons were one-offs with different teachers (Iulian for Computer Science, Fariha Muhith for Further Maths) than the repeating series.
+## Families with more than one child
 
-## Proposed fix
+Today a family only gets one reminder per day, so if two siblings are both behind, the second child is silently skipped. Now that each message names a child, each child who is behind gets their own reminder, and each child still only gets one per run.
 
-1. Confirm the intended weekly schedule: which subjects, which teacher, which day and time each.
-2. For each confirmed slot, remove the stop marker, reopen the series, and regenerate weekly sessions from this week forward (three months ahead), with Rishab on the register.
-3. Leave all past lessons, attendance, homework and summaries untouched.
-4. Verify afterwards that Rishab has the expected weekly sessions on the calendar and that a repeat run creates no duplicates.
+## Technical notes
 
-## Technical details
-
-- Series records: `recurring_lesson_groups` rows for parents `fa087187…` (CS) and `ac5dfb24…` (Economics) both have `next_extension_date` stamped to 2126 and matching `recurring_lesson_cancellations` rows with `cancelled_from` 2026-09-17 and 2026-09-21.
-- Reopening means deleting those cancellation rows, resetting `next_extension_date` / `instances_generated_until`, then generating the missing weekly instances with `lesson_students` entries for student 371.
+- `supabase/functions/homework-nudge-reminders/index.ts`: turn the `MSG` entries into functions taking the child's first name (trimmed, fallback "your child", possessive "your child's"), and pass `student.first_name`.
+- Change the de-duplication key from `email:<address>` / `whatsapp:<number>` to include the student id, so siblings each get their own message while re-runs still never double send.
+- Include the child name in the dry-run output so a test run shows the exact text.
+- Redeploy the function, then do a dry run for this Friday to confirm the wording.
