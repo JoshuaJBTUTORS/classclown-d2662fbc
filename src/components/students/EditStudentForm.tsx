@@ -46,6 +46,7 @@ const formSchema = z.object({
     message: "Please enter a valid email address.",
   }),
   studentId: z.string().optional(),
+  phone: z.string().optional(),
   subjects: z.string().min(2, {
     message: "Subjects must be at least 2 characters.",
   }),
@@ -67,6 +68,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
       lastName: student?.last_name || "",
       email: student?.email || "",
       studentId: student?.student_id || "",
+      phone: student?.phone || "",
       subjects: subjectsString,
       status: (student?.status === 'active' || student?.status === 'inactive' || student?.status === 'trial' || student?.status === 'stopped'
               ? student.status 
@@ -86,6 +88,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         lastName: student.last_name || "",
         email: student.email || "",
         studentId: student.student_id || "",
+        phone: student.phone || "",
         subjects: subjectsValue,
         status: (student.status === 'active' || student.status === 'inactive' || student.status === 'trial' || student.status === 'stopped'
                 ? student.status 
@@ -108,6 +111,7 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
         last_name: values.lastName,
         email: values.email,
         student_id: values.studentId,
+        phone: values.phone,
         subjects: subjectsString,
         status: values.status
       };
@@ -236,6 +240,20 @@ const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, isOpen, onCl
                   <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">Student ID</FormLabel>
                   <FormControl>
                     <Input placeholder="Student ID" className={inputClasses} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-heading text-xs font-bold uppercase tracking-wide text-muted-foreground">Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Phone Number" className={inputClasses} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
