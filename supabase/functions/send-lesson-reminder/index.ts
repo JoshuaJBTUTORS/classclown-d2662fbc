@@ -74,6 +74,8 @@ const handler = async (req: Request): Promise<Response> => {
             first_name,
             last_name,
             email,
+            phone,
+            whatsapp_number,
             parent:parents (
               id,
               first_name,
