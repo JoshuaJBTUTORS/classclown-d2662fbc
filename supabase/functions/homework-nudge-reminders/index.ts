@@ -15,6 +15,9 @@ const corsHeaders = {
  * this week's and last week's HeyCleo homework is complete and sends the most
  * appropriate plain text nudge by WhatsApp and email.
  *
+ * Students who share a parent are combined into ONE message per parent that
+ * names every child who is behind.
+ *
  * Body (all optional):
  *   { dry_run?: boolean, as_of?: "YYYY-MM-DD", student_ids?: number[],
  *     force?: boolean }   // ignore the Wednesday/Friday guard
@@ -28,15 +31,35 @@ const childNames = (first?: string | null) => {
   return { name: n, poss: /s$/i.test(n) ? `${n}'` : `${n}'s` };
 };
 
+// "Oscar" / "Oscar and Aarij" / "Oscar, Aarij and Destiny"
+const joinNames = (names: string[]): string => {
+  if (names.length <= 1) return names[0] ?? "your child";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+};
+
+// Possessive of a name list: "Oscar and Aarij's" (apostrophe only if last name ends in s)
+const joinPoss = (names: string[]): string => {
+  const joined = joinNames(names);
+  return /s$/i.test(names[names.length - 1] ?? "") ? `${joined}'` : `${joined}'s`;
+};
+
 const MSG = {
-  wedCurrent: (c: { name: string; poss: string }, days: number) =>
-    `Hello. This is a reminder that ${c.name} has ${days} ${days === 1 ? "day" : "days"} left to complete this week's homework. Please log on to classclowncrm.com and head to HeyCleo to complete the homework.`,
-  wedBoth: (c: { name: string; poss: string }) =>
-    `Hello. This is a reminder that ${c.poss} homework due from last week has not yet been completed. Please note that failure to complete can result in restricted access from future lessons as this is a requirement to ensure we can best support ${c.name}.`,
-  friCurrent: (c: { name: string; poss: string }) =>
-    `Hello. This is just a reminder that ${c.poss} homework is due today. Please let us know if you are having difficulty completing this week's homework.`,
-  friBoth: (c: { name: string; poss: string }) =>
-    `Hello. This is a reminder that ${c.name} has not yet completed this week and last week's homework. Please note that failure to complete homework can result in restricted access as this is a requirement to ensure we can best support ${c.name}.`,
+  wedCurrent: (names: string[], days: number) =>
+    names.length === 1
+      ? `Hello. This is a reminder that ${names[0]} has ${days} ${days === 1 ? "day" : "days"} left to complete this week's homework. Please log on to classclowncrm.com and head to HeyCleo to complete the homework.`
+      : `Hello. This is a reminder that ${joinNames(names)} have ${days} ${days === 1 ? "day" : "days"} left to complete this week's homework. Please log on to classclowncrm.com and head to HeyCleo to complete the homework.`,
+  wedBoth: (names: string[]) =>
+    names.length === 1
+      ? `Hello. This is a reminder that ${childNames(names[0]).poss} homework due from last week has not yet been completed. Please note that failure to complete can result in restricted access from future lessons as this is a requirement to ensure we can best support ${names[0]}.`
+      : `Hello. This is a reminder that ${joinPoss(names)} homework due from last week has not yet been completed. Please note that failure to complete can result in restricted access from future lessons as this is a requirement to ensure we can best support them.`,
+  friCurrent: (names: string[]) =>
+    names.length === 1
+      ? `Hello. This is just a reminder that ${childNames(names[0]).poss} homework is due today. Please let us know if you are having difficulty completing this week's homework.`
+      : `Hello. This is just a reminder that ${joinPoss(names)} homework is due today. Please let us know if you are having difficulty completing this week's homework.`,
+  friBoth: (names: string[]) =>
+    names.length === 1
+      ? `Hello. This is a reminder that ${names[0]} has not yet completed this week and last week's homework. Please note that failure to complete homework can result in restricted access as this is a requirement to ensure we can best support ${names[0]}.`
+      : `Hello. This is a reminder that ${joinNames(names)} have not yet completed this week and last week's homework. Please note that failure to complete homework can result in restricted access as this is a requirement to ensure we can best support them.`,
 };
 
 function londonParts(d: Date) {
@@ -270,6 +293,36 @@ serve(async (req) => {
       if (!h.completed) st.outstanding += 1;
     });
 
+    // 5. Build the list of students who need a nudge, then group by parent.
+    type Nudge = {
+      student: any;
+      firstName: string;
+      lastOutstanding: boolean;
+    };
+    const nudges: Nudge[] = [];
+
+    for (const student of students) {
+      const heycleoId = linked.get(student.id);
+      if (!heycleoId) continue;
+      const state = stateByHeycleo.get(heycleoId) ?? blank();
+      const currentOutstanding = state.current.outstanding > 0;
+      const lastOutstanding = state.previous.outstanding > 0;
+      if (!currentOutstanding && !lastOutstanding) continue;
+      nudges.push({
+        student,
+        firstName: childNames(student.first_name).name,
+        lastOutstanding,
+      });
+    }
+
+    // Group key: shared parent_id, otherwise the student stands alone.
+    const groups = new Map<string, Nudge[]>();
+    for (const n of nudges) {
+      const key = n.student.parent_id ? `parent:${n.student.parent_id}` : `student:${n.student.id}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(n);
+    }
+
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const resend = resendKey ? new Resend(resendKey) : null;
     const delayMs = typeof body.delay_ms === "number" ? body.delay_ms : 1500;
@@ -278,53 +331,54 @@ serve(async (req) => {
     let emailsSent = 0;
     let whatsappSent = 0;
 
-    for (const student of students) {
-      const heycleoId = linked.get(student.id);
-      if (!heycleoId) {
-        results.push({ student_id: student.id, skipped: "no heycleo account" });
-        continue;
-      }
-      const state = stateByHeycleo.get(heycleoId) ?? blank();
-      const currentOutstanding = state.current.outstanding > 0;
-      const lastOutstanding = state.previous.outstanding > 0;
+    for (const [groupKey, members] of groups) {
+      const names = members.map((m) => m.firstName);
+      // Most serious variant wins when siblings are in different states.
+      const anyLastOutstanding = members.some((m) => m.lastOutstanding);
 
-      if (!currentOutstanding && !lastOutstanding) {
-        results.push({ student_id: student.id, skipped: "all homework complete" });
-        continue;
-      }
-
-      const child = childNames(student.first_name);
       let text: string;
       let variant: string;
       if (isFriday) {
-        if (lastOutstanding) {
-          text = MSG.friBoth(child);
+        if (anyLastOutstanding) {
+          text = MSG.friBoth(names);
           variant = "friday_both";
         } else {
-          text = MSG.friCurrent(child);
+          text = MSG.friCurrent(names);
           variant = "friday_current";
         }
       } else {
-        if (lastOutstanding) {
-          text = MSG.wedBoth(child);
+        if (anyLastOutstanding) {
+          text = MSG.wedBoth(names);
           variant = "wednesday_last_week";
         } else {
-          text = MSG.wedCurrent(child, daysLeft);
+          text = MSG.wedCurrent(names, daysLeft);
           variant = "wednesday_current";
         }
       }
 
-      // Parent contacts, falling back to the student's own details.
-      const parent = student.parent_id ? parents.get(student.parent_id) : null;
-      const email = parent?.email || student.email || null;
-      const phone = normalisePhone(parent?.whatsapp_number || parent?.phone || student.whatsapp_number || student.phone);
-      const secondaryEmail = parent?.secondary_email && parent.secondary_email.trim().toLowerCase() !== (email || '').trim().toLowerCase()
+      // Parent contacts from the first member, falling back to the student's own details.
+      const first = members[0].student;
+      const parent = first.parent_id ? parents.get(first.parent_id) : null;
+      const email = parent?.email || first.email || null;
+      const phone = normalisePhone(parent?.whatsapp_number || parent?.phone || first.whatsapp_number || first.phone);
+      const secondaryEmail = parent?.secondary_email && parent.secondary_email.trim().toLowerCase() !== (email || "").trim().toLowerCase()
         ? parent.secondary_email.trim()
         : null;
       const secondaryPhoneRaw = parent?.secondary_phone ? normalisePhone(parent.secondary_phone) : null;
       const secondaryPhone = secondaryPhoneRaw && secondaryPhoneRaw !== phone ? secondaryPhoneRaw : null;
 
-      const outcome: any = { student_id: student.id, child: child.name, text, variant, email, phone, secondaryEmail, secondaryPhone, sent: [] as string[] };
+      const outcome: any = {
+        group: groupKey,
+        student_ids: members.map((m) => m.student.id),
+        children: names,
+        text,
+        variant,
+        email,
+        phone,
+        secondaryEmail,
+        secondaryPhone,
+        sent: [] as string[],
+      };
 
       if (body.dry_run) {
         outcome.dry_run = true;
@@ -332,9 +386,9 @@ serve(async (req) => {
         continue;
       }
 
-      // Email
+      // Email — dedupe per parent group per day.
       if (email && resend) {
-        const logKey = `email:${email}:s${student.id}`;
+        const logKey = `email:${email}:${groupKey}`;
         const { data: existing } = await service
           .from("notifications")
           .select("id")
@@ -366,7 +420,7 @@ serve(async (req) => {
             });
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            console.error("[homework-nudge] Email failed", { studentId: student.id, email, msg });
+            console.error("[homework-nudge] Email failed", { groupKey, email, msg });
             outcome.email_error = msg;
             await service.from("notifications").insert({
               type: "homework_nudge",
@@ -381,9 +435,9 @@ serve(async (req) => {
         outcome.email_error = "RESEND_API_KEY not configured";
       }
 
-      // WhatsApp
+      // WhatsApp — dedupe per parent group per day.
       if (phone) {
-        const logKey = `whatsapp:${phone}:s${student.id}`;
+        const logKey = `whatsapp:${phone}:${groupKey}`;
         const { data: existing } = await service
           .from("notifications")
           .select("id")
@@ -401,7 +455,7 @@ serve(async (req) => {
             outcome.sent.push("whatsapp");
           } else {
             outcome.whatsapp_error = result.error;
-            console.error("[homework-nudge] WhatsApp failed", { studentId: student.id, phone, error: result.error });
+            console.error("[homework-nudge] WhatsApp failed", { groupKey, phone, error: result.error });
           }
           await service.from("notifications").insert({
             type: "homework_nudge",
@@ -423,7 +477,7 @@ serve(async (req) => {
       run_date: todayIso,
       weekday: runWeekday,
       considered: students.length,
-      messaged: results.filter((r) => r.sent?.length).length,
+      parent_groups_messaged: results.filter((r) => r.sent?.length).length,
       emails_sent: emailsSent,
       whatsapp_sent: whatsappSent,
       dry_run: !!body.dry_run,
@@ -431,7 +485,7 @@ serve(async (req) => {
     };
     console.log("[homework-nudge] Done", {
       considered: summary.considered,
-      messaged: summary.messaged,
+      parentGroups: groups.size,
       emailsSent,
       whatsappSent,
     });
