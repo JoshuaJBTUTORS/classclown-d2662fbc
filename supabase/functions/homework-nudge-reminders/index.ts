@@ -101,7 +101,10 @@ function normalisePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
   const trimmed = String(phone).replace(/[\s()-]/g, "").trim();
   if (!trimmed) return null;
-  return whatsappService.formatPhoneNumber(trimmed);
+  const formatted = whatsappService.formatPhoneNumber(trimmed);
+  // Reject junk numbers (e.g. "+2250") — need at least 7 digits.
+  if (formatted.replace(/\D/g, "").length < 7) return null;
+  return formatted;
 }
 
 const norm = (v?: string | null) => (v ? v.toLowerCase().trim() : "");

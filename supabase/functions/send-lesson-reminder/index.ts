@@ -265,8 +265,13 @@ const handler = async (req: Request): Promise<Response> => {
             ? buildPhoneRecipients(parent.whatsapp_number || parent.phone, parent.secondary_phone)
             : [];
           const studentPhoneRaw = student.whatsapp_number || student.phone;
-          const studentPhone = studentPhoneRaw
+          const studentPhoneFormatted = studentPhoneRaw
             ? whatsappService.formatPhoneNumber(studentPhoneRaw)
+            : null;
+          // Reject junk numbers — need at least 7 digits.
+          const studentPhone = studentPhoneFormatted &&
+            studentPhoneFormatted.replace(/\D/g, '').length >= 7
+            ? studentPhoneFormatted
             : null;
           const parentPhonesNorm = new Set(
             parentPhoneTargets.map((t: string) => {
