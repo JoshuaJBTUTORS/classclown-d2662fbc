@@ -482,6 +482,79 @@ serve(async (req) => {
         }
       }
 
+      // Direct message to each child with their own contact details.
+      for (const sc of studentContacts) {
+        const childText = isFriday
+          ? (anyLastOutstanding ? MSG.friBoth([sc.name]) : MSG.friCurrent([sc.name]))
+          : (anyLastOutstanding ? MSG.wedBoth([sc.name]) : MSG.wedCurrent([sc.name], daysLeft));
+        const studentKey = `student:${sc.id}`;
+
+        if (sc.email && resend) {
+          const logKey = `email:${sc.email}:${studentKey}`;
+          const { data: existing } = await service
+            .from("notifications")
+            .select("id")
+            .eq("type", "homework_nudge")
+            .eq("email", logKey)
+            .eq("subject", todayIso)
+            .eq("status", "sent")
+            .limit(1);
+          if (!(existing && existing.length > 0)) {
+            try {
+              const { error } = await resend.emails.send({
+                from: "Class Beyond Academy <enquiries@classbeyondacademy.io>",
+                to: [sc.email],
+                subject: SUBJECT,
+                html: emailHtml(childText),
+                text: childText,
+              });
+              if (error) throw new Error(typeof error === "string" ? error : JSON.stringify(error));
+              emailsSent += 1;
+              outcome.sent.push(`student_email:${sc.name}`);
+              await service.from("notifications").insert({
+                type: "homework_nudge",
+                subject: todayIso,
+                email: logKey,
+                status: "sent",
+                sent_at: new Date().toISOString(),
+              });
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              console.error("[homework-nudge] Student email failed", { studentKey, email: sc.email, msg });
+            }
+          }
+        }
+
+        if (sc.phone) {
+          const logKey = `whatsapp:${sc.phone}:${studentKey}`;
+          const { data: existing } = await service
+            .from("notifications")
+            .select("id")
+            .eq("type", "homework_nudge")
+            .eq("email", logKey)
+            .eq("subject", todayIso)
+            .eq("status", "sent")
+            .limit(1);
+          if (!(existing && existing.length > 0)) {
+            const result = await whatsappService.sendMessage({ phoneNumber: sc.phone, text: childText });
+            if (result.success) {
+              whatsappSent += 1;
+              outcome.sent.push(`student_whatsapp:${sc.name}`);
+            } else {
+              console.error("[homework-nudge] Student WhatsApp failed", { studentKey, phone: sc.phone, error: result.error });
+            }
+            await service.from("notifications").insert({
+              type: "homework_nudge",
+              subject: todayIso,
+              email: logKey,
+              status: result.success ? "sent" : "failed",
+              sent_at: result.success ? new Date().toISOString() : null,
+              error_message: result.success ? null : `student ${variant}: ${result.error ?? "failed"}`,
+            });
+          }
+        }
+      }
+
       results.push(outcome);
       await sleep(delayMs);
     }
