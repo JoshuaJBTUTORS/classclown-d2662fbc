@@ -84,6 +84,13 @@ function PaymentForm({ proposal, onComplete }: PaymentCaptureStepProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 text-sm">
+        <p className="font-medium mb-1 text-primary">£0.00 Authorization</p>
+        <p className="text-muted-foreground">
+          We'll authorize your card with £0.00 to verify it. You won't be charged until your first lesson.
+        </p>
+      </div>
+
       <div className="space-y-4">
         <div>
           <Label htmlFor="name">Cardholder Name</Label>
@@ -114,12 +121,6 @@ function PaymentForm({ proposal, onComplete }: PaymentCaptureStepProps) {
         </div>
       </div>
 
-      <div className="bg-muted/50 p-4 rounded-lg text-sm">
-        <p className="font-medium mb-1">£0.00 Authorization</p>
-        <p className="text-muted-foreground">
-          We'll authorize your card with £0.00 to verify it. You won't be charged until your first lesson.
-        </p>
-      </div>
 
       <Button type="submit" disabled={!stripe || isSubmitting} className="w-full" size="lg">
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
