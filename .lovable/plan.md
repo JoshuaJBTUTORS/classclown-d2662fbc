@@ -1,33 +1,19 @@
-# Redesign the lesson proposal journey in the ClassClown CRM design language
+# Stop "add student" from moving future lessons, and put the moved lessons back
 
-## Goal
-Apply the attached ClassClown CRM visual system consistently across the complete parent journey: proposal review, agreement, and £0 card authorisation. Preserve all proposal content, legal wording, signing, payment, printing, countdown, navigation, and mobile behaviour.
+## What's happening
 
-## 1. Proposal page
-- Recompose the opening area around a confident ClassClown-style title, recipient name, offer countdown, proposal reference, and primary action.
-- Replace bordered white boxes with spacious mint, lilac, butter, blush, sky, and sand surfaces using the existing semantic pastel tokens.
-- Present the programme start, term, schedule, inclusions, results, and pricing as clear soft tiles with generous spacing, strong Plus Jakarta Sans headings, and Inter body copy.
-- Use deep teal for primary actions and emphasis, foreground-black secondary actions, soft shadows instead of borders on pastel surfaces, and rounded 1.5rem corners.
-- Restyle the sticky navigation, signed state, payment reminder, FAQs, and final action area so they belong to the same system.
-- Add restrained staggered fade-ins and hover lift where appropriate, respecting reduced-motion preferences.
-- Keep the embedded CEO video prominent and preserve print/download output.
+When a student is added and "all future lessons" is chosen, the edit screen always resends the lesson time, even if nobody changed it. The app then recalculates every future lesson's time using the computer's own clock/timezone instead of strictly UK time. On a computer not set to UK time, every lesson shifts by that timezone gap — which is why one group jumped 10 hours (Fri 6pm to Sat 4am) and GCSE Chemistry jumped 5 hours (Mon 6pm to 11pm). Different gaps point to the edits being made from computers in different timezones.
 
-## 2. Agreement page
-- Replace the generic centred card with a branded signing layout using a soft pastel header, readable terms panel, clear acceptance summary, and a distinct consent row.
-- Keep all 18 terms, checkbox requirements, signature recording, error handling, and navigation unchanged.
-- Make the agreement action visually clear on desktop and mobile without making legal copy harder to scan.
+## Fix
 
-## 3. £0 authorisation page
-- Match the same ClassClown shell, typography, soft surfaces, and action styling.
-- Keep the “£0.00 Authorization” notice first and visually prominent above cardholder and Stripe fields.
-- Preserve Stripe setup, recipient details, loading/error states, completion behaviour, and security copy.
+1. **Only change times when times actually changed** — if the start/end time and day match the original, adding or removing students leaves every lesson's time untouched.
+2. **Always calculate in UK time** — rewrite the time helpers so results are identical no matter where the person editing is located, including around clock changes.
+3. **Repair affected lessons** — find all recurring series whose future lessons no longer match their series' set day/time (Iulian's Year 11 Physics, Monday GCSE Chemistry, and any others from today), and move them back to their correct UK day and time, keeping students (including Abdurahman) as added.
+4. **Check** — re-run an "add student to all future" edit with the computer set to a non-UK timezone and confirm no times move; confirm the calendar shows Friday 6pm and Monday 6pm again.
 
-## 4. Responsive and quality checks
-- Ensure the layout becomes a clean single column on mobile, with stable buttons, readable tables/cards, and no overlapping sticky controls.
-- Check unsigned, signed, agreement, and payment states in the browser at desktop and mobile widths.
-- Verify the build, console, payment-step rendering, signing flow presentation, print styling, and reduced-motion behaviour.
+## Technical details
 
-## Technical notes
-- Primary files: `src/components/proposals/ProposalLayout.tsx`, `AgreementStep.tsx`, and `PaymentCaptureStep.tsx`.
-- Reuse the existing Plus Jakarta Sans/Inter fonts, deep-teal tokens, pastel palette, soft radii, and shadow tokens already defined in the project.
-- No database, proposal schema, Supabase function, Stripe, route, pricing, contract, or legal-content changes.
+- `src/utils/timezone.ts` `createUKDateTime`: replace `toZonedTime(new Date(localIso))` with `fromZonedTime(isoString, UK_TIMEZONE)` (returns true UTC); read hours/minutes via `formatInTimeZone(..., 'HH:mm')` instead of `getHours()`.
+- `src/services/recurringLessonEditService.ts` `applyTimeUpdatesToInstance` / `updateAllFutureLessons`: derive UK date with `formatInTimeZone(instance.start_time, UK, 'yyyy-MM-dd')`, build new times with `fromZonedTime`; set `hasTimeChanges` only when UK HH:mm or weekday differs from the original lesson; compute day delta with UK weekday strings.
+- `src/components/lessons/EditLessonForm.tsx` (~line 311): same UK-safe construction; omit `start_time`/`end_time` from the update when unchanged.
+- Data repair via SQL: for instances updated today whose UK weekday/time differs from the parent's `recurrence_day`/original time, reset to the series time on the intended date.
