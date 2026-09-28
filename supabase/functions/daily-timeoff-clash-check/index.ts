@@ -30,14 +30,19 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Today's window in UK time, expressed as UTC instants
+    // Current UK week (Monday 00:00 → following Monday 00:00), expressed as UTC instants
     const now = new Date();
-    const ukDay = formatInUKTime(now, "yyyy-MM-dd");
+    const ukToday = formatInUKTime(now, "yyyy-MM-dd");
     const offsetSuffix = formatInUKTime(now, "XXX"); // e.g. +01:00 or Z
-    const dayStart = new Date(`${ukDay}T00:00:00${offsetSuffix === "Z" ? "+00:00" : offsetSuffix}`);
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    const offset = offsetSuffix === "Z" ? "+00:00" : offsetSuffix;
+    const todayStart = new Date(`${ukToday}T00:00:00${offset}`);
+    const ukDow = Number(formatInUKTime(now, "i")); // 1 = Monday ... 7 = Sunday
+    const weekStart = new Date(todayStart.getTime() - (ukDow - 1) * 24 * 60 * 60 * 1000);
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    console.log(`[timeoff-clash] Checking ${ukDay} (${dayStart.toISOString()} → ${dayEnd.toISOString()})`);
+    const weekLabel = `${formatInUKTime(weekStart, "d MMM")} – ${formatInUKTime(new Date(weekEnd.getTime() - 1), "d MMM")}`;
+
+    console.log(`[timeoff-clash] Checking week ${weekLabel} (${weekStart.toISOString()} → ${weekEnd.toISOString()})`);
 
     const { data: lessons, error: lessonsError } = await supabase
       .from("lessons")
@@ -46,8 +51,8 @@ serve(async (req: Request) => {
         tutor:tutors(id, first_name, last_name, email),
         lesson_students(student:students(id, first_name, last_name))
       `)
-      .gte("start_time", dayStart.toISOString())
-      .lt("start_time", dayEnd.toISOString())
+      .gte("start_time", weekStart.toISOString())
+      .lt("start_time", weekEnd.toISOString())
       .neq("status", "cancelled");
 
     if (lessonsError) throw lessonsError;
@@ -56,12 +61,14 @@ serve(async (req: Request) => {
       .from("time_off_requests")
       .select("id, tutor_id, start_date, end_date, reason, status")
       .eq("status", "approved")
-      .lt("start_date", dayEnd.toISOString())
-      .gt("end_date", dayStart.toISOString());
+      .lt("start_date", weekEnd.toISOString())
+      .gt("end_date", weekStart.toISOString());
 
     if (timeOffError) throw timeOffError;
 
     const clashes: Array<{
+      day: string;
+      dayLabel: string;
       tutorName: string;
       lessonTitle: string;
       subject: string;
@@ -87,6 +94,8 @@ serve(async (req: Request) => {
             .join(", ");
 
           clashes.push({
+            day: formatInUKTime(lesson.start_time, "yyyy-MM-dd"),
+            dayLabel: formatInUKTime(lesson.start_time, "EEEE d MMMM"),
             tutorName: tutor ? `${tutor.first_name} ${tutor.last_name}` : "Unknown tutor",
             lessonTitle: lesson.title ?? "Lesson",
             subject: lesson.subject ?? "—",
@@ -100,33 +109,43 @@ serve(async (req: Request) => {
       }
     }
 
+    clashes.sort((a, b) => a.day.localeCompare(b.day) || a.lessonWindow.localeCompare(b.lessonWindow));
+
     console.log(`[timeoff-clash] ${lessons?.length ?? 0} lessons, ${timeOffs?.length ?? 0} time-off windows, ${clashes.length} clashes`);
 
     if (clashes.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, date: ukDay, clashes: 0, emailSent: false }),
+        JSON.stringify({ success: true, week: weekLabel, clashes: 0, emailSent: false }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const prettyDate = formatInUKTime(dayStart, "EEEE d MMMM yyyy");
+    // Group rows by day with a subheading row per day
+    let lastDay = "";
     const rows = clashes
-      .map(
-        (c) => `
+      .map((c) => {
+        const dayHeader =
+          c.day !== lastDay
+            ? `<tr style="background:#e8f0ef;text-align:left;">
+                 <td colspan="5" style="padding:8px 12px;font-weight:bold;">${esc(c.dayLabel)}</td>
+               </tr>`
+            : "";
+        lastDay = c.day;
+        return `${dayHeader}
         <tr>
           <td style="padding:10px 12px;border-bottom:1px solid #eee;"><strong>${esc(c.tutorName)}</strong></td>
           <td style="padding:10px 12px;border-bottom:1px solid #eee;">${esc(c.lessonWindow)}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #eee;">${esc(c.lessonTitle)}<br/><span style="color:#777;font-size:12px;">${esc(c.subject)}</span></td>
           <td style="padding:10px 12px;border-bottom:1px solid #eee;">${esc(c.students)}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #eee;">${esc(c.timeOffWindow)}<br/><span style="color:#777;font-size:12px;">${esc(c.reason)}</span></td>
-        </tr>`,
-      )
+        </tr>`;
+      })
       .join("");
 
     const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:820px;margin:0 auto;">
-        <h2 style="margin-bottom:4px;">⚠️ Tutor time-off clashes — ${esc(prettyDate)}</h2>
-        <p style="color:#555;margin-top:0;">${clashes.length} lesson${clashes.length === 1 ? " is" : "s are"} scheduled today with a tutor who has approved time off.</p>
+        <h2 style="margin-bottom:4px;">⚠️ Tutor time-off clashes — this week (${esc(weekLabel)})</h2>
+        <p style="color:#555;margin-top:0;">${clashes.length} lesson${clashes.length === 1 ? " is" : "s are"} scheduled this week with a tutor who has approved time off.</p>
         <table style="border-collapse:collapse;width:100%;font-size:14px;">
           <thead>
             <tr style="background:#f5f5f5;text-align:left;">
@@ -145,14 +164,14 @@ serve(async (req: Request) => {
     const { error: emailError } = await resend.emails.send({
       from: "Class Beyond <enquiries@classbeyondacademy.io>",
       to: RECIPIENTS,
-      subject: `⚠️ ${clashes.length} tutor time-off clash${clashes.length === 1 ? "" : "es"} today (${prettyDate})`,
+      subject: `⚠️ ${clashes.length} tutor time-off clash${clashes.length === 1 ? "" : "es"} this week (${weekLabel})`,
       html,
     });
 
     if (emailError) throw emailError;
 
     return new Response(
-      JSON.stringify({ success: true, date: ukDay, clashes: clashes.length, emailSent: true }),
+      JSON.stringify({ success: true, week: weekLabel, clashes: clashes.length, emailSent: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error: any) {
