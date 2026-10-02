@@ -12,8 +12,8 @@ export const getDomainConfig = (): DomainConfig => {
   return {
     name: 'Class Beyond',
     domain: 'classbeyond.io',
-    title: 'Class Beyond - AI Learning Platform',
-    description: 'Complete learning platform with AI-powered tutoring and voice lessons.',
+    title: 'Class Beyond Academy | Online Tutoring',
+    description: 'Personalised online lessons with expert tutors at Class Beyond Academy.',
     logo: '/class-beyond-logo.png',
     theme: 'classbeyond',
     ogImage: '/class-beyond-logo.png'
