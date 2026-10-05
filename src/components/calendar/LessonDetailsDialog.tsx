@@ -824,15 +824,15 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
 
 
       <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-md rounded-[var(--radius-soft)] border-0 p-4 sm:p-6 shadow-[var(--shadow-soft-lg)]">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-2xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto overflow-x-hidden rounded-[var(--radius-soft)] border-0 p-4 sm:p-6 shadow-[var(--shadow-soft-lg)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight">
-              <DoodleClipboard className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 pr-8 font-heading text-xl font-extrabold tracking-tight">
+              <DoodleClipboard className="h-5 w-5 shrink-0" />
               Assign Assessment Week
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <p className="text-sm text-muted-foreground">
               Reassign the lesson to the assessment tutor, swap the video link to the shared assessment room, and assign an assessment to every enrolled student. Time conflicts are ignored.
             </p>
@@ -859,12 +859,12 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
                     variant="outline"
                     role="combobox"
                     aria-expanded={assessmentPopoverOpen}
-                    className="w-full justify-between font-normal"
+                    className="w-full min-w-0 justify-between font-normal"
                   >
-                    {(() => {
+                    <span className="min-w-0 truncate text-left">{(() => {
                       const sel = assessmentsList.find((a) => a.id === selectedAssessmentId);
                       return sel ? sel.title : 'Select an assessment';
-                    })()}
+                    })()}</span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
