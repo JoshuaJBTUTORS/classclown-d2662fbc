@@ -948,10 +948,10 @@ const AssessmentAssignments = () => {
               {refreshMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Refreshing...
+                  Creating new version...
                 </>
               ) : (
-                'Refresh questions'
+                'Create new version'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
