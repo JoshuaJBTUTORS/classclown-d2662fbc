@@ -29,6 +29,7 @@ import { useHeyCleoHomeworkStatus } from '@/hooks/useHeyCleoHomeworkStatus';
 
 
 import { DeleteScope, lessonDeletionService } from '@/services/lessonDeletionService';
+import { ASSESSMENT_ROOM_ID, ASSESSMENT_ROOM_URL } from '@/constants/assessmentRoom';
 interface LessonDetailsDialogProps {
   lessonId: string | null;
   

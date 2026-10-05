@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { ASSESSMENT_ROOM_ID } from '@/constants/assessmentRoom';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
