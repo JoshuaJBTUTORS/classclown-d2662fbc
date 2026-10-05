@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { ASSESSMENT_ROOM_ID } from '@/constants/assessmentRoom';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -229,12 +230,14 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
     console.log('Last generation was >3 weeks ago - assuming we\'re just behind on generation');
   }
 
-  // Get the LAST INSTANCE to use as template (never the original)
+  // Get the LAST normal INSTANCE to use as template (never the original, and
+  // never an Assessment Week lesson — fall back to the week prior)
   const { data: lastInstance, error: lastInstanceError } = await supabase
     .from('lessons')
     .select('*')
     .eq('parent_lesson_id', originalLessonId)
     .eq('is_recurring_instance', true)
+    .or(`lesson_space_room_id.is.null,lesson_space_room_id.neq.${ASSESSMENT_ROOM_ID}`)
     .order('instance_date', { ascending: false })
     .limit(1)
     .single();
