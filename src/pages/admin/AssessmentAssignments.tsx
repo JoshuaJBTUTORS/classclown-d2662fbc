@@ -176,7 +176,8 @@ const AssessmentAssignments = () => {
     },
   });
 
-  // Refresh assessment mutation - regenerates all questions as variants via OpenAI
+  // Refresh assessment mutation - creates a new version of the paper with fresh
+  // question variants; the old paper is archived and keeps every answer and mark.
   const refreshMutation = useMutation({
     mutationFn: async (assessmentId: string) => {
       const { data, error } = await supabase.functions.invoke('refresh-assessment', {
@@ -189,8 +190,15 @@ const AssessmentAssignments = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['all-assessments'] });
       queryClient.invalidateQueries({ queryKey: ['all-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['published-assessments'] });
       queryClient.invalidateQueries({ queryKey: ['assessment-questions'] });
-      toast.success(`Refreshed ${data?.updated ?? ''} questions and cleared previous answers`);
+      queryClient.invalidateQueries({ queryKey: ['unsubmitted-attempts'] });
+      toast.success(
+        data?.new_title ? `New version created: ${data.new_title}` : 'New version created',
+        {
+          description: `${data?.updated ?? 0} questions refreshed · ${data?.assigned ?? 0} student(s) assigned the new version · previous answers and marks kept`,
+        }
+      );
       setRefreshConfirmId(null);
     },
     onError: (error: any) => {
@@ -475,7 +483,7 @@ const AssessmentAssignments = () => {
               size="sm"
               onClick={() => setRefreshConfirmId(assessment.id)}
               disabled={refreshMutation.isPending && refreshMutation.variables === assessment.id}
-              title="Regenerate all questions as variants"
+              title="Create a new version of this paper with fresh questions"
             >
               {refreshMutation.isPending && refreshMutation.variables === assessment.id ? (
                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -923,9 +931,9 @@ const AssessmentAssignments = () => {
       <AlertDialog open={!!refreshConfirmId} onOpenChange={(open) => !open && !refreshMutation.isPending && setRefreshConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Refresh assessment questions?</AlertDialogTitle>
+            <AlertDialogTitle>Create a new version of this paper?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will regenerate every question as a similar variant (names, numbers and minor wording change; structure, marks and difficulty stay the same). All previous student answers and submissions for this assessment will be permanently deleted. This cannot be undone.
+              Every question is regenerated as a similar variant — names, numbers and minor wording change, while structure, marks and difficulty stay the same. The new version is named after this month. Nothing is deleted: this paper keeps all previous student answers, marks and submissions and is archived so it can no longer be taken, and everyone already assigned gets the new version as a fresh task.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -940,10 +948,10 @@ const AssessmentAssignments = () => {
               {refreshMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Refreshing...
+                  Creating new version...
                 </>
               ) : (
-                'Refresh questions'
+                'Create new version'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
