@@ -1,9 +1,9 @@
 # Roadmap
 
-## In progress
-- [ ] Assessment "Refresh" button (`refresh-assessment`): stop deleting student answers — keep them by creating a new paper with new ids and archiving the old one.
-- [ ] Assessment "Refresh" button: name the new version after the current month (e.g. October) instead of always "Summer".
+## Done
+- [x] Assessment "Refresh" button (`refresh-assessment`): no longer deletes student answers. It creates a new paper with new ids and archives the old one, so previous answers, marks and submissions stay with the archived paper.
+- [x] Assessment "Refresh" button: names the new version after the current month in London time (e.g. October) instead of always "Summer".
+- [x] Confirmation dialog, button tooltip and success message in `src/pages/admin/AssessmentAssignments.tsx` updated to match.
 
 ## Notes
-- Old paper keeps its sessions, responses and marks; new paper gets fresh assignments.
-- UI copy in `src/pages/admin/AssessmentAssignments.tsx` must match the new behaviour.
+- Verified end to end on a throwaway test paper, then removed it.
