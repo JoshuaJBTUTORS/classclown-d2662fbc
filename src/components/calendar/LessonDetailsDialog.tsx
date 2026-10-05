@@ -80,8 +80,6 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   const [assessmentSearch, setAssessmentSearch] = useState<string>('');
   const [assessmentPopoverOpen, setAssessmentPopoverOpen] = useState<boolean>(false);
 
-  const ASSESSMENT_ROOM_URL = 'https://www.thelessonspace.com/space/2670b244-b11f-4be3-8336-32bb2ce558e9';
-  const ASSESSMENT_ROOM_ID = '2670b244-b11f-4be3-8336-32bb2ce558e9';
 
   const openAssessmentDialog = async () => {
     setSelectedAssessmentTutor('');
