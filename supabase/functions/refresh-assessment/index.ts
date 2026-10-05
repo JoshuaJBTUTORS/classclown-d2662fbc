@@ -8,6 +8,12 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BATCH_SIZE = 5;
 const MODEL = "gpt-4o";
 
+const MONTHS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+];
+const SEASONS = ["winter", "autumn", "spring", "fall"];
+
 interface Question {
   id: string;
   question_number: number | null;
@@ -16,6 +22,40 @@ interface Question {
   marks_available: number | null;
   correct_answer: string | null;
   marking_scheme: unknown;
+  keywords: unknown;
+  position: number | null;
+  image_url: string | null;
+}
+
+/** London month name so a refresh on the last day of a month names the right month. */
+function currentMonthName(): string {
+  const name = new Intl.DateTimeFormat("en-GB", {
+    month: "long",
+    timeZone: "Europe/London",
+  }).format(new Date());
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
+/**
+ * Names the paper after the current month, e.g.
+ *   "GCSE Chemistry Paper 1 - Winter Term Exam" -> "... - October Exam"
+ *   "GCSE Chemistry Paper 1 (September)"        -> "... (October)"
+ *   "GCSE Chemistry Paper 1"                    -> "... (October)"
+ */
+function applyMonthToTitle(title: string, month: string): string {
+  let t = (title ?? "").trim();
+  // "Winter Term" / "Spring term" -> the month
+  t = t.replace(new RegExp(`\\b(${SEASONS.join("|")})\\s+term\\b`, "gi"), month);
+  t = t.replace(new RegExp(`\\b(${SEASONS.join("|")})\\b`, "gi"), month);
+  // A month word left by a previous refresh -> this month. Only capitalised
+  // month words are touched so ordinary words like "may" or "march" stay put.
+  t = t.replace(new RegExp(`\\b(${MONTHS.join("|")})\\b`, "g"), (m) =>
+    m[0] === m[0].toUpperCase() ? month : m,
+  );
+  if (!new RegExp(`\\b${month}\\b`, "i").test(t)) {
+    t = t ? `${t} (${month})` : `${month} Assessment`;
+  }
+  return t.replace(/\s+/g, " ").trim();
 }
 
 async function rewriteBatch(batch: Question[]): Promise<Array<{ id: string; question_text: string; correct_answer: string; marking_scheme: unknown }>> {
@@ -131,7 +171,7 @@ Deno.serve(async (req) => {
     const roleSet = new Set((roles ?? []).map((r) => r.role));
     const { data: assessment, error: aErr } = await admin
       .from("ai_assessments")
-      .select("id, created_by, title")
+      .select("*")
       .eq("id", assessment_id)
       .maybeSingle();
     if (aErr || !assessment) {
@@ -145,7 +185,7 @@ Deno.serve(async (req) => {
     // Load questions
     const { data: questions, error: qErr } = await admin
       .from("assessment_questions")
-      .select("id, question_number, question_text, question_type, marks_available, correct_answer, marking_scheme")
+      .select("id, question_number, question_text, question_type, marks_available, correct_answer, marking_scheme, keywords, position, image_url")
       .eq("assessment_id", assessment_id)
       .order("question_number", { ascending: true });
     if (qErr) throw qErr;
@@ -153,68 +193,132 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "No questions to refresh" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Batch rewrite
+    // Batch rewrite into variants
     const updates: Array<{ id: string; question_text: string; correct_answer: string; marking_scheme: unknown }> = [];
     for (let i = 0; i < questions.length; i += BATCH_SIZE) {
       const batch = questions.slice(i, i + BATCH_SIZE) as Question[];
       const variants = await rewriteBatch(batch);
       updates.push(...variants);
     }
+    const variantById = new Map(updates.map((u) => [u.id, u]));
 
-    // Apply updates
-    for (const u of updates) {
-      const original = questions.find((q) => q.id === u.id);
-      const safeMarkingScheme =
-        u.marking_scheme ?? (original?.marking_scheme as unknown) ?? {};
-      const { error: uErr } = await admin
-        .from("assessment_questions")
-        .update({
-          question_text: u.question_text,
-          correct_answer: u.correct_answer,
-          marking_scheme: safeMarkingScheme,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", u.id)
-        .eq("assessment_id", assessment_id);
-      if (uErr) throw uErr;
+    const now = new Date().toISOString();
+    const month = currentMonthName();
+    const newTitle = applyMonthToTitle(assessment.title, month);
+
+    // 1. Create the new version of the paper (new ids, so old answers stay on the old paper)
+    const { data: newAssessment, error: createErr } = await admin
+      .from("ai_assessments")
+      .insert({
+        title: newTitle,
+        description: assessment.description,
+        subject: assessment.subject,
+        exam_board: assessment.exam_board,
+        year: assessment.year,
+        paper_type: assessment.paper_type,
+        total_marks: assessment.total_marks,
+        time_limit_minutes: assessment.time_limit_minutes,
+        created_by: assessment.created_by,
+        status: assessment.status,
+        questions_pdf_url: assessment.questions_pdf_url,
+        answers_pdf_url: assessment.answers_pdf_url,
+        processing_status: "completed",
+        is_ai_generated: assessment.is_ai_generated,
+        questions_text: assessment.questions_text,
+        answers_text: assessment.answers_text,
+        extract_text: assessment.extract_text,
+        extract_source: assessment.extract_source,
+        extract_type: assessment.extract_type,
+      })
+      .select("id, title")
+      .single();
+    if (createErr) throw createErr;
+    const newId = newAssessment.id;
+
+    // 2. Insert the refreshed questions under the new paper
+    const questionRows = (questions as Question[]).map((q) => {
+      const v = variantById.get(q.id);
+      const originalScheme = (q.marking_scheme as unknown) ?? {};
+      return {
+        assessment_id: newId,
+        question_number: q.question_number,
+        question_text: v?.question_text ?? q.question_text,
+        question_type: q.question_type,
+        marks_available: q.marks_available ?? 1,
+        correct_answer: v?.correct_answer ?? q.correct_answer ?? "",
+        marking_scheme: v?.marking_scheme ?? originalScheme,
+        keywords: (q.keywords as unknown) ?? [],
+        position: q.position ?? q.question_number ?? 1,
+        image_url: q.image_url,
+      };
+    });
+    const { error: qInsErr } = await admin.from("assessment_questions").insert(questionRows);
+    if (qInsErr) {
+      // Don't leave an empty paper behind
+      await admin.from("ai_assessments").delete().eq("id", newId);
+      throw qInsErr;
     }
 
-    // Rename assessment title: swap any other term (winter/autumn/spring/fall) to "Summer".
-    // Case-insensitive; preserves surrounding text. If none present, appends " (Summer Term)".
-    const originalTitle = (assessment.title ?? "").trim();
-    let newTitle = originalTitle;
-    const termRegex = /\b(winter|autumn|spring|fall)\b/i;
-    if (termRegex.test(newTitle)) {
-      newTitle = newTitle.replace(/\b(winter|autumn|spring|fall)\b/gi, (m) =>
-        m[0] === m[0].toUpperCase() ? "Summer" : "summer"
-      );
-    } else if (!/\bsummer\b/i.test(newTitle)) {
-      newTitle = newTitle ? `${newTitle} (Summer Term)` : "Summer Term Assessment";
-    }
-    if (newTitle !== originalTitle) {
-      await admin
-        .from("ai_assessments")
-        .update({ title: newTitle, updated_at: new Date().toISOString() })
-        .eq("id", assessment_id);
-    }
+    // 3. Archive the old paper: still holds every answer, mark and submission
+    const { error: archiveErr } = await admin
+      .from("ai_assessments")
+      .update({ status: "archived", updated_at: now })
+      .eq("id", assessment_id);
+    if (archiveErr) throw archiveErr;
 
-    // Cleanup student data
-    const { data: sessions } = await admin
-      .from("assessment_sessions")
-      .select("id")
-      .eq("assessment_id", assessment_id);
-    const sessionIds = (sessions ?? []).map((s) => s.id);
-    if (sessionIds.length > 0) {
-      await admin.from("student_responses").delete().in("session_id", sessionIds);
-    }
-    await admin.from("assessment_sessions").delete().eq("assessment_id", assessment_id);
-    await admin.from("marking_jobs").delete().eq("assessment_id", assessment_id);
-    await admin
+    // 4. Re-assign the same students on the new paper
+    const { data: oldAssignments, error: aSelectErr } = await admin
       .from("assessment_assignments")
-      .update({ status: "assigned", submitted_at: null, reviewed_at: null, reviewed_by: null })
+      .select("id, assigned_to, assigned_by, due_date, notes, status")
       .eq("assessment_id", assessment_id);
+    if (aSelectErr) throw aSelectErr;
 
-    return new Response(JSON.stringify({ success: true, updated: updates.length }), {
+    const { data: existingNew } = await admin
+      .from("assessment_assignments")
+      .select("assigned_to")
+      .eq("assessment_id", newId);
+    const alreadyAssigned = new Set((existingNew ?? []).map((a: any) => a.assigned_to));
+
+    const toCreate: Array<Record<string, unknown>> = [];
+    const toDelete: string[] = [];
+    for (const a of oldAssignments ?? []) {
+      const hasWork = a.status === "submitted" || a.status === "reviewed";
+      // A paper nobody started yet has no work behind it, so drop the dead row
+      // that would otherwise point at the archived version.
+      if (!hasWork) toDelete.push(a.id);
+      if (!alreadyAssigned.has(a.assigned_to)) {
+        toCreate.push({
+          assessment_id: newId,
+          assigned_to: a.assigned_to,
+          assigned_by: a.assigned_by,
+          due_date: a.due_date,
+          notes: a.notes,
+          status: "assigned",
+        });
+        alreadyAssigned.add(a.assigned_to);
+      }
+    }
+
+    if (toCreate.length) {
+      const { error: assignErr } = await admin.from("assessment_assignments").insert(toCreate);
+      if (assignErr) throw assignErr;
+    }
+    if (toDelete.length) {
+      const { error: delErr } = await admin
+        .from("assessment_assignments")
+        .delete()
+        .in("id", toDelete);
+      if (delErr) throw delErr;
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      updated: updates.length,
+      new_assessment_id: newId,
+      new_title: newAssessment.title,
+      archived_assessment_id: assessment_id,
+      assigned: toCreate.length,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
