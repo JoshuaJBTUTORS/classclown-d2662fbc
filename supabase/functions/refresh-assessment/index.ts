@@ -44,12 +44,14 @@ function currentMonthName(): string {
  */
 function applyMonthToTitle(title: string, month: string): string {
   let t = (title ?? "").trim();
+  // Collapse a duplicated bracket, e.g. "Paper 2 (June) (June)"
+  t = t.replace(/\s*(\([^)]*\))(?:\s*\1)+/g, " $1");
   // "Winter Term" / "Spring term" -> the month
   t = t.replace(new RegExp(`\\b(${SEASONS.join("|")})\\s+term\\b`, "gi"), month);
   t = t.replace(new RegExp(`\\b(${SEASONS.join("|")})\\b`, "gi"), month);
   // A month word left by a previous refresh -> this month. Only capitalised
   // month words are touched so ordinary words like "may" or "march" stay put.
-  t = t.replace(new RegExp(`\\b(${MONTHS.join("|")})\\b`, "g"), (m) =>
+  t = t.replace(new RegExp(`\\b(${MONTHS.join("|")})\\b`, "gi"), (m) =>
     m[0] === m[0].toUpperCase() ? month : m,
   );
   if (!new RegExp(`\\b${month}\\b`, "i").test(t)) {
