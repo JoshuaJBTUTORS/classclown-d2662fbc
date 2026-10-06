@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ClipboardCheck, Info } from 'lucide-react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,14 @@ const isAssessmentWeek = () => {
 
 export const AssessmentWeekBanner: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const clickedAt = useRef(0);
+
+  // Focus after a click re-triggers the tooltip; ignore open/close events in
+  // the brief window after a click so the button's own toggle wins.
+  const handleOpenChange = (next: boolean) => {
+    if (Date.now() - clickedAt.current < 250) return;
+    setOpen(next);
+  };
 
   if (!isAssessmentWeek()) return null;
 
