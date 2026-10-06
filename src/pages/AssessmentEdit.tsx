@@ -113,12 +113,35 @@ const AssessmentEdit: React.FC = () => {
                   Back to Learning Hub
                 </Button>
                 
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate(`/assessment/${id}/preview`)}
-                >
-                  Preview Assessment
-                </Button>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                    {assessment?.status === 'published' ? (
+                      <>
+                        <CircleCheck className="h-4 w-4 text-green-600" />
+                        Active
+                      </>
+                    ) : (
+                      <>
+                        <Circle className="h-4 w-4 text-gray-400" />
+                        <span className="capitalize">{assessment?.status || 'Unknown'}</span>
+                      </>
+                    )}
+                  </span>
+                  {assessment && assessment.status !== 'published' && (
+                    <Button
+                      onClick={handleActivate}
+                      disabled={activating}
+                    >
+                      {activating ? 'Activating…' : 'Make Assessment Active'}
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate(`/assessment/${id}/preview`)}
+                  >
+                    Preview Assessment
+                  </Button>
+                </div>
               </div>
 
               <div className="mb-6">
