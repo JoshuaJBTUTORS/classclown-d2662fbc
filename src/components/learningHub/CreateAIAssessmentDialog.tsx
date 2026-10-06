@@ -318,6 +318,31 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
           <TabsContent value="single" className="space-y-4">
             <Form {...form}>
               <form onSubmit={form.handleSubmit((values) => createAssessmentMutation.mutate(values))} className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Source PDF (optional)</p>
+                {pdfFile ? (
+                  <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm truncate">{pdfFile.name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {(pdfFile.size / 1024 / 1024).toFixed(1)} MB
+                      </span>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setPdfFile(null)}>
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/50">
+                    <Upload className="h-4 w-4" />
+                    Upload a PDF (past paper, notes, worksheet) for the AI to base questions on
+                    <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={handlePdfChange} />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">Max 20MB. The AI reads the PDF alongside your prompt.</p>
+              </div>
+
             <FormField
               control={form.control}
               name="title"
@@ -604,31 +629,6 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
                   </FormItem>
                 )}
               />
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Source PDF (optional)</p>
-                {pdfFile ? (
-                  <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="h-4 w-4 flex-shrink-0" />
-                      <span className="text-sm truncate">{pdfFile.name}</span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {(pdfFile.size / 1024 / 1024).toFixed(1)} MB
-                      </span>
-                    </div>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setPdfFile(null)}>
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/50">
-                    <Upload className="h-4 w-4" />
-                    Upload a PDF (past paper, notes, worksheet) for the AI to base questions on
-                    <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={handlePdfChange} />
-                  </label>
-                )}
-                <p className="text-xs text-muted-foreground">Max 20MB. The AI reads the PDF alongside your prompt.</p>
-              </div>
 
               {isEnglishLanguage && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
