@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
 import { ReferFriendDialog } from '@/components/calendar/ReferFriendDialog';
 import CalendarHero from '@/components/calendar/CalendarHero';
-import AssessmentWeekPopup from '@/components/calendar/AssessmentWeekPopup';
+import AssessmentWeekBanner from '@/components/calendar/AssessmentWeekBanner';
 
 
 const Calendar = () => {
@@ -223,8 +223,13 @@ const Calendar = () => {
       <div className="flex flex-col flex-1 w-full">
         <MobileMenuButton toggleSidebar={toggleSidebar} />
         <main className="flex-1 flex flex-col h-screen bg-background">
+          {/* Assessment Week notice */}
+          <div className="flex-shrink-0 px-4 md:px-8 pt-6">
+            <AssessmentWeekBanner />
+          </div>
+
           {/* Hero header */}
-          <div className="flex-shrink-0 px-4 md:px-8 pt-6 pb-4">
+          <div className="flex-shrink-0 px-4 md:px-8 pt-4 pb-4">
             <CalendarHero
               canUseFilters={canUseFilters}
               filtersOpen={filtersOpen}
@@ -335,7 +340,6 @@ const Calendar = () => {
         onOpenChange={setShowReferFriendDialog}
       />
 
-      <AssessmentWeekPopup />
     </>
   );
 };
