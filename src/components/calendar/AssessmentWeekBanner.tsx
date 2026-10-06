@@ -41,7 +41,7 @@ export const AssessmentWeekBanner: React.FC = () => {
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => setOpen(true)}
+              onClick={() => setOpen((o) => !o)}
               className="h-7 w-7 shrink-0 rounded-full text-background hover:bg-background/10 hover:text-background"
             >
               <Info className="h-4 w-4" aria-hidden="true" />
