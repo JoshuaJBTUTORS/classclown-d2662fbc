@@ -315,7 +315,7 @@ Requirements:
   const content = await callOpenAI(openAIApiKey, 'You are an expert assessment creator. Always return valid JSON with properly escaped quotes.', generationPrompt, pdf);
   
   if (!content || content.trim() === '') {
-    console.error(`[Batch ${batchNumber}] Empty content. Full response:`, JSON.stringify(data).substring(0, 1000));
+    console.error(`[Batch ${batchNumber}] Empty content.`);
     throw new Error(`Empty response from OpenAI for batch ${batchNumber}`);
   }
   
