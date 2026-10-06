@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ClipboardCheck, Info, X } from 'lucide-react';
+import { ClipboardCheck, Info } from 'lucide-react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,9 +19,10 @@ const isAssessmentWeek = () => {
 };
 
 export const AssessmentWeekBanner: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(isAssessmentWeek);
+  // `null` = follow hover/focus behaviour; true/false = pinned open/closed by click.
+  const [pinned, setPinned] = useState<boolean | null>(null);
 
-  if (!isAssessmentWeek() || !isOpen) return null;
+  if (!isAssessmentWeek()) return null;
 
   return (
     <div
