@@ -39,15 +39,23 @@ export const AssessmentWeekBanner: React.FC = () => {
       </p>
 
       <TooltipProvider delayDuration={100}>
-        <Tooltip open={open} onOpenChange={handleOpenChange}>
+        <Tooltip open={open}>
           <TooltipTrigger asChild>
             <Button
               type="button"
               variant="ghost"
               size="icon"
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+              onFocus={() => setHovered(true)}
+              onBlur={() => setHovered(false)}
               onClick={() => {
-                clickedAt.current = Date.now();
-                setOpen((o) => !o);
+                if (pinned) {
+                  setPinned(false);
+                  setHovered(false);
+                } else {
+                  setPinned(true);
+                }
               }}
               className="h-7 w-7 shrink-0 rounded-full text-background hover:bg-background/10 hover:text-background"
             >
