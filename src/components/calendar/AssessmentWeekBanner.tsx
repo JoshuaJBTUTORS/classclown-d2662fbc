@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { ClipboardCheck, Info } from 'lucide-react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Button } from '@/components/ui/button';
