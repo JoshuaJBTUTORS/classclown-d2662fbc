@@ -43,13 +43,16 @@ export const AssessmentWeekBanner: React.FC = () => {
       </p>
 
       <TooltipProvider delayDuration={100}>
-        <Tooltip open={open} onOpenChange={setOpen}>
+        <Tooltip open={open} onOpenChange={handleOpenChange}>
           <TooltipTrigger asChild>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => setOpen((o) => !o)}
+              onClick={() => {
+                clickedAt.current = Date.now();
+                setOpen((o) => !o);
+              }}
               className="h-7 w-7 shrink-0 rounded-full text-background hover:bg-background/10 hover:text-background"
             >
               <Info className="h-4 w-4" aria-hidden="true" />
