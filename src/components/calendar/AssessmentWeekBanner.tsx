@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ClipboardCheck, Info, X } from 'lucide-react';
+import { ClipboardCheck, Info } from 'lucide-react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,9 +19,13 @@ const isAssessmentWeek = () => {
 };
 
 export const AssessmentWeekBanner: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(isAssessmentWeek);
+  // Hover and click are handled manually so they compose predictably:
+  // hovering shows the message, clicking pins it, clicking again unpins it.
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const open = hovered || pinned;
 
-  if (!isAssessmentWeek() || !isOpen) return null;
+  if (!isAssessmentWeek()) return null;
 
   return (
     <div
@@ -34,13 +38,25 @@ export const AssessmentWeekBanner: React.FC = () => {
         Assessment Week: 5th October - 11th October
       </p>
 
-      <TooltipProvider>
-        <Tooltip>
+      <TooltipProvider delayDuration={100}>
+        <Tooltip open={open}>
           <TooltipTrigger asChild>
             <Button
               type="button"
               variant="ghost"
               size="icon"
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+              onFocus={() => setHovered(true)}
+              onBlur={() => setHovered(false)}
+              onClick={() => {
+                if (pinned) {
+                  setPinned(false);
+                  setHovered(false);
+                } else {
+                  setPinned(true);
+                }
+              }}
               className="h-7 w-7 shrink-0 rounded-full text-background hover:bg-background/10 hover:text-background"
             >
               <Info className="h-4 w-4" aria-hidden="true" />
@@ -61,17 +77,6 @@ export const AssessmentWeekBanner: React.FC = () => {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={() => setIsOpen(false)}
-        aria-label="Dismiss assessment week notice"
-        className="ml-auto h-7 w-7 shrink-0 rounded-full text-background hover:bg-background/10 hover:text-background"
-      >
-        <X className="h-4 w-4" aria-hidden="true" />
-      </Button>
     </div>
   );
 };
