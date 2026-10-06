@@ -19,8 +19,7 @@ const isAssessmentWeek = () => {
 };
 
 export const AssessmentWeekBanner: React.FC = () => {
-  // `null` = follow hover/focus behaviour; true/false = pinned open/closed by click.
-  const [pinned, setPinned] = useState<boolean | null>(null);
+  const [open, setOpen] = useState(false);
 
   if (!isAssessmentWeek()) return null;
 
