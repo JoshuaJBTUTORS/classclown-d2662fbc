@@ -67,11 +67,68 @@ function repairJSON(content: string): string {
   return repairedLines.join('\n');
 }
 
+
+const MODEL = "gpt-5.6";
+
+type PdfSource = { filename: string; base64: string } | null;
+
+// Streams a Responses API call to OpenAI (optionally with an attached PDF) and returns the text output.
+async function callOpenAI(apiKey: string, system: string, userText: string, pdf: PdfSource): Promise<string> {
+  const content: any[] = [];
+  if (pdf) {
+    content.push({ type: "input_file", filename: pdf.filename, file_data: `data:application/pdf;base64,${pdf.base64}` });
+    content.push({ type: "input_text", text: "The attached PDF is the source material for this assessment. Base the questions, terminology, style and difficulty on it." });
+  }
+  content.push({ type: "input_text", text: userText });
+
+  const res = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: MODEL,
+      stream: true,
+      instructions: system,
+      input: [{ role: "user", content }],
+      reasoning: { effort: "low" },
+      text: { format: { type: "json_object" } },
+    }),
+  });
+  if (!res.ok || !res.body) {
+    const t = await res.text();
+    throw new Error(`OpenAI API error: ${res.status} - ${t.slice(0, 500)}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "", output = "", failure = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const evt = JSON.parse(payload);
+        if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") output += evt.delta;
+        else if (evt.type === "response.completed" && !output) output = evt.response?.output_text ?? "";
+        else if (evt.type === "response.incomplete") failure = `Response incomplete: ${evt.response?.incomplete_details?.reason || "unknown"}`;
+        else if (evt.type === "response.failed") failure = evt.response?.error?.message || "AI generation failed";
+      } catch { /* ignore partial frames */ }
+    }
+  }
+  if (failure && !output.trim()) throw new Error(failure);
+  return output;
+}
+
 // Generate extract for English Language papers
 async function generateExtract(
   openAIApiKey: string,
   assessment: any,
-  prompt: string
+  prompt: string,
+  pdf: PdfSource
 ): Promise<{ text: string; source: string; type: string }> {
   const extractType = assessment.extract_type || 'fiction';
   
@@ -106,29 +163,7 @@ IMPORTANT: Include line numbers in the text itself, formatted as "LINE_NUMBER | 
 
   console.log(`Generating extract for English Language paper at ${new Date().toISOString()}`);
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-5-mini-2025-08-07',
-      messages: [
-        { role: 'system', content: 'You are an expert in creating GCSE English Language exam materials. Always return valid JSON.' },
-        { role: 'user', content: extractPrompt }
-      ],
-      max_completion_tokens: 4000,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to generate extract: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0]?.message?.content;
+  const content = await callOpenAI(openAIApiKey, 'You are an expert in creating GCSE English Language exam materials. Always return valid JSON.', extractPrompt, pdf);
   
   if (!content) {
     throw new Error('Empty response when generating extract');
@@ -155,7 +190,8 @@ async function generateQuestionsFromExtract(
   batchSize: number,
   startNumber: number,
   extract: { text: string; source: string; type: string },
-  assessment: any
+  assessment: any,
+  pdf: PdfSource
 ): Promise<any[]> {
   const generationPrompt = `
 You are an expert GCSE English Language examiner. Generate ${batchSize} exam questions based on THIS SPECIFIC EXTRACT.
@@ -201,29 +237,7 @@ CRITICAL RULES:
 
   console.log(`[Batch ${batchNumber}] Generating questions from extract at ${new Date().toISOString()}`);
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-5-mini-2025-08-07',
-      messages: [
-        { role: 'system', content: 'You are an expert GCSE English Language examiner. Always return valid JSON with properly escaped quotes.' },
-        { role: 'user', content: generationPrompt }
-      ],
-      max_completion_tokens: 8000,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0]?.message?.content;
+  const content = await callOpenAI(openAIApiKey, 'You are an expert GCSE English Language examiner. Always return valid JSON with properly escaped quotes.', generationPrompt, pdf);
 
   if (!content) {
     throw new Error(`Empty response from OpenAI for batch ${batchNumber}`);
@@ -246,7 +260,8 @@ async function generateQuestionBatch(
   startNumber: number,
   topic: string,
   prompt: string,
-  assessment: any
+  assessment: any,
+  pdf: PdfSource
 ): Promise<any[]> {
   const generationPrompt = `
 You are an expert assessment creator. Generate ${batchSize} exam questions for the topic: "${topic}".
@@ -297,40 +312,7 @@ Requirements:
 
   console.log(`[Batch ${batchNumber}] Starting OpenAI API call at ${new Date().toISOString()}`);
   
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-5-mini-2025-08-07',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert assessment creator. Always return valid JSON with properly escaped quotes.'
-        },
-        {
-          role: 'user',
-          content: generationPrompt
-        }
-      ],
-      max_completion_tokens: 16000,
-    }),
-  });
-
-  console.log(`[Batch ${batchNumber}] OpenAI API response status: ${response.status}`);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[Batch ${batchNumber}] OpenAI API error response: ${errorText}`);
-    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  console.log(`[Batch ${batchNumber}] OpenAI API response received. Choices: ${data.choices?.length || 0}, Model: ${data.model || 'unknown'}`);
-  
-  const content = data.choices[0]?.message?.content;
+  const content = await callOpenAI(openAIApiKey, 'You are an expert assessment creator. Always return valid JSON with properly escaped quotes.', generationPrompt, pdf);
   
   if (!content || content.trim() === '') {
     console.error(`[Batch ${batchNumber}] Empty content. Full response:`, JSON.stringify(data).substring(0, 1000));
@@ -371,7 +353,8 @@ async function processAssessmentInBackground(
   assessmentId: string,
   numberOfQuestions: number,
   topic: string,
-  prompt: string
+  prompt: string,
+  pdf: PdfSource = null
 ) {
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") || "",
@@ -429,7 +412,7 @@ async function processAssessmentInBackground(
       }).eq('id', assessmentId);
 
       try {
-        extract = await generateExtract(openAIApiKey, assessment, prompt);
+        extract = await generateExtract(openAIApiKey, assessment, prompt, pdf);
         
         // Save extract to assessment
         await supabase.from('ai_assessments').update({
@@ -490,7 +473,8 @@ async function processAssessmentInBackground(
             batchSize,
             startNumber,
             extract,
-            assessment
+            assessment,
+            pdf
           );
         } else {
           questions = await generateQuestionBatch(
@@ -500,7 +484,8 @@ async function processAssessmentInBackground(
             startNumber,
             topic,
             prompt,
-            assessment
+            assessment,
+            pdf
           );
         }
 
@@ -629,7 +614,10 @@ serve(async (req) => {
   }
 
   try {
-    const { assessmentId, numberOfQuestions, topic, prompt } = await req.json();
+    const { assessmentId, numberOfQuestions, topic, prompt, pdfBase64, pdfFilename } = await req.json();
+    const pdf: PdfSource = typeof pdfBase64 === 'string' && pdfBase64.length > 0
+      ? { filename: pdfFilename || 'source.pdf', base64: pdfBase64 }
+      : null;
     
     if (!assessmentId) {
       throw new Error("Assessment ID is required");
@@ -667,7 +655,7 @@ serve(async (req) => {
 
     // Start background processing
     EdgeRuntime.waitUntil(
-      processAssessmentInBackground(assessmentId, finalNumberOfQuestions, finalTopic, finalPrompt)
+      processAssessmentInBackground(assessmentId, finalNumberOfQuestions, finalTopic, finalPrompt, pdf)
     );
 
     return new Response(
