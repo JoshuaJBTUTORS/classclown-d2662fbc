@@ -20,6 +20,32 @@ const AssessmentEdit: React.FC = () => {
   const { isOwner } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
+  const [activating, setActivating] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleActivate = async () => {
+    if (!id) return;
+    setActivating(true);
+    try {
+      await aiAssessmentService.updateAssessment(id, { status: 'published' });
+      await queryClient.invalidateQueries({ queryKey: ['assessment', id] });
+      await queryClient.invalidateQueries({ queryKey: ['assessments'] });
+      toast({
+        title: 'Assessment is now active',
+        description: 'It can be assigned and taken again.',
+      });
+      refetch();
+    } catch (err) {
+      console.error('Failed to activate assessment:', err);
+      toast({
+        title: 'Could not activate assessment',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setActivating(false);
+    }
+  };
 
   const closeSidebar = () => {
     setSidebarOpen(false);
