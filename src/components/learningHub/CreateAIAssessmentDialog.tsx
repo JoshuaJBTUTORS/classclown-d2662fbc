@@ -69,6 +69,7 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, failed: 0 });
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>({
     processing: 'idle',
   });
@@ -134,13 +135,25 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
 
       // Start chunked AI processing (runs in background on server)
       setProcessingStatus({ processing: 'processing' });
+
+      let pdfBase64: string | undefined;
+      if (pdfFile) {
+        const bytes = new Uint8Array(await pdfFile.arrayBuffer());
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        }
+        pdfBase64 = btoa(binary);
+      }
       
       const { error: processError } = await supabase.functions.invoke('generate-assessment-chunked', {
         body: { 
           assessmentId: assessment.id,
           numberOfQuestions: values.numberOfQuestions,
           topic: values.topic,
-          prompt: values.prompt
+          prompt: values.prompt,
+          pdfBase64,
+          pdfFilename: pdfFile?.name,
         }
       });
 
@@ -170,7 +183,23 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
     },
   });
 
+  const handlePdfChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    event.target.value = '';
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast({ title: 'PDF only', description: 'Please choose a PDF file.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Please choose a PDF under 20MB.', variant: 'destructive' });
+      return;
+    }
+    setPdfFile(file);
+  };
+
   const handleClose = () => {
+    setPdfFile(null);
     form.reset();
     setProcessingStatus({ processing: 'idle' });
     setCsvRows([]);
@@ -575,6 +604,31 @@ const CreateAIAssessmentDialog: React.FC<CreateAIAssessmentDialogProps> = ({
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Source PDF (optional)</p>
+                {pdfFile ? (
+                  <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm truncate">{pdfFile.name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {(pdfFile.size / 1024 / 1024).toFixed(1)} MB
+                      </span>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setPdfFile(null)}>
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/50">
+                    <Upload className="h-4 w-4" />
+                    Upload a PDF (past paper, notes, worksheet) for the AI to base questions on
+                    <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={handlePdfChange} />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">Max 20MB. The AI reads the PDF alongside your prompt.</p>
+              </div>
 
               {isEnglishLanguage && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
