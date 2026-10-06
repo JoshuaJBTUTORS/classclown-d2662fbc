@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
 import { ReferFriendDialog } from '@/components/calendar/ReferFriendDialog';
 import CalendarHero from '@/components/calendar/CalendarHero';
+import AssessmentWeekPopup from '@/components/calendar/AssessmentWeekPopup';
 
 
 const Calendar = () => {
@@ -333,6 +334,8 @@ const Calendar = () => {
         open={showReferFriendDialog}
         onOpenChange={setShowReferFriendDialog}
       />
+
+      <AssessmentWeekPopup />
     </>
   );
 };
