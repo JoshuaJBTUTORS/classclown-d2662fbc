@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, Plus, CircleCheck, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,32 @@ const AssessmentEdit: React.FC = () => {
   const { isOwner } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
+  const [activating, setActivating] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleActivate = async () => {
+    if (!id) return;
+    setActivating(true);
+    try {
+      await aiAssessmentService.updateAssessment(id, { status: 'published' });
+      await queryClient.invalidateQueries({ queryKey: ['assessment', id] });
+      await queryClient.invalidateQueries({ queryKey: ['assessments'] });
+      toast({
+        title: 'Assessment is now active',
+        description: 'It can be assigned and taken again.',
+      });
+      refetch();
+    } catch (err) {
+      console.error('Failed to activate assessment:', err);
+      toast({
+        title: 'Could not activate assessment',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setActivating(false);
+    }
+  };
 
   const closeSidebar = () => {
     setSidebarOpen(false);
@@ -87,12 +113,35 @@ const AssessmentEdit: React.FC = () => {
                   Back to Learning Hub
                 </Button>
                 
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate(`/assessment/${id}/preview`)}
-                >
-                  Preview Assessment
-                </Button>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                    {assessment?.status === 'published' ? (
+                      <>
+                        <CircleCheck className="h-4 w-4 text-green-600" />
+                        Active
+                      </>
+                    ) : (
+                      <>
+                        <Circle className="h-4 w-4 text-gray-400" />
+                        <span className="capitalize">{assessment?.status || 'Unknown'}</span>
+                      </>
+                    )}
+                  </span>
+                  {assessment && assessment.status !== 'published' && (
+                    <Button
+                      onClick={handleActivate}
+                      disabled={activating}
+                    >
+                      {activating ? 'Activating…' : 'Make Assessment Active'}
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate(`/assessment/${id}/preview`)}
+                  >
+                    Preview Assessment
+                  </Button>
+                </div>
               </div>
 
               <div className="mb-6">
