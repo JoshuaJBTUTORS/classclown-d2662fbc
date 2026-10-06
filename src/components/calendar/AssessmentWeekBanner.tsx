@@ -19,15 +19,11 @@ const isAssessmentWeek = () => {
 };
 
 export const AssessmentWeekBanner: React.FC = () => {
-  const [open, setOpen] = useState(false);
-  const clickedAt = useRef(0);
-
-  // Focus after a click re-triggers the tooltip; ignore open/close events in
-  // the brief window after a click so the button's own toggle wins.
-  const handleOpenChange = (next: boolean) => {
-    if (Date.now() - clickedAt.current < 250) return;
-    setOpen(next);
-  };
+  // Hover and click are handled manually so they compose predictably:
+  // hovering shows the message, clicking pins it, clicking again unpins it.
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const open = hovered || pinned;
 
   if (!isAssessmentWeek()) return null;
 
