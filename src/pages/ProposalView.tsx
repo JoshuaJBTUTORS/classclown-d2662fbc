@@ -3,8 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import AgreementStep from '@/components/proposals/AgreementStep';
-import PaymentCaptureStep from '@/components/proposals/PaymentCaptureStep';
+import ProposalCheckout from '@/components/proposals/ProposalCheckout';
 import ProposalLayout from '@/components/proposals/ProposalLayout';
 import LoadingHand from '@/components/ui/loading-hand';
 
@@ -128,18 +127,13 @@ export default function ProposalView() {
     );
   }
 
-  if (currentStep === 'payment') {
-    return <PaymentCaptureStep proposal={proposal} onComplete={() => loadProposal()} />;
-  }
-
-  if (currentStep === 'agreement') {
+  if (currentStep === 'agreement' || currentStep === 'payment') {
     return (
-      <AgreementStep
+      <ProposalCheckout
         proposal={proposal}
-        onAgree={() => {
-          setCurrentStep('payment');
-        }}
-        onBack={() => setCurrentStep('view')}
+        initialStep={currentStep}
+        onBackToProposal={() => setCurrentStep('view')}
+        onFinished={() => { setCurrentStep('view'); loadProposal(); }}
       />
     );
   }
