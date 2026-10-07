@@ -289,7 +289,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <br />
                 <span className="decoration-pastel-mint decoration-[0.3em] underline underline-offset-[-0.12em]">{proposal.recipient_name}</span>
               </h1>
-              {!signed && (
+              {proposal.status !== 'completed' && (
                 <div
                   className={`mt-6 inline-flex items-center gap-2 rounded-[var(--radius-soft)] px-4 py-3 shadow-[var(--shadow-soft)] md:gap-3 md:px-6 md:py-4 ${
                     remainingMs <= 0
