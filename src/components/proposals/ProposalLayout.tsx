@@ -415,11 +415,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
           {/* The Plan */}
           <Section id="plan" eyebrow="The Plan" title="Your weekly schedule">
-            <div className="overflow-hidden rounded-2xl border border-border">
+            <div className="overflow-hidden rounded-[var(--radius-soft)] bg-card shadow-[var(--shadow-soft)]">
               {/* Mobile: stacked cards */}
               <div className="md:hidden">
                 {proposal.lesson_times.map((t, i) => (
-                  <div key={i} className={`px-4 py-4 ${i > 0 ? 'border-t border-border' : ''}`}>
+                  <div key={i} className={`px-4 py-4 ${i > 0 ? 'border-t border-foreground/10' : ''} ${i % 3 === 0 ? 'bg-pastel-mint' : i % 3 === 1 ? 'bg-pastel-sky' : 'bg-pastel-lilac'}`}>
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-semibold text-foreground">{t.day}</span>
                       <span className="font-semibold text-foreground">£{rowPrice(t)}</span>
@@ -434,7 +434,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
               {/* Desktop: table */}
               <table className="hidden w-full text-left text-sm md:table">
-                <thead className="bg-muted/60 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <thead className="bg-foreground text-[11px] uppercase text-background">
                   <tr>
                     <th className="px-5 py-3 font-semibold">Day</th>
                     <th className="px-5 py-3 font-semibold">Time</th>
@@ -445,7 +445,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 </thead>
                 <tbody>
                   {proposal.lesson_times.map((t, i) => (
-                    <tr key={i} className="border-t border-border">
+                    <tr key={i} className="border-t border-foreground/10 transition-colors hover:bg-muted/60">
                       <td className="px-5 py-4 font-medium">{t.day}</td>
                       <td className="px-5 py-4">{t.time}</td>
                       <td className="px-5 py-4 text-muted-foreground">{t.duration} min</td>
@@ -477,8 +477,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 'Homework after each session, marked to track progress',
                 'Direct line to our admissions team for anything you need',
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
-                  <div className="mt-0.5 rounded-full bg-primary/10 p-1 text-primary">
+                <li key={i} className={`flex min-h-24 items-start gap-3 rounded-[var(--radius-soft)] p-5 shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-soft-lg)] ${i % 3 === 0 ? 'bg-pastel-mint' : i % 3 === 1 ? 'bg-pastel-sky' : 'bg-pastel-butter'}`}>
+                  <div className="mt-0.5 rounded-full border border-foreground/70 bg-card p-1 text-foreground">
                     <Check className="h-3.5 w-3.5" />
                   </div>
                   <span className="text-sm leading-relaxed">{item}</span>
@@ -494,9 +494,9 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 { n: '92%', l: 'A*/A rate at GCSE' },
                 { n: '95%', l: '11+ pass rate' },
                 { n: '98%', l: 'Parent satisfaction' },
-              ].map((s) => (
-                <div key={s.n} className="rounded-2xl border border-border bg-card p-8">
-                  <p className="font-heading text-5xl font-bold text-primary">{s.n}</p>
+              ].map((s, i) => (
+                <div key={s.n} className={`rounded-[var(--radius-soft)] p-8 shadow-[var(--shadow-soft)] ${i === 0 ? 'bg-pastel-sky' : i === 1 ? 'bg-pastel-butter' : 'bg-pastel-lilac'}`}>
+                  <p className="font-heading text-5xl font-extrabold text-foreground">{s.n}</p>
                   <p className="mt-2 text-sm text-muted-foreground">{s.l}</p>
                 </div>
               ))}
@@ -505,22 +505,22 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
           {/* Pricing */}
           <Section id="pricing" eyebrow="Pricing" title="Simple, transparent pricing">
-            <div className="rounded-2xl border border-border bg-card p-8">
+            <div className="rounded-[var(--radius-soft)] bg-foreground p-8 text-background shadow-[var(--shadow-soft-lg)]">
               {hasMixedPricing ? (
                 <div className="flex items-baseline gap-2">
-                  <span className="font-heading text-3xl font-bold text-foreground">Priced per lesson</span>
+                  <span className="font-heading text-3xl font-extrabold text-background">Priced per lesson</span>
                 </div>
               ) : (
                 <div className="flex items-baseline gap-2">
-                  <span className="font-heading text-5xl font-bold text-foreground">£{rowPrice(proposal.lesson_times[0] ?? {})}</span>
-                  <span className="text-muted-foreground">per lesson</span>
+                  <span className="font-heading text-5xl font-extrabold text-background">£{rowPrice(proposal.lesson_times[0] ?? {})}</span>
+                  <span className="text-background/70">per lesson</span>
                 </div>
               )}
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-background/70">
                 {hasMixedPricing
                   ? 'Each session is priced individually (see the weekly schedule above).'
                   : `Each session is charged at £${rowPrice(proposal.lesson_times[0] ?? {})}.`}{' '}
-                Billed <span className="font-medium text-foreground">every 4 weeks in advance</span>. No sign-up fee.
+                Billed <span className="font-semibold text-background">every 4 weeks in advance</span>. No sign-up fee.
               </p>
 
 
@@ -537,27 +537,27 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                         ? '3 Months'
                         : 'Month to Month';
                 return (
-                  <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-5">
+                  <div className="mt-6 rounded-[var(--radius-soft)] bg-pastel-butter p-5 text-foreground">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Contract term</p>
-                        <p className="mt-1 font-heading text-2xl font-bold text-foreground">{label}</p>
+                        <p className="text-[11px] font-semibold uppercase text-pastel-butter-foreground">Contract term</p>
+                        <p className="mt-1 font-heading text-2xl font-extrabold text-foreground">{label}</p>
                       </div>
-                      <span className="rounded-full border border-primary/30 bg-background px-3 py-1 text-xs font-semibold text-primary">
+                      <span className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background">
                         Auto-renews
                       </span>
                     </div>
                     <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
                         <span>During the term, the number of sessions cannot be reduced and the plan cannot be downgraded.</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
                         <span>You can increase sessions or upgrade at any time.</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
                         <span>At the end of the term the contract auto-renews. To cancel or downgrade, let us know at least <strong className="text-foreground">30 days before</strong> the term end date.</span>
                       </li>
                     </ul>
@@ -571,7 +571,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
           {/* FAQs */}
           <Section id="faqs" eyebrow="FAQs" title="Common questions">
-            <Accordion type="single" collapsible className="rounded-2xl border border-border bg-card">
+            <Accordion type="single" collapsible className="rounded-[var(--radius-soft)] bg-card px-2 shadow-[var(--shadow-soft)]">
               {FAQS.map((f, i) => (
                 <AccordionItem key={i} value={`f-${i}`} className="border-border px-5 last:border-0">
                   <AccordionTrigger className="text-left font-medium">{f.q}</AccordionTrigger>
@@ -583,7 +583,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
           {/* Terms */}
           <Section id="terms" eyebrow="Terms" title="The fine print">
-            <div className="space-y-4 rounded-2xl border border-border bg-card p-8 text-sm leading-relaxed text-muted-foreground">
+            <div className="space-y-4 rounded-[var(--radius-soft)] bg-muted p-8 text-sm leading-relaxed text-muted-foreground shadow-[var(--shadow-soft)]">
               <p>
                 <strong className="text-foreground">Safeguarding.</strong> All tutors are enhanced DBS checked and complete
                 annual safeguarding training. Every session is recorded and stored securely for review.
@@ -640,26 +640,26 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             </div>
 
             {signed ? (
-              <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl border-2 border-green-600/40 bg-green-600/5 p-8 md:flex-row md:items-center md:justify-between">
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-pastel-mint p-8 shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="font-heading text-2xl font-semibold text-green-700 dark:text-green-400">
+                  <p className="font-heading text-2xl font-extrabold text-foreground">
                     Agreement signed{signedDateStr ? ` on ${signedDateStr}` : ''}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     A permanent copy of this signed proposal is kept on record for both parties.
                   </p>
                 </div>
-                <Button size="lg" variant="outline" onClick={() => window.print()} className="no-print">
+                <Button size="lg" variant="outline" onClick={() => window.print()} className="no-print border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background">
                   <Printer className="mr-2 h-4 w-4" /> Download / Print
                 </Button>
               </div>
             ) : (
-              <div className="mt-10 flex flex-col items-start gap-4 rounded-2xl bg-primary p-8 text-primary-foreground md:flex-row md:items-center md:justify-between">
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-pastel-sky p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="font-heading text-2xl font-semibold">Ready to get started?</p>
+                  <p className="font-heading text-2xl font-extrabold">Ready to get started?</p>
                   <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
                 </div>
-                <Button size="lg" variant="secondary" onClick={onConfirm}>
+                <Button size="lg" onClick={onConfirm} className="bg-foreground text-background hover:bg-foreground/90">
                   Confirm & get started
                 </Button>
               </div>
@@ -671,14 +671,14 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       {/* Mobile sticky CTA */}
       {!signed && (
         <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
-          <Button className="w-full" size="lg" onClick={onConfirm}>
+          <Button className="w-full bg-foreground text-background hover:bg-foreground/90" size="lg" onClick={onConfirm}>
             Confirm & get started
           </Button>
         </div>
       )}
       {signed && showPaymentBanner && onContinuePayment && (
         <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
-          <Button className="w-full" size="lg" onClick={onContinuePayment}>
+          <Button className="w-full bg-foreground text-background hover:bg-foreground/90" size="lg" onClick={onContinuePayment}>
             Complete payment setup
           </Button>
         </div>
@@ -688,11 +688,12 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone: 'mint' | 'butter' | 'lilac' }) {
+  const toneClass = tone === 'mint' ? 'bg-pastel-mint' : tone === 'butter' ? 'bg-pastel-butter' : 'bg-pastel-lilac';
   return (
-    <div>
-      <p className="font-heading text-4xl font-bold text-foreground">{value}</p>
-      <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+    <div className={`rounded-[var(--radius-soft)] p-6 shadow-[var(--shadow-soft)] ${toneClass}`}>
+      <p className="font-heading text-4xl font-extrabold text-foreground">{value}</p>
+      <p className="mt-1 text-[11px] font-semibold uppercase text-muted-foreground">{label}</p>
       {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
     </div>
   );
@@ -701,8 +702,8 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 function Section({ id, eyebrow, title, children }: { id: string; eyebrow: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">{eyebrow}</p>
-      <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight md:text-4xl">{title}</h2>
+      <p className="text-[11px] font-semibold uppercase text-muted-foreground">{eyebrow}</p>
+      <h2 className="mt-2 font-heading text-3xl font-extrabold md:text-4xl">{title}</h2>
       <div className="mt-8">{children}</div>
     </section>
   );
