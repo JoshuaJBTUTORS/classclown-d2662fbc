@@ -22,6 +22,8 @@ const STEPS = [
 
 export default function ProposalCheckout({ proposal, initialStep, onBackToProposal, onFinished }: Props) {
   const [step, setStep] = useState<Step>(initialStep);
+  const [isAgreed, setIsAgreed] = useState(proposal.status === 'agreed' || proposal.status === 'completed');
+  const goBack = step === 'payment' ? () => setStep('agreement') : onBackToProposal;
   const deadline = useMemo(() => resolveDiscountDeadline(proposal), [proposal.created_at, proposal.discount_deadline]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -48,10 +50,10 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
     <div className="min-h-screen bg-muted/40 py-6 md:py-10">
       <div className="container max-w-5xl space-y-6">
         <button
-          onClick={onBackToProposal}
+          onClick={goBack}
           className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to proposal
+          <ArrowLeft className="h-4 w-4" /> {step === 'payment' ? 'Back to terms' : 'Back to proposal'}
         </button>
 
         {/* Stepper */}
@@ -78,9 +80,9 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
         <div className="grid gap-6 md:grid-cols-[1fr_280px] md:items-start">
           <div key={step} className="animate-in fade-in slide-in-from-right-4 duration-300">
             {step === 'agreement' && (
-              <AgreementStep embedded proposal={proposal} onAgree={() => setStep('payment')} onBack={onBackToProposal} />
+              <AgreementStep embedded alreadyAgreed={isAgreed} proposal={proposal} onAgree={() => { setIsAgreed(true); setStep('payment'); }} onBack={onBackToProposal} />
             )}
-            {step === 'payment' && <PaymentCaptureStep embedded proposal={proposal} onComplete={() => setStep('done')} />}
+            {step === 'payment' && <PaymentCaptureStep embedded proposal={proposal} onBack={() => setStep('agreement')} onComplete={() => setStep('done')} />}
             {step === 'done' && (
               <div className="space-y-4 rounded-[var(--radius-soft)] bg-background p-8 text-center shadow-[var(--shadow-soft)] md:p-12">
                 <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-pastel-mint">

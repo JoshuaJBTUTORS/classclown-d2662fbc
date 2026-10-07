@@ -139,7 +139,7 @@ function PaymentForm({ proposal, onComplete, onBack }: PaymentCaptureStepProps) 
   );
 }
 
-export default function PaymentCaptureStep({ proposal, onComplete, embedded = false }: PaymentCaptureStepProps) {
+export default function PaymentCaptureStep({ proposal, onComplete, embedded = false, onBack }: PaymentCaptureStepProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -226,7 +226,7 @@ export default function PaymentCaptureStep({ proposal, onComplete, embedded = fa
               },
             }}
           >
-            <PaymentForm proposal={proposal} onComplete={onComplete} />
+            <PaymentForm proposal={proposal} onComplete={onComplete} onBack={onBack} />
           </Elements>
         )}
 
