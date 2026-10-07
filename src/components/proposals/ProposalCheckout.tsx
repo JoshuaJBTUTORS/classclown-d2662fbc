@@ -30,7 +30,7 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
-  useEffect(() => window.scrollTo({ top: 0, behavior: 'smooth' }), [step]);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [step]);
 
   const remaining = deadline - now;
   const countdown = (() => {
