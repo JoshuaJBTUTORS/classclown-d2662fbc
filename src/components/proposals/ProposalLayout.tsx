@@ -505,22 +505,22 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
           {/* Pricing */}
           <Section id="pricing" eyebrow="Pricing" title="Simple, transparent pricing">
-            <div className="rounded-[var(--radius-soft)] bg-foreground p-8 text-background shadow-[var(--shadow-soft-lg)]">
+            <div className="rounded-[var(--radius-soft)] border border-foreground/10 bg-background p-8 text-foreground shadow-[var(--shadow-soft-lg)]">
               {hasMixedPricing ? (
                 <div className="flex items-baseline gap-2">
-                  <span className="font-heading text-3xl font-extrabold text-background">Priced per lesson</span>
+                  <span className="font-heading text-3xl font-extrabold text-foreground">Priced per lesson</span>
                 </div>
               ) : (
                 <div className="flex items-baseline gap-2">
-                  <span className="font-heading text-5xl font-extrabold text-background">£{rowPrice(proposal.lesson_times[0] ?? {})}</span>
-                  <span className="text-background/70">per lesson</span>
+                  <span className="font-heading text-5xl font-extrabold text-foreground">£{rowPrice(proposal.lesson_times[0] ?? {})}</span>
+                  <span className="text-muted-foreground">per lesson</span>
                 </div>
               )}
-              <p className="mt-2 text-sm text-background/70">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {hasMixedPricing
                   ? 'Each session is priced individually (see the weekly schedule above).'
                   : `Each session is charged at £${rowPrice(proposal.lesson_times[0] ?? {})}.`}{' '}
-                Billed <span className="font-semibold text-background">every 4 weeks in advance</span>. No sign-up fee.
+                Billed <span className="font-semibold text-foreground">every 4 weeks in advance</span>. No sign-up fee.
               </p>
 
 
@@ -689,7 +689,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 }
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'mint' }) {
-  const toneClass = tone === 'mint' ? 'bg-pastel-mint' : 'bg-muted';
+  const toneClass = 'bg-pastel-mint';
   return (
     <div className={`rounded-[var(--radius-soft)] p-6 shadow-[var(--shadow-soft)] ${toneClass}`}>
       <p className="font-heading text-4xl font-extrabold text-foreground">{value}</p>
