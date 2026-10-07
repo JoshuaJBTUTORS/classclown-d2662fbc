@@ -211,7 +211,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           </div>
         </div>
         {showPaymentBanner && onContinuePayment && (
-          <div className="bg-pastel-butter">
+          <div className="bg-muted">
             <div className="mx-auto flex max-w-[1400px] flex-col items-start justify-between gap-2 px-6 py-3 sm:flex-row sm:items-center">
               <p className="text-sm">
                 <span className="font-semibold text-foreground">Next step:</span> complete your payment setup to activate lessons.
@@ -293,8 +293,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <div
                   className={`mt-6 inline-flex items-center gap-2 rounded-[var(--radius-soft)] px-4 py-3 shadow-[var(--shadow-soft)] md:gap-3 md:px-6 md:py-4 ${
                     remainingMs <= 0
-                      ? 'bg-pastel-blush text-pastel-blush-foreground'
-                      : 'bg-pastel-butter text-pastel-butter-foreground'
+                      ? 'bg-muted text-muted-foreground'
+                      : 'bg-muted text-muted-foreground'
                   }`}
                   title="Time remaining to confirm this proposal"
                 >
@@ -329,7 +329,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             </div>
 
             {/* Prepared by */}
-            <div className={`relative grid gap-6 rounded-[var(--radius-soft)] p-6 shadow-[var(--shadow-soft)] md:grid-cols-[auto_1fr_auto] md:items-center ${signed ? 'bg-pastel-mint' : 'bg-pastel-sky'}`}>
+            <div className={`relative grid gap-6 rounded-[var(--radius-soft)] p-6 shadow-[var(--shadow-soft)] md:grid-cols-[auto_1fr_auto] md:items-center ${signed ? 'bg-pastel-mint' : 'bg-muted'}`}>
               {signed && (
                 <div className="absolute -top-3 right-4 inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-[11px] font-bold uppercase text-background">
                   <Check className="h-3 w-3" /> Signed
@@ -376,8 +376,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   beforehand.
                 </p>
               </div>
-              <div className="rounded-[var(--radius-soft)] bg-pastel-lilac p-6 shadow-[var(--shadow-soft)] md:p-8">
-                <p className="text-[11px] font-semibold uppercase text-pastel-lilac-foreground">Programme term</p>
+              <div className="rounded-[var(--radius-soft)] bg-muted p-6 shadow-[var(--shadow-soft)] md:p-8">
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">Programme term</p>
                 <p className="mt-2 font-heading text-3xl font-extrabold text-foreground md:text-4xl">
                   {termLabel}
                 </p>
@@ -408,8 +408,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             {/* Key stats */}
             <div className="grid gap-4 md:grid-cols-3">
               <Stat tone="mint" label="Lessons per week" value={String(proposal.lesson_times.length)} />
-              <Stat tone="butter" label="Minutes per week" value={String(totalMinutesPerWeek)} />
-              <Stat tone="lilac" label={uniqueSubjects.length === 1 ? 'Subject' : 'Subjects'} value={String(uniqueSubjects.length)} sub={uniqueSubjects.join(', ')} />
+              <Stat label="Minutes per week" value={String(totalMinutesPerWeek)} />
+              <Stat label={uniqueSubjects.length === 1 ? 'Subject' : 'Subjects'} value={String(uniqueSubjects.length)} sub={uniqueSubjects.join(', ')} />
             </div>
           </section>
 
@@ -419,7 +419,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               {/* Mobile: stacked cards */}
               <div className="md:hidden">
                 {proposal.lesson_times.map((t, i) => (
-                  <div key={i} className={`px-4 py-4 ${i > 0 ? 'border-t border-foreground/10' : ''} ${i % 3 === 0 ? 'bg-pastel-mint' : i % 3 === 1 ? 'bg-pastel-sky' : 'bg-pastel-lilac'}`}>
+                  <div key={i} className={`px-4 py-4 ${i > 0 ? 'border-t border-foreground/10' : ''} ${i % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-semibold text-foreground">{t.day}</span>
                       <span className="font-semibold text-foreground">£{rowPrice(t)}</span>
@@ -477,7 +477,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 'Homework after each session, marked to track progress',
                 'Direct line to our admissions team for anything you need',
               ].map((item, i) => (
-                <li key={i} className={`flex min-h-24 items-start gap-3 rounded-[var(--radius-soft)] p-5 shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-soft-lg)] ${i % 3 === 0 ? 'bg-pastel-mint' : i % 3 === 1 ? 'bg-pastel-sky' : 'bg-pastel-butter'}`}>
+                <li key={i} className={`flex min-h-24 items-start gap-3 rounded-[var(--radius-soft)] p-5 shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-soft-lg)] bg-background border border-foreground/10`}>
                   <div className="mt-0.5 rounded-full border border-foreground/70 bg-card p-1 text-foreground">
                     <Check className="h-3.5 w-3.5" />
                   </div>
@@ -495,7 +495,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 { n: '95%', l: '11+ pass rate' },
                 { n: '98%', l: 'Parent satisfaction' },
               ].map((s, i) => (
-                <div key={s.n} className={`rounded-[var(--radius-soft)] p-8 shadow-[var(--shadow-soft)] ${i === 0 ? 'bg-pastel-sky' : i === 1 ? 'bg-pastel-butter' : 'bg-pastel-lilac'}`}>
+                <div key={s.n} className={`rounded-[var(--radius-soft)] p-8 shadow-[var(--shadow-soft)] bg-muted`}>
                   <p className="font-heading text-5xl font-extrabold text-foreground">{s.n}</p>
                   <p className="mt-2 text-sm text-muted-foreground">{s.l}</p>
                 </div>
@@ -537,10 +537,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                         ? '3 Months'
                         : 'Month to Month';
                 return (
-                  <div className="mt-6 rounded-[var(--radius-soft)] bg-pastel-butter p-5 text-foreground">
+                  <div className="mt-6 rounded-[var(--radius-soft)] bg-muted p-5 text-foreground">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase text-pastel-butter-foreground">Contract term</p>
+                        <p className="text-[11px] font-semibold uppercase text-muted-foreground">Contract term</p>
                         <p className="mt-1 font-heading text-2xl font-extrabold text-foreground">{label}</p>
                       </div>
                       <span className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background">
@@ -654,7 +654,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 </Button>
               </div>
             ) : (
-              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-pastel-sky p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="font-heading text-2xl font-extrabold">Ready to get started?</p>
                   <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
@@ -688,8 +688,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
   );
 }
 
-function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone: 'mint' | 'butter' | 'lilac' }) {
-  const toneClass = tone === 'mint' ? 'bg-pastel-mint' : tone === 'butter' ? 'bg-pastel-butter' : 'bg-pastel-lilac';
+function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'mint' }) {
+  const toneClass = tone === 'mint' ? 'bg-pastel-mint' : 'bg-muted';
   return (
     <div className={`rounded-[var(--radius-soft)] p-6 shadow-[var(--shadow-soft)] ${toneClass}`}>
       <p className="font-heading text-4xl font-extrabold text-foreground">{value}</p>
