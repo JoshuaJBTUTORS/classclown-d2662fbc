@@ -48,7 +48,7 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
     <div className="min-h-screen bg-muted/40 py-6 md:py-10">
       <div className="container max-w-5xl space-y-6">
         <button
-          onClick={step === 'agreement' ? onBackToProposal : onBackToProposal}
+          onClick={onBackToProposal}
           className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Back to proposal
