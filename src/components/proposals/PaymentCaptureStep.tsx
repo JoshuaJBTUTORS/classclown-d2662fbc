@@ -15,9 +15,10 @@ interface PaymentCaptureStepProps {
   proposal: any;
   onComplete: () => void;
   embedded?: boolean;
+  onBack?: () => void;
 }
 
-function PaymentForm({ proposal, onComplete }: PaymentCaptureStepProps) {
+function PaymentForm({ proposal, onComplete, onBack }: PaymentCaptureStepProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,15 +124,22 @@ function PaymentForm({ proposal, onComplete }: PaymentCaptureStepProps) {
       </div>
 
 
-      <Button type="submit" disabled={!stripe || isSubmitting} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" size="lg">
-        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {isSubmitting ? 'Saving…' : 'Save card & finish'}
-      </Button>
+      <div className="flex flex-col gap-3 md:flex-row">
+        {onBack && (
+          <Button type="button" variant="outline" size="lg" onClick={onBack} disabled={isSubmitting} className="w-full rounded-full md:w-auto">
+            Back
+          </Button>
+        )}
+        <Button type="submit" disabled={!stripe || isSubmitting} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 md:flex-1" size="lg">
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSubmitting ? 'Saving…' : 'Save card & finish'}
+        </Button>
+      </div>
     </form>
   );
 }
 
-export default function PaymentCaptureStep({ proposal, onComplete, embedded = false }: PaymentCaptureStepProps) {
+export default function PaymentCaptureStep({ proposal, onComplete, embedded = false, onBack }: PaymentCaptureStepProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -218,7 +226,7 @@ export default function PaymentCaptureStep({ proposal, onComplete, embedded = fa
               },
             }}
           >
-            <PaymentForm proposal={proposal} onComplete={onComplete} />
+            <PaymentForm proposal={proposal} onComplete={onComplete} onBack={onBack} />
           </Elements>
         )}
 
