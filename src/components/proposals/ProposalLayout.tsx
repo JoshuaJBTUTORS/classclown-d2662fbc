@@ -689,7 +689,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 }
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'mint' }) {
-  const toneClass = tone === 'mint' ? 'bg-pastel-mint' : 'bg-muted';
+  const toneClass = 'bg-pastel-mint';
   return (
     <div className={`rounded-[var(--radius-soft)] p-6 shadow-[var(--shadow-soft)] ${toneClass}`}>
       <p className="font-heading text-4xl font-extrabold text-foreground">{value}</p>
