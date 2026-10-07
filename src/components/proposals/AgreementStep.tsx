@@ -11,9 +11,10 @@ interface AgreementStepProps {
   onAgree: () => void;
   onBack: () => void;
   embedded?: boolean;
+  alreadyAgreed?: boolean;
 }
 
-export default function AgreementStep({ proposal, onAgree, onBack, embedded = false }: AgreementStepProps) {
+export default function AgreementStep({ proposal, onAgree, onBack, embedded = false, alreadyAgreed = false }: AgreementStepProps) {
   const [agreed, setAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -88,6 +89,14 @@ export default function AgreementStep({ proposal, onAgree, onBack, embedded = fa
           minimum term, payment arrangements, cancellation policy and teacher allocation terms.
         </div>
 
+        {alreadyAgreed ? (
+          <div className="flex items-center gap-3 rounded-[var(--radius-soft)] bg-pastel-mint p-4 text-sm font-semibold text-foreground">
+            <Checkbox checked disabled />
+            <span>
+              Agreed{proposal.agreed_at ? ` on ${new Date(proposal.agreed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}
+            </span>
+          </div>
+        ) : (
         <div className="flex items-start gap-3 p-4 border rounded-lg leading-relaxed">
           <Checkbox
             id="agree"
@@ -99,14 +108,19 @@ export default function AgreementStep({ proposal, onAgree, onBack, embedded = fa
             "I Agree," I am entering into a binding agreement with Class Beyond.
           </label>
         </div>
+        )}
 
         <div className="flex flex-col md:flex-row gap-4">
-          <Button variant="outline" onClick={onBack} disabled={isSubmitting} className="w-full md:w-auto">
+          <Button variant="outline" onClick={onBack} disabled={isSubmitting} className={embedded ? 'w-full rounded-full md:w-auto' : 'w-full md:w-auto'}>
             {embedded ? 'Back' : 'Back to Proposal'}
           </Button>
-          <Button onClick={handleAgree} disabled={!agreed || isSubmitting} className="w-full md:flex-1">
+          <Button
+            onClick={alreadyAgreed ? onAgree : handleAgree}
+            disabled={(!alreadyAgreed && !agreed) || isSubmitting}
+            className={embedded ? 'w-full rounded-full bg-foreground text-background hover:bg-foreground/90 md:flex-1' : 'w-full md:flex-1'}
+          >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {embedded ? 'Agree & continue' : 'I Agree - Continue to Payment Setup'}
+            {alreadyAgreed ? 'Continue' : embedded ? 'Agree & continue' : 'I Agree - Continue to Payment Setup'}
           </Button>
         </div>
       </Card>
