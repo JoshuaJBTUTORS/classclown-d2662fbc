@@ -3,7 +3,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Check, Mail, Phone, Printer, PlayCircle, Clock, Menu, ChevronDown } from 'lucide-react';
-import jbLogo from '@/assets/jb-tutors-logo.png';
 import { resolveDiscountDeadline } from './discountDeadline';
 
 const INTRO_VIDEO_URL = 'https://share.descript.com/embed/frwRgA0s1T9';
@@ -147,30 +146,30 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       )}
 
       {/* Top action bar */}
-      <header className="no-print sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+      <header className="no-print sticky top-0 z-40 bg-background/95 shadow-[var(--shadow-soft)] backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-3 px-4 md:px-6">
           <div className="flex min-w-0 items-center gap-2 md:gap-3">
-            <span className="font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">Class<span className="text-primary">Beyond</span></span>
+            <span className="font-heading text-xl font-extrabold text-foreground md:text-3xl">ClassBeyond</span>
           </div>
 
 
           {/* Desktop actions */}
           <div className="hidden items-center gap-2 md:flex">
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background">
               <a href={`mailto:${CONTACT_EMAIL}`}>
                 <Mail className="mr-2 h-4 w-4" /> Contact us
               </a>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background">
               <Printer className="mr-2 h-4 w-4" /> {signed ? 'Download / Print' : 'Print'}
             </Button>
             {signed ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-600/30 bg-green-600/10 px-3 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-pastel-mint px-3 py-1.5 text-xs font-semibold text-pastel-mint-foreground shadow-[var(--shadow-soft)]">
                 <Check className="h-3.5 w-3.5" />
                 Signed{signedDateStr ? ` · ${signedDateStr}` : ''}
               </span>
             ) : (
-              <Button size="sm" onClick={onConfirm}>
+              <Button size="sm" onClick={onConfirm} className="bg-foreground text-background shadow-none hover:bg-foreground/90 hover:shadow-[var(--shadow-soft)]">
                 Confirm & get started
               </Button>
             )}
@@ -179,11 +178,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           {/* Mobile actions */}
           <div className="flex items-center gap-2 md:hidden">
             {signed ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-green-600/30 bg-green-600/10 px-2 py-1 text-[11px] font-semibold text-green-700 dark:text-green-400">
+              <span className="inline-flex items-center gap-1 rounded-full bg-pastel-mint px-2 py-1 text-[11px] font-semibold text-pastel-mint-foreground">
                 <Check className="h-3 w-3" /> Signed
               </span>
             ) : (
-              <Button size="sm" onClick={onConfirm} className="h-8 px-3 text-xs">
+              <Button size="sm" onClick={onConfirm} className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/90">
                 Confirm
               </Button>
             )}
@@ -212,12 +211,12 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           </div>
         </div>
         {showPaymentBanner && onContinuePayment && (
-          <div className="border-t border-border/60 bg-primary/5">
+          <div className="bg-pastel-butter">
             <div className="mx-auto flex max-w-[1400px] flex-col items-start justify-between gap-2 px-6 py-3 sm:flex-row sm:items-center">
               <p className="text-sm">
-                <span className="font-semibold text-primary">Next step:</span> complete your payment setup to activate lessons.
+                <span className="font-semibold text-foreground">Next step:</span> complete your payment setup to activate lessons.
               </p>
-              <Button size="sm" onClick={onContinuePayment}>Complete payment setup</Button>
+              <Button size="sm" onClick={onContinuePayment} className="bg-foreground text-background hover:bg-foreground/90">Complete payment setup</Button>
             </div>
           </div>
         )}
@@ -240,8 +239,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   href={`#${s.id}`}
                   className={`rounded-md px-3 py-2 text-sm transition-colors ${
                     active === s.id
-                      ? 'bg-primary/10 font-medium text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'bg-foreground font-semibold text-background shadow-[var(--shadow-soft)]'
+                        : 'text-muted-foreground hover:bg-card hover:text-foreground hover:shadow-[var(--shadow-soft)]'
                   }`}
                 >
                   {s.label}
@@ -270,7 +269,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   <DropdownMenuItem
                     key={s.id}
                     onClick={() => scrollToSection(s.id)}
-                    className={active === s.id ? 'bg-primary/10 text-primary font-medium' : ''}
+                    className={active === s.id ? 'bg-foreground text-background font-medium' : ''}
                   >
                     {s.label}
                   </DropdownMenuItem>
@@ -282,27 +281,27 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
           {/* Overview */}
           <section id="overview" className="space-y-10 scroll-mt-24">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <p className="text-[11px] font-semibold uppercase text-muted-foreground">
                 Class Beyond Proposal
               </p>
-              <h1 className="mt-3 font-heading text-5xl font-bold leading-[1.05] tracking-tight text-foreground md:text-6xl">
+              <h1 className="mt-3 font-heading text-5xl font-extrabold leading-[1.05] text-foreground md:text-6xl">
                 A tailored plan for
                 <br />
-                <span className="text-primary">{proposal.recipient_name}</span>
+                <span className="decoration-pastel-mint decoration-[0.3em] underline underline-offset-[-0.12em]">{proposal.recipient_name}</span>
               </h1>
               {!signed && (
                 <div
-                  className={`mt-6 inline-flex items-center gap-2 rounded-2xl border px-4 py-3 md:gap-3 md:px-6 md:py-4 ${
+                  className={`mt-6 inline-flex items-center gap-2 rounded-[var(--radius-soft)] px-4 py-3 shadow-[var(--shadow-soft)] md:gap-3 md:px-6 md:py-4 ${
                     remainingMs <= 0
-                      ? 'border-destructive/40 bg-destructive/10 text-destructive'
-                      : 'border-primary/30 bg-primary/5 text-primary'
+                      ? 'bg-pastel-blush text-pastel-blush-foreground'
+                      : 'bg-pastel-butter text-pastel-butter-foreground'
                   }`}
                   title="Time remaining to confirm this proposal"
                 >
                   <Clock className="h-6 w-6 md:h-8 md:w-8" />
                   <div className="flex flex-col leading-tight">
                     <span className="font-heading text-2xl font-bold tabular-nums md:text-4xl">{countdownLabel}</span>
-                    <span className="text-[11px] font-semibold uppercase tracking-widest opacity-80 md:text-xs">
+                    <span className="text-[11px] font-semibold uppercase opacity-80 md:text-xs">
                       {remainingMs <= 0
                         ? 'Discounted rate expired'
                         : 'Left to claim this discounted rate'}
@@ -330,34 +329,34 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             </div>
 
             {/* Prepared by */}
-            <div className={`relative grid gap-6 rounded-2xl border p-6 md:grid-cols-[auto_1fr_auto] md:items-center ${signed ? 'border-green-600/40 bg-green-600/5' : 'border-border bg-card'}`}>
+            <div className={`relative grid gap-6 rounded-[var(--radius-soft)] p-6 shadow-[var(--shadow-soft)] md:grid-cols-[auto_1fr_auto] md:items-center ${signed ? 'bg-pastel-mint' : 'bg-pastel-sky'}`}>
               {signed && (
-                <div className="absolute -top-3 right-4 inline-flex items-center gap-1.5 rounded-full border border-green-600/40 bg-background px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-green-700 dark:text-green-400">
+                <div className="absolute -top-3 right-4 inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-[11px] font-bold uppercase text-background">
                   <Check className="h-3 w-3" /> Signed
                 </div>
               )}
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-heading text-xl font-semibold text-primary">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-foreground/70 bg-card font-heading text-xl font-extrabold text-foreground">
                 CB
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Prepared by</p>
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">Prepared by</p>
                 <p className="font-heading text-lg font-semibold">Class Beyond Admissions Team</p>
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  <a href={`mailto:${CONTACT_EMAIL}`} className="flex items-center gap-1.5 hover:text-primary">
+                  <a href={`mailto:${CONTACT_EMAIL}`} className="flex items-center gap-1.5 hover:text-foreground">
                     <Mail className="h-3.5 w-3.5" /> {CONTACT_EMAIL}
                   </a>
-                  <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:text-primary">
+                  <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:text-foreground">
                     <Phone className="h-3.5 w-3.5" /> {CONTACT_PHONE}
                   </a>
                 </div>
                 {signed && signedDateStr && (
-                  <p className="pt-2 text-sm font-medium text-green-700 dark:text-green-400">
+                  <p className="pt-2 text-sm font-medium text-pastel-mint-foreground">
                     Agreement accepted by {proposal.recipient_name} on {signedDateStr}.
                   </p>
                 )}
               </div>
               <div className="text-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Date</p>
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">Date</p>
                 <p className="mt-1 font-medium">{dateStr}</p>
                 <p className="mt-2 text-[11px] text-muted-foreground">Ref {shortRef}</p>
               </div>
@@ -365,10 +364,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
 
             {/* Programme start date & term */}
-            <div className="grid gap-6 rounded-2xl border-2 border-primary/30 bg-primary/5 p-6 md:grid-cols-2 md:p-8">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Programme start date</p>
-                <p className="mt-2 font-heading text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+            <div className="grid gap-5 md:grid-cols-[1.2fr_0.8fr]">
+              <div className="rounded-[var(--radius-soft)] bg-pastel-mint p-6 shadow-[var(--shadow-soft)] md:p-8">
+                <p className="text-[11px] font-semibold uppercase text-pastel-mint-foreground">Programme start date</p>
+                <p className="mt-2 font-heading text-3xl font-extrabold text-foreground md:text-4xl">
                   {programmeStartStr ?? 'To be confirmed'}
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -377,9 +376,9 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   beforehand.
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Programme term</p>
-                <p className="mt-2 font-heading text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              <div className="rounded-[var(--radius-soft)] bg-pastel-lilac p-6 shadow-[var(--shadow-soft)] md:p-8">
+                <p className="text-[11px] font-semibold uppercase text-pastel-lilac-foreground">Programme term</p>
+                <p className="mt-2 font-heading text-3xl font-extrabold text-foreground md:text-4xl">
                   {termLabel}
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -391,11 +390,11 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
 
             {/* Video */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-primary">
-                <PlayCircle className="h-6 w-6" />
-                <p className="text-lg md:text-xl font-semibold uppercase tracking-widest">A message from our CEO</p>
+              <div className="flex items-center gap-3 text-foreground">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70"><PlayCircle className="h-5 w-5" /></span>
+                <p className="text-lg font-bold uppercase md:text-xl">A message from our CEO</p>
               </div>
-              <div className="aspect-video overflow-hidden rounded-2xl border border-border bg-muted">
+              <div className="aspect-video overflow-hidden rounded-[var(--radius-soft)] bg-muted shadow-[var(--shadow-soft-lg)]">
                 <iframe
                   src={INTRO_VIDEO_URL}
                   title="Class Beyond intro"
@@ -407,10 +406,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             </div>
 
             {/* Key stats */}
-            <div className="grid gap-6 border-y border-border py-8 md:grid-cols-3">
-              <Stat label="Lessons per week" value={String(proposal.lesson_times.length)} />
-              <Stat label="Minutes per week" value={String(totalMinutesPerWeek)} />
-              <Stat label={uniqueSubjects.length === 1 ? 'Subject' : 'Subjects'} value={String(uniqueSubjects.length)} sub={uniqueSubjects.join(', ')} />
+            <div className="grid gap-4 md:grid-cols-3">
+              <Stat tone="mint" label="Lessons per week" value={String(proposal.lesson_times.length)} />
+              <Stat tone="butter" label="Minutes per week" value={String(totalMinutesPerWeek)} />
+              <Stat tone="lilac" label={uniqueSubjects.length === 1 ? 'Subject' : 'Subjects'} value={String(uniqueSubjects.length)} sub={uniqueSubjects.join(', ')} />
             </div>
           </section>
 
