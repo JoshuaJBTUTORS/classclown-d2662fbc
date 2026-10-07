@@ -392,7 +392,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-foreground">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full border border-foreground/70"><PlayCircle className="h-5 w-5" /></span>
-                <p className="text-lg font-bold uppercase md:text-xl">A message from our CEO</p>
+                <p className="text-lg font-bold uppercase md:text-xl">A message from your account manager</p>
               </div>
               <div className="aspect-video overflow-hidden rounded-[var(--radius-soft)] bg-muted shadow-[var(--shadow-soft-lg)]">
                 <iframe
