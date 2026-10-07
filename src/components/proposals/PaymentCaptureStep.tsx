@@ -14,6 +14,7 @@ const stripePromise = loadStripe('pk_live_51SEUOvJYNQBAYpmilzLd1wW33J3IqSlLE9oEt
 interface PaymentCaptureStepProps {
   proposal: any;
   onComplete: () => void;
+  embedded?: boolean;
 }
 
 function PaymentForm({ proposal, onComplete }: PaymentCaptureStepProps) {
@@ -84,8 +85,8 @@ function PaymentForm({ proposal, onComplete }: PaymentCaptureStepProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 text-sm">
-        <p className="font-medium mb-1 text-primary">£0.00 Authorization</p>
+      <div className="rounded-[var(--radius-soft)] bg-pastel-mint p-4 text-sm">
+        <p className="font-semibold mb-1 text-foreground">£0.00 Authorization</p>
         <p className="text-muted-foreground">
           We'll authorize your card with £0.00 to verify it. You won't be charged until your first lesson.
         </p>
@@ -122,15 +123,15 @@ function PaymentForm({ proposal, onComplete }: PaymentCaptureStepProps) {
       </div>
 
 
-      <Button type="submit" disabled={!stripe || isSubmitting} className="w-full" size="lg">
+      <Button type="submit" disabled={!stripe || isSubmitting} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90" size="lg">
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Complete Sign-Up
+        {isSubmitting ? 'Saving…' : 'Save card & finish'}
       </Button>
     </form>
   );
 }
 
-export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCaptureStepProps) {
+export default function PaymentCaptureStep({ proposal, onComplete, embedded = false }: PaymentCaptureStepProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -170,7 +171,7 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className={`flex items-center justify-center ${embedded ? 'py-16' : 'min-h-screen'}`}>
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -187,8 +188,14 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
   console.log('💳 Rendering PaymentCaptureStep with clientSecret:', clientSecret ? 'present' : 'missing');
 
   return (
-    <div className="container max-w-2xl py-12">
-      <Card className="p-8 md:p-12 space-y-6">
+    <div className={embedded ? '' : 'container max-w-2xl py-12'}>
+      <Card className={embedded ? 'space-y-6 rounded-[var(--radius-soft)] border-0 bg-background p-6 shadow-[var(--shadow-soft)] md:p-8' : 'p-8 md:p-12 space-y-6'}>
+        {embedded ? (
+          <div className="text-center space-y-1">
+            <h1 className="font-heading text-2xl font-bold text-foreground">Add your card</h1>
+            <p className="text-muted-foreground">Last step — save a card to secure your lessons</p>
+          </div>
+        ) : (
         <div className="text-center space-y-2">
           <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
           <h1 className="text-3xl font-bold text-primary">Almost There!</h1>
@@ -196,6 +203,7 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
             Final step: Add your payment method to complete sign-up
           </p>
         </div>
+        )}
 
         {clientSecret && (
           <Elements
@@ -205,7 +213,7 @@ export default function PaymentCaptureStep({ proposal, onComplete }: PaymentCapt
               appearance: {
                 theme: 'flat',
                 variables: {
-                  colorPrimary: '#1fb86b',
+                  colorPrimary: '#111111',
                 },
               },
             }}

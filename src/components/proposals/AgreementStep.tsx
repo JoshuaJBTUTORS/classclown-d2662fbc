@@ -10,9 +10,10 @@ interface AgreementStepProps {
   proposal: any;
   onAgree: () => void;
   onBack: () => void;
+  embedded?: boolean;
 }
 
-export default function AgreementStep({ proposal, onAgree, onBack }: AgreementStepProps) {
+export default function AgreementStep({ proposal, onAgree, onBack, embedded = false }: AgreementStepProps) {
   const [agreed, setAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,11 +58,6 @@ export default function AgreementStep({ proposal, onAgree, onBack }: AgreementSt
 
       if (updateError) throw updateError;
 
-      toast({
-        title: 'Agreement Accepted',
-        description: 'Proceeding to payment setup...',
-      });
-
       onAgree();
     } catch (error: any) {
       console.error('Error accepting agreement:', error);
@@ -76,10 +72,10 @@ export default function AgreementStep({ proposal, onAgree, onBack }: AgreementSt
   };
 
   return (
-    <div className="container max-w-4xl py-6 md:py-12">
-      <Card className="p-8 md:p-12 space-y-8">
+    <div className={embedded ? '' : 'container max-w-4xl py-6 md:py-12'}>
+      <Card className={embedded ? 'space-y-6 rounded-[var(--radius-soft)] border-0 bg-background p-6 shadow-[var(--shadow-soft)] md:p-8' : 'p-8 md:p-12 space-y-8'}>
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-primary">Terms & Conditions</h1>
+          <h1 className={embedded ? 'font-heading text-2xl font-bold text-foreground' : 'text-3xl font-bold text-primary'}>Terms & Conditions</h1>
           <p className="text-muted-foreground">Please review and accept our terms to continue</p>
         </div>
 
@@ -87,7 +83,7 @@ export default function AgreementStep({ proposal, onAgree, onBack }: AgreementSt
           <div dangerouslySetInnerHTML={{ __html: TERMS_AND_CONDITIONS }} />
         </div>
 
-        <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed text-foreground">
+        <div className="rounded-[var(--radius-soft)] bg-pastel-mint p-4 text-sm leading-relaxed text-foreground">
           By signing below, you confirm that you have reviewed and accepted the programme start date, lesson schedule,
           minimum term, payment arrangements, cancellation policy and teacher allocation terms.
         </div>
@@ -106,11 +102,11 @@ export default function AgreementStep({ proposal, onAgree, onBack }: AgreementSt
 
         <div className="flex flex-col md:flex-row gap-4">
           <Button variant="outline" onClick={onBack} disabled={isSubmitting} className="w-full md:w-auto">
-            Back to Proposal
+            {embedded ? 'Back' : 'Back to Proposal'}
           </Button>
           <Button onClick={handleAgree} disabled={!agreed || isSubmitting} className="w-full md:flex-1">
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            I Agree - Continue to Payment Setup
+            {embedded ? 'Agree & continue' : 'I Agree - Continue to Payment Setup'}
           </Button>
         </div>
       </Card>
