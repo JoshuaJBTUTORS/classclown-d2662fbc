@@ -602,7 +602,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <strong className="text-foreground">
                   {proposal.contract_term === '24_months' ? '24 months' : proposal.contract_term === '12_months' ? '12 months' : proposal.contract_term === '3_months' ? '3 months' : 'month to month'}
                 </strong>{' '}
-                and auto-renews at the end. During the term you cannot reduce the number of sessions or downgrade, upgrades are always welcome. To cancel or downgrade at renewal, give us at least 30 days' written notice before the term end date.
+                and auto-renews at the end. During the term you cannot reduce the number of sessions or downgrade; upgrades are always welcome. To cancel or downgrade at renewal, give us at least 30 days' written notice before the term end date.
               </p>
               <p>
                 <strong className="text-foreground">Teacher allocation.</strong> Class Beyond Academy assigns teachers based on
@@ -666,7 +666,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="font-heading text-2xl font-extrabold">Almost there!</p>
-                  <p className="mt-1 text-sm opacity-90">Your agreement is saved, finish payment setup to complete your sign-up.</p>
+                  <p className="mt-1 text-sm opacity-90">Your agreement is saved. Finish payment setup to complete your sign-up.</p>
                 </div>
                 <Button size="lg" onClick={onContinuePayment} className="bg-foreground text-background hover:bg-foreground/90">
                   Complete payment setup

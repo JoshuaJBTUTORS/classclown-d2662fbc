@@ -163,7 +163,7 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
                 </h3>
                 <p className="text-sm text-foreground/70">
                   {previousAnswer === '__no__'
-                    ? 'You already answered for this lesson, you can join straight away.'
+                    ? 'You already answered for this lesson, so you can join straight away.'
                     : `Your tutor can see what you'd like covered${previousAnswer !== 'sent' ? `: "${previousAnswer}"` : ''}.`}
                 </p>
               </div>

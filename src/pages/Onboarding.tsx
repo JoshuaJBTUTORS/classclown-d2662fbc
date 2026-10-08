@@ -104,7 +104,7 @@ const Onboarding: React.FC = () => {
     setCompleted((c) => Array.from(new Set([...c, 3])));
 
     if (!createdProposal || !createdProposal.recipient_email) {
-      toast.error('Missing proposal data, cannot push HubSpot ticket');
+      toast.error('Missing proposal data; cannot push HubSpot ticket');
       navigate('/students');
       return;
     }
@@ -120,13 +120,13 @@ const Onboarding: React.FC = () => {
       }).then(({ error }) => {
         if (error) {
           console.error('Welcome email failed:', error);
-          toast.warning('Welcome email failed to send, please send manually');
+          toast.warning('Welcome email failed to send; please send manually');
         } else {
           toast.success('Welcome email sent to client');
         }
       }).catch((err) => {
         console.error('Welcome email exception:', err);
-        toast.warning('Welcome email failed to send, please send manually');
+        toast.warning('Welcome email failed to send; please send manually');
       });
 
       const { data, error } = await supabase.functions.invoke('hubspot-create-payment-ticket', {
@@ -145,10 +145,10 @@ const Onboarding: React.FC = () => {
       if (error) throw error;
       if ((data as any)?.ticketId) {
         if ((data as any)?.leadStatusUpdated) {
-          toast.success('Onboarding complete, payment ticket created and HubSpot contact marked Active Customer');
+          toast.success('Onboarding complete: payment ticket created and HubSpot contact marked Active Customer');
         } else {
-          toast.success('Onboarding complete, payment setup ticket created in HubSpot');
-          toast.warning('Could not update HubSpot lead status, please set Active Customer manually');
+          toast.success('Onboarding complete: payment setup ticket created in HubSpot');
+          toast.warning('Could not update HubSpot lead status; please set Active Customer manually');
         }
       } else {
         throw new Error((data as any)?.error || 'Unknown response from HubSpot');
@@ -157,7 +157,7 @@ const Onboarding: React.FC = () => {
       await welcomeEmailPromise;
     } catch (e: any) {
       console.error('HubSpot ticket push failed:', e);
-      toast.error('Onboarding complete, but HubSpot ticket failed, please create manually');
+      toast.error('Onboarding complete, but HubSpot ticket failed; please create manually');
     } finally {
       setPushingTicket(false);
       navigate('/students');
@@ -267,7 +267,7 @@ const Onboarding: React.FC = () => {
     setCheckError(null);
     setHasChecked(true);
     if (!createdParentRowId) {
-      setCheckError('Missing parent id, complete step 1 first.');
+      setCheckError('Missing parent id; complete step 1 first.');
       return;
     }
     setCheckingLessons(true);
@@ -396,7 +396,7 @@ const Onboarding: React.FC = () => {
                 <div>
                   <h2 className="text-xl font-bold text-pastel-sky-foreground">Step 1: Select completed proposal</h2>
                   <p className="text-sm text-pastel-sky-foreground/80 mt-1">
-                    Pick a signed proposal, we'll auto-create the parent account using the details on file.
+                    Pick a signed proposal; we'll auto-create the parent account using the details on file.
                     Default password: <code className="text-xs">classbeyond123!</code>
                   </p>
                 </div>
@@ -507,7 +507,7 @@ const Onboarding: React.FC = () => {
                 <div>
                   <h2 className="text-xl font-bold text-pastel-butter-foreground">Step 2: Sessions offered on the proposal</h2>
                   <p className="text-sm text-pastel-butter-foreground/80 mt-1">
-                    Make a note of the sessions offered, these are the times agreed on the signed proposal.
+                    Make a note of the sessions offered; these are the times agreed on the signed proposal.
                   </p>
                 </div>
               </div>
@@ -595,7 +595,7 @@ const Onboarding: React.FC = () => {
               <div className="flex flex-col gap-4">
                 {createdProposal && (
                   <div className="rounded-2xl border-2 border-foreground/70 bg-background/70 p-4 text-sm">
-                    <div className="font-semibold mb-1">Reminder, sessions to schedule</div>
+                    <div className="font-semibold mb-1">Reminder: sessions to schedule</div>
                     <div className="text-muted-foreground mb-2">
                       Parent: {createdProposal.recipient_name} · Subject: {createdProposal.subject || '—'} · Type: {createdProposal.lesson_type || '—'}
                     </div>

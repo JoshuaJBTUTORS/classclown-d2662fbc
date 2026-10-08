@@ -247,7 +247,7 @@ const AssessmentAssignments = () => {
     mutationFn: (assignmentId: string) => resetAssignmentToAssigned(assignmentId),
     onSuccess: () => {
       refreshQueues();
-      toast.success('Assignment reset, the student can start again');
+      toast.success('Assignment reset. The student can start again');
     },
     onError: (error: any) => toast.error(error?.message || 'Failed to reset assignment'),
   });
@@ -767,7 +767,7 @@ const AssessmentAssignments = () => {
                   ) : (
                     <div className="text-center py-12">
                       <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Nothing stranded, every attempt with answers is filed</p>
+                      <p className="text-muted-foreground">Nothing stranded; every attempt with answers is filed</p>
                     </div>
                   )}
                 </TabsContent>
@@ -787,7 +787,7 @@ const AssessmentAssignments = () => {
 
                 <TabsContent value="reviewed" className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Marked papers. Click a card to expand the full breakdown, every question, the
+                    Marked papers. Click a card to expand the full breakdown: every question, the
                     student's answer, marks awarded and the AI feedback.
                   </p>
                   {(() => {
@@ -933,7 +933,7 @@ const AssessmentAssignments = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Create a new version of this paper?</AlertDialogTitle>
             <AlertDialogDescription>
-              Every question is regenerated as a similar variant, names, numbers and minor wording change, while structure, marks and difficulty stay the same. The new version is named after this month. Nothing is deleted: this paper keeps all previous student answers, marks and submissions and is archived so it can no longer be taken, and everyone already assigned gets the new version as a fresh task.
+              Every question is regenerated as a similar variant: names, numbers and minor wording change, while structure, marks and difficulty stay the same. The new version is named after this month. Nothing is deleted: this paper keeps all previous student answers, marks and submissions and is archived so it can no longer be taken, and everyone already assigned gets the new version as a fresh task.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

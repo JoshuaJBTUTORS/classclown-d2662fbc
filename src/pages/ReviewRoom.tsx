@@ -229,7 +229,7 @@ const ReviewRoom = () => {
                   </Label>
                   <Input
                     id="exam_board_level"
-                    placeholder="e.g. Higher, AQA Maths, Foundation, Edexcel Science"
+                    placeholder="e.g. Higher (AQA Maths), Foundation (Edexcel Science)"
                     value={contact.exam_board_level}
                     onChange={(e) => setContact({ ...contact, exam_board_level: e.target.value })}
                   />

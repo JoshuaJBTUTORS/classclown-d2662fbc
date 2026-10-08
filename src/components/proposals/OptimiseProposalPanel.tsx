@@ -109,7 +109,7 @@ export default function OptimiseProposalPanel({ lessonTimes, lessonType, student
               <div>
                 <p className="text-sm font-medium">Cleo's calendar check</p>
                 <p className="text-xs text-muted-foreground">
-                  Suggestions only, nothing in your proposal has been changed.
+                  Suggestions only; nothing in your proposal has been changed.
                 </p>
               </div>
               <div className="flex items-center gap-1">
