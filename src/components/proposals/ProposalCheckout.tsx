@@ -58,7 +58,7 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
         </button>
 
         {/* Stepper */}
-        <ol className="flex items-center gap-2 md:gap-4">
+        <ol className="flex items-center gap-2 px-4 sm:px-6 md:gap-4 md:px-8 lg:px-0">
           {STEPS.map((s, i) => {
             const done = i < activeIndex;
             const current = i === activeIndex;
