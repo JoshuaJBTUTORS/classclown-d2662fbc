@@ -663,6 +663,16 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   <Printer className="mr-2 h-4 w-4" /> Download / Print
                 </Button>
               </div>
+            ) : paymentPending ? (
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-heading text-2xl font-extrabold">Almost there!</p>
+                  <p className="mt-1 text-sm opacity-90">Your agreement is saved — finish payment setup to complete your sign-up.</p>
+                </div>
+                <Button size="lg" onClick={onContinuePayment} className="bg-foreground text-background hover:bg-foreground/90">
+                  Complete payment setup
+                </Button>
+              </div>
             ) : (
               <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
                 <div>
