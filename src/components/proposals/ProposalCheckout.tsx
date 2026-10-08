@@ -52,27 +52,27 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
       <div className="container max-w-5xl space-y-6">
         <button
           onClick={goBack}
-          className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          className="mx-1 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground sm:mx-0"
         >
           <ArrowLeft className="h-4 w-4" /> {step === 'payment' ? 'Back to terms' : 'Back to proposal'}
         </button>
 
         {/* Stepper */}
-        <ol className="flex items-center gap-2 px-4 sm:px-6 md:gap-4 md:px-8 lg:px-0">
+        <ol className="grid w-full grid-cols-3 px-1 sm:px-0">
           {STEPS.map((s, i) => {
             const done = i < activeIndex;
             const current = i === activeIndex;
             return (
-              <li key={s.key} className="flex flex-1 items-center gap-2 md:gap-3">
+              <li key={s.key} className="relative flex min-w-0 flex-col items-center gap-2 px-1 sm:flex-row sm:gap-3 sm:px-0">
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-colors ${
+                  className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-colors ${
                     done ? 'border-foreground bg-foreground text-background' : current ? 'border-foreground bg-pastel-mint text-foreground' : 'border-foreground/20 text-muted-foreground'
                   }`}
                 >
                   {done ? <Check className="h-4 w-4" /> : i + 1}
                 </span>
-                <span className={`hidden text-sm sm:inline ${current ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{s.label}</span>
-                {i < STEPS.length - 1 && <span className={`h-px flex-1 ${done ? 'bg-foreground' : 'bg-foreground/15'}`} />}
+                <span className={`min-w-0 text-center text-[11px] leading-tight sm:text-left sm:text-sm ${current ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{s.label}</span>
+                {i < STEPS.length - 1 && <span className={`absolute left-[calc(50%+20px)] right-[calc(-50%+20px)] top-4 h-px sm:static sm:flex-1 ${done ? 'bg-foreground' : 'bg-foreground/15'}`} />}
               </li>
             );
           })}
