@@ -33,7 +33,7 @@ export const ReviewRoomApprovalEmail = ({
         <Text style={text}>Dear {parentName},</Text>
         <Text style={text}>
           We're so excited to see {childName} in The Review Room. Your seat is confirmed for the
-          session{sessions.length > 1 ? 's' : ''} below — our UK qualified teachers and examiners
+          session{sessions.length > 1 ? 's' : ''} below, our UK qualified teachers and examiners
           can't wait to meet you both.
         </Text>
 
@@ -63,7 +63,7 @@ export const ReviewRoomApprovalEmail = ({
           <strong>A few quick tips:</strong>
         </Text>
         <ul style={listStyle}>
-          <li>Save this email — the link is the same for every session you've booked.</li>
+          <li>Save this email, the link is the same for every session you've booked.</li>
           <li>Join 2-3 minutes early so you're settled when the teacher begins.</li>
           <li>Have a pen, paper, and a quiet space ready.</li>
           <li>Headphones often help with focus.</li>
