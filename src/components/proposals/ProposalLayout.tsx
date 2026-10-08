@@ -169,11 +169,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <Check className="h-3.5 w-3.5" />
                 Signed{signedDateStr ? ` · ${signedDateStr}` : ''}
               </span>
-            ) : paymentPending ? (
-              <Button size="sm" onClick={onContinuePayment} className="bg-foreground text-background shadow-none hover:bg-foreground/90 hover:shadow-[var(--shadow-soft)]">
-                Complete payment setup
-              </Button>
-            ) : (
+            ) : paymentPending ? null : (
               <Button size="sm" onClick={onConfirm} className="bg-foreground text-background shadow-none hover:bg-foreground/90 hover:shadow-[var(--shadow-soft)]">
                 Confirm & get started
               </Button>
