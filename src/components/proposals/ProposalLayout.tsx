@@ -126,7 +126,6 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
     ? new Date(signedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
   const paymentPending = !signed && showPaymentBanner && !!onContinuePayment;
-    : null;
 
 
   return (
