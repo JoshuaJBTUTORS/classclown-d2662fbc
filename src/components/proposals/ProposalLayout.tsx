@@ -187,6 +187,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               <span className="inline-flex items-center gap-1 rounded-full bg-pastel-mint px-2 py-1 text-[11px] font-semibold text-pastel-mint-foreground">
                 <Check className="h-3 w-3" /> Signed
               </span>
+            ) : paymentPending ? (
+              <Button size="sm" onClick={onContinuePayment} className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/90">
+                Payment setup
+              </Button>
             ) : (
               <Button size="sm" onClick={onConfirm} className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/90">
                 Confirm
