@@ -427,7 +427,7 @@ const StudentLessonSummary: React.FC<StudentLessonSummaryProps> = ({ lessonId, s
               
               <CollapsibleContent className="mt-2">
                 <div className="pl-7 space-y-3">
-                  {/* Engagement Metrics Summary — hidden when student didn't attend */}
+                  {/* Engagement Metrics Summary, hidden when student didn't attend */}
                   {!didNotAttend && (summary.engagement_score || summary.confidence_score || summary.participation_time_percentage) && (
                     <div className={cn('grid grid-cols-3 gap-4 rounded-2xl p-5', activeTone.bg)}>
                       {summary.engagement_score && (

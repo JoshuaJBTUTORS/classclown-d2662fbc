@@ -62,7 +62,7 @@ function flatten(raw: unknown): string {
   return "";
 }
 
-// Mirrors src/constants/subjects.ts — the only subject names our system uses.
+// Mirrors src/constants/subjects.ts, the only subject names our system uses.
 const CANONICAL_SUBJECTS = [
   "Early KS2 Maths", "Early KS2 English",
   "KS2 Maths", "KS2 English",
@@ -143,7 +143,7 @@ YEAR GROUP AND SUBJECT MAPPING (mandatory):
 - Every subject you write, in subject_list and in EVERY lesson_times[].subject, must be an exact name from this canonical list, banded to the RESOLVED year band (never the band the trial was booked under):
 ${CANONICAL_SUBJECTS.join(", ")}
 - Band prefixes: early_ks2 -> "Early KS2 ..."; ks2 -> "KS2 ..." (use "Sats Maths"/"Sats English" when SATs preparation is the stated goal); 11_plus -> "11 Plus Maths / English / VR / NVR"; ks3 -> "KS3 ..."; gcse -> "GCSE ..."; a_level -> "A-level ...".
-- Never output a bare subject like "Maths", "English" or "Science" — always the banded name (e.g. Year 10 maths becomes "GCSE Maths Highier" or "GCSE Maths Foundation", Year 7 science becomes "KS3 Science", Year 6 maths becomes "KS2 Maths").
+- Never output a bare subject like "Maths", "English" or "Science", always the banded name (e.g. Year 10 maths becomes "GCSE Maths Highier" or "GCSE Maths Foundation", Year 7 science becomes "KS3 Science", Year 6 maths becomes "KS2 Maths").
 - For GCSE maths pick Higher or Foundation from what was said; if it was not said, default to "GCSE Maths Highier" and mark it low confidence.
 - If a requested subject has no equivalent in the list for that band (e.g. GCSE History), write the closest sensible banded name and mark it low confidence.
 - For rotating slots, join the canonical names with " / " and append " (rotating)".`;
@@ -508,7 +508,7 @@ Deno.serve(async (req) => {
           { role: "system", content: SYSTEM },
           {
             role: "user",
-            content: `BOOKING CONTEXT (contact details authoritative; booked subject and year group are reference only — the transcript wins for year group and subjects):\n${JSON.stringify(context, null, 2)}\n\nTRANSCRIPT:\n${text}`,
+            content: `BOOKING CONTEXT (contact details authoritative; booked subject and year group are reference only, the transcript wins for year group and subjects):\n${JSON.stringify(context, null, 2)}\n\nTRANSCRIPT:\n${text}`,
           },
         ],
         response_format: {

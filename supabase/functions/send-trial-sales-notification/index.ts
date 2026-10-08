@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
         subject,
         preferredDate,
         preferredTime,
-        (message || "No additional message") + (isReviewRoom ? `\n\n[Review Room booking — link to be sent shortly before session]` : ''),
+        (message || "No additional message") + (isReviewRoom ? `\n\n[Review Room booking, link to be sent shortly before session]` : ''),
         bookingId
       );
 

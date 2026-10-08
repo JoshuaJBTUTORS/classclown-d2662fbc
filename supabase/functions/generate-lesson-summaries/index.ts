@@ -511,7 +511,7 @@ async function combineChunkSummaries(allSummaries: any[], students: any[], lesso
       ai_summary: `Combined analysis from ${studentSummaries.length} transcript segments. Student showed ${overallEngagement.toLowerCase()} engagement with ${allContributions.length} notable contributions across the lesson.`,
     };
 
-    // Generate structured homework brief (internal only — drives future homework generation).
+    // Generate structured homework brief (internal only, drives future homework generation).
     const homeworkBrief = await generateHomeworkBrief(
       lessonId,
       `${student.first_name || ''} ${student.last_name || ''}`.trim() || `student ${student.id}`,
@@ -668,7 +668,7 @@ Hesitation signals: ${JSON.stringify(aggregated.confidence_indicators?.hesitatio
 
 Numeric hints: confidence_score=${aggregated.confidence_score ?? 'n/a'} (0-10), engagement_level=${aggregated.engagement_level ?? 'n/a'}.`;
 
-    const difficultyRules = `Rules for difficulty_tag — this is critical:
+    const difficultyRules = `Rules for difficulty_tag, this is critical:
 - "1" = student REALLY did not understand the topic. Use when struggle signals clearly dominate, confidence_score <= 4, or the student produced little/no correct reasoning.
 - "2" = student PARTIALLY understands the topic. Use when there is a mix of understanding and gaps, or when signals are unclear.
 - NEVER output any value other than "1" or "2". Do NOT invent tags like "3", "mastered", or "challenge". If in doubt, output "2".`;
@@ -678,7 +678,7 @@ Numeric hints: confidence_score=${aggregated.confidence_score ?? 'n/a'} (0-10), 
 
 ${sharedContext}
 
-This lesson covered MULTIPLE subjects (${subjectParts.join(' + ')}). You MUST split the topics by subject — never mix topics from different subjects under one subject.
+This lesson covered MULTIPLE subjects (${subjectParts.join(' + ')}). You MUST split the topics by subject, never mix topics from different subjects under one subject.
 
 Return STRICT JSON with this exact shape and nothing else:
 {

@@ -396,7 +396,7 @@ serve(async (req) => {
       const brief = row.homework_brief || {};
 
       // New multi-subject shape: brief.subjects = [{ subject, topics, difficulty_tag }, ...]
-      // Legacy flat shape: { subject, topics, difficulty_tag } — treat as one entry.
+      // Legacy flat shape: { subject, topics, difficulty_tag }, treat as one entry.
       const entries: any[] = Array.isArray(brief.subjects) && brief.subjects.length > 0
         ? brief.subjects
         : [brief];
@@ -485,7 +485,7 @@ serve(async (req) => {
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const resend = resendKey ? new Resend(resendKey) : null;
     if (notifyEnabled && !resend) {
-      console.warn("[weekly-homework-sync] RESEND_API_KEY missing — emails will be skipped");
+      console.warn("[weekly-homework-sync] RESEND_API_KEY missing, emails will be skipped");
     }
 
     let sent = 0;
@@ -582,7 +582,7 @@ serve(async (req) => {
 
     if (isRootRun) await manifestQueue(queueIds);
 
-    // Kick the remainder off immediately — before this batch does any work.
+    // Kick the remainder off immediately, before this batch does any work.
     handOff(overflowIds, "overflow");
 
     const runStartedAt = Date.now();
@@ -616,7 +616,7 @@ serve(async (req) => {
 
       const totalLessons = subjects.reduce((n, s) => n + s.lesson_count, 0);
       if (subjects.length === 0 || totalLessons === 0) {
-        console.log("[weekly-homework-sync] Skipping student — no eligible lessons after filters", { studentId });
+        console.log("[weekly-homework-sync] Skipping student, no eligible lessons after filters", { studentId });
         skipped += 1;
         try {
           await service.from("notifications").insert({

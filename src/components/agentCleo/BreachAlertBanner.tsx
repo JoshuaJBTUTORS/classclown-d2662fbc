@@ -30,7 +30,7 @@ const BreachCard: React.FC<{ breach: TutorBreach; onDismiss: (id: string) => voi
         </span>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm">
-            {breach.tutor_name || 'Unknown tutor'} — {CATEGORY_LABELS[breach.category] ?? breach.category.replace(/_/g, ' ')}
+            {breach.tutor_name || 'Unknown tutor'}, {CATEGORY_LABELS[breach.category] ?? breach.category.replace(/_/g, ' ')}
           </div>
           <div className="text-xs text-[#6b6b76] dark:text-[#8e8ea0] mt-0.5">
             {[breach.lesson_title, date, breach.students].filter(Boolean).join(' · ')}

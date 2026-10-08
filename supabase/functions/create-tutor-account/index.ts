@@ -193,7 +193,7 @@ serve(async (req) => {
       tempPassword,
       message: created
         ? "Tutor account created"
-        : "Existing login found — tutor record linked and role ensured",
+        : "Existing login found, tutor record linked and role ensured",
     });
   } catch (error: any) {
     console.error("create-tutor-account error:", error);

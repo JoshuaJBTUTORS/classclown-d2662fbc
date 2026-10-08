@@ -231,7 +231,7 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
   }
 
   // Get the LAST normal INSTANCE to use as template (never the original, and
-  // never an Assessment Week lesson — fall back to the week prior)
+  // never an Assessment Week lesson, fall back to the week prior)
   const { data: lastInstance, error: lastInstanceError } = await supabase
     .from('lessons')
     .select('*')

@@ -69,10 +69,10 @@ const ReviewRoomApprovalDialog: React.FC<Props> = ({ isOpen, onClose, bookings, 
         toast.error(result.error || 'No sessions could be approved');
       } else {
         toast.success(
-          `Approved ${result.approvedCount} session${result.approvedCount === 1 ? '' : 's'} — parent notified by email & WhatsApp`,
+          `Approved ${result.approvedCount} session${result.approvedCount === 1 ? '' : 's'}, parent notified by email & WhatsApp`,
         );
         if (result.skipped.length > 0) {
-          toast.warning(`${result.skipped.length} session(s) skipped — see console for details`);
+          toast.warning(`${result.skipped.length} session(s) skipped; see console for details`);
           console.warn('Skipped sessions:', result.skipped);
         }
         onComplete();

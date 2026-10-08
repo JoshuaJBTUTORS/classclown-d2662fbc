@@ -106,7 +106,7 @@ export const ReviewRoomReminderEmail = ({
               ✨ Join Review Room
             </Button>
             <Text style={noAccountText}>
-              <em>No account setup required — this link takes you straight to the session.</em>
+              <em>No account setup required, this link takes you straight to the session.</em>
             </Text>
           </Section>
 

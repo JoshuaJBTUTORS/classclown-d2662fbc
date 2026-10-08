@@ -264,7 +264,7 @@ export const DifficultySelectionScreen = ({
       </div>
 
       <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto">
-        Don't worry—you can always try a different level next time! Choose what feels right for you today.
+        Don't worry, you can always try a different level next time! Choose what feels right for you today.
       </p>
     </div>
   );

@@ -129,7 +129,7 @@ serve(async (req) => {
     // If we have a stored secret, verify the signature. If not, log and accept
     // (rollout: historical lessons launched before webhook adoption won't have one).
     if (isTrustedReplay) {
-      console.log(`[${rid}] trusted replay token — skipping signature verification`);
+      console.log(`[${rid}] trusted replay token, skipping signature verification`);
     } else if (lessonRow?.lesson_space_webhook_secret && signatureHeader) {
       const expected = await hmacSha256Hex(lessonRow.lesson_space_webhook_secret, rawBody);
       if (!timingSafeEq(expected, signatureHeader.trim())) {
@@ -142,12 +142,12 @@ serve(async (req) => {
       console.log(`[${rid}] signature verified for lesson ${lessonRow.id}`);
     } else {
       console.warn(
-        `[${rid}] no stored secret or no signature header — accepting without verification (lesson=${lessonRow?.id ?? "unknown"})`,
+        `[${rid}] no stored secret or no signature header, accepting without verification (lesson=${lessonRow?.id ?? "unknown"})`,
       );
     }
 
     if (!lessonRow?.id) {
-      // We still fetch and store keyed by session_id — future join will surface it
+      // We still fetch and store keyed by session_id, future join will surface it
       console.warn(`[${rid}] no lesson matched session=${sessionId} room=${roomId}; storing orphan transcript row`);
     }
 
@@ -207,7 +207,7 @@ serve(async (req) => {
       }
       transcriptionRowId = upserted?.id ?? null;
     } else {
-      // No lesson row to key on — insert loosely, will be reconciled when session captured
+      // No lesson row to key on, insert loosely, will be reconciled when session captured
       const { error: insErr } = await supabase.from("lesson_transcriptions").insert(upsertRow);
       if (insErr) console.error(`[${rid}] orphan transcript insert failed:`, insErr.message);
     }

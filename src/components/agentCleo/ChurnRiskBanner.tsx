@@ -27,7 +27,7 @@ const RiskCard: React.FC<{ risk: StudentChurnRisk; onDismiss: (id: string) => vo
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm">
             {risk.student_name || 'Unknown student'}
-            {risk.parent_name ? ` — parent: ${risk.parent_name}` : ''}
+            {risk.parent_name ? `, parent: ${risk.parent_name}` : ''}
           </div>
           <div className="text-xs text-[#6b6b76] dark:text-[#8e8ea0] mt-0.5">{metrics}</div>
 
@@ -35,7 +35,7 @@ const RiskCard: React.FC<{ risk: StudentChurnRisk; onDismiss: (id: string) => vo
             {risk.reasons.map((r, i) => (
               <li key={i} className="text-sm">
                 <span className="font-medium">{r.label}</span>
-                <span className="text-[#55555e] dark:text-[#c5c5d2]"> — {r.detail}</span>
+                <span className="text-[#55555e] dark:text-[#c5c5d2]">, {r.detail}</span>
               </li>
             ))}
           </ul>

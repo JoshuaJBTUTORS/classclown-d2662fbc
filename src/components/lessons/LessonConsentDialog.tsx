@@ -153,7 +153,7 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto pr-1 pt-3">
-          {/* Topic request — answerable once per lesson */}
+          {/* Topic request, answerable once per lesson */}
           {alreadyAnswered ? (
             <div className="flex items-start gap-3 rounded-[1.25rem] border border-foreground/15 bg-pastel-mint/40 p-4">
               <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-foreground" />
@@ -163,7 +163,7 @@ const LessonConsentDialog: React.FC<LessonConsentDialogProps> = ({
                 </h3>
                 <p className="text-sm text-foreground/70">
                   {previousAnswer === '__no__'
-                    ? 'You already answered for this lesson — you can join straight away.'
+                    ? 'You already answered for this lesson, so you can join straight away.'
                     : `Your tutor can see what you'd like covered${previousAnswer !== 'sent' ? `: "${previousAnswer}"` : ''}.`}
                 </p>
               </div>

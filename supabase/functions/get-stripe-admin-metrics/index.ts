@@ -63,7 +63,7 @@ async function computeForAccount(stripe: Stripe, account: AccountKey, window: Wi
     }
     // active at window start: created before startTs AND (not canceled OR canceled after startTs)
     if (startTs === null) {
-      // "all time" — active at start = 0 baseline; use createdcount instead
+      // "all time", active at start = 0 baseline; use createdcount instead
       activeAtStart++;
     } else if (sub.created < startTs && (!sub.canceled_at || sub.canceled_at >= startTs)) {
       activeAtStart++;

@@ -1,4 +1,4 @@
-// Agent Cleo — proposal optimiser.
+// Agent Cleo, proposal optimiser.
 // Read-only. Checks each proposed lesson slot against tutor availability,
 // existing group sessions and overall slot coverage, then asks the model to
 // rank and phrase the findings. Never writes anything.
@@ -217,7 +217,7 @@ Rules:
 - Status "good": at least 2 available tutors at the slot and no clearly better alternative.
 - Status "better": it works but there is a materially better option (a joinable existing group with fewer than 6 students, or a nearby slot with noticeably more tutor coverage).
 - Status "none": no tutor is free at that slot for that subject.
-- Existing joinable groups are the highest-value finding — mention them first in the detail.
+- Existing joinable groups are the highest-value finding, mention them first in the detail.
 - Only suggest an alternative day/time that actually appears in subject_coverage_by_slot with more tutors than the proposed slot. Never invent slots, tutors or groups.
 - Keep the client's preference in mind: suggest the smallest possible change (same day, adjacent hour) before a different day.
 - Be concrete and short. Use numbers and names from the data. British English. No emojis.

@@ -123,10 +123,10 @@ serve(async (req) => {
     if (lessonRow?.lesson_space_webhook_secret && signatureHeader) {
       const expected = await hmacSha256Hex(lessonRow.lesson_space_webhook_secret, rawBody);
       if (!timingSafeEq(expected, signatureHeader.trim())) {
-        console.warn(`[${rid}] signature mismatch for lesson ${lessonRow.id} — accepting anyway`);
+        console.warn(`[${rid}] signature mismatch for lesson ${lessonRow.id}, accepting anyway`);
       }
     } else {
-      console.warn(`[${rid}] no stored secret or no signature — accepting (lesson=${lessonRow?.id ?? "unknown"})`);
+      console.warn(`[${rid}] no stored secret or no signature, accepting (lesson=${lessonRow?.id ?? "unknown"})`);
     }
 
     // ---- Participant join/leave tracking (user.joined / user.left) ----

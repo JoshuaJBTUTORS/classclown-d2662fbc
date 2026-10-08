@@ -42,7 +42,7 @@ async function findMatchingReviewRoomLesson(
 
   // Build the UK-local datetime then convert to UTC.
   // We do a window search (+/- 5 minutes) to be tolerant of any minor drift.
-  // UK uses BST (+1) most of the year — using toISOString of a plain Date
+  // UK uses BST (+1) most of the year, using toISOString of a plain Date
   // assumes the runtime TZ. To be safe we compute via a UTC offset lookup.
   const localIso = `${date}T${hhmm}:00`;
 

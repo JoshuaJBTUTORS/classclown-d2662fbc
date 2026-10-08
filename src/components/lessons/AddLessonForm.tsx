@@ -278,7 +278,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
 
       const newLessonId = lessonData?.[0]?.id;
 
-      // Add students to the original lesson (skipped for Review Room — none selected)
+      // Add students to the original lesson (skipped for Review Room, none selected)
       if (newLessonId && !isReviewRoom && selectedStudents.length > 0) {
         setLoadingStep('Adding students...');
         const lessonStudentsData = selectedStudents.map(studentId => ({
@@ -293,7 +293,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
         if (studentsError) throw studentsError;
       }
 
-      // Automatically create LessonSpace room for the lesson (skipped for Review Room — uses shared link)
+      // Automatically create LessonSpace room for the lesson (skipped for Review Room, uses shared link)
       if (newLessonId && !isReviewRoom) {
         try {
           setLoadingStep('Creating video room...');
@@ -395,7 +395,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
           </DialogTitle>
           <DialogDescription>
             {form.watch('isReviewRoom')
-              ? 'Free GCSE revision session — only tutor and time required. Recurs weekly with no end date. A video room is created automatically.'
+              ? 'Free GCSE revision session: only tutor and time required. Recurs weekly with no end date. A video room is created automatically.'
               : 'Create a new tutoring session for your students. A video room will be created automatically.'}
           </DialogDescription>
         </DialogHeader>
@@ -416,7 +416,7 @@ const AddLessonForm: React.FC<AddLessonFormProps> = ({ isOpen, onClose, onSucces
                     <div className="space-y-0.5">
                       <FormLabel className="text-base font-heading font-bold text-pastel-mint-foreground">Review Room Session</FormLabel>
                       <div className="text-sm text-pastel-mint-foreground/70">
-                        Free GCSE revision — only tutor & time needed. Auto-recurs weekly indefinitely.
+                        Free GCSE revision: only tutor & time needed. Auto-recurs weekly indefinitely.
                       </div>
                     </div>
                     <FormControl>

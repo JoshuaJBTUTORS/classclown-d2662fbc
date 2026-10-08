@@ -68,7 +68,7 @@ serve(async (req) => {
 
     // Store the recording URL in the lessons table
     if (recordingUrl) {
-      // Only lessons that have already started can own a recording — the same
+      // Only lessons that have already started can own a recording, the same
       // session id may be attached to future occurrences of a reused room.
       const { error: updateError } = await supabaseClient
         .from('lessons')

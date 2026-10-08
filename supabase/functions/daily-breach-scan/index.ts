@@ -61,19 +61,19 @@ const esc = (s: unknown) =>
 
 const BREACH_POLICY = `A tutor breach is any action or behaviour that violates professional standards, safeguarding requirements, privacy rules, or the organisation's policies. Categories:
 
-1. personal_information — Disclosing or requesting private information without proper authorisation: personal email addresses, phone numbers, home addresses, social-media accounts, login details, or other identifying/confidential information.
-2. inappropriate_communication — Language or behaviour that is insulting, threatening, discriminatory, intimidating, sexually inappropriate, aggressive, or otherwise disrespectful toward students, parents, colleagues or staff.
-3. professional_misconduct — Behaviour that is unprofessional, unsafe, dishonest, disruptive, or damaging to the learning environment or the organisation's reputation.
-4. safeguarding — Failing to maintain appropriate professional boundaries, unauthorised contact with a student, or failing to report a safeguarding concern through the correct process.
-5. discrimination_harassment — Treating anyone unfairly or harassing them because of a protected characteristic, background, identity, ability or personal circumstances.`;
+1. personal_information, Disclosing or requesting private information without proper authorisation: personal email addresses, phone numbers, home addresses, social-media accounts, login details, or other identifying/confidential information.
+2. inappropriate_communication, Language or behaviour that is insulting, threatening, discriminatory, intimidating, sexually inappropriate, aggressive, or otherwise disrespectful toward students, parents, colleagues or staff.
+3. professional_misconduct, Behaviour that is unprofessional, unsafe, dishonest, disruptive, or damaging to the learning environment or the organisation's reputation.
+4. safeguarding, Failing to maintain appropriate professional boundaries, unauthorised contact with a student, or failing to report a safeguarding concern through the correct process.
+5. discrimination_harassment, Treating anyone unfairly or harassing them because of a protected characteristic, background, identity, ability or personal circumstances.`;
 
 const MOMENT_POLICY = `A HIGH-IMPACT MOMENT is something a STUDENT (or parent) says that gives the team a concrete, time-relevant reason to contact the family. The bar is HIGH. Most lessons contain ZERO high-impact moments. Reporting nothing is the correct and expected outcome for a normal lesson.
 
-QUALIFICATION TEST — a moment must pass ALL FOUR. If any one fails, do not report it:
+QUALIFICATION TEST, a moment must pass ALL FOUR. If any one fails, do not report it:
 1. SPOKEN BY THE STUDENT OR PARENT. Not the tutor. Not inferred, implied or summarised by you.
-2. ABOUT SOMETHING OUTSIDE THIS LESSON — a school event, a result, a deadline, a decision, a change at school or home affecting their education. Anything happening inside this lesson is the tutor's job, not a moment.
-3. HAS A CONCRETE ANCHOR — a named assessment or school event, a stated date or timeframe, a grade/score/target, or a clearly stated school-level problem. No anchor means no moment.
-4. PASSES THE "WOULD WE PHONE HOME ABOUT THIS?" TEST — the recommended action must be something a human at a tutoring company would genuinely do this week.
+2. ABOUT SOMETHING OUTSIDE THIS LESSON, a school event, a result, a deadline, a decision, a change at school or home affecting their education. Anything happening inside this lesson is the tutor's job, not a moment.
+3. HAS A CONCRETE ANCHOR, a named assessment or school event, a stated date or timeframe, a grade/score/target, or a clearly stated school-level problem. No anchor means no moment.
+4. PASSES THE "WOULD WE PHONE HOME ABOUT THIS?" TEST, the recommended action must be something a human at a tutoring company would genuinely do this week.
 
 NEVER REPORT (hard exclusions, no exceptions):
 - Technical problems: connection, audio, video, screen-share, "I can't see it", "I can't write on it", logging in.
@@ -86,15 +86,15 @@ NEVER REPORT (hard exclusions, no exceptions):
 - Anything the tutor said. Anything you had to guess at.
 
 CATEGORIES (use the tightened definitions):
-1. upcoming_assessment — A named future SCHOOL or EXAM-BOARD assessment: test, exam, mock, GCSE/A-Level/SATs/11+ paper, coursework deadline. Must be identifiable, not "we have tests sometimes".
-2. past_assessment — A specific completed school assessment the student reflects on, with enough detail to follow up.
-3. assessment_result — An actual stated mark, score, grade, ranking, predicted grade or explicit teacher verdict.
-4. other_academic_result — Report card, progress report, admissions/school-place decision, formal school feedback.
-5. support_needed — A PATTERN or SCHOOL-LEVEL problem: falling behind at school, repeated poor results, stated anxiety or loss of confidence about their education, or a wellbeing concern. NOT a single wobble on one topic in this lesson.
-6. positive_progress — A concrete, stated achievement: improved grade, award, moved up a set, met a target, explicit teacher praise.
-7. goal_or_circumstance_change — An ACTUAL decision or change: new target grade, subject options chosen, exam entry, school move, application submitted, tutoring needs changing. NOT routine life updates.
+1. upcoming_assessment, A named future SCHOOL or EXAM-BOARD assessment: test, exam, mock, GCSE/A-Level/SATs/11+ paper, coursework deadline. Must be identifiable, not "we have tests sometimes".
+2. past_assessment, A specific completed school assessment the student reflects on, with enough detail to follow up.
+3. assessment_result, An actual stated mark, score, grade, ranking, predicted grade or explicit teacher verdict.
+4. other_academic_result, Report card, progress report, admissions/school-place decision, formal school feedback.
+5. support_needed, A PATTERN or SCHOOL-LEVEL problem: falling behind at school, repeated poor results, stated anxiety or loss of confidence about their education, or a wellbeing concern. NOT a single wobble on one topic in this lesson.
+6. positive_progress, A concrete, stated achievement: improved grade, award, moved up a set, met a target, explicit teacher praise.
+7. goal_or_circumstance_change, An ACTUAL decision or change: new target grade, subject options chosen, exam entry, school move, application submitted, tutoring needs changing. NOT routine life updates.
 
-SCORING — give every moment an impact_score 0-100 using this rubric, and a one-line score_reason:
+SCORING, give every moment an impact_score 0-100 using this rubric, and a one-line score_reason:
 - Concreteness of the anchor (0-30): named event / real date / actual grade scores high; vague "soon", "some tests" scores near zero.
 - Time-sensitivity (0-25): acting this week clearly matters.
 - Value to the family (0-25): would the parent be glad we called about this?
@@ -144,7 +144,7 @@ const tidyQuote = (q: string) =>
 
 /**
  * Reject quotes that are mostly transcript filler ("Yeah. Yeah. Okay. No.")
- * — they never constitute real evidence of a moment.
+ *, they never constitute real evidence of a moment.
  */
 const isSubstantialQuote = (q: string) => {
   const words = normalise(q).split(" ").filter(Boolean);
@@ -188,15 +188,15 @@ async function analyseTranscript(
           content:
             `You review UK online tutoring lesson transcripts for a tutoring company. You do TWO jobs in one pass.
 
-JOB 1 — TUTOR BREACHES (tutor behaviour only, never student behaviour):
+JOB 1, TUTOR BREACHES (tutor behaviour only, never student behaviour):
 ${BREACH_POLICY}
 
-JOB 2 — HIGH-IMPACT STUDENT MOMENTS:
+JOB 2, HIGH-IMPACT STUDENT MOMENTS:
 ${MOMENT_POLICY}
 
 RULES FOR BOTH JOBS:
 - Every item you report MUST include "evidence": one or more EXACT verbatim lines copied from the transcript. Never paraphrase evidence. If you cannot quote it, do not report it.
-- Transcripts are auto-generated and contain errors — never report anything based on a single ambiguous word.
+- Transcripts are auto-generated and contain errors, never report anything based on a single ambiguous word.
 - Be strict about false positives. Normal teaching, friendly banter and lesson logistics are neither a breach nor a high-impact moment.
 - Use only the student names supplied. If you cannot tell which student spoke, set student_name to null.
 - Leave any field you do not have information for as null. Never invent dates, grades or subjects.
@@ -204,7 +204,7 @@ RULES FOR BOTH JOBS:
 Return JSON only, in this exact shape:
 {
   "findings": [{"category": "personal_information|inappropriate_communication|professional_misconduct|safeguarding|discrimination_harassment", "severity": "low|medium|high", "summary": "one or two sentences", "evidence": ["exact quote"]}],
-  "moments": [{"category": "${MOMENT_CATEGORIES.join("|")}", "student_name": string|null, "subject": string|null, "event_type": "e.g. mock exam, end-of-topic test, report card", "timeframe": "as said, e.g. 'next Tuesday', 'after half term'", "event_date": "YYYY-MM-DD or null — only if an unambiguous date is stated", "grade_or_target": string|null, "student_reaction": "short description of how the student feels about it", "urgency": "low|medium|high", "recommended_action": "one short sentence on the outreach to make", "impact_score": 0-100, "score_reason": "one short line justifying the score", "evidence": ["exact quote — the student's own words, a full sentence, no filler"]}]
+  "moments": [{"category": "${MOMENT_CATEGORIES.join("|")}", "student_name": string|null, "subject": string|null, "event_type": "e.g. mock exam, end-of-topic test, report card", "timeframe": "as said, e.g. 'next Tuesday', 'after half term'", "event_date": "YYYY-MM-DD or null, only if an unambiguous date is stated", "grade_or_target": string|null, "student_reaction": "short description of how the student feels about it", "urgency": "low|medium|high", "recommended_action": "one short sentence on the outreach to make", "impact_score": 0-100, "score_reason": "one short line justifying the score", "evidence": ["exact quote, the student's own words, a full sentence, no filler"]}]
 }
 If there is nothing to report, return {"findings": [], "moments": []}. An empty "moments" array is a normal, expected result.`,
         },
@@ -319,7 +319,7 @@ async function verifyMoments(moments: Moment[]): Promise<Moment[]> {
             content:
               `You are a strict reviewer for a UK tutoring company. For each candidate below, answer whether it passes ALL FOUR rules:
 1. Said by the student or parent, not the tutor, not inferred.
-2. About something OUTSIDE the lesson (school event, result, deadline, decision) — not about the topic being taught right now.
+2. About something OUTSIDE the lesson (school event, result, deadline, decision), not about the topic being taught right now.
 3. Has a concrete anchor: a named assessment/school event, a stated date or timeframe, a grade/target, or a clearly stated school-level problem.
 4. Would a human at the company genuinely contact the family about it this week?
 
@@ -334,7 +334,7 @@ Return JSON only: {"keep": [indexes that pass all four]}. When in doubt, leave i
     });
 
     if (!res.ok) {
-      console.error(`[breach-scan] verify pass failed (${res.status}) — keeping candidates`);
+      console.error(`[breach-scan] verify pass failed (${res.status}), keeping candidates`);
       return moments;
     }
 
@@ -352,7 +352,7 @@ Return JSON only: {"keep": [indexes that pass all four]}. When in doubt, leave i
     }
     return kept;
   } catch (err: any) {
-    console.error(`[breach-scan] verify pass error: ${err?.message ?? err} — keeping candidates`);
+    console.error(`[breach-scan] verify pass error: ${err?.message ?? err}, keeping candidates`);
     return moments;
   }
 }
@@ -618,7 +618,7 @@ serve(async (req: Request) => {
 
       const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:900px;margin:0 auto;">
-        <h2 style="margin-bottom:4px;">🚨 Tutor breach alert — ${esc(prettyDate)}</h2>
+        <h2 style="margin-bottom:4px;">🚨 Tutor breach alert, ${esc(prettyDate)}</h2>
         <p style="color:#555;margin-top:0;">${breachRows.length} potential breach${breachRows.length === 1 ? "" : "es"} detected in yesterday's lesson transcripts. Review these in Agent Cleo.</p>
         <table style="border-collapse:collapse;width:100%;font-size:14px;">
           <thead>
@@ -632,7 +632,7 @@ serve(async (req: Request) => {
           </thead>
           <tbody>${rowsHtml}</tbody>
         </table>
-        <p style="color:#777;font-size:12px;margin-top:24px;">Automated daily transcript review — Class Beyond Academy CRM. These are AI-generated flags and must be verified before any action is taken.</p>
+        <p style="color:#777;font-size:12px;margin-top:24px;">Automated daily transcript review, Class Beyond Academy CRM. These are AI-generated flags and must be verified before any action is taken.</p>
       </div>`;
 
       const { error: emailError } = await resend.emails.send({
@@ -678,10 +678,10 @@ serve(async (req: Request) => {
 
       const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:760px;margin:0 auto;">
-        <h2 style="margin-bottom:2px;">📌 High-impact moments — ${esc(prettyDate)}</h2>
+        <h2 style="margin-bottom:2px;">📌 High-impact moments, ${esc(prettyDate)}</h2>
         <p style="color:#555;margin-top:0;font-size:14px;">${sorted.length} moment${sorted.length === 1 ? "" : "s"} worth outreach${highCount ? ` · ${highCount} urgent` : ""}.</p>
         <ul style="list-style:none;padding:0;margin:16px 0 0 0;">${items}</ul>
-        <p style="color:#777;font-size:12px;margin-top:24px;">Every line above is quoted directly from the lesson transcript. Automated daily review — Class Beyond Academy CRM.</p>
+        <p style="color:#777;font-size:12px;margin-top:24px;">Every line above is quoted directly from the lesson transcript. Automated daily review, Class Beyond Academy CRM.</p>
       </div>`;
 
       const { error: momentEmailError } = await resend.emails.send({
