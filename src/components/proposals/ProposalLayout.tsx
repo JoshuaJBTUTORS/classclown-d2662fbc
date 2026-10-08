@@ -124,7 +124,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       : '3 months';
   const signedDateStr = signedAt
     ? new Date(signedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    : null;
+    : '';
+  const paymentPending = !signed && showPaymentBanner && !!onContinuePayment;
 
 
   return (
@@ -168,6 +169,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 <Check className="h-3.5 w-3.5" />
                 Signed{signedDateStr ? ` · ${signedDateStr}` : ''}
               </span>
+            ) : paymentPending ? (
+              <Button size="sm" onClick={onContinuePayment} className="bg-foreground text-background shadow-none hover:bg-foreground/90 hover:shadow-[var(--shadow-soft)]">
+                Complete payment setup
+              </Button>
             ) : (
               <Button size="sm" onClick={onConfirm} className="bg-foreground text-background shadow-none hover:bg-foreground/90 hover:shadow-[var(--shadow-soft)]">
                 Confirm & get started
@@ -181,6 +186,10 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               <span className="inline-flex items-center gap-1 rounded-full bg-pastel-mint px-2 py-1 text-[11px] font-semibold text-pastel-mint-foreground">
                 <Check className="h-3 w-3" /> Signed
               </span>
+            ) : paymentPending ? (
+              <Button size="sm" onClick={onContinuePayment} className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/90">
+                Payment setup
+              </Button>
             ) : (
               <Button size="sm" onClick={onConfirm} className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/90">
                 Confirm
@@ -653,6 +662,16 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                   <Printer className="mr-2 h-4 w-4" /> Download / Print
                 </Button>
               </div>
+            ) : paymentPending ? (
+              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-heading text-2xl font-extrabold">Almost there!</p>
+                  <p className="mt-1 text-sm opacity-90">Your agreement is saved — finish payment setup to complete your sign-up.</p>
+                </div>
+                <Button size="lg" onClick={onContinuePayment} className="bg-foreground text-background hover:bg-foreground/90">
+                  Complete payment setup
+                </Button>
+              </div>
             ) : (
               <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
                 <div>
@@ -669,14 +688,14 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       </div>
 
       {/* Mobile sticky CTA */}
-      {!signed && (
+      {!signed && !paymentPending && (
         <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
           <Button className="w-full bg-foreground text-background hover:bg-foreground/90" size="lg" onClick={onConfirm}>
             Confirm & get started
           </Button>
         </div>
       )}
-      {signed && showPaymentBanner && onContinuePayment && (
+      {paymentPending && (
         <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
           <Button className="w-full bg-foreground text-background hover:bg-foreground/90" size="lg" onClick={onContinuePayment}>
             Complete payment setup
