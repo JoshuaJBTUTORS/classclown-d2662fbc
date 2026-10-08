@@ -89,7 +89,7 @@ function PaymentForm({ proposal, onComplete, onBack }: PaymentCaptureStepProps) 
       <div className="rounded-[var(--radius-soft)] bg-pastel-mint p-4 text-sm">
         <p className="font-semibold mb-1 text-foreground">£0.00 Authorization</p>
         <p className="text-muted-foreground">
-          We'll authorize your card with £0.00 to verify it. You won't be charged until your first lesson.
+          We'll authorize your card with £0.00 to verify it. You won't be charged until after your first lesson.
         </p>
       </div>
 
