@@ -448,7 +448,7 @@ const AssessmentAssignments = () => {
               {assessment.title || 'Untitled Assessment'}
             </CardTitle>
             <CardDescription className="mt-1">
-              {assessment.subject} {assessment.exam_board && `• ${assessment.exam_board}`}
+              {assessment.subject?.replace(/^GCSE Maths (?:Highier|Higher)$/i, 'GCSE Maths')} {assessment.exam_board && `• ${assessment.exam_board}`}
             </CardDescription>
           </div>
           {getAssessmentStatusBadge(assessment.status)}
