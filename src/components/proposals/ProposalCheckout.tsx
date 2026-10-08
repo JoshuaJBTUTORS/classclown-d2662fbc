@@ -52,13 +52,13 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
       <div className="container max-w-5xl space-y-6">
         <button
           onClick={goBack}
-          className="mx-1 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground sm:mx-0"
+          className="mx-1 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground sm:mx-4 md:mx-6 lg:mx-0"
         >
           <ArrowLeft className="h-4 w-4" /> {step === 'payment' ? 'Back to terms' : 'Back to proposal'}
         </button>
 
         {/* Stepper */}
-        <ol className="grid w-full grid-cols-3 px-1 sm:px-0">
+        <ol className="grid w-full grid-cols-3 px-1 sm:px-4 md:px-6 lg:px-0">
           {STEPS.map((s, i) => {
             const done = i < activeIndex;
             const current = i === activeIndex;
