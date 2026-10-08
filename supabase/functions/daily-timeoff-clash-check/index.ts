@@ -144,7 +144,7 @@ serve(async (req: Request) => {
 
     const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:820px;margin:0 auto;">
-        <h2 style="margin-bottom:4px;">⚠️ Tutor time-off clashes — this week (${esc(weekLabel)})</h2>
+        <h2 style="margin-bottom:4px;">⚠️ Tutor time-off clashes, this week (${esc(weekLabel)})</h2>
         <p style="color:#555;margin-top:0;">${clashes.length} lesson${clashes.length === 1 ? " is" : "s are"} scheduled this week with a tutor who has approved time off.</p>
         <table style="border-collapse:collapse;width:100%;font-size:14px;">
           <thead>
@@ -158,7 +158,7 @@ serve(async (req: Request) => {
           </thead>
           <tbody>${rows}</tbody>
         </table>
-        <p style="color:#777;font-size:12px;margin-top:24px;">Automated daily check — Class Beyond Academy CRM</p>
+        <p style="color:#777;font-size:12px;margin-top:24px;">Automated daily check, Class Beyond Academy CRM</p>
       </div>`;
 
     const { error: emailError } = await resend.emails.send({

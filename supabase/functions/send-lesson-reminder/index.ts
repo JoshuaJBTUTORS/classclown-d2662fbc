@@ -268,7 +268,7 @@ const handler = async (req: Request): Promise<Response> => {
           const studentPhoneFormatted = studentPhoneRaw
             ? whatsappService.formatPhoneNumber(studentPhoneRaw)
             : null;
-          // Reject junk numbers — need at least 7 digits.
+          // Reject junk numbers, need at least 7 digits.
           const studentPhone = studentPhoneFormatted &&
             studentPhoneFormatted.replace(/\D/g, '').length >= 7
             ? studentPhoneFormatted

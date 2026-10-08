@@ -102,7 +102,7 @@ function normalisePhone(phone: string | null | undefined): string | null {
   const trimmed = String(phone).replace(/[\s()-]/g, "").trim();
   if (!trimmed) return null;
   const formatted = whatsappService.formatPhoneNumber(trimmed);
-  // Reject junk numbers (e.g. "+2250") — need at least 7 digits.
+  // Reject junk numbers (e.g. "+2250"), need at least 7 digits.
   if (formatted.replace(/\D/g, "").length < 7) return null;
   return formatted;
 }
@@ -403,7 +403,7 @@ serve(async (req) => {
         continue;
       }
 
-      // Email — dedupe per parent group per day.
+      // Email, dedupe per parent group per day.
       if (email && resend) {
         const logKey = `email:${email}:${groupKey}`;
         const { data: existing } = await service
@@ -452,7 +452,7 @@ serve(async (req) => {
         outcome.email_error = "RESEND_API_KEY not configured";
       }
 
-      // WhatsApp — dedupe per parent group per day.
+      // WhatsApp, dedupe per parent group per day.
       if (phone) {
         const logKey = `whatsapp:${phone}:${groupKey}`;
         const { data: existing } = await service

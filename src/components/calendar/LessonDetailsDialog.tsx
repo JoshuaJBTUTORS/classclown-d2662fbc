@@ -185,7 +185,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
         .insert(rows);
       if (insertUrlError) throw insertUrlError;
 
-      // Assign the selected assessment to every enrolled student — fallback to parent account
+      // Assign the selected assessment to every enrolled student, fallback to parent account
       const studentList = (enrolled || [])
         .map((r: any) => r.student)
         .filter((s: any) => s?.id);
@@ -241,7 +241,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       }
 
       toast.success(
-        `Assessment week assigned — sent to ${resolved.length} of ${studentList.length} student${studentList.length === 1 ? '' : 's'} (via parent where needed)`
+        `Assessment week assigned, sent to ${resolved.length} of ${studentList.length} student${studentList.length === 1 ? '' : 's'} (via parent where needed)`
       );
       if (skipped > 0) {
         toast.message(`${skipped} student${skipped === 1 ? '' : 's'} skipped (no student or parent account linked)`);

@@ -108,7 +108,7 @@ async function syncResource(
     // problem, not a genuine wipe. Skip the write + prune entirely and flag it.
     if (full && baseline > 0 && rows.length < Math.ceil(baseline * 0.5)) {
       const warning =
-        `implausible payload: got ${rows.length} rows, currently store ${baseline} — skipped upsert and prune`;
+        `implausible payload: got ${rows.length} rows, currently store ${baseline}, skipped upsert and prune`;
       console.warn(`[heycleo-pull] ${resource}: ${warning}`);
       await supabase.from("heycleo_sync_state").upsert({
         resource,

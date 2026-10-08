@@ -233,7 +233,7 @@ const TimeOffRequests = () => {
         return false;
       }
 
-      // Date range filter — match time off periods overlapping the selected range
+      // Date range filter, match time off periods overlapping the selected range
       const reqStart = new Date(request.start_date);
       const reqEnd = new Date(request.end_date || request.start_date);
 

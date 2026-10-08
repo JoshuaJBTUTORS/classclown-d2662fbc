@@ -136,7 +136,7 @@ export default function SentOffers() {
       toast({
         title: data?.created ? 'Tutor account created' : 'Tutor linked',
         description: data?.created
-          ? `Login details ${data?.emailed ? 'emailed to' : 'created for'} ${o.recipient_email}${data?.tempPassword && !data?.emailed ? ` — temp password: ${data.tempPassword}` : ''}`
+          ? `Login details ${data?.emailed ? 'emailed to' : 'created for'} ${o.recipient_email}${data?.tempPassword && !data?.emailed ? `, temp password: ${data.tempPassword}` : ''}`
           : data?.message,
       });
       load();
@@ -255,7 +255,7 @@ export default function SentOffers() {
                         variant="ghost"
                         onClick={() => createAccount(o)}
                         disabled={creatingId === o.id}
-                        title={o.tutor_id ? 'Tutor account linked — click to re-sync' : 'Create tutor account'}
+                        title={o.tutor_id ? 'Tutor account linked, click to re-sync' : 'Create tutor account'}
                         className={o.tutor_id ? 'text-green-600' : ''}
                       >
                         {creatingId === o.id

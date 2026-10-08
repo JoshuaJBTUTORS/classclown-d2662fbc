@@ -141,7 +141,7 @@ export const useCalendarData = ({
     if (timeOffBlocks && timeOffBlocks.length > 0) {
       const timeOffEvents = timeOffBlocks.map((request: any) => ({
         id: `time-off-${request.id}`,
-        title: request.reason ? `Time off — ${request.reason}` : 'Time off',
+        title: request.reason ? `Time off, ${request.reason}` : 'Time off',
         start: convertUTCToUK(request.start_date).toISOString(),
         end: convertUTCToUK(request.end_date).toISOString(),
         className: 'calendar-event time-off-event',

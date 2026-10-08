@@ -79,7 +79,7 @@ async function docxToText(base64: string): Promise<string> {
   const xml = await file.async("string");
 
   const text = xml
-    // Word can wrap run text in CDATA — unwrap it before tags are stripped.
+    // Word can wrap run text in CDATA, unwrap it before tags are stripped.
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_, inner) =>
       String(inner).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
     .replace(/<w:tab[^>]*\/>/g, " ")
@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
     rows.forEach((r) => { termByWeek[r.week_number] = r.term; });
 
     // The week range comes from the requested target (default 52), NOT from the
-    // existing rows — otherwise a 30-week plan can never grow to a full year.
+    // existing rows, otherwise a 30-week plan can never grow to a full year.
     const requestedWeeks = Number(body.targetWeeks);
     const minWeek = 1;
     const maxWeek = Number.isFinite(requestedWeeks)
@@ -314,19 +314,19 @@ Apply these rules strictly:
 2. Use the document's sequence and terminology. Keep existing wording only where it already matches the document.
 3. These weeks MUST be assessment weeks, overwriting whatever currently sits there:
 ${activeAssessmentWeeks.map(([w, d]) => `   - Week ${w} (${d})`).join("\n")}
-   Title them as an assessment (e.g. "Assessment Week — <topics covered so far>") and describe what is assessed based on the preceding weeks.
+   Title them as an assessment (e.g. "Assessment Week, <topics covered so far>") and describe what is assessed based on the preceding weeks.
 4. Remove or reword anything that cannot be run online. Required practicals must become teacher demonstrations, virtual simulations, or analysis of provided results. Never instruct the student to physically carry out an experiment.
 
 If the source document is organised into UNITS rather than weeks, convert units to weeks like this:
 - Take every unit for the years in scope, in the order the document gives them, and compress them into the single ${minWeek}-${maxWeek} week cycle.
 - Roughly one to two weeks per unit: a large unit (about 10 or more lessons) may span two consecutive weeks; two short units may share one week.
 - The unit title drives the week's topic title; the unit's lesson list and unit description drive the week's description (list the key lessons/outcomes covered).
-- Never leave units out because you have run short of weeks — merge related units instead so the whole sequence is represented.
+- Never leave units out because you have run short of weeks, merge related units instead so the whole sequence is represented.
 
 Week numbering rules:
 - Week numbers are fixed to the calendar and must stay within ${minWeek}-${maxWeek}.
 - When a week is removed, shift the later topics UP into the freed slot so the teaching sequence stays continuous, but the assessment weeks above always keep their number and content.
-- The plan is a full ${maxWeek}-week cycle. Output every week number from ${minWeek} to ${maxWeek} exactly once — spread the document's content across ALL of them. Do not stop early just because the current plan has fewer weeks than that.
+- The plan is a full ${maxWeek}-week cycle. Output every week number from ${minWeek} to ${maxWeek} exactly once, spread the document's content across ALL of them. Do not stop early just because the current plan has fewer weeks than that.
 - Keep the term label already attached to each week number. For week numbers that do not exist yet, use: weeks 1-12 Autumn, 13-24 Spring, 25-${maxWeek} Summer.
 
 Also return a short list of the notable changes you made (removals, rewordings of practicals, assessment weeks inserted).`;

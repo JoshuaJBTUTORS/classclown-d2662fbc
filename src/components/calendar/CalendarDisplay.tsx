@@ -157,7 +157,7 @@ const CalendarDisplay: React.FC<CalendarDisplayProps> = ({
     return (
       <div className="calendar-event-content">
         <p className="event-title">{eventInfo.event.title}</p>
-        {/* black arrow button — same design as the subject tile arrow */}
+        {/* black arrow button, same design as the subject tile arrow */}
         <span className="calendar-event-arrow">
           <ArrowUpRight className="h-3 w-3" strokeWidth={2.5} />
         </span>

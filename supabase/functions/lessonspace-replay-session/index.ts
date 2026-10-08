@@ -186,7 +186,7 @@ serve(async (req) => {
       summary.transcript_webhook = { skipped: "no_transcription_url" };
     }
 
-    // Save recording URL if we got one — match by session_id first, then room_id.
+    // Save recording URL if we got one, match by session_id first, then room_id.
     if (recordingUrl) {
       let matchedLessonId: string | null = null;
       const { data: bySession } = await admin

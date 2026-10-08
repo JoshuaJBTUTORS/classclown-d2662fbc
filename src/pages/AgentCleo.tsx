@@ -175,21 +175,21 @@ const SUGGESTIONS = [
 const DAILY_QUOTES = [
   'Small steps every day add up to big results.',
   'Every lesson you plan changes someone’s trajectory.',
-  'Progress, not perfection — you’re doing great.',
+  'Progress, not perfection, you’re doing great.',
   'The best time to help a student is today.',
   'Great teaching starts with great organisation. You’ve got this.',
   'One calm, clear day at a time.',
   'Your work today becomes someone’s breakthrough tomorrow.',
   'Consistency is quiet, but it wins.',
   'A well-run day is a gift to every family you support.',
-  'Keep going — the details you handle matter more than you know.',
+  'Keep going, the details you handle matter more than you know.',
   'Today is a good day to make a difference.',
   'Clarity beats chaos. You’re building clarity.',
   'Every family you onboard is a new story beginning.',
-  'Done is better than perfect — keep the momentum.',
+  'Done is better than perfect, keep the momentum.',
 ];
 
-// Deterministic daily pick — rotates once per day, no backend needed.
+// Deterministic daily pick, rotates once per day, no backend needed.
 const quoteOfTheDay = () => {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
@@ -242,7 +242,7 @@ const LessonProposalCard: React.FC<{
     <div className="mt-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#2a2a2a] overflow-hidden">
       <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center gap-2">
         <CalendarPlus className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-        <span className="font-medium text-sm">Create lesson — needs your approval</span>
+        <span className="font-medium text-sm">Create lesson, needs your approval</span>
       </div>
 
       <dl className="px-4 py-3 text-sm space-y-2">
@@ -354,7 +354,7 @@ const LessonEditProposalCard: React.FC<{
     <div className="mt-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#2a2a2a] overflow-hidden">
       <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center gap-2">
         <CalendarCog className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-        <span className="font-medium text-sm">Edit lesson — needs your approval</span>
+        <span className="font-medium text-sm">Edit lesson, needs your approval</span>
       </div>
 
       <div className="px-4 py-3 text-sm space-y-3">
@@ -480,7 +480,7 @@ const AgentCleo: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Tracks the thread the current send belongs to, so a thread created mid-send is persisted to.
   const activeThreadRef = useRef<string | null>(threadId ?? null);
-  // Thread just created by this page's own send — its URL change must not trigger a DB restore.
+  // Thread just created by this page's own send, its URL change must not trigger a DB restore.
   const justCreatedThreadRef = useRef<string | null>(null);
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
@@ -712,7 +712,7 @@ const AgentCleo: React.FC = () => {
 
             setMessages((prev) => prev.map((m) =>
               m.id === assistantId
-                ? { ...m, toolStatus: `⚠ ${ev.tool ?? 'Tool'} hit an error — trying a different way…` }
+                ? { ...m, toolStatus: `⚠ ${ev.tool ?? 'Tool'} hit an error, trying a different way…` }
                 : m,
             ));
           } else if (ev.type === 'error') {
@@ -789,8 +789,8 @@ const AgentCleo: React.FC = () => {
         entry.id,
         'created',
         count > 1
-          ? `Created — ${count} lessons added to the calendar.`
-          : 'Created — the lesson is on the calendar.',
+          ? `Created, ${count} lessons added to the calendar.`
+          : 'Created, the lesson is on the calendar.',
       );
       return true;
     } catch (e) {
@@ -813,10 +813,10 @@ const AgentCleo: React.FC = () => {
 
       if (p.scope === 'all_future_lessons') {
         const updated = await updateAllFutureLessons(p.lesson_id, updateData, p.lesson_start_time);
-        setEntryState(msgId, entry.id, 'created', `Applied — ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
+        setEntryState(msgId, entry.id, 'created', `Applied, ${updated} lesson${updated === 1 ? '' : 's'} updated.`);
       } else {
         await updateSingleRecurringInstance(p.lesson_id, updateData);
-        setEntryState(msgId, entry.id, 'created', 'Applied — the lesson has been updated.');
+        setEntryState(msgId, entry.id, 'created', 'Applied, the lesson has been updated.');
       }
       return true;
     } catch (e) {
@@ -829,7 +829,7 @@ const AgentCleo: React.FC = () => {
     entry.kind === 'create' ? applyCreate(msg.id, entry) : applyEdit(msg.id, entry);
 
   const cancelEntry = (msg: Msg, entry: ProposalEntry) => {
-    setEntryState(msg.id, entry.id, 'cancelled', 'Cancelled — nothing was changed.');
+    setEntryState(msg.id, entry.id, 'cancelled', 'Cancelled, nothing was changed.');
   };
 
   const setBatchMessage = (msgId: string, message: string | null) => {
@@ -853,7 +853,7 @@ const AgentCleo: React.FC = () => {
   const cancelAll = (msg: Msg) => {
     const pending = (msg.proposals ?? []).filter((p) => p.state === 'pending' || p.state === 'error');
     pending.forEach((entry) => cancelEntry(msg, entry));
-    setBatchMessage(msg.id, 'Cancelled — nothing was changed.');
+    setBatchMessage(msg.id, 'Cancelled, nothing was changed.');
   };
 
 

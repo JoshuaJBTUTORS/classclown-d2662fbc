@@ -123,8 +123,8 @@ export const LessonStartPopup: React.FC = () => {
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Message from Cleo:</span>{' '}
               {hasStarted
-                ? 'Your lesson is live right now — hop in and say hello to your tutor!'
-                : 'Your lesson is about to begin — get comfy and join when you\u2019re ready!'}
+                ? 'Your lesson is live right now, hop in and say hello to your tutor!'
+                : 'Your lesson is about to begin, get comfy and join when you\u2019re ready!'}
             </p>
           </div>
 

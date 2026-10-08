@@ -84,8 +84,8 @@ QUESTION DETAILS:
 
 STUDENT ANSWER: ${studentAnswer}
 
-LENIENT MARKING RULES — APPLY STRICTLY:
-1. Award partial marks generously for any correct reasoning, method step, working, or understanding shown — even if the final answer is wrong.
+LENIENT MARKING RULES, APPLY STRICTLY:
+1. Award partial marks generously for any correct reasoning, method step, working, or understanding shown, even if the final answer is wrong.
 2. Accept equivalent answers and alternative valid approaches. Do not insist on one exact phrasing unless the question explicitly requires it.
 3. Give the student the benefit of the doubt. If the answer is partially right or shows effort in the right direction, award marks rather than withholding them.
 4. Do not penalise spelling, grammar, punctuation, or handwriting unless the question specifically tests those skills (e.g., English spelling test).
@@ -205,7 +205,7 @@ serve(async (req) => {
     let markedById: string | null = null;
 
     if (token && token === serviceRoleKey) {
-      // Internal/admin tooling call — no end user to attribute the marking to.
+      // Internal/admin tooling call, no end user to attribute the marking to.
       markedById = null;
     } else {
       const {
@@ -270,7 +270,7 @@ serve(async (req) => {
       const answer = String(response.student_answer ?? "").trim();
       const now = new Date().toISOString();
 
-      // Blank answers cost nothing to mark — record a zero and move on.
+      // Blank answers cost nothing to mark, record a zero and move on.
       if (!answer) {
         await supabase
           .from("student_responses")

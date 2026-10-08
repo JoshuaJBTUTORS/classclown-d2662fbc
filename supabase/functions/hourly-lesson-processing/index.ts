@@ -226,7 +226,7 @@ async function processLesson(lessonId: string, stats: Stats) {
   const completed = await ensureTranscript(lesson, stats);
   if (!completed) return;
 
-  // Step 4: summaries (fire-and-forget — generation takes 60-120s)
+  // Step 4: summaries (fire-and-forget, generation takes 60-120s)
   if (lesson.lesson_students?.length) {
     await ensureSummaries(lesson.id, stats);
   }
@@ -253,7 +253,7 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
   const urlIsLive =
     !!row?.transcription_url && !!row?.expires_at && new Date(row.expires_at).getTime() > Date.now();
 
-  // 3a: we hold a live URL — just download the text.
+  // 3a: we hold a live URL, just download the text.
   if (urlIsLive) {
     const ok = await downloadText(lesson.id, row!.transcription_url as string);
     if (ok) {
@@ -264,7 +264,7 @@ async function ensureTranscript(lesson: any, stats: Stats): Promise<boolean> {
     return false;
   }
 
-  // 3b: no live URL — ask LessonSpace for a fresh one, then download immediately.
+  // 3b: no live URL, ask LessonSpace for a fresh one, then download immediately.
   let pollError = (await supabase.functions.invoke("generate-lesson-summaries", {
     body: { action: "get-transcription", lessonId: lesson.id },
   })).error;
@@ -437,7 +437,7 @@ async function deferTranscript(
     console.log(`Lesson ${lessonId} deferred (attempt ${attempts}): ${reason}`);
   }
 
-  // session_id is NOT NULL, so a partial upsert would wipe it — update in place
+  // session_id is NOT NULL, so a partial upsert would wipe it, update in place
   // when a row exists and only insert (with the session id) when it does not.
   let error;
   if (row?.id) {
@@ -450,7 +450,7 @@ async function deferTranscript(
         ignoreDuplicates: false,
       }));
   } else {
-    // No row and no session id yet — nothing safe to persist; the lesson stays
+    // No row and no session id yet, nothing safe to persist; the lesson stays
     // in the queue and will be retried on the next run.
     return;
   }

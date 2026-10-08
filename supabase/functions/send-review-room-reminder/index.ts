@@ -94,7 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
     const errors: string[] = [];
     let emailIndex = 0;
 
-    // Build a flat list of (lesson, student, parent) tuples — dedupe per parent+lesson
+    // Build a flat list of (lesson, student, parent) tuples, dedupe per parent+lesson
     type Recipient = {
       lesson: any;
       student: any;

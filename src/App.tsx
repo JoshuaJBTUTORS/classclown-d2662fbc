@@ -102,7 +102,7 @@ const AppVersionMonitor = () => {
   return null;
 };
 
-// Single shared client — recreating it on every render wipes the cache and
+// Single shared client, recreating it on every render wipes the cache and
 // remounts every screen (losing in-progress form input).
 const queryClient = new QueryClient({
   defaultOptions: {

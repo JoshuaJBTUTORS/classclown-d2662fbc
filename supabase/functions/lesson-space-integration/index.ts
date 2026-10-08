@@ -164,7 +164,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
     // Never call LessonSpace API or overwrite lesson_space_room_url for these.
     if (lesson.lesson_type === 'review_room') {
       const REVIEW_ROOM_FIXED_URL = 'https://www.thelessonspace.com/space/3b3388bf-7e1f-4276-9f37-de5b17053e84';
-      console.log(`[${rid.substring(0, 8)}] 🛡️ Review Room detected — skipping room creation, enforcing fixed shared URL`);
+      console.log(`[${rid.substring(0, 8)}] 🛡️ Review Room detected, skipping room creation, enforcing fixed shared URL`);
 
       await supabase
         .from("lessons")
@@ -203,7 +203,7 @@ async function createLessonSpaceRoom(data: CreateRoomRequest, supabase: any) {
 
     // Webhook URLs LessonSpace should call for this space.
     // Note: LessonSpace only supports session.*, transcription.finish, user.*, chat.*,
-    // cobrowser.* and knock.*. Recording delivery is polled — no webhook for it.
+    // cobrowser.* and knock.*. Recording delivery is polled, no webhook for it.
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const transcriptWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-transcript-webhook`;
     const sessionWebhookUrl = `${supabaseUrl}/functions/v1/lessonspace-session-webhook`;
@@ -623,9 +623,9 @@ async function addStudentsToRoom(data: any, supabase: any) {
       throw new Error(`Failed to fetch lesson: ${lessonError.message}`);
     }
 
-    // 🛡️ Review Room lessons always use the shared link — never generate per-student URLs.
+    // 🛡️ Review Room lessons always use the shared link, never generate per-student URLs.
     if (lesson?.lesson_type === 'review_room') {
-      console.log(`🛡️ Review Room lesson ${lessonId} — skipping student URL generation (shared link is used)`);
+      console.log(`🛡️ Review Room lesson ${lessonId}, skipping student URL generation (shared link is used)`);
       return new Response(
         JSON.stringify({
           success: true,

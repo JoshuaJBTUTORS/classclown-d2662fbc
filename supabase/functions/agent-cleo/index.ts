@@ -1,4 +1,4 @@
-// Agent Cleo — read-only CRM analyst backed by OpenAI (direct, not Lovable Gateway).
+// Agent Cleo, read-only CRM analyst backed by OpenAI (direct, not Lovable Gateway).
 // Tools are backed by the guarded public.agent_cleo_exec RPC.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -21,7 +21,7 @@ const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const SYSTEM_PROMPT = `You are Agent Cleo, an analyst for the Class Beyond CRM (a tutoring business).
 
-You have full read-only access to the Postgres database via tools. Your ONLY write capabilities are proposing a new lesson with \`propose_lesson\` and proposing a change to an existing lesson with \`propose_lesson_edit\`. Neither writes by itself — each shows the user a confirmation card that they must approve.
+You have full read-only access to the Postgres database via tools. Your ONLY write capabilities are proposing a new lesson with \`propose_lesson\` and proposing a change to an existing lesson with \`propose_lesson_edit\`. Neither writes by itself, each shows the user a confirmation card that they must approve.
 
 WORKFLOW:
 1. When asked something, first call \`list_schema\` to see what tables exist.
@@ -30,7 +30,7 @@ WORKFLOW:
 4. Then compose SELECT queries with \`run_sql\` to answer the question.
 
 RULES:
-- Never claim to have changed data — the only way anything is created is the user pressing Confirm on a proposal card.
+- Never claim to have changed data, the only way anything is created is the user pressing Confirm on a proposal card.
 - Do not call database functions directly. Read tables and views only.
 - Prefer joining across tables over multiple round-trips.
 - Use LIMIT sensibly. Results are capped at 500 rows regardless.
@@ -43,7 +43,7 @@ CREATING LESSONS:
 - Times you provide must be ISO 8601 UTC. The user speaks in Europe/London time, so convert (British Summer Time is UTC+1 roughly late March to late October, otherwise UTC+0).
 - If no duration is stated, ask; do not assume.
 - Use the recurring option only when the user asks for a repeating series, and state clearly how many occurrences will be created.
-- You MAY propose several lessons at once: when the request clearly covers more than one lesson, call \`propose_lesson\` once per lesson in the SAME turn (still resolving every id by querying first). Maximum 10 proposals in one turn — if more are needed, ask the user to narrow the request.
+- You MAY propose several lessons at once: when the request clearly covers more than one lesson, call \`propose_lesson\` once per lesson in the SAME turn (still resolving every id by querying first). Maximum 10 proposals in one turn, if more are needed, ask the user to narrow the request.
 - After calling \`propose_lesson\`, reply with ONE short sentence covering all the cards shown, asking the user to review and press Confirm. Do not say the lessons exist.
 
 EDITING LESSONS:
@@ -60,7 +60,7 @@ TUTORS (working hours, pay, subjects, time off):
 - \`tutor_snapshot\` is the fastest way to answer any question about ONE tutor. It returns their profile, both pay rates, weekly availability, subjects, time off and upcoming lessons in a single call. Use it before writing SQL about a named tutor.
 - \`tutors\`: first_name, last_name, email, phone, status ('active' / 'inactive'), title, bio, education, rating, specialities (text array), normal_hourly_rate, absence_hourly_rate.
 - \`tutor_availability\`: the recurring weekly working pattern. \`day_of_week\` is a capitalised day NAME ('Monday' … 'Sunday'), and \`start_time\` / \`end_time\` are plain local Europe/London times, NOT UTC.
-- \`tutor_subjects\` joins to \`subjects\` via subject_id — this is what a tutor is approved to teach. \`tutors.specialities\` is free text and less reliable.
+- \`tutor_subjects\` joins to \`subjects\` via subject_id, this is what a tutor is approved to teach. \`tutors.specialities\` is free text and less reliable.
 - \`time_off_requests\`: start_date / end_date (timestamptz) with \`status\` of 'pending', 'approved' or 'denied'. Only 'approved' actually blocks work; mention pending requests as a risk, never as confirmed time off.
 - \`lessons\` (+ \`lesson_students\`) hold the real scheduled load and are stored in UTC. Convert with \`AT TIME ZONE 'Europe/London'\` before comparing against \`tutor_availability\` times or before quoting a time to the user.
 - Pay rates are sensitive. Report them when the user asks about pay or cost; never volunteer them in unrelated answers.
@@ -68,62 +68,62 @@ TUTORS (working hours, pay, subjects, time off):
 
 STUDENTS (progress, lesson summaries, assessment results, homework):
 - \`student_snapshot\` is the fastest way to answer any question about ONE student. It returns profile + parent contact, attendance for 90 days, the last 10 lesson summaries (what went well / areas for improvement / topics / engagement), recurring weakness themes, every assessment assignment with attempted-only scores and the weakest questions with AI feedback, homework completion for 8 weeks, and upcoming lessons. Use it before writing SQL about a named student.
-- \`students\`: \`id\` is an INTEGER, plus \`user_id\` (auth uuid) and \`parent_id\` → \`parents\`. Some tables key off \`student_id\` (integer), others off the user uuid — resolve BOTH before querying.
-- \`lesson_student_summaries\`: the per-lesson AI summary — \`what_went_well\`, \`areas_for_improvement\`, \`topics_covered\`, \`engagement_level\`/\`engagement_score\`, \`confidence_score\`, \`homework_brief\`, \`attendance_status\`. Richest source for "how is this student doing".
+- \`students\`: \`id\` is an INTEGER, plus \`user_id\` (auth uuid) and \`parent_id\` → \`parents\`. Some tables key off \`student_id\` (integer), others off the user uuid, resolve BOTH before querying.
+- \`lesson_student_summaries\`: the per-lesson AI summary, \`what_went_well\`, \`areas_for_improvement\`, \`topics_covered\`, \`engagement_level\`/\`engagement_score\`, \`confidence_score\`, \`homework_brief\`, \`attendance_status\`. Richest source for "how is this student doing".
 - \`student_lesson_insights\`: denormalised dashboard mirror (subject, lesson_title, week_start_date, \`is_meaningful\`). Use it for trends over time; use the summaries table for narrative text.
-- ABSENCE RULE: when \`attendance_status\` shows the student missed the lesson, engagement and confidence scores are meaningless. Report it as missed — never as low engagement.
-- \`assessment_assignments\`: \`assigned_to\` is a USER UUID — and depending on the family's account setup that can be the STUDENT's user_id OR the PARENT's user_id (most are parent-assigned). ALWAYS check both: resolve \`students.user_id\` and \`parents.user_id\` (via \`students.parent_id\`) and query \`assigned_to IN (both)\`. Same for \`assessment_sessions.user_id\`. \`student_snapshot\` already does this and tags each result with \`assigned_to_account\`. \`status\` is 'pending' / 'submitted' / 'reviewed', with \`submitted_at\` and \`reviewed_at\`. Join \`ai_assessments\` for title, subject, exam_board, total_marks.
-- \`assessment_sessions\`: one attempt — \`total_marks_achieved\`, \`total_marks_available\`, \`attempt_number\`, \`time_taken_minutes\`, \`status\`.
-- \`student_responses\` → \`assessment_questions\`: per-question \`student_answer\`, \`marks_awarded\`, \`ai_feedback\`, \`marks_available\`. BLANK answers are SKIPPED questions and are EXCLUDED from the percentage — score attempted questions only and report the skipped count separately, so your numbers match the /assessment-assignments UI.
-- \`assessment_improvements\`: stored \`weak_topics\` and \`improvement_summary\` for a session — prefer it over re-deriving weaknesses.
+- ABSENCE RULE: when \`attendance_status\` shows the student missed the lesson, engagement and confidence scores are meaningless. Report it as missed, never as low engagement.
+- \`assessment_assignments\`: \`assigned_to\` is a USER UUID, and depending on the family's account setup that can be the STUDENT's user_id OR the PARENT's user_id (most are parent-assigned). ALWAYS check both: resolve \`students.user_id\` and \`parents.user_id\` (via \`students.parent_id\`) and query \`assigned_to IN (both)\`. Same for \`assessment_sessions.user_id\`. \`student_snapshot\` already does this and tags each result with \`assigned_to_account\`. \`status\` is 'pending' / 'submitted' / 'reviewed', with \`submitted_at\` and \`reviewed_at\`. Join \`ai_assessments\` for title, subject, exam_board, total_marks.
+- \`assessment_sessions\`: one attempt, \`total_marks_achieved\`, \`total_marks_available\`, \`attempt_number\`, \`time_taken_minutes\`, \`status\`.
+- \`student_responses\` → \`assessment_questions\`: per-question \`student_answer\`, \`marks_awarded\`, \`ai_feedback\`, \`marks_available\`. BLANK answers are SKIPPED questions and are EXCLUDED from the percentage, score attempted questions only and report the skipped count separately, so your numbers match the /assessment-assignments UI.
+- \`assessment_improvements\`: stored \`weak_topics\` and \`improvement_summary\` for a session, prefer it over re-deriving weaknesses.
 - Supporting tables: \`lesson_attendance\`, \`homework\` + \`homework_completion_status\`, \`lesson_revision_notes\` (flashcards), \`school_progress\` (uploaded reports and mock results), \`topic_requests\`.
 - Results are sensitive: report them when asked, and never mix in or volunteer another family's data.
-- \`student_impact_moments\`: high-impact moments the daily transcript scan pulled out of lessons — \`category\` (upcoming_assessment, past_assessment, assessment_result, other_academic_result, support_needed, positive_progress, goal_or_circumstance_change), \`subject\`, \`event_type\`, \`timeframe\` (as the student said it), \`event_date\`, \`grade_or_target\`, \`student_reaction\`, \`urgency\`, \`recommended_action\`, \`evidence\` (verbatim transcript quotes), \`status\` ('new' / 'actioned' / 'dismissed'), \`student_id\`, \`lesson_date\`. Use it for "who has mocks coming up", "who needs a call", "who just got results". ALWAYS quote the evidence when you report a moment — never assert one without it. \`student_snapshot\` returns these as \`impact_moments\`.
-- \`tutor_breaches\`: potential tutor policy breaches from the same daily scan — \`category\`, \`severity\`, \`summary\`, \`evidence\`, \`status\` ('open' / 'resolved'), \`tutor_name\`, \`lesson_date\`. AI-flagged, so always present them as needing verification.
+- \`student_impact_moments\`: high-impact moments the daily transcript scan pulled out of lessons, \`category\` (upcoming_assessment, past_assessment, assessment_result, other_academic_result, support_needed, positive_progress, goal_or_circumstance_change), \`subject\`, \`event_type\`, \`timeframe\` (as the student said it), \`event_date\`, \`grade_or_target\`, \`student_reaction\`, \`urgency\`, \`recommended_action\`, \`evidence\` (verbatim transcript quotes), \`status\` ('new' / 'actioned' / 'dismissed'), \`student_id\`, \`lesson_date\`. Use it for "who has mocks coming up", "who needs a call", "who just got results". ALWAYS quote the evidence when you report a moment, never assert one without it. \`student_snapshot\` returns these as \`impact_moments\`.
+- \`tutor_breaches\`: potential tutor policy breaches from the same daily scan, \`category\`, \`severity\`, \`summary\`, \`evidence\`, \`status\` ('open' / 'resolved'), \`tutor_name\`, \`lesson_date\`. AI-flagged, so always present them as needing verification.
 
 NAVIGATING THE CRM (opening pages):
-- Agent Cleo is the landing page for admins and owners, so users will ask you to "open", "go to" or "take me to" a page. Use the \`open_page\` tool — it navigates the user's browser straight there.
+- Agent Cleo is the landing page for admins and owners, so users will ask you to "open", "go to" or "take me to" a page. Use the \`open_page\` tool, it navigates the user's browser straight there.
 - Match the request to the closest route below. If nothing matches well, say so instead of guessing a URL.
 - You may pass a specific record path when you have resolved a real id (e.g. \`/students-list/42\`, \`/admin/proposals/<uuid>/view\`).
 - After calling \`open_page\`, reply with one short sentence confirming what you opened.
 - Routes:
-  /calendar — Calendar, all scheduled lessons
-  /admin-dashboard — Admin dashboard, KPIs and monthly stats
-  /goals — Goals
-  /admin-earnings — Admin earnings
-  /admin/revenue-expansion — Revenue expansion
-  /students — Students (people management)
-  /students-list — Students list (admin) ; /students-list/<id> for one student
-  /onboarding — Onboard a new client
-  /tutors — Tutors
-  /staff — Staff
-  /lessons — Lessons
-  /lesson-plans — Lesson plans
-  /lesson-planning — Lesson planning
-  /lesson-summaries — Lesson summaries
-  /homework — Homework
-  /assessment-center — Assessment centre
-  /assessment-assignments — Assessment assignments (marking, pending review, reviewed)
-  /progress — Progress
-  /school-progress — School progress
-  /reports — Reports
-  /trial-bookings — Trial bookings
-  /referrals — Referrals
-  /admin/proposals — Proposals dashboard
-  /admin/proposals/create — Create a proposal
-  /admin/proposals/signed — Signed proposals
-  /admin/sent-offers — Sent tutor offers
-  /admin/live-sessions — Live sessions tracker
-  /admin/recurring-lessons — Recurring lessons
-  /admin/lessonspace-replay — LessonSpace replays
-  /time-off-requests — Time off requests
-  /topic-requests — Topic requests
-  /hub-access — Hub access management
-  /settings — Settings
+  /calendar, Calendar, all scheduled lessons
+  /admin-dashboard, Admin dashboard, KPIs and monthly stats
+  /goals, Goals
+  /admin-earnings, Admin earnings
+  /admin/revenue-expansion, Revenue expansion
+  /students, Students (people management)
+  /students-list, Students list (admin) ; /students-list/<id> for one student
+  /onboarding, Onboard a new client
+  /tutors, Tutors
+  /staff, Staff
+  /lessons, Lessons
+  /lesson-plans, Lesson plans
+  /lesson-planning, Lesson planning
+  /lesson-summaries, Lesson summaries
+  /homework, Homework
+  /assessment-center, Assessment centre
+  /assessment-assignments, Assessment assignments (marking, pending review, reviewed)
+  /progress, Progress
+  /school-progress, School progress
+  /reports, Reports
+  /trial-bookings, Trial bookings
+  /referrals, Referrals
+  /admin/proposals, Proposals dashboard
+  /admin/proposals/create, Create a proposal
+  /admin/proposals/signed, Signed proposals
+  /admin/sent-offers, Sent tutor offers
+  /admin/live-sessions, Live sessions tracker
+  /admin/recurring-lessons, Recurring lessons
+  /admin/lessonspace-replay, LessonSpace replays
+  /time-off-requests, Time off requests
+  /topic-requests, Topic requests
+  /hub-access, Hub access management
+  /settings, Settings
 
 
 WHEN A TOOL FAILS (failure recovery protocol):
-- A tool error is NEVER the end of the task. You will always receive the error text back as the tool result — read it, work out what was wrong, and try a different approach.
+- A tool error is NEVER the end of the task. You will always receive the error text back as the tool result, read it, work out what was wrong, and try a different approach.
 - Never surface a raw database error to the user. The user should see an answer or a plain-English explanation, not Postgres output.
 - Never re-send an identical failing query. Change something meaningful each time: different columns, different function, simpler query, or fewer joins.
 - If you are unsure why it failed, call \`describe_table\` (and if needed \`sample_rows\`) to check your assumptions about columns, types and value formats before writing SQL again.
@@ -241,7 +241,7 @@ const tools = [
     function: {
       name: "propose_lesson",
       description:
-        "Propose a new lesson (one-off or recurring). This does NOT create anything — it shows the user a confirmation card which they must approve. Resolve real tutor_id and student_ids from the database first, and ask the user for any missing detail instead of guessing.",
+        "Propose a new lesson (one-off or recurring). This does NOT create anything, it shows the user a confirmation card which they must approve. Resolve real tutor_id and student_ids from the database first, and ask the user for any missing detail instead of guessing.",
       parameters: {
         type: "object",
         properties: {
@@ -278,7 +278,7 @@ const tools = [
     function: {
       name: "propose_lesson_edit",
       description:
-        "Propose an edit to an EXISTING lesson. This does NOT change anything — it shows the user a confirmation card with a before/after diff which they must approve. Resolve the real lesson_id (and any tutor_id / student_ids) from the database first, and only include the fields that should change.",
+        "Propose an edit to an EXISTING lesson. This does NOT change anything, it shows the user a confirmation card with a before/after diff which they must approve. Resolve the real lesson_id (and any tutor_id / student_ids) from the database first, and only include the fields that should change.",
       parameters: {
         type: "object",
         properties: {
@@ -403,7 +403,7 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
 function recoveryHint(message: string): string {
   const m = message.toLowerCase();
   if (/function .* does not exist/.test(m)) {
-    return "That function or extension is not available in this database (pg_trgm/fuzzystrmatch are not installed). Rewrite using plain SQL — ILIKE '%text%', lower(), split_part — instead of similarity()/%/levenshtein/soundex.";
+    return "That function or extension is not available in this database (pg_trgm/fuzzystrmatch are not installed). Rewrite using plain SQL, ILIKE '%text%', lower(), split_part, instead of similarity()/%/levenshtein/soundex.";
   }
   if (/column .* does not exist/.test(m)) {
     return "Wrong column name. Call describe_table on the relevant table and use the exact column names it returns.";
@@ -415,7 +415,7 @@ function recoveryHint(message: string): string {
     return "Type mismatch. Check the column types with describe_table and add an explicit cast (e.g. ::text, ::date, ::uuid).";
   }
   if (/syntax error/.test(m)) {
-    return "Rewrite the query — check quoting, commas and CTE structure. Simplify it if needed.";
+    return "Rewrite the query, check quoting, commas and CTE structure. Simplify it if needed.";
   }
   if (/timeout|canceling statement|statement timeout/.test(m)) {
     return "The query was too heavy. Narrow the date range, drop joins, or add a tighter LIMIT and retry.";
@@ -697,7 +697,7 @@ async function tutorSlotWarnings(opts: {
 
 /**
  * Validate a proposed lesson and enrich it with human-readable names.
- * Performs NO writes — the user must approve the card before anything is created.
+ * Performs NO writes, the user must approve the card before anything is created.
  */
 async function buildLessonProposal(args: Record<string, any>) {
   const problems: string[] = [];
@@ -784,7 +784,7 @@ async function buildLessonProposal(args: Record<string, any>) {
 
 /**
  * Validate a proposed EDIT to an existing lesson and build a before/after diff.
- * Performs NO writes — the user must approve the card, and the client then applies
+ * Performs NO writes, the user must approve the card, and the client then applies
  * the change through the same service the calendar edit form uses.
  */
 async function buildLessonEditProposal(args: Record<string, any>) {
@@ -938,7 +938,7 @@ async function buildLessonEditProposal(args: Record<string, any>) {
   if (!changes.length) {
     return {
       ok: false as const,
-      error: "Nothing would change — the values given already match the lesson. Ask the user what they want changed.",
+      error: "Nothing would change, the values given already match the lesson. Ask the user what they want changed.",
     };
   }
 
@@ -1020,7 +1020,7 @@ Deno.serve(async (req) => {
       .select("role")
       .eq("user_id", userData.user.id);
     const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "owner");
-    if (!allowed) return json({ error: "Forbidden — admin/owner only" }, 403);
+    if (!allowed) return json({ error: "Forbidden, admin/owner only" }, 403);
 
     const body = await req.json();
     const userMessages = body.messages ?? [];
@@ -1500,7 +1500,7 @@ async function studentSnapshot(input: string) {
       engagement_score: absent ? null : s.engagement_score,
       confidence_score: absent ? null : s.confidence_score,
       homework_brief: s.homework_brief ?? null,
-      note: absent ? "Student missed this lesson — engagement/confidence not meaningful." : undefined,
+      note: absent ? "Student missed this lesson, engagement/confidence not meaningful." : undefined,
     };
   });
 
@@ -1685,9 +1685,9 @@ async function studentSnapshot(input: string) {
       start_time_utc: l.start_time,
     })),
     notes: [
-      "Assessment percentages count ATTEMPTED questions only — blank answers are reported as skipped.",
+      "Assessment percentages count ATTEMPTED questions only, blank answers are reported as skipped.",
       "Lessons the student missed have engagement/confidence suppressed; report them as missed.",
-      "impact_moments come from the daily transcript scan; every one carries verbatim quotes — cite them.",
+      "impact_moments come from the daily transcript scan; every one carries verbatim quotes, cite them.",
     ],
   };
 }

@@ -109,7 +109,7 @@ export default function OptimiseProposalPanel({ lessonTimes, lessonType, student
               <div>
                 <p className="text-sm font-medium">Cleo's calendar check</p>
                 <p className="text-xs text-muted-foreground">
-                  Suggestions only — nothing in your proposal has been changed.
+                  Suggestions only, nothing in your proposal has been changed.
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -138,7 +138,7 @@ export default function OptimiseProposalPanel({ lessonTimes, lessonType, student
                   const proposed = validTimes[finding.index] ?? validTimes[i];
                   const label =
                     finding.slot ||
-                    (proposed ? `${proposed.day} ${proposed.time} — ${proposed.subject}` : `Lesson ${i + 1}`);
+                    (proposed ? `${proposed.day} ${proposed.time}, ${proposed.subject}` : `Lesson ${i + 1}`);
 
                   return (
                     <div key={`${finding.index}-${i}`} className="rounded-lg border p-3 space-y-2">
@@ -157,7 +157,7 @@ export default function OptimiseProposalPanel({ lessonTimes, lessonType, student
                         <div className="flex items-start gap-2 rounded-md bg-muted/60 p-2 text-sm">
                           <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                           <span>
-                            Existing group: {finding.group_match.title || 'Group session'} —{' '}
+                            Existing group: {finding.group_match.title || 'Group session'},{' '}
                             {finding.group_match.day} {finding.group_match.time}
                             {finding.group_match.tutor ? ` with ${finding.group_match.tutor}` : ''}
                             {typeof finding.group_match.students === 'number'
@@ -172,7 +172,7 @@ export default function OptimiseProposalPanel({ lessonTimes, lessonType, student
                           <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                           <span>
                             Suggested instead: {finding.suggestion.day} {finding.suggestion.time}
-                            {finding.suggestion.reason ? ` — ${finding.suggestion.reason}` : ''}
+                            {finding.suggestion.reason ? `, ${finding.suggestion.reason}` : ''}
                           </span>
                         </div>
                       )}

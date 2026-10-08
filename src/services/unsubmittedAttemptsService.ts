@@ -20,7 +20,7 @@ const isSubmittedStatus = (status?: string | null) =>
 
 /**
  * Every attempt that holds at least one real answer but never reached the
- * submitted state — whether the session is still open or was completed
+ * submitted state, whether the session is still open or was completed
  * without an assignment row behind it.
  */
 export async function getUnsubmittedAttempts(): Promise<UnsubmittedAttempt[]> {

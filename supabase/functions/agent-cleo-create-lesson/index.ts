@@ -1,4 +1,4 @@
-// Agent Cleo — lesson creation endpoint.
+// Agent Cleo, lesson creation endpoint.
 // Only owner/admin users may call this. Every proposal is re-validated server-side;
 // the client-sent payload is never trusted as-is.
 
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       .select("role")
       .eq("user_id", userData.user.id);
     const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "owner");
-    if (!allowed) return json({ error: "Forbidden — admin/owner only" }, 403);
+    if (!allowed) return json({ error: "Forbidden, admin/owner only" }, 403);
 
     const body = await req.json().catch(() => null);
     const p = body?.proposal;

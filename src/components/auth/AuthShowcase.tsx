@@ -30,7 +30,7 @@ const SlideFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </motion.div>
 );
 
-/** Slide 1 — Cleo hand logo */
+/** Slide 1, Cleo hand logo */
 const CleoSlide: React.FC<{ float: boolean }> = ({ float }) => (
   <SlideFrame>
     <motion.img
@@ -49,7 +49,7 @@ const CleoSlide: React.FC<{ float: boolean }> = ({ float }) => (
   </SlideFrame>
 );
 
-/** Slide 2 — Top-tier teachers */
+/** Slide 2, Top-tier teachers */
 const TeachersSlide: React.FC = () => (
   <SlideFrame>
     <motion.div
@@ -76,7 +76,7 @@ const RESULTS = [
   { figure: '88%', label: 'A* and A at A Level', tone: 'bg-pastel-blush' },
 ];
 
-/** Slide 3 — Proven results */
+/** Slide 3, Proven results */
 const ResultsSlide: React.FC = () => (
   <SlideFrame>
     <div className="w-full max-w-sm space-y-3">

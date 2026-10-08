@@ -45,7 +45,7 @@ export const getSubjectClass = (subject: string, lessonType?: string): string =>
     return 'ks3-event';
   }
 
-  // Year 11 gets its own color — check before GCSE so it isn't swallowed
+  // Year 11 gets its own color, check before GCSE so it isn't swallowed
   if (subjectLower.includes('year 11')) {
     return 'year-11-event';
   }

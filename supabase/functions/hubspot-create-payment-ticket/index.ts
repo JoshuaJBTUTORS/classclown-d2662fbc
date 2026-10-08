@@ -175,7 +175,7 @@ serve(async (req) => {
       : 'None listed';
 
     const content = [
-      `Client onboarded — payment setup required.`,
+      `Client onboarded, payment setup required.`,
       ``,
       `Parent: ${parentName}`,
       `Email: ${parentEmail}`,
@@ -197,7 +197,7 @@ serve(async (req) => {
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         properties: {
-          subject: `Payment Setup — ${parentName}`,
+          subject: `Payment Setup, ${parentName}`,
           content,
           hs_pipeline: '0',
           hs_pipeline_stage: '1',

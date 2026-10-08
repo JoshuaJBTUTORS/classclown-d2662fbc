@@ -79,7 +79,7 @@ const AccountPanel = ({ metrics, label }: { metrics: StripeAccountMetrics; label
 
       {metrics.truncated && (
         <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" /> Results truncated at 1000 records — figures are an approximation.
+          <AlertCircle className="h-3 w-3" /> Results truncated at 1000 records, figures are an approximation.
         </p>
       )}
     </div>

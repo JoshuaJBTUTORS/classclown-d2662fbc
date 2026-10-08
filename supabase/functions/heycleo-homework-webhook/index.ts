@@ -204,7 +204,7 @@ serve(async (req) => {
   // error, but we short-circuit before sending anything.
   // To re-enable: remove this block.
   // ============================================================
-  console.log("Homework reminders are disabled — ignoring incoming webhook.");
+  console.log("Homework reminders are disabled, ignoring incoming webhook.");
   return new Response(
     JSON.stringify({
       success: true,
@@ -385,7 +385,7 @@ serve(async (req) => {
           if (match) resolutionPath = "matched_by_name";
         }
 
-        // 3c) Single-student lesson — unambiguous
+        // 3c) Single-student lesson, unambiguous
         if (!match && enrolled.length === 1) {
           match = enrolled[0];
           resolutionPath = "single_student_lesson";
@@ -397,7 +397,7 @@ serve(async (req) => {
             `Resolved via lesson enrolment (${resolutionPath}): ${match.first_name} ${match.last_name} (id=${match.id})`
           );
         } else {
-          // 3d) Ambiguous — notify ALL parents on the lesson rather than dropping the reminder
+          // 3d) Ambiguous, notify ALL parents on the lesson rather than dropping the reminder
           ambiguousMatch = true;
           resolutionPath = "ambiguous_fanout";
           recipients = enrolled.map(buildRecipient);
@@ -410,7 +410,7 @@ serve(async (req) => {
       console.log("No homework row matched title:", payload.homework_title);
     }
 
-    // STEP 4: Fallback — old email-based lookup against students AND parents
+    // STEP 4: Fallback, old email-based lookup against students AND parents
     if (recipients.length === 0) {
       console.log("Falling back to email-based lookup for:", payload.student_email);
 
@@ -467,7 +467,7 @@ serve(async (req) => {
                 buildRecipient({ ...(k as StudentRow), parents: parentByEmail as any })
               );
               console.warn(
-                `Parent ${parentByEmail.email} has ${kids.length} children — fanning out reminders.`
+                `Parent ${parentByEmail.email} has ${kids.length} children, fanning out reminders.`
               );
             }
           }

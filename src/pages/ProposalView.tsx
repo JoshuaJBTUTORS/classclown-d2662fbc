@@ -85,7 +85,7 @@ export default function ProposalView() {
       }
 
       // Determine current step based on status
-      // Always start on the document view — signed docs stay visible for the record.
+      // Always start on the document view, signed docs stay visible for the record.
       setCurrentStep('view');
     } catch (error: any) {
       console.error('❌ Error loading proposal:', error);
@@ -112,7 +112,7 @@ export default function ProposalView() {
     return (
       <div className="container max-w-2xl py-16 text-center space-y-4">
         <p className="text-muted-foreground text-sm mb-2">
-          This is a public proposal page — no sign-in required
+          This is a public proposal page, no sign-in required
         </p>
         <p className="text-destructive text-lg font-semibold">
           {errorMessage || 'Invalid or expired proposal link.'}

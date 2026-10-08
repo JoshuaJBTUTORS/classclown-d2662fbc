@@ -201,7 +201,7 @@ export default function PaymentCaptureStep({ proposal, onComplete, embedded = fa
         {embedded ? (
           <div className="text-center space-y-1">
             <h1 className="font-heading text-2xl font-bold text-foreground">Add your card</h1>
-            <p className="text-muted-foreground">Last step — save a card to secure your lessons</p>
+            <p className="text-muted-foreground">Last step, save a card to secure your lessons</p>
           </div>
         ) : (
         <div className="text-center space-y-2">

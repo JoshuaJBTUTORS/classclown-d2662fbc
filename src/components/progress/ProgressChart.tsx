@@ -130,7 +130,7 @@ const HomeworkByMonth: React.FC<ProgressChartProps> = ({ filters, userRole }) =>
     return Math.round(scores.reduce((sum, s) => sum + s.percentage, 0) / scores.length);
   }, [scores]);
 
-  /** Most recent visible month with data — gets the deep-peach highlight. */
+  /** Most recent visible month with data, gets the deep-peach highlight. */
   const latestKey = useMemo(() => {
     for (let i = visible.length - 1; i >= 0; i--) {
       if (visible[i].average != null) return visible[i].key;

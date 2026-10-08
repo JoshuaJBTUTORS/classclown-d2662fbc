@@ -279,7 +279,7 @@ const StudentDetail: React.FC = () => {
                             <span className="font-semibold text-foreground">{l.title}</span>
                             {l.wasLate && (
                               <span className={cn(chip, 'bg-pastel-butter')}>
-                                Joined late — partial data
+                                Joined late, partial data
                               </span>
                             )}
                             {!l.wasLate && l.confidenceScore !== null && (() => {
@@ -319,7 +319,7 @@ const StudentDetail: React.FC = () => {
                             <p className="mt-1 text-xs italic text-muted-foreground">
                               {l.hasSummary
                                 ? 'No topics recorded for this lesson.'
-                                : 'Topics pending — transcript still processing.'}
+                                : 'Topics pending, transcript still processing.'}
                             </p>
                           )}
                           {l.homeworkBrief ? (
@@ -347,7 +347,7 @@ const StudentDetail: React.FC = () => {
                                         : 'bg-pastel-butter'
                                     )}
                                   >
-                                    Difficulty {l.homeworkBrief.difficulty_tag} —{' '}
+                                    Difficulty {l.homeworkBrief.difficulty_tag},{' '}
                                     {l.homeworkBrief.difficulty_tag === '1'
                                       ? 'Not understanding'
                                       : 'Partial understanding'}
