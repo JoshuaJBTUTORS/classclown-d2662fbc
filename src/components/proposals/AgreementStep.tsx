@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 interface AgreementStepProps {
   proposal: any;
-  onAgree: () => void;
+  onAgree: (agreedAt?: string) => void;
   onBack: () => void;
   embedded?: boolean;
   alreadyAgreed?: boolean;
@@ -49,17 +49,18 @@ export default function AgreementStep({ proposal, onAgree, onBack, embedded = fa
       if (signatureError) throw signatureError;
 
       // Update proposal status
+      const agreedAt = new Date().toISOString();
       const { error: updateError } = await supabase
         .from('lesson_proposals')
         .update({
           status: 'agreed',
-          agreed_at: new Date().toISOString(),
+          agreed_at: agreedAt,
         })
         .eq('id', proposal.id);
 
       if (updateError) throw updateError;
 
-      onAgree();
+      onAgree(agreedAt);
     } catch (error: any) {
       console.error('Error accepting agreement:', error);
       toast({
@@ -115,7 +116,7 @@ export default function AgreementStep({ proposal, onAgree, onBack, embedded = fa
             {embedded ? 'Back' : 'Back to Proposal'}
           </Button>
           <Button
-            onClick={alreadyAgreed ? onAgree : handleAgree}
+            onClick={alreadyAgreed ? () => onAgree() : handleAgree}
             disabled={(!alreadyAgreed && !agreed) || isSubmitting}
             className={embedded ? 'w-full rounded-full bg-foreground text-background hover:bg-foreground/90 md:flex-1' : 'w-full md:flex-1'}
           >

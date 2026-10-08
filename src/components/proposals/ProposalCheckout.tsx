@@ -12,6 +12,7 @@ interface Props {
   initialStep: 'agreement' | 'payment';
   onBackToProposal: () => void;
   onFinished: () => void;
+  onAgreed?: (agreedAt: string) => void;
 }
 
 const STEPS = [
@@ -20,7 +21,7 @@ const STEPS = [
   { key: 'payment', label: 'Add card' },
 ];
 
-export default function ProposalCheckout({ proposal, initialStep, onBackToProposal, onFinished }: Props) {
+export default function ProposalCheckout({ proposal, initialStep, onBackToProposal, onFinished, onAgreed }: Props) {
   const [step, setStep] = useState<Step>(initialStep);
   const [isAgreed, setIsAgreed] = useState(proposal.status === 'agreed' || proposal.status === 'completed');
   const goBack = step === 'payment' ? () => setStep('agreement') : onBackToProposal;
@@ -80,7 +81,7 @@ export default function ProposalCheckout({ proposal, initialStep, onBackToPropos
         <div className="grid gap-6 md:grid-cols-[1fr_280px] md:items-start">
           <div key={step} className="animate-in fade-in slide-in-from-right-4 duration-300">
             {step === 'agreement' && (
-              <AgreementStep embedded alreadyAgreed={isAgreed} proposal={proposal} onAgree={() => { setIsAgreed(true); setStep('payment'); }} onBack={onBackToProposal} />
+              <AgreementStep embedded alreadyAgreed={isAgreed || proposal.status === 'agreed' || proposal.status === 'completed'} proposal={proposal} onAgree={(agreedAt) => { setIsAgreed(true); if (agreedAt) onAgreed?.(agreedAt); setStep('payment'); }} onBack={onBackToProposal} />
             )}
             {step === 'payment' && <PaymentCaptureStep embedded proposal={proposal} onBack={() => setStep('agreement')} onComplete={() => setStep('done')} />}
             {step === 'done' && (

@@ -133,6 +133,7 @@ export default function ProposalView() {
         proposal={proposal}
         initialStep={currentStep}
         onBackToProposal={() => setCurrentStep('view')}
+        onAgreed={(agreed_at) => setProposal((p) => (p ? { ...p, status: 'agreed', agreed_at } : p))}
         onFinished={() => { setCurrentStep('view'); loadProposal(); }}
       />
     );
