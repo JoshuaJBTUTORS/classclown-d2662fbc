@@ -689,7 +689,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       </div>
 
       {/* Mobile sticky CTA */}
-      {!signed && (
+      {!signed && !paymentPending && (
         <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
           <Button className="w-full bg-foreground text-background hover:bg-foreground/90" size="lg" onClick={onConfirm}>
             Confirm & get started
