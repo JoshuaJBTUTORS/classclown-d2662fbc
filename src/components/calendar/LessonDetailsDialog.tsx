@@ -241,7 +241,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
       }
 
       toast.success(
-        `Assessment week assigned, sent to ${resolved.length} of ${studentList.length} student${studentList.length === 1 ? '' : 's'} (via parent where needed)`
+        `Assessment week assigned; sent to ${resolved.length} of ${studentList.length} student${studentList.length === 1 ? '' : 's'} (via parent where needed)`
       );
       if (skipped > 0) {
         toast.message(`${skipped} student${skipped === 1 ? '' : 's'} skipped (no student or parent account linked)`);
