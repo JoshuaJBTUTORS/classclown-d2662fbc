@@ -659,22 +659,22 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                 </Button>
               </div>
             ) : paymentPending ? (
-              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
+              <div className="mt-10 flex flex-col items-start gap-6 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between md:gap-8">
                 <div>
                   <p className="font-heading text-2xl font-extrabold">Almost there!</p>
                   <p className="mt-1 text-sm opacity-90">Your agreement is saved. Finish payment setup to complete your sign-up.</p>
                 </div>
-                <Button size="lg" onClick={onContinuePayment} className="bg-foreground text-background hover:bg-foreground/90">
+                <Button size="lg" onClick={onContinuePayment} className="shrink-0 bg-foreground text-background hover:bg-foreground/90">
                   Complete payment setup
                 </Button>
               </div>
             ) : (
-              <div className="mt-10 flex flex-col items-start gap-4 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between">
+              <div className="mt-10 flex flex-col items-start gap-6 rounded-[var(--radius-soft)] bg-muted p-8 text-foreground shadow-[var(--shadow-soft)] md:flex-row md:items-center md:justify-between md:gap-8">
                 <div>
                   <p className="font-heading text-2xl font-extrabold">Ready to get started?</p>
                   <p className="mt-1 text-sm opacity-90">Confirm your plan and we'll book your first lesson within 48 hours.</p>
                 </div>
-                <Button size="lg" onClick={onConfirm} className="bg-foreground text-background hover:bg-foreground/90">
+                <Button size="lg" onClick={onConfirm} className="shrink-0 bg-foreground text-background hover:bg-foreground/90">
                   Confirm & get started
                 </Button>
               </div>
