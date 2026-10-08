@@ -124,6 +124,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       : '3 months';
   const signedDateStr = signedAt
     ? new Date(signedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+  const paymentPending = !signed && showPaymentBanner && !!onContinuePayment;
     : null;
 
 
