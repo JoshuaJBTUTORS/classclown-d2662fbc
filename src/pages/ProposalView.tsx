@@ -139,7 +139,7 @@ export default function ProposalView() {
     );
   }
 
-  const isSigned = proposal.status === 'agreed' || proposal.status === 'completed';
+  const isSigned = proposal.status === 'completed';
 
   return (
     <ProposalLayout
