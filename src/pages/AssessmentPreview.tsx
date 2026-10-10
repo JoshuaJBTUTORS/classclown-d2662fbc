@@ -210,7 +210,27 @@ const AssessmentPreview: React.FC = () => {
                     </CardContent>
                   </Card>
 
+                  {assessment.extract_text && (
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <BookOpen className="h-5 w-5 mr-2" />
+                          Source / Extract
+                        </CardTitle>
+                        {assessment.extract_source && (
+                          <p className="text-sm text-gray-500 italic">{assessment.extract_source}</p>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        <div className="max-h-72 overflow-y-auto whitespace-pre-wrap font-serif text-sm leading-relaxed border rounded-lg p-4 bg-muted/30">
+                          {assessment.extract_text}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <Card>
+
                     <CardHeader>
                       <CardTitle>Questions ({questions?.length || 0})</CardTitle>
                     </CardHeader>

@@ -21,6 +21,9 @@ export interface AIAssessment {
   ai_confidence_score?: number;
   processing_error?: string;
   is_ai_generated?: boolean;
+  extract_text?: string;
+  extract_source?: string;
+  extract_type?: string;
 }
 
 export interface AssessmentQuestion {
