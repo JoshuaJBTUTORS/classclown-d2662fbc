@@ -149,6 +149,17 @@ serve(async (req) => {
       ? new Date(`${todayIso}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short" })
       : parts.weekday;
 
+    // Paused weeks: no reminders at all (requested by admin). Dates are London dates.
+    const PAUSED_RANGES: Array<[string, string]> = [["2026-10-12", "2026-10-18"]];
+    const realToday = parts.date;
+    if (!body.dry_run && PAUSED_RANGES.some(([s, e]) => (realToday >= s && realToday <= e) || (todayIso >= s && todayIso <= e))) {
+      console.log("[homework-nudge] Paused week, no reminders sent", { realToday, todayIso });
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "reminders paused this week" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const isWednesday = runWeekday.startsWith("Wed");
     const isFriday = runWeekday.startsWith("Fri");
 
