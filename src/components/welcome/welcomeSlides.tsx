@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { WavingHand } from '@/components/ui/waving-hand';
 import {
   DoodleCalendar,
   DoodleClipboard,
@@ -56,11 +57,9 @@ export const TOUR_SLIDES: TourSlide[] = [
   },
 ];
 
-/** Waving hand matching the login page emoji, with the cc-wave animation. */
+/** Waving hand on the welcome intro, uses the shared WavingHand. */
 export const WelcomeIntroIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <span aria-hidden="true" className={cn('inline-block animate-wave text-3xl leading-none', className)}>
-    👋
-  </span>
+  <WavingHand className={cn(className)} />
 );
 export const AllSetIcon = DoodleCheck;
 
