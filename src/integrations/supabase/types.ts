@@ -3421,6 +3421,27 @@ export type Database = {
           },
         ]
       }
+      lesson_time_fix_backup_2026_10: {
+        Row: {
+          fixed_at: string
+          lesson_id: string
+          old_end: string | null
+          old_start: string | null
+        }
+        Insert: {
+          fixed_at?: string
+          lesson_id: string
+          old_end?: string | null
+          old_start?: string | null
+        }
+        Update: {
+          fixed_at?: string
+          lesson_id?: string
+          old_end?: string | null
+          old_start?: string | null
+        }
+        Relationships: []
+      }
       lesson_transcriptions: {
         Row: {
           chunk_count: number | null
