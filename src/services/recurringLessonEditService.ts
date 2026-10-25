@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, addWeeks, differenceInMinutes, getDay, setDay, parseISO } from 'date-fns';
+import { ukInstant, ukDateOf, ukTimeOf, addUkDays } from '@/utils/ukWallClock';
 import { createUKDateTime, convertUKToUTC, convertUTCToUK } from '@/utils/timezone';
 
 export interface LessonUpdate {
@@ -176,26 +177,12 @@ const applyTimeUpdatesToInstance = (
   dayDelta: number = 0
 ) => {
   // Get the instance date (preserve the specific date of this instance), then shift by dayDelta
-  let instanceDate = new Date(instanceLesson.start_time);
-  if (dayDelta !== 0) {
-    instanceDate = addDays(instanceDate, dayDelta);
-  }
-
-  // Extract the time components from the new times (in UK timezone)
-  const ukStartTime = convertUTCToUK(newStartTime);
-  const ukEndTime = convertUTCToUK(newEndTime);
-
-  // Create new times for this instance date using UK timezone
-  const instanceUKStartTime = createUKDateTime(instanceDate,
-    `${ukStartTime.getHours().toString().padStart(2, '0')}:${ukStartTime.getMinutes().toString().padStart(2, '0')}`
-  );
-  const instanceUKEndTime = createUKDateTime(instanceDate,
-    `${ukEndTime.getHours().toString().padStart(2, '0')}:${ukEndTime.getMinutes().toString().padStart(2, '0')}`
-  );
-
-  // Convert back to UTC for storage
-  const instanceStartTime = convertUKToUTC(instanceUKStartTime);
-  const instanceEndTime = convertUKToUTC(instanceUKEndTime);
+  // Work in UK calendar dates and UK wall-clock times so clock changes and the
+  // browser's own timezone never shift the lesson.
+  const ukDate = addUkDays(ukDateOf(new Date(instanceLesson.start_time)), dayDelta);
+  const instanceStartTime = ukInstant(ukDate, ukTimeOf(newStartTime));
+  const durationMs = newEndTime.getTime() - newStartTime.getTime();
+  const instanceEndTime = new Date(instanceStartTime.getTime() + durationMs);
 
   return {
     start_time: instanceStartTime.toISOString(),

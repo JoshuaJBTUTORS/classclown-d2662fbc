@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ASSESSMENT_ROOM_ID } from '@/constants/assessmentRoom';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
+import { ukInstant, ukDateOf, ukTimeOf } from '@/utils/ukWallClock';
 
 const UK_TIMEZONE = 'Europe/London';
 
@@ -19,6 +20,7 @@ interface RecurringLessonData {
   recurrenceEndDate?: Date;
   isInfinite?: boolean;
   selectedStudents: number[];
+  ukStartTimeOverride?: string;
 }
 
 export const generateRecurringLessonInstances = async (data: RecurringLessonData) => {
@@ -51,9 +53,8 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
   const instances = [];
   const lessonDuration = endTime.getTime() - startTime.getTime();
   
-  // Extract time components from original lesson
-  const startHour = startTime.getUTCHours();
-  const startMinute = startTime.getUTCMinutes();
+  // UK wall-clock time of the original lesson
+  const ukStartTime = data.ukStartTimeOverride || ukTimeOf(startTime);
   
   // Generate first 20 instances or until end date (whichever comes first)
   let currentDate = new Date(startTime);
@@ -83,15 +84,8 @@ export const generateRecurringLessonInstances = async (data: RecurringLessonData
     }
 
     if (currentDate <= (effectiveEndDate || new Date())) {
-      // Apply the original lesson's time-of-day to the new date
-      const instanceStartTime = new Date(Date.UTC(
-        currentDate.getUTCFullYear(),
-        currentDate.getUTCMonth(),
-        currentDate.getUTCDate(),
-        startHour,
-        startMinute,
-        0
-      ));
+      // Keep the UK wall-clock time (e.g. always 6pm London), correct across clock changes
+      const instanceStartTime = ukInstant(ukDateOf(currentDate), ukStartTime);
       const instanceEndTime = new Date(instanceStartTime.getTime() + lessonDuration);
       
       instances.push({
@@ -278,7 +272,8 @@ export const generateNextBatchOfInstances = async (originalLessonId: string, bat
     recurrenceInterval: lastInstance.recurrence_interval as any,
     recurrenceEndDate: recurrencePattern.endDate ? new Date(recurrencePattern.endDate) : undefined,
     isInfinite: recurrencePattern.isInfinite,
-    selectedStudents
+    selectedStudents,
+    ukStartTimeOverride: ukTimeOf(lastInstanceStart)
   };
 
   return await generateRecurringLessonInstances(data);
