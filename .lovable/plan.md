@@ -27,3 +27,10 @@ None of these are the same lesson duplicated. Two involve lessons I moved this m
 1. Find out, for each clash, which lesson was added or moved most recently and by which route (new series, one-off, trial booking).
 2. Tell me which lesson in each pair should move, or to which tutor, and I'll change only those.
 3. Optionally: add a warning when a lesson is booked on top of another one for the same tutor.
+
+## 3. Remove the top "Request topic" button from the calendar
+- Students and parents see a "Request topic" button at the top of the calendar. Requests sent from it aren't attached to any lesson, so the tutor never sees them against a session. Neila's request on 24 Oct came from this button.
+- Remove that button (and the pop-up it opens) from the top of the calendar. The Refer a friend button stays. Topic requests made from a specific lesson keep working.
+- Neila's existing request stays on the Topic Request Approval page for review.
+
+Technical: remove the `onRequestTopic` prop and button in `CalendarHero.tsx`, plus the `TopicRequestDialog` state/render in `Calendar.tsx`.
