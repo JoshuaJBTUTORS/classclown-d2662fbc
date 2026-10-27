@@ -1,7 +1,7 @@
 import React from 'react';
 import { Filter, CalendarPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DoodleChat, DoodleCoin } from '@/components/progress/ProgressDoodles';
+import { DoodleCoin } from '@/components/progress/ProgressDoodles';
 
 interface CalendarHeroProps {
   canUseFilters: boolean;
@@ -10,7 +10,6 @@ interface CalendarHeroProps {
   canScheduleLessons: boolean;
   onSchedule: () => void;
   showFamilyActions: boolean;
-  onRequestTopic: () => void;
   onReferFriend: () => void;
 }
 
@@ -36,7 +35,6 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
   canScheduleLessons,
   onSchedule,
   showFamilyActions,
-  onRequestTopic,
   onReferFriend,
 }) => {
   return (
@@ -57,16 +55,6 @@ export const CalendarHero: React.FC<CalendarHeroProps> = ({
 
         {showFamilyActions && (
           <>
-            <button
-              type="button"
-              onClick={onRequestTopic}
-              className={chipBase}
-            >
-              <span className={chipIcon}>
-                <DoodleChat className="h-4 w-4" />
-              </span>
-              Request topic
-            </button>
             <button
               type="button"
               onClick={onReferFriend}
