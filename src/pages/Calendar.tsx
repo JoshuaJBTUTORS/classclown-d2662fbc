@@ -17,7 +17,6 @@ import { CalendarPlus, Info, Filter, MessageSquare, Users } from 'lucide-react';
 import AddLessonForm from '@/components/lessons/AddLessonForm';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TopicRequestDialog } from '@/components/calendar/TopicRequestDialog';
 import { ReferFriendDialog } from '@/components/calendar/ReferFriendDialog';
 import CalendarHero from '@/components/calendar/CalendarHero';
 import AssessmentWeekBanner from '@/components/calendar/AssessmentWeekBanner';
@@ -39,7 +38,6 @@ const Calendar = () => {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedLessonType, setSelectedLessonType] = useState<string>('All Lessons');
   const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
-  const [showTopicRequestDialog, setShowTopicRequestDialog] = useState(false);
   const [showReferFriendDialog, setShowReferFriendDialog] = useState(false);
 
   // New state for view-based date range
@@ -237,7 +235,6 @@ const Calendar = () => {
               canScheduleLessons={canScheduleLessons}
               onSchedule={openAddLessonDialog}
               showFamilyActions={!canUseFilters && (isStudent || isParent)}
-              onRequestTopic={() => setShowTopicRequestDialog(true)}
               onReferFriend={() => setShowReferFriendDialog(true)}
             />
           </div>
@@ -328,11 +325,6 @@ const Calendar = () => {
         />
       )}
 
-      {/* Topic Request Dialog for students and parents */}
-      <TopicRequestDialog
-        open={showTopicRequestDialog}
-        onOpenChange={setShowTopicRequestDialog}
-      />
 
       {/* Refer Friend Dialog for students and parents */}
       <ReferFriendDialog
