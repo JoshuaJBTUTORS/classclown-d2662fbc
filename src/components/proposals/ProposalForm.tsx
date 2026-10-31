@@ -33,7 +33,7 @@ export const proposalSchema = z.object({
   pricePerLesson: z.number().min(0).optional(),
   paymentCycle: z.string().min(1, 'Payment cycle is required'),
   programmeStartDate: z.string().min(1, 'Programme start date is required'),
-  contractTerm: z.enum(['month_to_month', '3_months', '12_months', '24_months'], {
+  contractTerm: z.enum(['month_to_month', '3_months', '6_months', '12_months', '24_months'], {
     required_error: 'Programme term is required',
   }),
   internalNotes: z.string().max(5000).optional().or(z.literal('')),
@@ -332,6 +332,7 @@ export default function ProposalForm({
                       <SelectContent className={menuClass}>
                         <SelectItem value="month_to_month">Month to Month</SelectItem>
                         <SelectItem value="3_months">3 Months</SelectItem>
+                        <SelectItem value="6_months">6 Months</SelectItem>
                         <SelectItem value="12_months">12 Months</SelectItem>
                         <SelectItem value="24_months">24 Months</SelectItem>
                       </SelectContent>

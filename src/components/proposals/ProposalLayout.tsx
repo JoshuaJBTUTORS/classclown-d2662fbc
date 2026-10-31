@@ -34,7 +34,7 @@ interface Proposal {
   subject: string;
   price_per_lesson: number;
   payment_cycle: string;
-  contract_term?: 'month_to_month' | '3_months' | '12_months' | '24_months' | null;
+  contract_term?: 'month_to_month' | '3_months' | '6_months' | '12_months' | '24_months' | null;
   programme_start_date?: string | null;
   lesson_times: Array<{ day: string; time: string; duration: number; subject?: string; price?: number }>;
   status: string;
@@ -119,6 +119,8 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
       ? '24 months'
       : proposal.contract_term === '12_months'
       ? '12 months'
+      : proposal.contract_term === '6_months'
+      ? '6 months'
       : proposal.contract_term === 'month_to_month'
       ? '1 month'
       : '3 months';
@@ -538,7 +540,9 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
                     ? '24 Months'
                     : term === '12_months'
                       ? '12 Months'
-                      : term === '3_months'
+                      : term === '6_months'
+                        ? '6 Months'
+                        : term === '3_months'
                         ? '3 Months'
                         : 'Month to Month';
                 return (
@@ -596,7 +600,7 @@ export default function ProposalLayout({ proposal, onConfirm, onProposalUpdate, 
               <p>
                 <strong className="text-foreground">Cancellations & term.</strong> Reschedule or cancel individual lessons with 24 hours notice at no cost. Your contract term is{' '}
                 <strong className="text-foreground">
-                  {proposal.contract_term === '24_months' ? '24 months' : proposal.contract_term === '12_months' ? '12 months' : proposal.contract_term === '3_months' ? '3 months' : 'month to month'}
+                  {proposal.contract_term === '24_months' ? '24 months' : proposal.contract_term === '12_months' ? '12 months' : proposal.contract_term === '6_months' ? '6 months' : proposal.contract_term === '3_months' ? '3 months' : 'month to month'}
                 </strong>{' '}
                 and auto-renews at the end. During the term you cannot reduce the number of sessions or downgrade; upgrades are always welcome. To cancel or downgrade at renewal, give us at least 30 days' written notice before the term end date.
               </p>

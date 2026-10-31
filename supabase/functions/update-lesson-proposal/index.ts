@@ -11,7 +11,7 @@ interface UpdateProposalRequest {
   subject: string;
   pricePerLesson: number;
   paymentCycle: string;
-  contractTerm?: 'month_to_month' | '3_months' | '12_months' | '24_months';
+  contractTerm?: 'month_to_month' | '3_months' | '6_months' | '12_months' | '24_months';
   programmeStartDate?: string | null;
   lessonTimes: Array<{
     day: string;
