@@ -28,7 +28,7 @@ interface FormData {
   lessonTime: string; // Actual lesson time
   selectedTutorId: string;
 }
-const TrialBookingTayanaPage: React.FC = () => {
+const TrialBookingHopewellPage: React.FC = () => {
   const refCode = getRefCodeFromUrl();
   const referrerName = useReferrerName(refCode);
   const [currentStep, setCurrentStep] = useState(1);
@@ -157,10 +157,10 @@ const TrialBookingTayanaPage: React.FC = () => {
   };
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
-    console.log('Submitting Tayana trial booking request with data:', formData);
+    console.log('Submitting Hopewell trial booking request with data:', formData);
     setIsSubmitting(true);
     try {
-      // Create trial booking request with Tayana source and uniqueness flag
+      // Create trial booking request with Hopewell source and uniqueness flag
       const trialBookingResult = await createTrialBooking({
         parent_name: formData.parentName,
         child_name: formData.childName,
@@ -172,8 +172,8 @@ const TrialBookingTayanaPage: React.FC = () => {
         lesson_time: formData.lessonTime,
         // Actual lesson time
         subject_id: formData.subject?.id || '',
-        message: `Tayana trial lesson request for ${formData.childName}`,
-        booking_source: 'tayana',
+        message: `Hopewell trial lesson request for ${formData.childName}`,
+        booking_source: 'hopewell',
         is_unique_booking: uniquenessCheck.isUnique,
         referral_code: new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase() || undefined
       });
@@ -181,12 +181,12 @@ const TrialBookingTayanaPage: React.FC = () => {
         throw new Error(trialBookingResult.error || 'Failed to submit trial booking request.');
       }
       toast({
-        title: "Tayana Trial Booking Submitted!",
+        title: "Hopewell Trial Booking Submitted!",
         description: uniquenessCheck.isUnique ? "Your unique trial booking has been submitted and will count towards our targets!" : "Your trial booking has been submitted (duplicate contact info detected)."
       });
       navigate('/trial-booking-confirmation');
     } catch (err: any) {
-      console.error('Error during Tayana trial booking submission:', err);
+      console.error('Error during Hopewell trial booking submission:', err);
       toast({
         variant: "destructive",
         title: "Error!",
@@ -225,12 +225,12 @@ const TrialBookingTayanaPage: React.FC = () => {
   return <div className="container mx-auto py-10 px-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-2">
-          {referrerName ? `${referrerName} has invited you to book a trial with Class Beyond Academy` : 'Book a Trial Lesson (TAYANA)'}
+          {referrerName ? `${referrerName} has invited you to book a trial with Class Beyond Academy` : 'Book a Trial Lesson (HOPEWELL)'}
         </h1>
         <p className="text-muted-foreground text-center mb-8">
           {referrerName
             ? 'Submit a request for a free 45-minute trial lesson - and you both get £50 when the trial goes ahead'
-            : 'Submit a request for a free 45-minute trial lesson - Tayana Referral Link'}
+            : 'Submit a request for a free 45-minute trial lesson - Hopewell Referral Link'}
         </p>
 
         <StepIndicator currentStep={currentStep} totalSteps={totalSteps} stepLabels={stepLabels} />
@@ -256,7 +256,7 @@ const TrialBookingTayanaPage: React.FC = () => {
               {isSubmitting ? <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Submitting...
-                </> : 'Submit Tayana Request'}
+                </> : 'Submit Hopewell Request'}
             </Button>}
         </div>
       </div>
@@ -291,4 +291,4 @@ const TrialBookingTayanaPage: React.FC = () => {
       </AlertDialog>
     </div>;
 };
-export default TrialBookingTayanaPage;
+export default TrialBookingHopewellPage;
