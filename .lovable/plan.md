@@ -1,10 +1,9 @@
-# Add A-level English as a subject
+# Add new subjects
 
 ## What changes
-- Add a new subject called **A-level English** alongside the other A-level subjects (Biology, Maths, Physics, etc.).
-- It will then show up everywhere subjects are picked: lessons, tutor subjects, students, proposals and trial bookings, as all of these read from the same subject list.
+- **A-level English** and **A-level Further Maths**: added next to the other A-level subjects. They appear everywhere subjects are picked, including the public trial booking pages.
+- **GCSE Religious Studies**: added to the GCSE subjects for lessons, tutors, students and proposals, but **hidden from the trial booking pages** (main, Musa and Hopewell).
 
 ## Technical details
-- One database change: insert a row into `subjects` with name `A-level English`, category `a_level` (matching the existing "A-level ..." naming).
-- No code changes needed; subject dropdowns load from the `subjects` table.
-- If you would prefer separate "A-level English Language" and "A-level English Literature" (like the GCSE ones), say so and I will add both instead.
+- Insert three rows into `subjects`: `A-level English` (a_level), `A-level Further Maths` (a_level), `GCSE Religious Studies` (gcse).
+- `SubjectSelectionStep.tsx` (shared by all trial booking pages) gets a small exclusion list (`HIDDEN_FROM_BOOKING = ['GCSE Religious Studies']`) filtered out before grouping by category. Other screens are untouched.
