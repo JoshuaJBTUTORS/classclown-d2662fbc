@@ -75,7 +75,8 @@ const SubjectSelectionStep: React.FC<SubjectSelectionStepProps> = ({
   }
 
   // Group subjects by category
-  const subjectsByCategory = subjects.reduce((acc, subject) => {
+  const HIDDEN_FROM_BOOKING = ['GCSE Religious Studies'];
+  const subjectsByCategory = subjects.filter(s => !HIDDEN_FROM_BOOKING.includes(s.name)).reduce((acc, subject) => {
     if (!acc[subject.category]) {
       acc[subject.category] = [];
     }
